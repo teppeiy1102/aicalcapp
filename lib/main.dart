@@ -19,6 +19,12 @@ class MyApp extends StatelessWidget {
           primary: Color(0xFF5E81FF),
           surface: Color(0xFF1A1A26),
         ),
+        textTheme: ThemeData.dark().textTheme.apply(
+          fontFamily: 'NotoSansJP',
+        ),
+        primaryTextTheme: ThemeData.dark().textTheme.apply(
+          fontFamily: 'NotoSansJP',
+        ),
       ),
       home: const HomeScreen(),
     );

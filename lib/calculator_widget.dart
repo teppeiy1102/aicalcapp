@@ -1781,6 +1781,15 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   Widget _buildViewModeWidget() {
     final items = _items;
     final title = widget.config.data['title'] as String? ?? '定型計算';
+    final bgColorValue = widget.config.data['bgColor'] as int?;
+    final isDark = bgColorValue != null
+        ? _kNoteColorPresets
+              .firstWhere(
+                (p) => p.value == bgColorValue,
+                orElse: () => _kNoteColorPresets.first,
+              )
+              .isDark
+        : true;
 
     // 結果計算（buildと同一ロジック）
     // Pass 1: 暫定計算（連動なし）
@@ -1969,69 +1978,56 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       return buf.toString();
     }
 
+    final paperColor = isDark ? const Color(0xFF1A1A22) : const Color(0xFFFAFAFA);
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      padding: widget.contentPadding ?? const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withOpacity(0.08)),
+        color: paperColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ヘッダー
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+          if (widget.showHeader) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black87,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'ZenOldMincho',
+                      letterSpacing: 1.2,
+                    ),
                   ),
                 ),
-              ),
+                IconButton(
+                  icon: const Icon(Icons.edit_note_rounded, size: 20),
+                  onPressed: () => widget.onUpdate({...widget.config.data, 'viewMode': false}),
+                  color: isDark ? Colors.white24 : Colors.black26,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Divider(color: isDark ? Colors.white10 : Colors.black12, thickness: 0.5),
+            const SizedBox(height: 24),
+          ],
           
-              GestureDetector(
-                onTap: () =>
-                    widget.onUpdate({...widget.config.data, 'viewMode': false}),
-                behavior: HitTestBehavior.opaque,
-                child: const Padding(
-                  padding: EdgeInsets.all(4),
-                  child: Icon(
-                    Icons.visibility_off_outlined,
-                    color: Colors.black38,
-                    size: 20,
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 10),
-    GestureDetector(
-                onTap: () => setState(() => _showCalc = !_showCalc),
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Icon(
-                    _showCalc ? Icons.calculate : Icons.calculate_outlined,
-                    color: _showCalc ? Colors.black54 : Colors.black26,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          //  const SizedBox(height: 8),
           if (items.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: Center(
-                child: Text(
-                  '計算式がありません',
-                  style: TextStyle(color: Colors.black38, fontSize: 12),
+            Center(
+              child: Text(
+                '内容がありません',
+                style: TextStyle(
+                  color: isDark ? Colors.white12 : Colors.black12,
+                  fontFamily: 'ZenOldMincho',
                 ),
               ),
             )
@@ -2049,54 +2045,69 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                   '${fmtNum(result, precision)}${unitResult.isNotEmpty ? ' $unitResult' : ''}';
 
               return Padding(
-                padding: const EdgeInsets.only(top: 6),
+                padding: const EdgeInsets.only(bottom: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Divider(color: Colors.black12, height: 1),
-                    const SizedBox(height: 4),
-                    Text(
-                      name.isEmpty ? '名称未設定' : name,
-                      style: const TextStyle(
-                        color: Colors.black54,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+                    if (name.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text(
+                          name,
+                          style: TextStyle(
+                            color: isDark ? Colors.white38 : Colors.black45,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'ZenOldMincho',
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
                     Text.rich(
                       TextSpan(
                         children: [
                           TextSpan(
-                            text: '$formula  ',
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 12,
+                            text: formula,
+                            style: TextStyle(
+                              color: isDark ? Colors.white60 : Colors.black54,
+                              fontSize: 14,
+                              fontFamily: 'ZenOldMincho',
+                              height: 1.5,
                             ),
                           ),
-                          const TextSpan(
-                            text: '= ',
+                          TextSpan(
+                            text: ' = ',
                             style: TextStyle(
-                              color: Colors.black38,
-                              fontSize: 13,
+                              color: isDark ? Colors.white24 : Colors.black12,
+                              fontSize: 16,
                             ),
                           ),
                           TextSpan(
                             text: resultStr,
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 15,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87,
+                              fontSize: 19,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'ZenOldMincho',
+                              letterSpacing: -0.5,
                             ),
                           ),
                         ],
                       ),
-                      softWrap: true,
                     ),
+                    if (i < items.length - 1)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Divider(color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03), thickness: 0.5),
+                      ),
                   ],
                 ),
               );
             }),
-          if (_showCalc) ...[SizedBox(height: 12), _buildInlineCalc(false)],
+          if (_showCalc) ...[
+            const SizedBox(height: 12),
+            _buildInlineCalc(isDark),
+          ],
         ],
       ),
     );
