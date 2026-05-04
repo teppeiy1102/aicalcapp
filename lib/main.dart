@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'widget_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -39,7 +43,15 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<WidgetConfig> _configs = [
+  static const _kPrefsKey = 'aicalc_configs_v1';
+
+  List<WidgetConfig> _configs = [];
+  bool _isLoading = true;
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  PersistentBottomSheetController? _calcSheetController;
+
+  // ── デフォルト初期シート ──────────────────────────────────────────────────
+  static List<WidgetConfig> get _defaultConfigs => [
     WidgetConfig(
       id: '1',
       type: 'calculator',
@@ -60,14 +72,78 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         ],
         'isExpanded': true,
+        'bgColor': 0xFF1A1A2E,
       },
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConfigs();
+  }
+
+  // ── JSON から深いコピーで WidgetConfig を復元 ─────────────────────────────
+  // json.decode は Map<String, dynamic> を返すが、ネストされた List/Map も
+  // 同様に正しく型付けされている。ただし参照を共有しないよう deepCopy する。
+  static dynamic _deepCopy(dynamic v) {
+    if (v is Map) {
+      return Map<String, dynamic>.fromEntries(
+        v.entries.map((e) => MapEntry(e.key as String, _deepCopy(e.value))),
+      );
+    }
+    if (v is List) {
+      return v.map(_deepCopy).toList();
+    }
+    return v; // String, num, bool, null はイミュータブルなのでそのまま
+  }
+
+  // ── SharedPreferences からロード ──────────────────────────────────────────
+  Future<void> _loadConfigs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString(_kPrefsKey);
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final list = json.decode(jsonStr) as List<dynamic>;
+        final loaded = list.map((e) {
+          final m = e as Map<String, dynamic>;
+          return WidgetConfig(
+            id: m['id'] as String? ?? '${DateTime.now().millisecondsSinceEpoch}',
+            type: m['type'] as String? ?? 'calculator',
+            data: _deepCopy(m['data']) as Map<String, dynamic>,
+          );
+        }).toList();
+        if (mounted) setState(() { _configs = loaded; _isLoading = false; });
+        return;
+      }
+    } catch (e, st) {
+      // 読み込み失敗時はデフォルトに戻す
+      debugPrint('[_loadConfigs] 読み込みに失敗しました: $e\n$st');
+    }
+    if (mounted) setState(() { _configs = _defaultConfigs; _isLoading = false; });
+  }
+
+  // ── SharedPreferences へ保存 ─────────────────────────────────────────────
+  Future<void> _saveConfigs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = _configs.map((c) => {
+        'id': c.id,
+        'type': c.type,
+        'data': c.data,
+      }).toList();
+      await prefs.setString(_kPrefsKey, json.encode(list));
+    } catch (e, st) {
+      // 保存失敗をデバッグコンソールに記録（アプリはクラッシュさせない）
+      debugPrint('[_saveConfigs] 保存に失敗しました: $e\n$st');
+    }
+  }
 
   void _updateConfig(int index, Map<String, dynamic> data) {
     setState(() {
       _configs[index] = _configs[index].copyWith(data: data);
     });
+    _saveConfigs();
   }
 
   void _duplicateConfig(int index) {
@@ -83,6 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     });
+    _saveConfigs();
   }
 
   void _addConfig() {
@@ -93,19 +170,47 @@ class _HomeScreenState extends State<HomeScreen> {
         'title': '無題のシート',
         'items': _sampleItems,
         'isExpanded': true,
+        'bgColor': 0xFF1A1A2E,
       },
     );
-    setState(() => _configs.add(newConfig));
-    final newIndex = _configs.length - 1;
+    setState(() => _configs.insert(0, newConfig));
+    _saveConfigs();
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => WidgetDetailPage(
           initialConfig: newConfig,
-          onUpdate: (data) => _updateConfig(newIndex, data),
-          onDuplicate: () => _duplicateConfig(newIndex),
+          onUpdate: (data) => _updateConfig(0, data),
+          onDuplicate: () => _duplicateConfig(0),
         ),
       ),
+    );
+  }
+
+  void _openHomeCalc() {
+    if (_calcSheetController != null) {
+      _calcSheetController!.close();
+      return;
+    }
+    _calcSheetController = showHomeCalcSheet(
+      scaffoldKey: _scaffoldKey,
+      onAddItem: (item) {
+        final newConfig = WidgetConfig(
+          id: '${DateTime.now().millisecondsSinceEpoch}',
+          type: 'calculator',
+          data: {
+            'title': '無題のシート',
+            'items': [item],
+            'isExpanded': true,
+            'bgColor': 0xFF1A1A2E,
+          },
+        );
+        setState(() => _configs.insert(0, newConfig));
+        _saveConfigs();
+      },
+      onClosed: () {
+        if (mounted) setState(() => _calcSheetController = null);
+      },
     );
   }
 
@@ -141,12 +246,22 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {
               setState(() => _configs.removeAt(index));
               Navigator.pop(ctx);
+              _saveConfigs();
             },
             child: const Text('削除する', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
+  }
+
+  void _reorderConfigs(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) newIndex -= 1;
+      final item = _configs.removeAt(oldIndex);
+      _configs.insert(newIndex, item);
+    });
+    _saveConfigs();
   }
 
   void _openDetail(int index) {
@@ -164,7 +279,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0D0D14),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF5E81FF))),
+      );
+    }
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: const Color(0xFF0D0D14),
       body: Stack(
         children: [
@@ -208,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen> {
             slivers: [
               SliverAppBar(
                 pinned: true,
-                expandedHeight: 160,
+                expandedHeight: 200,
                 backgroundColor: const Color(0xFF0D0D14).withOpacity(0.8),
                 surfaceTintColor: Colors.transparent,
                 elevation: 0,
@@ -220,12 +342,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'AI Calc',
+                        'Genba Calc',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 26,
+                          fontSize: 36,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: -1.2,
+                          letterSpacing: 1.2,
                         ),
                       ),
                       Text(
@@ -248,18 +370,19 @@ class _HomeScreenState extends State<HomeScreen> {
               else
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(24, 8, 24, 140),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (ctx, i) => Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        child: _WidgetCard(
-                          config: _configs[i],
-                          index: i,
-                          onTap: () => _openDetail(i),
-                          onDelete: () => _deleteConfig(i),
-                        ),
+                  sliver: SliverReorderableList(
+                    itemCount: _configs.length,
+                    onReorder: _reorderConfigs,
+                    itemBuilder: (ctx, i) => Padding(
+                      key: ValueKey(_configs[i].id),
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: _WidgetCard(
+                        config: _configs[i],
+                        index: i,
+                        onTap: () => _openDetail(i),
+                        onDelete: () => _deleteConfig(i),
+                        onUpdate: (data) => _updateConfig(i, data),
                       ),
-                      childCount: _configs.length,
                     ),
                   ),
                 ),
@@ -267,7 +390,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: _AddButton(onTap: _addConfig),
+      floatingActionButton: _HomeFab(
+        onAddSheet: _addConfig,
+        onOpenCalc: _openHomeCalc,
+        calcActive: _calcSheetController != null,
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
@@ -291,63 +418,37 @@ class _EmptyState extends StatelessWidget {
               border: Border.all(color: Colors.white.withOpacity(0.05)),
             ),
             child: Icon(
-              Icons.auto_awesome_mosaic_rounded,
-              color: Colors.white.withOpacity(0.15),
-              size: 40,
-            ),
-          ),
-          const SizedBox(height: 32),
-          const Text(
-            'まだシートがありません',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '計算を自動化する魔法を始めましょう',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.3),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WidgetCard extends StatelessWidget {
+              Icons.auto_awesome_mosaic_rounded, color: Colors.white.withOpacity(0.15), size: 40,),), const SizedBox(height: 32), const Text( 'まだシートがありません', style: TextStyle( color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.5,),), const SizedBox(height: 12), Text( '計算を自動化する魔法を始めましょう', style: TextStyle( color: Colors.white.withOpacity(0.3), fontSize: 14, fontWeight: FontWeight.w400,),), ],),); } } class _WidgetCard extends StatefulWidget {
   final WidgetConfig config;
   final int index;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final void Function(Map<String, dynamic>) onUpdate;
 
   const _WidgetCard({
     required this.config,
     required this.index,
     required this.onTap,
     required this.onDelete,
+    required this.onUpdate,
   });
 
   static const List<Color> _accentColors = [
     Color(0xFF5E81FF),
-    Color(0xFF9E7AFF),
-    Color(0xFF43E5FF),
-    Color(0xFFFF7B5C),
-    Color(0xFF5CFFB6),
   ];
 
   @override
-  Widget build(BuildContext context) {
-    final title = config.data['title'] as String? ?? '定型計算';
-    final items = config.data['items'] as List<dynamic>? ?? [];
-    final accent = _accentColors[index % _accentColors.length];
+  State<_WidgetCard> createState() => _WidgetCardState();
+}
 
+class _WidgetCardState extends State<_WidgetCard> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = widget.config.data['title'] as String? ?? '定型計算';
+    final items = widget.config.data['items'] as List<dynamic>? ?? [];
+    final accent = _WidgetCard._accentColors[widget.index % _WidgetCard._accentColors.length];
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
@@ -361,60 +462,42 @@ class _WidgetCard extends StatelessWidget {
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          splashColor: accent.withOpacity(0.1),
-          highlightColor: accent.withOpacity(0.05),
-          child: Stack(
-            children: [
-              Positioned(
-                top: -40,
-                right: -40,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        accent.withOpacity(0.15),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              splashColor: accent.withOpacity(0.1),
+              highlightColor: accent.withOpacity(0.05),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 15, 10, 15),
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: Colors.white.withOpacity(0.06),
                     width: 1.5,
                   ),
-                  borderRadius: BorderRadius.circular(32),
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(32),
+                    topRight: const Radius.circular(32),
+                    bottomLeft: _isExpanded ? Radius.zero : const Radius.circular(32),
+                    bottomRight: _isExpanded ? Radius.zero : const Radius.circular(32),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.03),
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(
-                          color: accent.withOpacity(0.3),
-                          width: 1.5,
+                    ReorderableDragStartListener(
+                      index: widget.index,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Icon(
+                          Icons.drag_handle_rounded,
+                          color: Colors.white24,
+                          size: 22,
                         ),
                       ),
-                      child: Icon(
-                        Icons.calculate_rounded,
-                        color: accent,
-                        size: 30,
-                      ),
                     ),
-                    const SizedBox(width: 20),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,7 +510,7 @@ class _WidgetCard extends StatelessWidget {
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.5,
                             ),
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 8),
@@ -460,8 +543,10 @@ class _WidgetCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    Column(children: [
+                  
                     GestureDetector(
-                      onTap: onDelete,
+                      onTap: widget.onDelete,
                       child: Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
@@ -475,63 +560,141 @@ class _WidgetCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ],
+                    SizedBox(height: 10,),
+  GestureDetector(
+                      onTap: () => setState(() => _isExpanded = !_isExpanded),
+                      child: Padding(
+                        padding: const EdgeInsets.all(0),
+                        child: Icon(
+                          _isExpanded
+                              ? Icons.keyboard_arrow_up_rounded
+                              : Icons.keyboard_arrow_down_rounded,
+                          color: Colors.white38,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+
+                    ],)
+                 ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+          if (_isExpanded)
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
+              ),
+              child: CalculatorViewCard(
+                config: widget.config,
+                onUpdate: widget.onUpdate,
+                contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              ),
+            ),
+        ],
       ),
     );
   }
 }
 
-class _AddButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _AddButton({required this.onTap});
+class _HomeFab extends StatelessWidget {
+  final VoidCallback onAddSheet;
+  final VoidCallback onOpenCalc;
+  final bool calcActive;
+  const _HomeFab({
+    required this.onAddSheet,
+    required this.onOpenCalc,
+    this.calcActive = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF5E81FF),
-              Color(0xFF9E7AFF),
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF5E81FF).withOpacity(0.3),
-              blurRadius: 30,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.add_rounded, color: Colors.white, size: 28),
-            SizedBox(width: 12),
-            Text(
-              '新しいシート',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.5,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 電卓ボタン
+        GestureDetector(
+          onTap: onOpenCalc,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            height: 64,
+            width: 64,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              color: calcActive
+                  ? const Color(0xFF5E81FF)
+                  : const Color(0xFF1A1A2E),
+              border: Border.all(
+                color: calcActive
+                    ? const Color(0xFF5E81FF)
+                    : Colors.white.withOpacity(0.1),
+                width: 1.5,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF5E81FF).withOpacity(
+                    calcActive ? 0.35 : 0.15,
+                  ),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-          ],
+            child: Icon(
+              calcActive
+                  ? Icons.calculate_rounded
+                  : Icons.calculate_outlined,
+              color: calcActive ? Colors.white : Colors.white54,
+              size: 28,
+            ),
+          ),
         ),
-      ),
+        const SizedBox(width: 12),
+        // 新規シートボタン
+        GestureDetector(
+          onTap: onAddSheet,
+          child: Container(
+            height: 64,
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF5E81FF),
+                  Color(0xFF9E7AFF),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF5E81FF).withOpacity(0.3),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add_rounded, color: Colors.white, size: 28),
+                SizedBox(width: 10),
+                Text(
+                  '新しいシート',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -212,11 +212,17 @@ class _CalcBottomSheet extends StatefulWidget {
   final int existingItemCount;
   final void Function(Map<String, dynamic> item) onAddItem;
   final bool isDark;
+  final VoidCallback onClose;
+  final ScrollController? scrollController;
+  final DraggableScrollableController? sheetController;
 
   const _CalcBottomSheet({
     required this.existingItemCount,
     required this.onAddItem,
+    required this.onClose,
     this.isDark = true,
+    this.scrollController,
+    this.sheetController,
   });
 
   @override
@@ -395,7 +401,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
       };
     }
     widget.onAddItem(item);
-    if (mounted) Navigator.pop(context);
+    if (mounted) widget.onClose();
   }
 
   void _showAiCountDialog() async {
@@ -427,6 +433,17 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final dsc = widget.sheetController;
+    if (dsc != null) {
+      return AnimatedBuilder(
+        animation: dsc,
+        builder: (ctx, _) => _buildLayout(ctx),
+      );
+    }
+    return _buildLayout(context);
+  }
+
+  Widget _buildLayout(BuildContext context) {
     final isDark = widget.isDark;
     final textColor = isDark ? Colors.white : Colors.black87;
     final keyBg = isDark
@@ -446,6 +463,30 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
     }
     final subtitle = _hasResult ? _exprStr : inProg;
 
+    final screenH = MediaQuery.of(context).size.height;
+    final screenW = MediaQuery.of(context).size.width;
+    final viewInsetsBottom = MediaQuery.of(context).viewInsets.bottom;
+
+    // DraggableScrollableController.size で正確なシート高さを取得
+    final dsc = widget.sheetController;
+    final extent = (dsc != null && dsc.isAttached) ? dsc.size : 0.55;
+    final sheetH = extent * screenH;
+
+    // 固定 UI 要素の高さ（グリッド外）
+    const kFixedH = 202.0; // ハンドル12 + ヘッダー40 + gap4 + 追加ボタン40 + 表示部80 + gap6 + pad上8 + pad下16
+    const kGridGapH = 24.0; // 4行間 × 6px
+    const kAiBtnH = 64.0;   // gap12 + ボタン44 + gap8
+
+    final gridWithAI = sheetH - kFixedH - kGridGapH - kAiBtnH - viewInsetsBottom;
+    final showAiButton = gridWithAI / 5 >= 28;
+    final gridAvail = showAiButton
+        ? gridWithAI
+        : (sheetH - kFixedH - kGridGapH - viewInsetsBottom);
+    final buttonH = (gridAvail / 5).clamp(24.0, 72.0);
+    final buttonW = (screenW - 40.0 - 18.0) / 4;
+    final ratio = buttonW / buttonH;
+    final fontSize = (buttonH * 0.45).clamp(13.0, 32.0);
+
     Widget calcKey(String label, {Color? bg, Color? fg}) {
       final lbl = (label == 'C' || label == 'AC')
           ? (_isClearState ? 'AC' : 'C')
@@ -454,189 +495,190 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
         label: lbl,
         bg: bg ?? keyBg,
         fg: fg ?? textColor,
-        fontSize: 30,
+        fontSize: fontSize,
         onTap: () => _onKey(lbl),
       );
     }
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  '電卓',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white54),
-                onPressed: () => Navigator.pop(context),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          // 「追加」ボタン
-          AnimatedOpacity(
-            opacity: _hasResult ? 1.0 : 0.35,
-            duration: const Duration(milliseconds: 200),
-            child: GestureDetector(
-              onTap: _hasResult ? _addResult : null,
+    return SingleChildScrollView(
+      controller: widget.scrollController,
+      physics: const ClampingScrollPhysics(),
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 8,
+          bottom: viewInsetsBottom + 16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ドラッグハンドル
+            Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
-                  color: _hasResult
-                      ? Colors.blueAccent
-                      : Colors.grey.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(40),
-                ),
-                alignment: Alignment.center,
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.add, color: Colors.white, size: 16),
-                    SizedBox(width: 6),
-                    Text(
-                      'この計算を追加',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
-          ),
-          // 表示部
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-            height: 80,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (subtitle.isNotEmpty)
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Text(
-                      subtitle,
-                      style: TextStyle(
-                        height: 0.9,
-                        color: textColor.withOpacity(0.45),
-                        fontSize: 16,
-                      ),
-                    ),
+           
+            const SizedBox(height: 4),
+            // 「追加」ボタン
+            AnimatedOpacity(
+              opacity: _hasResult ? 1.0 : 0.35,
+              duration: const Duration(milliseconds: 200),
+              child: GestureDetector(
+                onTap: _hasResult ? _addResult : null,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _hasResult
+                        ? Colors.blueAccent
+                        : Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(40),
                   ),
-                FittedBox(
-                  child: Text(
-                    _display,
-                    maxLines: 1,
-                    style: TextStyle(
-                      height: 1,
-                      color: textColor,
-                      fontSize: 44,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.right,
+                  alignment: Alignment.center,
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add, color: Colors.white, size: 16),
+                      SizedBox(width: 6),
+                      Text(
+                        'この計算を追加',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
+            ),
+            // 表示部
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+              height: 80,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (subtitle.isNotEmpty)
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Text(
+                        subtitle,
+                        style: TextStyle(
+                          height: 0.9,
+                          color: textColor.withOpacity(0.45),
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  FittedBox(
+                    child: Text(
+                      _display,
+                      maxLines: 1,
+                      style: TextStyle(
+                        height: 1,
+                        color: textColor,
+                        fontSize: 44,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.right,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            // ボタングリッド（シート高さに応じてボタンサイズ可変）
+            GridView.count(
+              padding: EdgeInsets.zero,
+              crossAxisCount: 4,
+              mainAxisSpacing: 6,
+              crossAxisSpacing: 6,
+              childAspectRatio: ratio,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                calcKey('C',
+                    bg: Colors.redAccent.withOpacity(0.18),
+                    fg: Colors.redAccent),
+                calcKey('+/-', bg: keyBg),
+                calcKey('%', bg: keyBg),
+                calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
+                calcKey('7'), calcKey('8'), calcKey('9'),
+                calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
+                calcKey('4'), calcKey('5'), calcKey('6'),
+                calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
+                calcKey('1'), calcKey('2'), calcKey('3'),
+                calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
+                calcKey('⌫', bg: keyBg),
+                calcKey('0'), calcKey('.'),
+                calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
               ],
             ),
-          ),
-          const SizedBox(height: 6),
-          // ボタングリッド
-          GridView.count(
-            padding: EdgeInsets.zero,
-            crossAxisCount: 4,
-            mainAxisSpacing: 6,
-            crossAxisSpacing: 6,
-            childAspectRatio: 1,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              calcKey('C', bg: Colors.redAccent.withOpacity(0.18), fg: Colors.redAccent),
-              calcKey('+/-', bg: keyBg),
-              calcKey('%', bg: keyBg),
-              calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
-              calcKey('7'), calcKey('8'), calcKey('9'),
-              calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
-              calcKey('4'), calcKey('5'), calcKey('6'),
-              calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
-              calcKey('1'), calcKey('2'), calcKey('3'),
-              calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
-              calcKey('⌫', bg: keyBg),
-              calcKey('0'), calcKey('.'),
-              calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // AIカウントボタン
-          if (_isAiCounting)
-            const Padding(
-              padding: EdgeInsets.only(bottom: 6),
-              child: LinearProgressIndicator(
-                color: Colors.tealAccent,
-                minHeight: 2,
-                backgroundColor: Colors.transparent,
-              ),
-            ),
-          GestureDetector(
-            onTap: _isAiCounting ? null : _showAiCountDialog,
-            child: AnimatedOpacity(
-              opacity: _isAiCounting ? 0.5 : 1.0,
-              duration: const Duration(milliseconds: 150),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.teal.withOpacity(0.25),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.tealAccent.withOpacity(0.35),
-                    width: 0.8,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.camera_alt_outlined,
-                      color: Colors.tealAccent,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _isAiCounting ? 'AIカウント中...' : 'AIカウント',
-                      style: const TextStyle(
+            // AI カウントボタン（シートが小さいときは非表示）
+            if (showAiButton) ...[
+                  const SizedBox(height: 12),
+                  if (_isAiCounting)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 6),
+                      child: LinearProgressIndicator(
                         color: Colors.tealAccent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                        minHeight: 2,
+                        backgroundColor: Colors.transparent,
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
+                  GestureDetector(
+                    onTap: _isAiCounting ? null : _showAiCountDialog,
+                    child: AnimatedOpacity(
+                      opacity: _isAiCounting ? 0.5 : 1.0,
+                      duration: const Duration(milliseconds: 150),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.teal.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.tealAccent.withOpacity(0.35),
+                            width: 0.8,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.camera_alt_outlined,
+                              color: Colors.tealAccent,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _isAiCounting ? 'AIカウント中...' : 'AIカウント',
+                              style: const TextStyle(
+                                color: Colors.tealAccent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              const SizedBox(height: 8),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -662,6 +704,8 @@ class WidgetDetailPage extends StatefulWidget {
 class _WidgetDetailPageState extends State<WidgetDetailPage> {
   late WidgetConfig _config;
   final _calcKey = GlobalKey<_CalculatorWidgetState>();
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  PersistentBottomSheetController? _calcSheetController;
   bool _isAiGenerating = false;
 
   @override
@@ -691,21 +735,25 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
               .isDark
         : true;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A2E),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => _CalcBottomSheet(
+    if (_calcSheetController != null) {
+      _calcSheetController!.close();
+      return;
+    }
+    _calcSheetController = _scaffoldKey.currentState!.showBottomSheet(
+      backgroundColor: Colors.transparent,
+      enableDrag: false,
+      (ctx) => _CalcDraggableSheetContent(
         existingItemCount: currentItems.length,
         isDark: isDark,
         onAddItem: (item) {
           state?._addItemFromMap(item);
         },
+        onClose: () => _calcSheetController?.close(),
       ),
     );
+    _calcSheetController!.closed.then((_) {
+      if (mounted) setState(() => _calcSheetController = null);
+    });
   }
 
   Color _toolbarIconColor(bool isActive) =>
@@ -715,6 +763,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
   Widget build(BuildContext context) {
     final title = _config.data['title'] as String? ?? '定型計算';
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: const Color(0xFF0D0D14),
       extendBodyBehindAppBar: true,
       appBar: AppBar(
@@ -848,6 +897,113 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ── 電卓ドラッガブルシート（DraggableScrollableController ライフサイクル管理） ──
+class _CalcDraggableSheetContent extends StatefulWidget {
+  final int existingItemCount;
+  final void Function(Map<String, dynamic> item) onAddItem;
+  final bool isDark;
+  final VoidCallback onClose;
+
+  const _CalcDraggableSheetContent({
+    required this.existingItemCount,
+    required this.onAddItem,
+    required this.isDark,
+    required this.onClose,
+  });
+
+  @override
+  State<_CalcDraggableSheetContent> createState() =>
+      _CalcDraggableSheetContentState();
+}
+
+class _CalcDraggableSheetContentState
+    extends State<_CalcDraggableSheetContent> {
+  final _dsc = DraggableScrollableController();
+
+  @override
+  void dispose() {
+    _dsc.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      controller: _dsc,
+      initialChildSize: 0.55,
+      minChildSize: 0.38,
+      maxChildSize: 0.92,
+      expand: true,
+      snap: true,
+      snapSizes: const [0.55, 0.72, 0.92],
+      builder: (ctx, scrollController) => Material(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        clipBehavior: Clip.antiAlias,
+        child: _CalcBottomSheet(
+          scrollController: scrollController,
+          sheetController: _dsc,
+          existingItemCount: widget.existingItemCount,
+          isDark: widget.isDark,
+          onAddItem: widget.onAddItem,
+          onClose: widget.onClose,
+        ),
+      ),
+    );
+  }
+}
+
+/// HomeScreen から電卓ボトムシートを開く公開ユーティリティ
+PersistentBottomSheetController? showHomeCalcSheet({
+  required GlobalKey<ScaffoldState> scaffoldKey,
+  required void Function(Map<String, dynamic> item) onAddItem,
+  VoidCallback? onClosed,
+}) {
+  PersistentBottomSheetController? ctrl;
+  ctrl = scaffoldKey.currentState?.showBottomSheet(
+    backgroundColor: Colors.transparent,
+    enableDrag: false,
+    (ctx) => _CalcDraggableSheetContent(
+      existingItemCount: 0,
+      isDark: true,
+      onAddItem: onAddItem,
+      onClose: () => ctrl?.close(),
+    ),
+  );
+  ctrl?.closed.then((_) => onClosed?.call());
+  return ctrl;
+}
+
+/// 計算シートを閲覧モードで表示するパブリックウィジェット（HomeScreen のカード展開用）
+class CalculatorViewCard extends StatelessWidget {
+  final WidgetConfig config;
+  final void Function(Map<String, dynamic>) onUpdate;
+  final EdgeInsetsGeometry? contentPadding;
+
+  const CalculatorViewCard({
+    super.key,
+    required this.config,
+    required this.onUpdate,
+    this.contentPadding,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _CalculatorWidget(
+      config: WidgetConfig(
+        id: config.id,
+        type: config.type,
+        data: {...config.data, 'viewMode': true},
+      ),
+      onUpdate: onUpdate,
+      onDuplicate: () {},
+      showToolbar: false,
+      showHeader: false,
+      contentPadding: contentPadding ?? const EdgeInsets.fromLTRB(16, 8, 16, 16),
     );
   }
 }

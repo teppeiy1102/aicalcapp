@@ -472,7 +472,122 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       'others': [],
       'brackets': [],
     });
-    widget.onUpdate({...widget.config.data, 'items': newItems});
+    // index より後のメモインデックスをひとつ繰り下げ
+    final newMemos = _remapMemoIndices(_memos, (old) => old > index ? old + 1 : old);
+    widget.onUpdate({...widget.config.data, 'items': newItems, 'memos': newMemos});
+  }
+
+  // ── メモ管理 ──────────────────────────────────────────────────────────────
+  List<Map<String, dynamic>> get _memos {
+    final raw = widget.config.data['memos'] as List<dynamic>? ?? [];
+    return raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  List<Map<String, dynamic>> _remapMemoIndices(
+    List<Map<String, dynamic>> memos,
+    int? Function(int) remap,
+  ) {
+    final result = <Map<String, dynamic>>[];
+    for (final memo in memos) {
+      final oldIdx = memo['afterCalcIdx'] as int? ?? 0;
+      final newIdx = remap(oldIdx);
+      if (newIdx != null) {
+        result.add({...memo, 'afterCalcIdx': newIdx});
+      }
+    }
+    return result;
+  }
+
+  void _insertMemoAfter(int calcIdx, BuildContext context) {
+    // PopupMenu の dismiss アニメーション（約300ms）完了後にダイアログを表示する
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      final ctrl = TextEditingController();
+      // showDialog の戻り値でテキストを受け取り、.then() で onUpdate を呼ぶ。
+      // addPostFrameCallback はダイアログアニメーション中に setState を呼んでしまうため使わない。
+      // .then() はダイアログのルートが完全に pop した後に実行されるため安全。
+      showDialog<String?>(
+        context: this.context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          title: Row(
+            children: const [
+              Icon(Icons.sticky_note_2_outlined, color: Colors.amber, size: 18),
+              SizedBox(width: 8),
+              Text('メモを追加', style: TextStyle(color: Colors.white, fontSize: 16)),
+            ],
+          ),
+          content: TextField(
+            controller: ctrl,
+            autofocus: false,
+            maxLines: 5,
+            minLines: 2,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: 'メモを入力...',
+              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.06),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: Colors.amber),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(null),
+              child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final t = ctrl.text;
+                // キーボードを先に解放してから pop することで
+                // KeyUpEvent のアサーション失敗を防ぐ
+                FocusManager.instance.primaryFocus?.unfocus();
+                Navigator.of(ctx).pop(t);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber,
+                foregroundColor: Colors.black,
+              ),
+              child: const Text('追加'),
+            ),
+          ],
+        ),
+      ).then((result) {
+        // ダイアログの exit アニメーション（約300ms）が完了してから dispose する。
+        // .then() は Navigator.pop() が呼ばれた直後（マイクロタスク）に実行されるため、
+        // アニメーション中に即座に dispose すると TextField がクラッシュする。
+        Future.delayed(const Duration(milliseconds: 400), ctrl.dispose);
+        if (result == null || !mounted) return;
+        final newMemos = List<Map<String, dynamic>>.from(_memos);
+        newMemos.add({'afterCalcIdx': calcIdx, 'text': result});
+        widget.onUpdate({...widget.config.data, 'memos': newMemos});
+      });
+    });
+  }
+
+  void _updateMemo(int memoIdx, String text) {
+    final newMemos = List<Map<String, dynamic>>.from(_memos);
+    if (memoIdx < 0 || memoIdx >= newMemos.length) return;
+    newMemos[memoIdx] = {...newMemos[memoIdx], 'text': text};
+    widget.onUpdate({...widget.config.data, 'memos': newMemos});
+  }
+
+  void _deleteMemo(int memoIdx) {
+    final newMemos = List<Map<String, dynamic>>.from(_memos);
+    if (memoIdx < 0 || memoIdx >= newMemos.length) return;
+    newMemos.removeAt(memoIdx);
+    widget.onUpdate({...widget.config.data, 'memos': newMemos});
   }
 
   void _toggleNameVisible(int index) {
@@ -594,7 +709,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     if (newItems.isEmpty) {
       newItems = List<Map<String, dynamic>>.from(_sampleItems);
     }
-    widget.onUpdate({...widget.config.data, 'items': newItems});
+    // 削除した計算のメモも削除し、以降のインデックスを繰り上げ
+    final newMemos = _remapMemoIndices(_memos, (old) {
+      if (old == index) return null;
+      if (old > index) return old - 1;
+      return old;
+    });
+    widget.onUpdate({...widget.config.data, 'items': newItems, 'memos': newMemos});
   }
 
   void _duplicateItem(int index) {
@@ -607,7 +728,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       if (oldIdx > index) return oldIdx + 1;
       return oldIdx;
     });
-    widget.onUpdate({...widget.config.data, 'items': newItems});
+    final newMemos = _remapMemoIndices(_memos, (old) => old > index ? old + 1 : old);
+    widget.onUpdate({...widget.config.data, 'items': newItems, 'memos': newMemos});
   }
 
   void _moveItem(int from, int to) {
@@ -627,7 +749,17 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       }
       return oldIdx;
     });
-    widget.onUpdate({...widget.config.data, 'items': newItems});
+    // メモインデックスも同様に移動
+    final newMemos = _remapMemoIndices(_memos, (old) {
+      if (old == from) return to;
+      if (from < to) {
+        if (old > from && old <= to) return old - 1;
+      } else {
+        if (old >= to && old < from) return old + 1;
+      }
+      return old;
+    });
+    widget.onUpdate({...widget.config.data, 'items': newItems, 'memos': newMemos});
   }
 
   void _updateItem(int index, Map<String, dynamic> newItem) {
@@ -2045,7 +2177,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                   '${fmtNum(result, precision)}${unitResult.isNotEmpty ? ' $unitResult' : ''}';
 
               return Padding(
-                padding: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.only(bottom: 4,left: 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -2097,7 +2229,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                     ),
                     if (i < items.length - 1)
                       Padding(
-                        padding: const EdgeInsets.only(top: 16),
+                        padding: const EdgeInsets.only(top: 6),
                         child: Divider(color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03), thickness: 0.5),
                       ),
                   ],
@@ -2132,14 +2264,35 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final headerTextColor = isDark ? Colors.white : Colors.black;
     final headerIconColor = isDark ? Colors.white70 : Colors.black54;
     return Container(
-      padding: widget.contentPadding ??
-          const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      constraints: BoxConstraints(
+        minHeight: MediaQuery.of(context).size.height,
+      ),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        borderRadius: BorderRadius.circular(0),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.08)
+              : Colors.black.withOpacity(0.1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withOpacity(0.25)
+                : Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: Stack(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(19.5),
+        child: CustomPaint(
+          painter: _PaperPainter(isDark: isDark),
+          child: Padding(
+            padding: widget.contentPadding ??
+                const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Stack(
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2381,70 +2534,114 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                       if (!anyChange) break;
                     }
 
-                    return (() {
-                      final rows = <Widget>[];
-                      items.asMap().entries.forEach((entry) {
-                        final i = entry.key;
-                        final item = entry.value;
-                        final resolved = resolvedRows[i];
-                        if (i > 0) {
-                          rows.add(Divider(
-                            color: isDark
-                                ? Colors.white.withOpacity(0.07)
-                                : Colors.black.withOpacity(0.08),
-                            height: 1,
-                            indent: 16,
-                            endIndent: 16,
-                          ));
-                        }
-                        rows.add(_CalculatorRow(
-                          name: item['name'] as String? ?? '',
-                          myIndex: i,
-                          isFirst: i == 0,
-                          input: resolved['input'],
-                          inputLink: item['inputLink'] as bool? ?? false,
-                          inputLinkSource:
-                              item['inputLinkSource'] as Map<String, dynamic>?,
-                          inputTransform: item['inputTransform'] as String?,
-                          inputPowExp: (item['inputPowExp'] as num? ?? 2.0)
-                              .toDouble(),
-                          op: item['op'] as String? ?? '+',
-                          operand: resolved['operand'],
-                          operandLink: item['operandLink'] as bool? ?? false,
-                          operandLinkSource:
-                              item['operandLinkSource'] as Map<String, dynamic>?,
-                          operandTransform: item['operandTransform'] as String?,
-                          operandPowExp: (item['operandPowExp'] as num? ?? 2.0)
-                              .toDouble(),
-                          others: resolved['others'],
-                          result: resolved['result'],
-                          precision: item['precision'] as int? ?? 2,
-                          unit1: item['unit1'] as String? ?? '',
-                          unit2: item['unit2'] as String? ?? '',
-                          unitResult: item['unitResult'] as String? ?? '',
-                          isDark: isDark,
-                          brackets: item['brackets'] as List? ?? [],
-                          allItems: items,
-                          allResults: finalResults,
-                          onChanged: (newItem) => _updateItem(i, newItem),
-                          onDelete: () => _removeItem(i),
-                          onCopy: () => _duplicateItem(i),
-                          onMoveUp: i > 0 ? () => _moveItem(i, i - 1) : null,
-                          onMoveDown: i < items.length - 1
-                              ? () => _moveItem(i, i + 1)
-                              : null,
-                          onAdd: () => _addTerm(i),
-                          onPickBrackets: () => _pickBracketsFor(i),
-                          onAllItemsUpdate: (newItems) => widget.onUpdate(
-                            {...widget.config.data, 'items': newItems},
-                          ),
-                          nameVisible: item['nameVisible'] as bool? ?? true,
-                          onInsertBelow: () => _insertItemAfter(i),
-                          onToggleName: () => _toggleNameVisible(i),
-                        ));
-                      });
-                      return rows;
-                    })();
+                    return [
+                      ReorderableListView(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        buildDefaultDragHandles: false,
+                        padding: EdgeInsets.zero,
+                        onReorder: (int oldIndex, int newIndex) {
+                          if (newIndex > oldIndex) newIndex -= 1;
+                          _moveItem(oldIndex, newIndex);
+                        },
+                        children: (() {
+                          final memos = _memos;
+                          final listItems = <Widget>[];
+                          for (int i = 0; i < items.length; i++) {
+                            final item = items[i];
+                            final resolved = resolvedRows[i];
+                            final memoWidgets = <Widget>[];
+                            for (int mi = 0; mi < memos.length; mi++) {
+                              if ((memos[mi]['afterCalcIdx'] as int? ?? -1) == i) {
+                                final memoIdx = mi;
+                                memoWidgets.add(_MemoRowWidget(
+                                  key: ValueKey('memo_$memoIdx'),
+                                  text: memos[mi]['text'] as String? ?? '',
+                                  isDark: isDark,
+                                  onUpdate: (t) => _updateMemo(memoIdx, t),
+                                  onDelete: () => _deleteMemo(memoIdx),
+                                ));
+                              }
+                            }
+                            listItems.add(Column(
+                              key: ValueKey('calc_${widget.config.id}_$i'),
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (i > 0)
+                                  Divider(
+                                    color: isDark
+                                        ? Colors.white.withOpacity(0.07)
+                                        : Colors.black.withOpacity(0.08),
+                                    height: 1,
+                                    indent: 16,
+                                    endIndent: 16,
+                                  ),
+                                _CalculatorRow(
+                                  name: item['name'] as String? ?? '',
+                                  myIndex: i,
+                                  isFirst: i == 0,
+                                  input: resolved['input'],
+                                  inputLink: item['inputLink'] as bool? ?? false,
+                                  inputLinkSource:
+                                      item['inputLinkSource'] as Map<String, dynamic>?,
+                                  inputTransform: item['inputTransform'] as String?,
+                                  inputPowExp: (item['inputPowExp'] as num? ?? 2.0)
+                                      .toDouble(),
+                                  op: item['op'] as String? ?? '+',
+                                  operand: resolved['operand'],
+                                  operandLink: item['operandLink'] as bool? ?? false,
+                                  operandLinkSource:
+                                      item['operandLinkSource'] as Map<String, dynamic>?,
+                                  operandTransform: item['operandTransform'] as String?,
+                                  operandPowExp: (item['operandPowExp'] as num? ?? 2.0)
+                                      .toDouble(),
+                                  others: resolved['others'],
+                                  result: resolved['result'],
+                                  precision: item['precision'] as int? ?? 2,
+                                  unit1: item['unit1'] as String? ?? '',
+                                  unit2: item['unit2'] as String? ?? '',
+                                  unitResult: item['unitResult'] as String? ?? '',
+                                  isDark: isDark,
+                                  brackets: item['brackets'] as List? ?? [],
+                                  allItems: items,
+                                  allResults: finalResults,
+                                  onChanged: (newItem) => _updateItem(i, newItem),
+                                  onDelete: () => _removeItem(i),
+                                  onCopy: () => _duplicateItem(i),
+                                  onMoveUp: i > 0 ? () => _moveItem(i, i - 1) : null,
+                                  onMoveDown: i < items.length - 1
+                                      ? () => _moveItem(i, i + 1)
+                                      : null,
+                                  onAdd: () => _addTerm(i),
+                                  onPickBrackets: () => _pickBracketsFor(i),
+                                  onAllItemsUpdate: (newItems) => widget.onUpdate(
+                                    {...widget.config.data, 'items': newItems},
+                                  ),
+                                  nameVisible: item['nameVisible'] as bool? ?? true,
+                                  onInsertBelow: () => _insertItemAfter(i),
+                                  onInsertMemoBelow: () =>
+                                      _insertMemoAfter(i, context),
+                                  onToggleName: () => _toggleNameVisible(i),
+                                  dragHandle: ReorderableDragStartListener(
+                                    index: i,
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(right: 4),
+                                      child: Icon(
+                                        Icons.drag_handle_rounded,
+                                        color: isDark ? Colors.white24 : Colors.black26,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                ...memoWidgets,
+                              ],
+                            ));
+                          }
+                          return listItems;
+                        })(),
+                      ),
+                    ];
                   })(),
                 const SizedBox(height: 12),
                 // 下部ツールバー（showToolbar=true のときのみ表示）
@@ -2539,6 +2736,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             ],
           ),
         ],
+      ),
+          ),
+        ),
       ),
     );
   }
@@ -2946,8 +3146,10 @@ class _CalculatorRow extends StatelessWidget {
   final VoidCallback onPickBrackets;
   final void Function(List<Map<String, dynamic>>) onAllItemsUpdate;
   final VoidCallback? onInsertBelow;
+  final VoidCallback? onInsertMemoBelow;
   final VoidCallback? onToggleName;
   final bool nameVisible;
+  final Widget? dragHandle;
 
   const _CalculatorRow({
     required this.name,
@@ -2983,8 +3185,10 @@ class _CalculatorRow extends StatelessWidget {
     required this.onPickBrackets,
     required this.onAllItemsUpdate,
     this.onInsertBelow,
+    this.onInsertMemoBelow,
     this.onToggleName,
     this.nameVisible = true,
+    this.dragHandle,
   });
 
   static const Map<String, double> commonConstants = {
@@ -3745,6 +3949,31 @@ class _CalculatorRow extends StatelessWidget {
       const {'key': 'result', 'label': '答え'},
     ];
 
+    // 連動元フィールドの現在値を文字列で返すヘルパー
+    String fieldValue(String key) {
+      double v;
+      if (key == 'input') {
+        v = input;
+      } else if (key == 'operand') {
+        v = operand;
+      } else if (key == 'result') {
+        v = result;
+      } else if (key.startsWith('other_')) {
+        final idx = int.tryParse(key.substring(6)) ?? 0;
+        if (idx < others.length) {
+          v = (others[idx] as Map)['val'] as double? ?? 0.0;
+        } else {
+          v = 0.0;
+        }
+      } else {
+        v = 0.0;
+      }
+      if (v == v.truncateToDouble() && v.abs() < 1e12) {
+        return v.toStringAsFixed(0);
+      }
+      return v.toStringAsFixed(precision);
+    }
+
     String selectedSrc = 'result';
     Set<String> selectedDests = _calcSelectedDests(selectedSrc);
 
@@ -3764,135 +3993,331 @@ class _CalculatorRow extends StatelessWidget {
           contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
           content: SizedBox(
             width: double.maxFinite,
-            height: 420,
+            height: 500,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: const Text(
-                    '連動元の値',
-                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                // ── 連動元セクション（青系） ──────────────────────────
+                Container(
+                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0A1628),
+                    border: Border.all(
+                      color: Colors.blueAccent.withOpacity(0.6),
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                ),
-                const SizedBox(height: 8),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: srcFields.map((sf) {
-                      final key = sf['key'] as String;
-                      final label = sf['label'] as String;
-                      final sel = selectedSrc == key;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(label),
-                          selected: sel,
-                          selectedColor: Colors.blueAccent.withOpacity(0.3),
-                          backgroundColor: Colors.white.withOpacity(0.05),
-                          labelStyle: TextStyle(
-                            color: sel ? Colors.blueAccent : Colors.white70,
-                            fontSize: 12,
-                          ),
-                          onSelected: (_) => setDs(() {
-                            selectedSrc = key;
-                            selectedDests = _calcSelectedDests(key);
-                          }),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.upload_rounded,
+                              size: 14,
+                              color: Colors.blueAccent,
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              '連動元',
+                              style: TextStyle(
+                                color: Colors.blueAccent,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                '「$name」',
+                                style: const TextStyle(
+                                  color: Colors.white60,
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
-                      );
-                    }).toList(),
+                      ),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                        child: Row(
+                          children: srcFields.map((sf) {
+                            final key = sf['key'] as String;
+                            final label = sf['label'] as String;
+                            final sel = selectedSrc == key;
+                            final valStr = fieldValue(key);
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: GestureDetector(
+                                onTap: () => setDs(() {
+                                  selectedSrc = key;
+                                  selectedDests = _calcSelectedDests(key);
+                                }),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: sel
+                                        ? Colors.blueAccent.withOpacity(0.22)
+                                        : Colors.white.withOpacity(0.05),
+                                    border: Border.all(
+                                      color: sel
+                                          ? Colors.blueAccent
+                                          : Colors.white24,
+                                      width: sel ? 1.5 : 1.0,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        label,
+                                        style: TextStyle(
+                                          color: sel
+                                              ? Colors.blueAccent
+                                              : Colors.white70,
+                                          fontSize: 13,
+                                          fontWeight: sel
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        valStr,
+                                        style: TextStyle(
+                                          color: sel
+                                              ? Colors.white
+                                              : Colors.white38,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 10),
-                const Divider(color: Colors.white12, height: 1),
+                const SizedBox(height: 12),
+                // ── 連動先セクション（シアン系） ──────────────────────
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-                  child: const Text(
-                    '連動先（複数選択可）',
-                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                  child: Row(
+                    children: const [
+                      Icon(
+                        Icons.download_rounded,
+                        size: 14,
+                        color: Color(0xFF26C6DA),
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        '連動先',
+                        style: TextStyle(
+                          color: Color(0xFF26C6DA),
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        '（複数選択可）',
+                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                      ),
+                    ],
                   ),
                 ),
                 Expanded(
-                  child: allItems.length <= 1
-                      ? const Center(
-                          child: Text(
-                            '他の計算式がありません',
-                            style: TextStyle(color: Colors.white38, fontSize: 12),
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: allItems.length,
-                          itemBuilder: (context, i) {
-                            if (i == myIndex) return const SizedBox.shrink();
-                            final item = allItems[i] as Map;
-                            final rowName =
-                                item['name'] as String? ?? '計算 ${i + 1}';
-                            final destFields = <Map<String, dynamic>>[
-                              ...const [
-                                {'key': 'input', 'label': '項1'},
-                                {'key': 'operand', 'label': '項2'},
-                              ],
-                              ...List.generate(
-                                (item['others'] as List? ?? []).length,
-                                (j) => {'key': 'other_$j', 'label': '項${j + 3}'},
+                  child: Container(
+                    margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+                    decoration: BoxDecoration(
+                     // color: const Color(0xFF071A1A),
+                      border: Border.all(
+                        color: const Color.fromARGB(141, 250, 250, 250).withOpacity(0.5),
+                        width: 1.5,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: allItems.length <= 1
+                        ? const Center(
+                            child: Text(
+                              '他の計算式がありません',
+                              style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 12,
                               ),
-                            ];
-                            if (destFields.isEmpty) return const SizedBox.shrink();
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-                                  child: Text(
-                                    rowName,
-                                    style: const TextStyle(
-                                      color: Colors.blueAccent,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            itemCount: allItems.length,
+                            itemBuilder: (context, i) {
+                              if (i == myIndex) return const SizedBox.shrink();
+                              final item = allItems[i] as Map;
+                              final rowName =
+                                  item['name'] as String? ?? '計算 ${i + 1}';
+                              final itemOthers =
+                                  item['others'] as List? ?? [];
+                              final destFields = <Map<String, dynamic>>[
+                                {
+                                  'key': 'input',
+                                  'label': '項1',
+                                  'val': item['input'] as double? ?? 0.0,
+                                },
+                                {
+                                  'key': 'operand',
+                                  'label': '項2',
+                                  'val': item['operand'] as double? ?? 0.0,
+                                },
+                                ...List.generate(
+                                  itemOthers.length,
+                                  (j) => {
+                                    'key': 'other_$j',
+                                    'label': '項${j + 3}',
+                                    'val': (itemOthers[j] as Map)['val']
+                                            as double? ??
+                                        0.0,
+                                  },
+                                ),
+                              ];
+                              if (destFields.isEmpty) return const SizedBox.shrink();
+                              final destPrec =
+                                  item['precision'] as int? ?? 2;
+                              String fmtDest(double v) {
+                                if (v == v.truncateToDouble() &&
+                                    v.abs() < 1e12) {
+                                  return v.toStringAsFixed(0);
+                                }
+                                return v.toStringAsFixed(destPrec);
+                              }
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.fromLTRB(12, 10, 12, 4),
+                                    child: Text(
+                                      rowName,
+                                      style: const TextStyle(
+                                        color: Color(0xFF26C6DA),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                                  child: Wrap(
-                                    spacing: 8,
-                                    runSpacing: 4,
-                                    children: destFields.map((df) {
-                                      final fk = df['key'] as String;
-                                      final dk = '${i}_$fk';
-                                      final isSel = selectedDests.contains(dk);
-                                      return FilterChip(
-                                        label: Text(df['label'] as String),
-                                        selected: isSel,
-                                        selectedColor:
-                                            Colors.blueAccent.withOpacity(0.25),
-                                        checkmarkColor: Colors.blueAccent,
-                                        backgroundColor:
-                                            Colors.white.withOpacity(0.05),
-                                        labelStyle: TextStyle(
-                                          color: isSel
-                                              ? Colors.blueAccent
-                                              : Colors.white70,
-                                          fontSize: 12,
-                                        ),
-                                        onSelected: (v) => setDs(() {
-                                          if (v) {
-                                            selectedDests.add(dk);
-                                          } else {
-                                            selectedDests.remove(dk);
-                                          }
-                                        }),
-                                      );
-                                    }).toList(),
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                                    child: Wrap(
+                                      spacing: 8,
+                                      runSpacing: 6,
+                                      children: destFields.map((df) {
+                                        final fk = df['key'] as String;
+                                        final dk = '${i}_$fk';
+                                        final isSel = selectedDests.contains(dk);
+                                        final valStr = fmtDest(
+                                            df['val'] as double? ?? 0.0);
+                                        return GestureDetector(
+                                          onTap: () => setDs(() {
+                                            if (isSel) {
+                                              selectedDests.remove(dk);
+                                            } else {
+                                              selectedDests.add(dk);
+                                            }
+                                          }),
+                                          child: AnimatedContainer(
+                                            duration: const Duration(
+                                                milliseconds: 150),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 12, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: isSel
+                                                  ? const Color(0xFF26C6DA)
+                                                      .withOpacity(0.18)
+                                                  : Colors.white
+                                                      .withOpacity(0.05),
+                                              border: Border.all(
+                                                color: isSel
+                                                    ? const Color(0xFF26C6DA)
+                                                    : Colors.white24,
+                                                width: isSel ? 1.5 : 1.0,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    if (isSel)
+                                                      const Padding(
+                                                        padding:
+                                                            EdgeInsets.only(
+                                                                right: 4),
+                                                        child: Icon(
+                                                          Icons.check,
+                                                          size: 12,
+                                                          color: Color(
+                                                              0xFF26C6DA),
+                                                        ),
+                                                      ),
+                                                    Text(
+                                                      df['label'] as String,
+                                                      style: TextStyle(
+                                                        color: isSel
+                                                            ? const Color(
+                                                                0xFF26C6DA)
+                                                            : Colors.white70,
+                                                        fontSize: 13,
+                                                        fontWeight: isSel
+                                                            ? FontWeight.bold
+                                                            : FontWeight.normal,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 3),
+                                                Text(
+                                                  valStr,
+                                                  style: TextStyle(
+                                                    color: isSel
+                                                        ? Colors.white
+                                                        : Colors.white38,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
                                   ),
-                                ),
-                                const Divider(color: Colors.white10, height: 16),
-                              ],
-                            );
-                          },
-                        ),
+                                  const Divider(color: Colors.white10, height: 12),
+                                ],
+                              );
+                            },
+                          ),
+                  ),
                 ),
+                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -5769,6 +6194,145 @@ class _CalculatorRow extends StatelessWidget {
   bool _hasEnd(int idx) =>
       (brackets ?? []).any((b) => (b as Map)['end'] == idx);
 
+  Widget _buildToolButtons(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(
+            Icons.add_circle_outline_rounded,
+            color: Colors.blueAccent.withOpacity(0.6),
+            size: 20,
+          ),
+          tooltip: '項を追加',
+          onPressed: onAdd,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+        ),
+        const SizedBox(width: 2),
+        PopupMenuButton<String>(
+          icon: Icon(
+            Icons.more_vert_rounded,
+            color: isDark ? Colors.white24 : Colors.black26,
+            size: 20,
+          ),
+          color: const Color(0xFF1A1A2E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          itemBuilder: (ctx) => [
+            PopupMenuItem(
+              value: 'toggle_name',
+              child: Row(
+                children: [
+                  Icon(nameVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.white70, size: 18),
+                  const SizedBox(width: 12),
+                  Text(nameVisible ? '名称を隠す' : '名称を出す', style: const TextStyle(color: Colors.white, fontSize: 13)),
+                ],
+              ),
+            ),
+            if (onMoveUp != null)
+              const PopupMenuItem(
+                value: 'move_up',
+                child: Row(
+                  children: [
+                    Icon(Icons.arrow_upward_rounded, color: Colors.white70, size: 18),
+                    SizedBox(width: 12),
+                    Text('上に移動', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  ],
+                ),
+              ),
+            if (onMoveDown != null)
+              const PopupMenuItem(
+                value: 'move_down',
+                child: Row(
+                  children: [
+                    Icon(Icons.arrow_downward_rounded, color: Colors.white70, size: 18),
+                    SizedBox(width: 12),
+                    Text('下に移動', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  ],
+                ),
+              ),
+            const PopupMenuDivider(height: 1),
+            const PopupMenuItem(
+              value: 'insert_below',
+              child: Row(
+                children: [
+                  Icon(Icons.playlist_add_rounded, color: Colors.white70, size: 18),
+                  SizedBox(width: 12),
+                  Text('下に計算を追加', style: TextStyle(color: Colors.white, fontSize: 13)),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'insert_memo_below',
+              child: Row(
+                children: [
+                  Icon(Icons.sticky_note_2_outlined, color: Colors.amber, size: 18),
+                  SizedBox(width: 12),
+                  Text('メモを追加', style: TextStyle(color: Colors.white, fontSize: 13)),
+                ],
+              ),
+            ),
+            const PopupMenuDivider(height: 1),
+            const PopupMenuItem(
+              value: 'copy',
+              child: Row(
+                children: [
+                  Icon(Icons.copy_all_rounded, color: Colors.blueAccent, size: 18),
+                  SizedBox(width: 12),
+                  Text('複製', style: TextStyle(color: Colors.white, fontSize: 13)),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'brackets',
+              child: Row(
+                children: [
+                  Icon(Icons.code_rounded, color: Colors.blueAccent, size: 18),
+                  SizedBox(width: 12),
+                  Text('優先順位 ( )', style: TextStyle(color: Colors.white, fontSize: 13)),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'link_dest',
+              child: Row(
+                children: [
+                  Icon(Icons.link_rounded, color: Colors.blueAccent, size: 18),
+                  SizedBox(width: 12),
+                  Text('リンク設定', style: TextStyle(color: Colors.white, fontSize: 13)),
+                ],
+              ),
+            ),
+            const PopupMenuDivider(height: 1),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
+                  SizedBox(width: 12),
+                  Text('削除', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
+                ],
+              ),
+            ),
+          ],
+          onSelected: (val) {
+            if (val == 'delete') onDelete();
+            if (val == 'copy') onCopy();
+            if (val == 'brackets') onPickBrackets();
+            if (val == 'link_dest') _showSetLinkDestDialog(context);
+            if (val == 'move_up') onMoveUp?.call();
+            if (val == 'move_down') onMoveDown?.call();
+            if (val == 'toggle_name') onToggleName?.call();
+            if (val == 'insert_below') onInsertBelow?.call();
+            if (val == 'insert_memo_below') onInsertMemoBelow?.call();
+          },
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -5776,34 +6340,42 @@ class _CalculatorRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (nameVisible)
+          if (nameVisible || dragHandle != null)
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: EdgeInsets.only(bottom: nameVisible ? 12.0 : 4.0),
               child: Row(
                 children: [
-                  Container(
-                    width: 4,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: Colors.blueAccent.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(2),
+                  if (dragHandle != null) ...[
+                    dragHandle!,
+                    const SizedBox(width: 4),
+                  ],
+                  if (nameVisible) ...[
+                    Container(
+                      width: 4,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: Colors.blueAccent.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => _editDetails(context),
-                      child: Text(
-                        name.isEmpty ? '名称未設定' : name,
-                        style: TextStyle(
-                          color: isDark ? Colors.white.withOpacity(0.9) : Colors.black87,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.2,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _editDetails(context),
+                        child: Text(
+                          name.isEmpty ? '名称未設定' : name,
+                          style: TextStyle(
+                            color: isDark ? Colors.white.withOpacity(0.9) : Colors.black87,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.2,
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                    _buildToolButtons(context),
+                  ] else if (dragHandle != null)
+                    const Expanded(child: SizedBox()),
                 ],
               ),
             ),
@@ -5945,115 +6517,195 @@ class _CalculatorRow extends StatelessWidget {
                   onTapDown: (details) => _editResultProperties(context, details.globalPosition),
                 ),
 
-                const SizedBox(width: 12),
-                
-                // ツールボタン
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.add_circle_outline_rounded,
-                        color: Colors.blueAccent.withOpacity(0.6),
-                        size: 22,
-                      ),
-                      tooltip: '項を追加',
-                      onPressed: onAdd,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                    const SizedBox(width: 4),
-                    PopupMenuButton<String>(
-                      icon: Icon(
-                        Icons.more_vert_rounded,
-                        color: isDark ? Colors.white24 : Colors.black26,
-                        size: 20,
-                      ),
-                      color: const Color(0xFF1A1A2E),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      itemBuilder: (ctx) => [
-                        PopupMenuItem(
-                          value: 'toggle_name',
-                          child: Row(
-                            children: [
-                              Icon(nameVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.white70, size: 18),
-                              const SizedBox(width: 12),
-                              Text(nameVisible ? '名称を隠す' : '名称を出す', style: const TextStyle(color: Colors.white, fontSize: 13)),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'insert_below',
-                          child: Row(
-                            children: [
-                              Icon(Icons.playlist_add_rounded, color: Colors.white70, size: 18),
-                              SizedBox(width: 12),
-                              Text('下に計算を追加', style: TextStyle(color: Colors.white, fontSize: 13)),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuDivider(height: 1),
-                        const PopupMenuItem(
-                          value: 'copy',
-                          child: Row(
-                            children: [
-                              Icon(Icons.copy_all_rounded, color: Colors.blueAccent, size: 18),
-                              SizedBox(width: 12),
-                              Text('複製', style: TextStyle(color: Colors.white, fontSize: 13)),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'brackets',
-                          child: Row(
-                            children: [
-                              Icon(Icons.code_rounded, color: Colors.blueAccent, size: 18),
-                              SizedBox(width: 12),
-                              Text('優先順位 ( )', style: TextStyle(color: Colors.white, fontSize: 13)),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'link_dest',
-                          child: Row(
-                            children: [
-                              Icon(Icons.link_rounded, color: Colors.blueAccent, size: 18),
-                              SizedBox(width: 12),
-                              Text('リンク設定', style: TextStyle(color: Colors.white, fontSize: 13)),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuDivider(height: 1),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Row(
-                            children: [
-                              Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
-                              SizedBox(width: 12),
-                              Text('削除', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
-                            ],
-                          ),
-                        ),
-                      ],
-                      onSelected: (val) {
-                        if (val == 'delete') onDelete();
-                        if (val == 'copy') onCopy();
-                        if (val == 'brackets') onPickBrackets();
-                        if (val == 'link_dest') _showSetLinkDestDialog(context);
-                        if (val == 'move_up') onMoveUp?.call();
-                        if (val == 'move_down') onMoveDown?.call();
-                        if (val == 'toggle_name') onToggleName?.call();
-                        if (val == 'insert_below') onInsertBelow?.call();
-                      },
-                    ),
-                  ],
-                ),
+                if (!nameVisible) ...[
+                  const SizedBox(width: 12),
+                  _buildToolButtons(context),
+                ],
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── 紙のライン背景ペインター ──
+class _PaperPainter extends CustomPainter {
+  final bool isDark;
+  const _PaperPainter({required this.isDark});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..color = isDark
+          ? Colors.white.withOpacity(0.045)
+          : Colors.black.withOpacity(0.055)
+      ..strokeWidth = 0.6;
+    const lineSpacing = 26.0;
+    const topOffset = 16.0;
+    double y = topOffset;
+    while (y < size.height) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
+      y += lineSpacing;
+    }
+    // 左マージン線
+    final marginPaint = Paint()
+      ..color = isDark
+          ? Colors.blueAccent.withOpacity(0.12)
+          : Colors.redAccent.withOpacity(0.12)
+      ..strokeWidth = 1.0;
+    canvas.drawLine(
+      const Offset(28, 0),
+      Offset(28, size.height),
+      marginPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _PaperPainter old) => old.isDark != isDark;
+}
+
+// ── メモ行ウィジェット ──
+class _MemoRowWidget extends StatelessWidget {
+  final String text;
+  final bool isDark;
+  final void Function(String) onUpdate;
+  final VoidCallback onDelete;
+
+  const _MemoRowWidget({
+    super.key,
+    required this.text,
+    required this.isDark,
+    required this.onUpdate,
+    required this.onDelete,
+  });
+
+  void _showEditDialog(BuildContext context) {
+    final ctrl = TextEditingController(text: text);
+    showDialog<String?>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: Row(
+          children: const [
+            Icon(Icons.sticky_note_2_outlined, color: Colors.amber, size: 18),
+            SizedBox(width: 8),
+            Text(
+              'メモを編集',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ],
+        ),
+        content: TextField(
+          controller: ctrl,
+          autofocus: false, // キーボードアサーション失敗を回避
+          maxLines: 5,
+          minLines: 2,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
+          decoration: InputDecoration(
+            hintText: 'メモを入力...',
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.06),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: Colors.amber),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(null),
+            child: const Text('キャンセル',
+                style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final t = ctrl.text;
+              // キーボードを先に解放してから pop（KeyUpEvent アサーション回避）
+              FocusManager.instance.primaryFocus?.unfocus();
+              Navigator.of(ctx).pop(t);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber,
+              foregroundColor: Colors.black,
+            ),
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    ).then((result) {
+      // exit アニメーション完了後に dispose（即時 dispose は TextField クラッシュの原因）
+      Future.delayed(const Duration(milliseconds: 400), ctrl.dispose);
+      if (result == null) return;
+      onUpdate(result);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final empty = text.trim().isEmpty;
+    return GestureDetector(
+      onTap: () => _showEditDialog(context),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.amber.withOpacity(0.06)
+              : Colors.amber.withOpacity(0.09),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isDark
+                ? Colors.amber.withOpacity(0.2)
+                : Colors.amber.withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Icon(
+                Icons.sticky_note_2_outlined,
+                size: 14,
+                color: Colors.amber.withOpacity(0.7),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                empty ? 'メモ（タップして編集）' : text,
+                style: TextStyle(
+                  color: empty
+                      ? (isDark ? Colors.white24 : Colors.black26)
+                      : (isDark ? Colors.white70 : Colors.black.withOpacity(0.7)),
+                  fontSize: 13,
+                  fontStyle: empty ? FontStyle.italic : FontStyle.normal,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            GestureDetector(
+              onTap: onDelete,
+              child: Icon(
+                Icons.close_rounded,
+                size: 14,
+                color: Colors.redAccent.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
