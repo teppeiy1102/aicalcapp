@@ -21,7 +21,7 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF0D0D14),
         colorScheme: const ColorScheme.dark(
           primary: Color(0xFF5E81FF),
-          surface: Color(0xFF1A1A26),
+          surface: Color.fromARGB(255, 31, 31, 31),
         ),
         textTheme: ThemeData.dark().textTheme.apply(
           fontFamily: 'NotoSansJP',
@@ -325,74 +325,79 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverAppBar(
-                pinned: true,
-                expandedHeight: 200,
-                backgroundColor: const Color(0xFF0D0D14).withOpacity(0.8),
-                surfaceTintColor: Colors.transparent,
-                elevation: 0,
-                flexibleSpace: FlexibleSpaceBar(
-                  titlePadding: const EdgeInsets.only(left: 28, bottom: 24),
-                  centerTitle: false,
-                  title: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Genba Calc',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 36,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
+          SafeArea(
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  expandedHeight: 200,
+                  backgroundColor: const Color(0xFF0D0D14).withOpacity(0.9),
+                  surfaceTintColor: Colors.transparent,
+                  elevation: 0,
+                  flexibleSpace: FlexibleSpaceBar(
+                    titlePadding: const EdgeInsets.only(left: 28, bottom: 0),
+                    centerTitle: false,
+                    title: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Spacer(flex: 4),
+                        const Text(
+                          'Genba Calc',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 30,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2,
+                          ),
                         ),
-                      ),
-                      Text(
-                        '現場を支える、次世代の計算機',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.35),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.2,
+                        Text(
+                          '現場を支える、次世代の計算機',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.35),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.2,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (_configs.isEmpty)
-                const SliverFillRemaining(
-                  child: _EmptyState(),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 140),
-                  sliver: SliverReorderableList(
-                    itemCount: _configs.length,
-                    onReorder: _reorderConfigs,
-                    itemBuilder: (ctx, i) => Padding(
-                      key: ValueKey(_configs[i].id),
-                      padding: const EdgeInsets.only(bottom: 20),
-                      child: _WidgetCard(
-                        config: _configs[i],
-                        index: i,
-                        onTap: () => _openDetail(i),
-                        onDelete: () => _deleteConfig(i),
-                        onUpdate: (data) => _updateConfig(i, data),
-                      ),
+                        Spacer(flex: 1,)
+                      ],
                     ),
                   ),
                 ),
-            ],
+                if (_configs.isEmpty)
+                  const SliverFillRemaining(
+                    child: _EmptyState(),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 140),
+                    sliver: SliverReorderableList(
+                      itemCount: _configs.length,
+                      onReorder: _reorderConfigs,
+                      itemBuilder: (ctx, i) => Padding(
+                        key: ValueKey(_configs[i].id),
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _WidgetCard(
+                          config: _configs[i],
+                          index: i,
+                          onTap: () => _openDetail(i),
+                          onDelete: () => _deleteConfig(i),
+                          onUpdate: (data) => _updateConfig(i, data),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
       floatingActionButton: _HomeFab(
-        onAddSheet: _addConfig,
         onOpenCalc: _openHomeCalc,
+        onAddSheet: _addConfig,
         calcActive: _calcSheetController != null,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
@@ -448,154 +453,196 @@ class _WidgetCardState extends State<_WidgetCard> {
   Widget build(BuildContext context) {
     final title = widget.config.data['title'] as String? ?? '定型計算';
     final items = widget.config.data['items'] as List<dynamic>? ?? [];
+    final memos = widget.config.data['memos'] as List<dynamic>? ?? [];
     final accent = _WidgetCard._accentColors[widget.index % _WidgetCard._accentColors.length];
+    final bgColorValue = widget.config.data['bgColor'] as int?;
+    final cardBgColor = bgColorValue != null ? Color(bgColorValue) : const Color(0xFF1A1A26);
+    final isDark = cardBgColor.computeLuminance() < 0.5;
+    final titleColor = isDark ? Colors.white : const Color(0xFF1A1A2E);
+    final subIconColor = isDark ? Colors.white24 : Colors.black26;
+    final borderColor = isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.12);
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
-        color: const Color(0xFF1A1A26),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: widget.onTap,
-              splashColor: accent.withOpacity(0.1),
-              highlightColor: accent.withOpacity(0.05),
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(16, 15, 10, 15),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.06),
-                    width: 1.5,
+        color: cardBgColor.withAlpha(200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.onTap,
+                splashColor: accent.withOpacity(0.1),
+                highlightColor: accent.withOpacity(0.05),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(16, 15, 10, 15),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: borderColor,
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(32),
+                      topRight: const Radius.circular(32),
+                      bottomLeft: _isExpanded ? Radius.zero : const Radius.circular(32),
+                      bottomRight: _isExpanded ? Radius.zero : const Radius.circular(32),
+                    ),
                   ),
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(32),
-                    topRight: const Radius.circular(32),
-                    bottomLeft: _isExpanded ? Radius.zero : const Radius.circular(32),
-                    bottomRight: _isExpanded ? Radius.zero : const Radius.circular(32),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    ReorderableDragStartListener(
-                      index: widget.index,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: Icon(
-                          Icons.drag_handle_rounded,
-                          color: Colors.white24,
-                          size: 22,
+                  child: Row(
+                    children: [
+                      ReorderableDragStartListener(
+                        index: widget.index,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: Icon(
+                            Icons.drag_indicator,
+                            color: subIconColor,
+                            size: 22,
+                          ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: TextStyle(
+                                color: titleColor,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.5,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: accent.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
+                            const SizedBox(height: 8),
+                            Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  Icons.data_usage_rounded,
-                                  size: 12,
-                                  color: accent,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  items.isEmpty ? '計算式未設定' : '${items.length}件の計算項目',
-                                  style: TextStyle(
-                                    color: accent.withOpacity(0.9),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: accent.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.data_usage_rounded,
+                                        size: 12,
+                                        color: accent,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        items.isEmpty ? '計算式未設定' : '${items.length}件の計算項目',
+                                        style: TextStyle(
+                                          color: accent.withOpacity(0.9),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
+                                if (memos.isNotEmpty) ...
+                                [
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amber.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.sticky_note_2_outlined,
+                                          size: 12,
+                                          color: Colors.amber,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '${memos.length}件のメモ',
+                                          style: const TextStyle(
+                                            color: Colors.amber,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
+                          ],
+                        ),
+                      ),
+                      Column(children: [
+                    
+                      GestureDetector(
+                        onTap: widget.onDelete,
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.03),
+                            shape: BoxShape.circle,
                           ),
-                        ],
-                      ),
-                    ),
-                    Column(children: [
-                  
-                    GestureDetector(
-                      onTap: widget.onDelete,
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.03),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.delete_sweep_rounded,
-                          color: Colors.white.withOpacity(0.2),
-                          size: 22,
+                          child: Icon(
+                            Icons.delete_sweep_rounded,
+                            color: isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.25),
+                            size: 22,
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(height: 10,),
-  GestureDetector(
-                      onTap: () => setState(() => _isExpanded = !_isExpanded),
-                      child: Padding(
-                        padding: const EdgeInsets.all(0),
-                        child: Icon(
-                          _isExpanded
-                              ? Icons.keyboard_arrow_up_rounded
-                              : Icons.keyboard_arrow_down_rounded,
-                          color: Colors.white38,
-                          size: 22,
+                      SizedBox(height: 10,),
+        GestureDetector(
+                        onTap: () => setState(() => _isExpanded = !_isExpanded),
+                        child: Padding(
+                          padding: const EdgeInsets.all(0),
+                          child: Icon(
+                            _isExpanded
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
+                            color: isDark ? Colors.white38 : Colors.black38,
+                            size: 22,
+                          ),
                         ),
                       ),
-                    ),
-
-                    ],)
-                 ],
+      
+                      ],)
+                   ],
+                  ),
                 ),
               ),
             ),
-          ),
-          if (_isExpanded)
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(32),
-                bottomRight: Radius.circular(32),
+            if (_isExpanded)
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+                child: CalculatorViewCard(
+                  config: widget.config,
+                  onUpdate: widget.onUpdate,
+                  contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                ),
               ),
-              child: CalculatorViewCard(
-                config: widget.config,
-                onUpdate: widget.onUpdate,
-                contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              ),
-            ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
   }
 }
 
@@ -614,7 +661,52 @@ class _HomeFab extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 電卓ボタン
+        Spacer(),
+    
+        // 新規シートボタン
+        GestureDetector(
+          onTap: onAddSheet,
+          child: Container(
+            height: 64,
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.fromARGB(255, 241, 243, 249),
+                  Color.fromARGB(255, 202, 183, 255),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF5E81FF).withOpacity(0.3),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add_rounded, color: Colors.black, size: 28),
+                SizedBox(width: 10),
+                Text(
+                  '新しいシート',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Spacer(),
+    // 電卓ボタン
         GestureDetector(
           onTap: onOpenCalc,
           child: AnimatedContainer(
@@ -623,14 +715,13 @@ class _HomeFab extends StatelessWidget {
             width: 64,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
-              color: calcActive
-                  ? const Color(0xFF5E81FF)
-                  : const Color(0xFF1A1A2E),
-              border: Border.all(
-                color: calcActive
-                    ? const Color(0xFF5E81FF)
-                    : Colors.white.withOpacity(0.1),
-                width: 1.5,
+             gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.fromARGB(255, 241, 243, 249),
+                  Color.fromARGB(255, 202, 183, 255),
+                ],
               ),
               boxShadow: [
                 BoxShadow(
@@ -646,54 +737,12 @@ class _HomeFab extends StatelessWidget {
               calcActive
                   ? Icons.calculate_rounded
                   : Icons.calculate_outlined,
-              color: calcActive ? Colors.white : Colors.white54,
+              color: calcActive ? Colors.black : Colors.black,
               size: 28,
             ),
           ),
         ),
-        const SizedBox(width: 12),
-        // 新規シートボタン
-        GestureDetector(
-          onTap: onAddSheet,
-          child: Container(
-            height: 64,
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF5E81FF),
-                  Color(0xFF9E7AFF),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF5E81FF).withOpacity(0.3),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.add_rounded, color: Colors.white, size: 28),
-                SizedBox(width: 10),
-                Text(
-                  '新しいシート',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        SizedBox(width: 12,)
       ],
     );
   }

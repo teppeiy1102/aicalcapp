@@ -11,7 +11,10 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'ai_service.dart';
 
+part 'calc_input_widgets.dart';
 part 'calculator_widget.dart';
+part 'calculator_row.dart';
+part 'memo_ai_widgets.dart';
 
 // ── WidgetConfig ──────────────────────────────────────────────────────────────
 class WidgetConfig {
@@ -448,7 +451,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
     final textColor = isDark ? Colors.white : Colors.black87;
     final keyBg = isDark
         ? Colors.white.withOpacity(0.1)
-        : Colors.black.withOpacity(0.07);
+        : Colors.white.withOpacity(1);
     final opColor = isDark ? Colors.blueAccent : Colors.black87;
     final eqColor = isDark ? Colors.orangeAccent : Colors.black87;
 
@@ -475,13 +478,8 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
     // 固定 UI 要素の高さ（グリッド外）
     const kFixedH = 202.0; // ハンドル12 + ヘッダー40 + gap4 + 追加ボタン40 + 表示部80 + gap6 + pad上8 + pad下16
     const kGridGapH = 24.0; // 4行間 × 6px
-    const kAiBtnH = 64.0;   // gap12 + ボタン44 + gap8
 
-    final gridWithAI = sheetH - kFixedH - kGridGapH - kAiBtnH - viewInsetsBottom;
-    final showAiButton = gridWithAI / 5 >= 28;
-    final gridAvail = showAiButton
-        ? gridWithAI
-        : (sheetH - kFixedH - kGridGapH - viewInsetsBottom);
+    final gridAvail = sheetH - kFixedH - kGridGapH - viewInsetsBottom;
     final buttonH = (gridAvail / 5).clamp(24.0, 72.0);
     final buttonW = (screenW - 40.0 - 18.0) / 4;
     final ratio = buttonW / buttonH;
@@ -505,8 +503,8 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
       physics: const ClampingScrollPhysics(),
       child: Padding(
         padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
+          left: 10,
+          right: 10,
           top: 8,
           bottom: viewInsetsBottom + 16,
         ),
@@ -514,19 +512,37 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ドラッグハンドル
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+            // ドラッグハンドル + 閉じるボタン
+            SizedBox(
+              height: 40,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.black26,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    top: -8,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, size: 30),
+                      color: isDark ? Colors.white38 : Colors.black38,
+                      splashRadius: 20,
+                      onPressed: widget.onClose,
+                    ),
+                  ),
+                ],
               ),
             ),
-           
+
             const SizedBox(height: 4),
             // 「追加」ボタン
             AnimatedOpacity(
@@ -563,35 +579,83 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
             ),
             // 表示部
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
               height: 80,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  if (subtitle.isNotEmpty)
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Text(
-                        subtitle,
-                        style: TextStyle(
-                          height: 0.9,
-                          color: textColor.withOpacity(0.45),
-                          fontSize: 16,
+                  // AIカウントアイコンボタン（横長）
+                  GestureDetector(
+                    onTap: _isAiCounting ? null : _showAiCountDialog,
+                    child: AnimatedOpacity(
+                      opacity: _isAiCounting ? 0.4 : 1.0,
+                      duration: const Duration(milliseconds: 150),
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(1),
+                          borderRadius: BorderRadius.circular(1000),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.45),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Icon(
+                              Icons.camera_alt_outlined,
+                              color: Colors.black,
+                              size: 24,
+                            ),
+                            if (_isAiCounting)
+                              SizedBox(
+                                width: (buttonH * 0.5).clamp(24.0, 38.0),
+                                height: (buttonH * 0.5).clamp(24.0, 38.0),
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color: Colors.white,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
-                  FittedBox(
-                    child: Text(
-                      _display,
-                      maxLines: 1,
-                      style: TextStyle(
-                        height: 1,
-                        color: textColor,
-                        fontSize: 44,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.right,
+                  ),
+                  const SizedBox(width: 6),
+                  // 数値・式表示エリア
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (subtitle.isNotEmpty)
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Text(
+                              subtitle,
+                              style: TextStyle(
+                                height: 0.9,
+                                color: textColor.withOpacity(0.45),
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        FittedBox(
+                          child: Text(
+                            _display,
+                            maxLines: 1,
+                            style: TextStyle(
+                              height: 1,
+                              color: textColor,
+                              fontSize: 44,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -625,58 +689,6 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                 calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
               ],
             ),
-            // AI カウントボタン（シートが小さいときは非表示）
-            if (showAiButton) ...[
-                  const SizedBox(height: 12),
-                  if (_isAiCounting)
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 6),
-                      child: LinearProgressIndicator(
-                        color: Colors.tealAccent,
-                        minHeight: 2,
-                        backgroundColor: Colors.transparent,
-                      ),
-                    ),
-                  GestureDetector(
-                    onTap: _isAiCounting ? null : _showAiCountDialog,
-                    child: AnimatedOpacity(
-                      opacity: _isAiCounting ? 0.5 : 1.0,
-                      duration: const Duration(milliseconds: 150),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.teal.withOpacity(0.25),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.tealAccent.withOpacity(0.35),
-                            width: 0.8,
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.camera_alt_outlined,
-                              color: Colors.tealAccent,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _isAiCounting ? 'AIカウント中...' : 'AIカウント',
-                              style: const TextStyle(
-                                color: Colors.tealAccent,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-              const SizedBox(height: 8),
-            ],
           ],
         ),
       ),
@@ -705,8 +717,10 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
   late WidgetConfig _config;
   final _calcKey = GlobalKey<_CalculatorWidgetState>();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
-  PersistentBottomSheetController? _calcSheetController;
+  final _scrollController = ScrollController();
+  bool _calcSheetOpen = false;
   bool _isAiGenerating = false;
+  OverlayEntry? _calcSheetOverlay;
 
   @override
   void initState() {
@@ -721,7 +735,17 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
     widget.onUpdate(data);
   }
 
+  void _closeCalcSheet() {
+    _calcSheetOverlay?.remove();
+    _calcSheetOverlay = null;
+    if (mounted) setState(() => _calcSheetOpen = false);
+  }
+
   void _openCalcSheet() {
+    if (_calcSheetOpen) {
+      _closeCalcSheet();
+      return;
+    }
     final state = _calcKey.currentState;
     final currentItems =
         state?._items ?? (_config.data['items'] as List<dynamic>? ?? []);
@@ -735,25 +759,27 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
               .isDark
         : true;
 
-    if (_calcSheetController != null) {
-      _calcSheetController!.close();
-      return;
-    }
-    _calcSheetController = _scaffoldKey.currentState!.showBottomSheet(
-      backgroundColor: Colors.transparent,
-      enableDrag: false,
-      (ctx) => _CalcDraggableSheetContent(
+    setState(() => _calcSheetOpen = true);
+    _calcSheetOverlay = OverlayEntry(
+      builder: (ctx) => _CalcDraggableSheetContent(
         existingItemCount: currentItems.length,
         isDark: isDark,
+        bgColor: bgColorValue,
         onAddItem: (item) {
           state?._addItemFromMap(item);
         },
-        onClose: () => _calcSheetController?.close(),
+        onClose: _closeCalcSheet,
       ),
     );
-    _calcSheetController!.closed.then((_) {
-      if (mounted) setState(() => _calcSheetController = null);
-    });
+    Overlay.of(context).insert(_calcSheetOverlay!);
+  }
+
+  @override
+  void dispose() {
+    _calcSheetOverlay?.remove();
+    _calcSheetOverlay = null;
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Color _toolbarIconColor(bool isActive) =>
@@ -762,21 +788,39 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
   @override
   Widget build(BuildContext context) {
     final title = _config.data['title'] as String? ?? '定型計算';
+    final bgColorValue = _config.data['bgColor'] as int?;
+    final scaffoldBgColor = bgColorValue != null ? Color(bgColorValue) : const Color(0xFF0D0D14);
+    final isDark = scaffoldBgColor.computeLuminance() < 0.5;
+    final fgColor = isDark ? Colors.white : const Color(0xFF1A1A2E);
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: scaffoldBgColor,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0D14).withOpacity(0.7),
+        backgroundColor: scaffoldBgColor.withOpacity(0.85),
         surfaceTintColor: Colors.transparent,
-        foregroundColor: Colors.white,
+        foregroundColor: fgColor,
         elevation: 0,
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.5,
+        title: GestureDetector(
+          onTap: () => _calcKey.currentState?._editTitle(),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                    color: fgColor,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(Icons.edit_outlined, size: 15, color: fgColor.withOpacity(0.38)),
+            ],
           ),
         ),
         actions: [
@@ -801,7 +845,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF5E81FF).withOpacity(0.05),
+                    const Color(0xFF5E81FF).withOpacity(0.55),
                     Colors.transparent,
                   ],
                 ),
@@ -810,15 +854,23 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
           ),
           SafeArea(
             child: SingleChildScrollView(
+              controller: _scrollController,
               physics: const BouncingScrollPhysics(),
-              child: _CalculatorWidget(
-                key: _calcKey,
-                config: _config,
-                onUpdate: _handleUpdate,
-                onDuplicate: widget.onDuplicate,
-                showToolbar: false,
-                showHeader: false,
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              child: Padding(
+                padding: _calcSheetOpen
+                    ? EdgeInsets.only(
+                        bottom: MediaQuery.of(context).size.height * 0.60,
+                      )
+                    : EdgeInsets.only(bottom: 50),
+                child: _CalculatorWidget(
+                  key: _calcKey,
+                  config: _config,
+                  onUpdate: _handleUpdate,
+                  onDuplicate: widget.onDuplicate,
+                  showToolbar: false,
+                  showHeader: false,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                ),
               ),
             ),
           ),
@@ -828,8 +880,8 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
         padding: const EdgeInsets.only(bottom: 10),
         child: FloatingActionButton(
           onPressed: () => _calcKey.currentState?._addItem(),
-          backgroundColor: const Color(0xFF5E81FF),
-          foregroundColor: Colors.white,
+          backgroundColor: isDark ? Colors.white : Colors.black,
+          foregroundColor: scaffoldBgColor,
           elevation: 12,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           child: const Icon(Icons.add_rounded, size: 30),
@@ -841,13 +893,22 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
 
   Widget _buildBottomBar() {
     final isViewMode = _config.data['viewMode'] as bool? ?? false;
+    final bgColorValue = _config.data['bgColor'] as int?;
+    final barBgColor = bgColorValue != null ? Color(bgColorValue) : const Color(0xFF161625);
+    final isDarkBar = barBgColor.computeLuminance() < 0.5;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF161625),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.05))),
+        color: barBgColor,
+        border: Border(
+          top: BorderSide(
+            color: isDarkBar
+                ? Colors.white.withOpacity(0.08)
+                : Colors.black.withOpacity(0.12),
+          ),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withOpacity(isDarkBar ? 0.3 : 0.1),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -880,7 +941,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   _ToolbarButton(
                     icon: isViewMode ? Icons.edit_note_rounded : Icons.visibility_rounded,
                     label: isViewMode ? '編集モード' : '閲覧モード',
-                    color: isViewMode ? const Color(0xFF5E81FF) : Colors.white38,
+                    color: isViewMode ? const Color(0xFF5E81FF) : (isDarkBar ? Colors.white38 : Colors.black45),
                     onTap: () => _handleUpdate(
                       {..._config.data, 'viewMode': !isViewMode},
                     ),
@@ -888,7 +949,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   _ToolbarButton(
                     icon: Icons.calculate_rounded,
                     label: '電卓',
-                    color: Colors.white38,
+                    color: isDarkBar ? Colors.white38 : Colors.black45,
                     onTap: _openCalcSheet,
                   ),
                 ],
@@ -906,6 +967,7 @@ class _CalcDraggableSheetContent extends StatefulWidget {
   final int existingItemCount;
   final void Function(Map<String, dynamic> item) onAddItem;
   final bool isDark;
+  final int? bgColor;
   final VoidCallback onClose;
 
   const _CalcDraggableSheetContent({
@@ -913,6 +975,7 @@ class _CalcDraggableSheetContent extends StatefulWidget {
     required this.onAddItem,
     required this.isDark,
     required this.onClose,
+    this.bgColor,
   });
 
   @override
@@ -935,24 +998,43 @@ class _CalcDraggableSheetContentState
     return DraggableScrollableSheet(
       controller: _dsc,
       initialChildSize: 0.55,
-      minChildSize: 0.38,
+      minChildSize: 0.55,
       maxChildSize: 0.92,
       expand: true,
       snap: true,
-      snapSizes: const [0.55, 0.72, 0.92],
-      builder: (ctx, scrollController) => Material(
-        color: const Color(0xFF1A1A2E),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        clipBehavior: Clip.antiAlias,
-        child: _CalcBottomSheet(
-          scrollController: scrollController,
-          sheetController: _dsc,
-          existingItemCount: widget.existingItemCount,
-          isDark: widget.isDark,
-          onAddItem: widget.onAddItem,
-          onClose: widget.onClose,
-        ),
-      ),
+      snapSizes: const [0.55, 0.72],
+      builder: (ctx, scrollController) {
+        final sheetColor = widget.bgColor != null
+            ? Color(widget.bgColor!)
+            : const Color(0xFF1A1A2E);
+        return Material(
+          color: sheetColor,
+          shadowColor: Colors.black.withOpacity(0.9),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          clipBehavior: Clip.antiAlias,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              color: widget.isDark ? Colors.black12 : Colors.white12,
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 1,
+                  offset: const Offset(-0, 1),
+                  color: Colors.black.withOpacity(widget.isDark ? 0.3 : 0.05),
+                ),
+              ],
+            ),
+            child: _CalcBottomSheet(
+              scrollController: scrollController,
+              sheetController: _dsc,
+              existingItemCount: widget.existingItemCount,
+              isDark: widget.isDark,
+              onAddItem: widget.onAddItem,
+              onClose: widget.onClose,
+            ),
+          ),
+        );
+      },
     );
   }
 }
