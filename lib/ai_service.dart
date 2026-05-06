@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 enum AiModel { local, openrouter }
 
@@ -11,7 +12,7 @@ class GemmaAi {
   bool _isInit = false;
   static const _channel = MethodChannel('com.newluncher/litert_lm');
   AiModel _currentModel = AiModel.openrouter;
-  static const String _openRouterKey = "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";
+  String get _openRouterKey => dotenv.env['OPENROUTER_KEY'] ?? '';
 
   Completer<void>? _queryLock;
 

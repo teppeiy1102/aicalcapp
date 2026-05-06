@@ -2,12 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'ai_service.dart';
 import 'widget_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  GroundingDinoService.hfToken = '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';
+  await dotenv.load(fileName: ".env");
+  GroundingDinoService.hfToken = dotenv.env['HF_TOKEN'] ?? '';
   runApp(const MyApp());
 }
 
