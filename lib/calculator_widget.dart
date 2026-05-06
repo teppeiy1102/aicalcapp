@@ -8,6 +8,8 @@ class _CalculatorWidget extends StatefulWidget {
   final bool showToolbar;
   final bool showHeader;
   final EdgeInsetsGeometry? contentPadding;
+  /// AI生成中フラグが変化したときに通知するコールバック
+  final void Function(bool isGenerating)? onAiGeneratingChanged;
 
   const _CalculatorWidget({
     super.key,
@@ -17,6 +19,7 @@ class _CalculatorWidget extends StatefulWidget {
     this.showToolbar = true,
     this.showHeader = true,
     this.contentPadding,
+    this.onAiGeneratingChanged,
   });
 
   @override
@@ -58,8 +61,44 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     return raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
+  // 定数リスト: [{ 'id': String, 'name': String, 'value': double }]
+  List<Map<String, dynamic>> get _constants {
+    final raw = widget.config.data['constants'] as List<dynamic>? ?? [];
+    return raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  // スタンドアロンメモ: [{ 'id': String, 'text': String }]
+  List<Map<String, dynamic>> get _standaloneItems {
+    final raw = widget.config.data['standaloneItems'] as List<dynamic>? ?? [];
+    return raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  /// 実効表示順を返す。
+  /// data['displayOrder'] が未設定のときは items 順のデフォルトを返す。
+  /// 形式: [{'type':'calc','calcIdx':int} | {'type':'standalone','itemId':String}]
+  List<Map<String, dynamic>> get _effectiveDisplayOrder {
+    final items = _items;
+    final raw = widget.config.data['displayOrder'] as List<dynamic>?;
+    if (raw == null) {
+      return List.generate(items.length, (i) => {'type': 'calc', 'calcIdx': i});
+    }
+    final order = raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    // 未登録のcalc があれば末尾に追加（整合性保持）
+    final presentIdxs = order
+        .where((e) => e['type'] == 'calc')
+        .map((e) => e['calcIdx'] as int)
+        .toSet();
+    for (int i = 0; i < items.length; i++) {
+      if (!presentIdxs.contains(i)) {
+        order.add({'type': 'calc', 'calcIdx': i});
+      }
+    }
+    return order;
+  }
+
   void _addItem() {
     final newItems = List<Map<String, dynamic>>.from(_items);
+    final newCalcIdx = newItems.length;
     newItems.add({
       'name': '計算 ${newItems.length + 1}',
       'input': 0.0,
@@ -68,18 +107,24 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       'others': [],
       'brackets': [],
     });
-    widget.onUpdate({...widget.config.data, 'items': newItems});
+    final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
+    order.add({'type': 'calc', 'calcIdx': newCalcIdx});
+    widget.onUpdate({...widget.config.data, 'items': newItems, 'displayOrder': order});
   }
 
   void _addItemFromMap(Map<String, dynamic> item) {
     final newItems = List<Map<String, dynamic>>.from(_items);
+    final newCalcIdx = newItems.length;
     newItems.add(item);
-    widget.onUpdate({...widget.config.data, 'items': newItems});
+    final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
+    order.add({'type': 'calc', 'calcIdx': newCalcIdx});
+    widget.onUpdate({...widget.config.data, 'items': newItems, 'displayOrder': order});
   }
 
-  void _insertItemAfter(int index) {
+  void _insertItemAfter(int calcIdx) {
     final newItems = List<Map<String, dynamic>>.from(_items);
-    newItems.insert(index + 1, {
+    final newCalcIdx = newItems.length;
+    newItems.add({
       'name': '計算 ${newItems.length + 1}',
       'input': 0.0,
       'op': '+',
@@ -87,9 +132,16 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       'others': [],
       'brackets': [],
     });
-    // index より後のメモインデックスをひとつ繰り下げ
-    final newMemos = _remapMemoIndices(_memos, (old) => old > index ? old + 1 : old);
-    widget.onUpdate({...widget.config.data, 'items': newItems, 'memos': newMemos});
+    // displayOrder 内で calcIdx のエントリの直後に新アイテムを挿入
+    final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
+    int insertPos = order.length;
+    for (int i = 0; i < order.length; i++) {
+      if (order[i]['type'] == 'calc' && order[i]['calcIdx'] == calcIdx) {
+        insertPos = i + 1;
+      }
+    }
+    order.insert(insertPos, {'type': 'calc', 'calcIdx': newCalcIdx});
+    widget.onUpdate({...widget.config.data, 'items': newItems, 'displayOrder': order, 'memos': _memos});
   }
 
   // ── メモ管理 ──────────────────────────────────────────────────────────────
@@ -117,72 +169,14 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     // PopupMenu の dismiss アニメーション（約300ms）完了後にダイアログを表示する
     Future.delayed(const Duration(milliseconds: 350), () {
       if (!mounted) return;
-      final ctrl = TextEditingController();
-      // showDialog の戻り値でテキストを受け取り、.then() で onUpdate を呼ぶ。
-      // addPostFrameCallback はダイアログアニメーション中に setState を呼んでしまうため使わない。
-      // .then() はダイアログのルートが完全に pop した後に実行されるため安全。
       showDialog<String?>(
         context: this.context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E),
-          title: Row(
-            children: const [
-              Icon(Icons.sticky_note_2_outlined, color: Colors.amber, size: 18),
-              SizedBox(width: 8),
-              Text('メモを追加', style: TextStyle(color: Colors.white, fontSize: 16)),
-            ],
-          ),
-          content: TextField(
-            controller: ctrl,
-            autofocus: false,
-            maxLines: 5,
-            minLines: 2,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
-            decoration: InputDecoration(
-              hintText: 'メモを入力...',
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.06),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.amber),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(null),
-              child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final t = ctrl.text;
-                // キーボードを先に解放してから pop することで
-                // KeyUpEvent のアサーション失敗を防ぐ
-                FocusManager.instance.primaryFocus?.unfocus();
-                Navigator.of(ctx).pop(t);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amber,
-                foregroundColor: Colors.black,
-              ),
-              child: const Text('追加'),
-            ),
-          ],
+        builder: (ctx) => _MemoEditDialog(
+          initialText: '',
+          title: 'メモを追加',
+          saveLabel: '追加',
         ),
       ).then((result) {
-        // ダイアログの exit アニメーション（約300ms）が完了してから dispose する。
-        // .then() は Navigator.pop() が呼ばれた直後（マイクロタスク）に実行されるため、
-        // アニメーション中に即座に dispose すると TextField がクラッシュする。
-        Future.delayed(const Duration(milliseconds: 400), ctrl.dispose);
         if (result == null || !mounted) return;
         final newMemos = List<Map<String, dynamic>>.from(_memos);
         newMemos.add({'afterCalcIdx': calcIdx, 'text': result});
@@ -223,6 +217,79 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       return updated;
     }).toList();
     widget.onUpdate({...widget.config.data, 'items': newItems});
+  }
+
+  // ── 定数管理 ────────────────────────────────────────────────────────────────
+  void _addConstant() {
+    final consts = List<Map<String, dynamic>>.from(_constants);
+    final newId = DateTime.now().millisecondsSinceEpoch.toString();
+    consts.add({
+      'id': newId,
+      'name': '定数${consts.length + 1}',
+      'value': 0.0,
+    });
+    widget.onUpdate({...widget.config.data, 'constants': consts});
+  }
+
+  void _updateConstant(int idx, Map<String, dynamic> data) {
+    final consts = List<Map<String, dynamic>>.from(_constants);
+    if (idx < 0 || idx >= consts.length) return;
+    consts[idx] = data;
+    widget.onUpdate({...widget.config.data, 'constants': consts});
+  }
+
+  void _deleteConstant(int idx) {
+    final consts = List<Map<String, dynamic>>.from(_constants);
+    if (idx < 0 || idx >= consts.length) return;
+    consts.removeAt(idx);
+    widget.onUpdate({...widget.config.data, 'constants': consts});
+  }
+
+  // ── スタンドアロンメモ管理 ──────────────────────────────────────────────────
+  void _addStandaloneMemo() {
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      showDialog<String?>(
+        context: this.context,
+        builder: (ctx) => _MemoEditDialog(
+          initialText: '',
+          title: 'メモを追加',
+          saveLabel: '追加',
+        ),
+      ).then((result) {
+        if (result == null || !mounted) return;
+        final newId = DateTime.now().millisecondsSinceEpoch.toString();
+        final newItems = List<Map<String, dynamic>>.from(_standaloneItems);
+        newItems.add({'id': newId, 'text': result});
+        final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
+        order.add({'type': 'standalone', 'itemId': newId});
+        widget.onUpdate({
+          ...widget.config.data,
+          'standaloneItems': newItems,
+          'displayOrder': order,
+        });
+      });
+    });
+  }
+
+  void _updateStandaloneMemo(String id, String text) {
+    final items = List<Map<String, dynamic>>.from(_standaloneItems);
+    final idx = items.indexWhere((e) => e['id'] == id);
+    if (idx < 0) return;
+    items[idx] = {...items[idx], 'text': text};
+    widget.onUpdate({...widget.config.data, 'standaloneItems': items});
+  }
+
+  void _deleteStandaloneMemo(String id) {
+    final items = List<Map<String, dynamic>>.from(_standaloneItems);
+    items.removeWhere((e) => e['id'] == id);
+    final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
+    order.removeWhere((e) => e['type'] == 'standalone' && e['itemId'] == id);
+    widget.onUpdate({
+      ...widget.config.data,
+      'standaloneItems': items,
+      'displayOrder': order,
+    });
   }
 
   static List<Map<String, dynamic>> get _sampleItems => [
@@ -311,70 +378,64 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     }).toList();
   }
 
-  void _removeItem(int index) {
+  void _removeItem(int calcIdx) {
     var newItems = List<Map<String, dynamic>>.from(_items);
-    newItems.removeAt(index);
+    newItems.removeAt(calcIdx);
     // 削除した行を参照していたリンクを解除し、以降のインデックスを繰り上げ
     newItems = _remapLinkIndices(newItems, (oldIdx) {
-      if (oldIdx == index) return null;
-      if (oldIdx > index) return oldIdx - 1;
+      if (oldIdx == calcIdx) return null;
+      if (oldIdx > calcIdx) return oldIdx - 1;
       return oldIdx;
     });
+    // displayOrder から削除エントリを消し、後続の calcIdx を繰り上げ
+    var order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
+    order.removeWhere((e) => e['type'] == 'calc' && e['calcIdx'] == calcIdx);
+    order = order.map((e) {
+      if (e['type'] == 'calc') {
+        final ci = e['calcIdx'] as int;
+        if (ci > calcIdx) return {...e, 'calcIdx': ci - 1};
+      }
+      return e;
+    }).toList();
     // 全て削除したらサンプルを追加
     if (newItems.isEmpty) {
       newItems = List<Map<String, dynamic>>.from(_sampleItems);
+      order = [{'type': 'calc', 'calcIdx': 0}];
     }
     // 削除した計算のメモも削除し、以降のインデックスを繰り上げ
     final newMemos = _remapMemoIndices(_memos, (old) {
-      if (old == index) return null;
-      if (old > index) return old - 1;
+      if (old == calcIdx) return null;
+      if (old > calcIdx) return old - 1;
       return old;
     });
-    widget.onUpdate({...widget.config.data, 'items': newItems, 'memos': newMemos});
+    widget.onUpdate({...widget.config.data, 'items': newItems, 'displayOrder': order, 'memos': newMemos});
   }
 
-  void _duplicateItem(int index) {
-    var newItems = List<Map<String, dynamic>>.from(_items);
-    final copy = Map<String, dynamic>.from(newItems[index]);
+  void _duplicateItem(int calcIdx) {
+    final newItems = List<Map<String, dynamic>>.from(_items);
+    final copy = Map<String, dynamic>.from(newItems[calcIdx]);
     copy['name'] = '${copy['name'] ?? ''} (コピー)';
-    newItems.insert(index + 1, copy);
-    // index より後の行がひとつ後ろにずれる
-    newItems = _remapLinkIndices(newItems, (oldIdx) {
-      if (oldIdx > index) return oldIdx + 1;
-      return oldIdx;
-    });
-    final newMemos = _remapMemoIndices(_memos, (old) => old > index ? old + 1 : old);
-    widget.onUpdate({...widget.config.data, 'items': newItems, 'memos': newMemos});
+    final newCalcIdx = newItems.length;
+    newItems.add(copy); // 末尾に追加（既存 rowIdx 変わらず）
+    // displayOrder で元エントリの直後に複製を挿入
+    final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
+    int insertPos = order.length;
+    for (int i = 0; i < order.length; i++) {
+      if (order[i]['type'] == 'calc' && order[i]['calcIdx'] == calcIdx) {
+        insertPos = i + 1;
+      }
+    }
+    order.insert(insertPos, {'type': 'calc', 'calcIdx': newCalcIdx});
+    widget.onUpdate({...widget.config.data, 'items': newItems, 'displayOrder': order, 'memos': _memos});
   }
 
+  /// 表示順上の from 位置を to 位置へ移動する（displayOrder のみ更新）
   void _moveItem(int from, int to) {
-    if (to < 0 || to >= _items.length) return;
-    var newItems = List<Map<String, dynamic>>.from(_items);
-    final item = newItems.removeAt(from);
-    newItems.insert(to, item);
-    // 移動に伴うインデックス変化を全リンクに反映
-    newItems = _remapLinkIndices(newItems, (oldIdx) {
-      if (oldIdx == from) return to;
-      if (from < to) {
-        // from+1..to の行がひとつ前に詰まる
-        if (oldIdx > from && oldIdx <= to) return oldIdx - 1;
-      } else {
-        // to..from-1 の行がひとつ後ろにずれる
-        if (oldIdx >= to && oldIdx < from) return oldIdx + 1;
-      }
-      return oldIdx;
-    });
-    // メモインデックスも同様に移動
-    final newMemos = _remapMemoIndices(_memos, (old) {
-      if (old == from) return to;
-      if (from < to) {
-        if (old > from && old <= to) return old - 1;
-      } else {
-        if (old >= to && old < from) return old + 1;
-      }
-      return old;
-    });
-    widget.onUpdate({...widget.config.data, 'items': newItems, 'memos': newMemos});
+    final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
+    if (from < 0 || to < 0 || from >= order.length || to >= order.length) return;
+    final entry = order.removeAt(from);
+    order.insert(to, entry);
+    widget.onUpdate({...widget.config.data, 'displayOrder': order});
   }
 
   void _updateItem(int index, Map<String, dynamic> newItem) {
@@ -594,6 +655,168 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     }
   }
 
+  // ── 定数セクションWidget ──────────────────────────────────────────────────
+  Widget _buildConstantsSection(List<Map<String, dynamic>> constants, bool isDark) {
+    final fgColor = isDark ? Colors.white : const Color(0xFF1A1A2E);
+    final subColor = isDark ? Colors.white54 : Colors.black45;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.amberAccent.withOpacity(isDark ? 0.07 : 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amberAccent.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.push_pin_outlined, size: 14, color: Colors.amberAccent),
+              const SizedBox(width: 6),
+              Text('定数', style: TextStyle(color: Colors.amberAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              GestureDetector(
+                onTap: _addConstant,
+                child: const Icon(Icons.add_rounded, size: 18, color: Colors.amberAccent),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: constants.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final c = entry.value;
+              final name = c['name'] as String? ?? '';
+              final value = (c['value'] as num? ?? 0.0).toDouble();
+              final valStr = value == value.truncateToDouble() && value.abs() < 1e12
+                  ? value.toInt().toString()
+                  : value.toStringAsFixed(4).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+              return GestureDetector(
+                onTap: () => _editConstant(idx),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amberAccent.withOpacity(0.35)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(name, style: TextStyle(color: subColor, fontSize: 12)),
+                      const SizedBox(width: 6),
+                      Text('=', style: TextStyle(color: subColor, fontSize: 12)),
+                      const SizedBox(width: 4),
+                      Text(valStr, style: TextStyle(color: fgColor, fontSize: 13, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editConstant(int idx) async {
+    final consts = _constants;
+    if (idx < 0 || idx >= consts.length) return;
+    final c = consts[idx];
+    final nameCtrl = TextEditingController(text: c['name'] as String? ?? '');
+    final valCtrl = TextEditingController(text: (c['value'] as num? ?? 0.0).toString());
+    final result = await showModalBottomSheet<Map<String, dynamic>?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 24, right: 24, top: 24,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text('定数の設定', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white54),
+                  onPressed: () => Navigator.pop(ctx),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text('名前', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: nameCtrl,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(hintText: '例: 税率', hintStyle: TextStyle(color: Colors.white24)),
+            ),
+            const SizedBox(height: 16),
+            const Text('値', style: TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: valCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: const TextStyle(color: Colors.white, fontSize: 20),
+              decoration: const InputDecoration(hintText: '0.0', hintStyle: TextStyle(color: Colors.white24)),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, {'delete': true}),
+                  child: const Text('削除', style: TextStyle(color: Colors.redAccent)),
+                ),
+                const Spacer(),
+                SizedBox(
+                  width: 120,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () => Navigator.pop(ctx, {
+                      'name': nameCtrl.text,
+                      'value': valCtrl.text,
+                    }),
+                    child: const Text('保存', style: TextStyle(fontSize: 16)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    if (result == null) return;
+    if (result['delete'] == true) {
+      _deleteConstant(idx);
+    } else {
+      _updateConstant(idx, {
+        ...consts[idx],
+        'name': result['name'] as String,
+        'value': double.tryParse(result['value'] as String) ?? 0.0,
+      });
+    }
+  }
+
   void _showActionSheet() {
     final items = _items;
     final allNamesVisible =
@@ -610,6 +833,23 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(height: 14),
+            ListTile(
+              leading: const Icon(Icons.push_pin_outlined, color: Colors.amberAccent),
+              title: const Text('定数を追加', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _addConstant();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.sticky_note_2_outlined, color: Colors.tealAccent),
+              title: const Text('メモを追加', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _addStandaloneMemo();
+              },
+            ),
+            const Divider(color: Colors.white12, height: 1),
             ListTile(
               leading: Icon(
                 allNamesVisible
@@ -897,29 +1137,6 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         backgroundColor: Color(0xFF2A2A3A),
       ),
     );
-  }
-
-  void _applyToAllOther(int idx, String key) {
-    final curItems = _items;
-    if (curItems.isEmpty) return;
-    final firstOthers = curItems.first['others'] as List? ?? [];
-    if (firstOthers.length <= idx) return;
-    final valueToApply = (firstOthers[idx] as Map)[key];
-
-    final newItems = curItems.map((item) {
-      final newItem = Map<String, dynamic>.from(item);
-      final itemOthers = List<Map<String, dynamic>>.from(
-        newItem['others'] as List? ?? [],
-      );
-      if (itemOthers.length > idx) {
-        final newOther = Map<String, dynamic>.from(itemOthers[idx]);
-        newOther[key] = valueToApply;
-        itemOthers[idx] = newOther;
-      }
-      newItem['others'] = itemOthers;
-      return newItem;
-    }).toList();
-    widget.onUpdate({...widget.config.data, 'items': newItems});
   }
 
   double _evaluateTokens(List<dynamic> tokens) {
@@ -1913,6 +2130,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   Widget build(BuildContext context) {
     if (_viewMode) return _buildViewModeWidget();
     final items = _items;
+    final constants = _constants;
+    final standaloneItems = _standaloneItems;
+    final displayOrder = _effectiveDisplayOrder;
     final bgColorValue = widget.config.data['bgColor'] as int?;
     final bgColor = bgColorValue != null
         ? Color(bgColorValue)
@@ -2023,10 +2243,14 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                   ),
                 ),
               if (widget.showHeader ? _isExpanded : true) ...[
-                // const SizedBox(height: 20),
+                // 定数セクション
+                if (constants.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  _buildConstantsSection(constants, isDark),
+                ],
 
                 // 「計算式がありません」または行リスト
-                if (items.isEmpty)
+                if (items.isEmpty && displayOrder.every((e) => e['type'] == 'calc'))
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Center(
@@ -2089,6 +2313,14 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                         return finalResults.isNotEmpty
                             ? finalResults.last
                             : fallback;
+                      }
+                      // 定数リンク
+                      if (source['type'] == 'constant') {
+                        final constIdx = source['constIdx'] as int? ?? 0;
+                        if (constIdx >= 0 && constIdx < constants.length) {
+                          return (constants[constIdx]['value'] as num? ?? 0.0).toDouble();
+                        }
+                        return fallback;
                       }
                       final int sRowIdx = source['rowIdx'] as int? ?? 0;
                       final String sTarget =
@@ -2211,97 +2443,143 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                         children: (() {
                           final memos = _memos;
                           final listItems = <Widget>[];
-                          for (int i = 0; i < items.length; i++) {
-                            final item = items[i];
-                            final resolved = resolvedRows[i];
-                            final memoWidgets = <Widget>[];
-                            for (int mi = 0; mi < memos.length; mi++) {
-                              if ((memos[mi]['afterCalcIdx'] as int? ?? -1) == i) {
-                                final memoIdx = mi;
-                                memoWidgets.add(_MemoRowWidget(
-                                  key: ValueKey('memo_$memoIdx'),
-                                  text: memos[mi]['text'] as String? ?? '',
-                                  isDark: isDark,
-                                  onUpdate: (t) => _updateMemo(memoIdx, t),
-                                  onDelete: () => _deleteMemo(memoIdx),
-                                ));
+                          int displayIdx = 0;
+                          for (final entry in displayOrder) {
+                            final di = displayIdx++;
+                            if (entry['type'] == 'calc') {
+                              final ci = entry['calcIdx'] as int;
+                              if (ci < 0 || ci >= items.length || ci >= resolvedRows.length) continue;
+                              final item = items[ci];
+                              final resolved = resolvedRows[ci];
+                              final memoWidgets = <Widget>[];
+                              for (int mi = 0; mi < memos.length; mi++) {
+                                if ((memos[mi]['afterCalcIdx'] as int? ?? -1) == ci) {
+                                  final memoIdx = mi;
+                                  memoWidgets.add(_MemoRowWidget(
+                                    key: ValueKey('memo_${widget.config.id}_$memoIdx'),
+                                    text: memos[mi]['text'] as String? ?? '',
+                                    isDark: isDark,
+                                    onUpdate: (t) => _updateMemo(memoIdx, t),
+                                    onDelete: () => _deleteMemo(memoIdx),
+                                  ));
+                                }
                               }
-                            }
-                            listItems.add(Column(
-                              key: ValueKey('calc_${widget.config.id}_$i'),
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (i > 0)
-                                  Divider(
-                                    color: isDark
-                                        ? Colors.white.withOpacity(0.07)
-                                        : Colors.black.withOpacity(0.08),
-                                    height: 1,
-                                    indent: 16,
-                                    endIndent: 16,
-                                  ),
-                                _CalculatorRow(
-                                  name: item['name'] as String? ?? '',
-                                  myIndex: i,
-                                  isFirst: i == 0,
-                                  input: resolved['input'],
-                                  inputLink: item['inputLink'] as bool? ?? false,
-                                  inputLinkSource:
-                                      item['inputLinkSource'] as Map<String, dynamic>?,
-                                  inputTransform: item['inputTransform'] as String?,
-                                  inputPowExp: (item['inputPowExp'] as num? ?? 2.0)
-                                      .toDouble(),
-                                  op: item['op'] as String? ?? '+',
-                                  operand: resolved['operand'],
-                                  operandLink: item['operandLink'] as bool? ?? false,
-                                  operandLinkSource:
-                                      item['operandLinkSource'] as Map<String, dynamic>?,
-                                  operandTransform: item['operandTransform'] as String?,
-                                  operandPowExp: (item['operandPowExp'] as num? ?? 2.0)
-                                      .toDouble(),
-                                  others: resolved['others'],
-                                  result: resolved['result'],
-                                  precision: item['precision'] as int? ?? 2,
-                                  unit1: item['unit1'] as String? ?? '',
-                                  unit2: item['unit2'] as String? ?? '',
-                                  unitResult: item['unitResult'] as String? ?? '',
-                                  isDark: isDark,
-                                  brackets: item['brackets'] as List? ?? [],
-                                  allItems: items,
-                                  allResults: finalResults,
-                                  onChanged: (newItem) => _updateItem(i, newItem),
-                                  onDelete: () => _removeItem(i),
-                                  onCopy: () => _duplicateItem(i),
-                                  onMoveUp: i > 0 ? () => _moveItem(i, i - 1) : null,
-                                  onMoveDown: i < items.length - 1
-                                      ? () => _moveItem(i, i + 1)
-                                      : null,
-                                  onAdd: () => _addTerm(i),
-                                  onPickBrackets: () => _pickBracketsFor(i),
-                                  onAllItemsUpdate: (newItems) => widget.onUpdate(
-                                    {...widget.config.data, 'items': newItems},
-                                  ),
-                                  nameVisible: item['nameVisible'] as bool? ?? true,
-                                  onInsertBelow: () => _insertItemAfter(i),
-                                  onInsertMemoBelow: () =>
-                                      _insertMemoAfter(i, context),
-                                  onToggleName: () => _toggleNameVisible(i),
-                                  wrapFormula: _wrapFormula,
-                                  dragHandle: ReorderableDragStartListener(
-                                    index: i,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 4),
-                                      child: Icon(
-                                        Icons.drag_indicator,
-                                        color: isDark ? Colors.white24 : Colors.black26,
-                                        size: 18,
+                              listItems.add(Column(
+                                key: ValueKey('calc_${widget.config.id}_$ci'),
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (di > 0)
+                                    Divider(
+                                      color: isDark
+                                          ? Colors.white.withOpacity(0.07)
+                                          : Colors.black.withOpacity(0.08),
+                                      height: 1,
+                                      indent: 16,
+                                      endIndent: 16,
+                                    ),
+                                  _CalculatorRow(
+                                    name: item['name'] as String? ?? '',
+                                    myIndex: ci,
+                                    isFirst: di == 0,
+                                    input: resolved['input'],
+                                    inputLink: item['inputLink'] as bool? ?? false,
+                                    inputLinkSource:
+                                        item['inputLinkSource'] as Map<String, dynamic>?,
+                                    inputTransform: item['inputTransform'] as String?,
+                                    inputPowExp: (item['inputPowExp'] as num? ?? 2.0)
+                                        .toDouble(),
+                                    op: item['op'] as String? ?? '+',
+                                    operand: resolved['operand'],
+                                    operandLink: item['operandLink'] as bool? ?? false,
+                                    operandLinkSource:
+                                        item['operandLinkSource'] as Map<String, dynamic>?,
+                                    operandTransform: item['operandTransform'] as String?,
+                                    operandPowExp: (item['operandPowExp'] as num? ?? 2.0)
+                                        .toDouble(),
+                                    others: resolved['others'],
+                                    result: resolved['result'],
+                                    precision: item['precision'] as int? ?? 2,
+                                    unit1: item['unit1'] as String? ?? '',
+                                    unit2: item['unit2'] as String? ?? '',
+                                    unitResult: item['unitResult'] as String? ?? '',
+                                    isDark: isDark,
+                                    brackets: item['brackets'] as List? ?? [],
+                                    allItems: items,
+                                    allResults: finalResults,
+                                    constants: constants,
+                                    onChanged: (newItem) => _updateItem(ci, newItem),
+                                    onDelete: () => _removeItem(ci),
+                                    onCopy: () => _duplicateItem(ci),
+                                    onMoveUp: di > 0 ? () => _moveItem(di, di - 1) : null,
+                                    onMoveDown: di < displayOrder.length - 1
+                                        ? () => _moveItem(di, di + 1)
+                                        : null,
+                                    onAdd: () => _addTerm(ci),
+                                    onPickBrackets: () => _pickBracketsFor(ci),
+                                    onAllItemsUpdate: (newItems) => widget.onUpdate(
+                                      {...widget.config.data, 'items': newItems},
+                                    ),
+                                    nameVisible: item['nameVisible'] as bool? ?? true,
+                                    onInsertBelow: () => _insertItemAfter(ci),
+                                    onInsertMemoBelow: () =>
+                                        _insertMemoAfter(ci, context),
+                                    onToggleName: () => _toggleNameVisible(ci),
+                                    wrapFormula: _wrapFormula,
+                                    dragHandle: ReorderableDragStartListener(
+                                      index: di,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(right: 4),
+                                        child: Icon(
+                                          Icons.drag_indicator,
+                                          color: isDark ? Colors.white24 : Colors.black26,
+                                          size: 18,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                                ...memoWidgets,
-                              ],
-                            ));
+                                  ...memoWidgets,
+                                ],
+                              ));
+                            } else {
+                              // スタンドアロンメモ
+                              final itemId = entry['itemId'] as String? ?? '';
+                              final memo = standaloneItems.firstWhere(
+                                (e) => e['id'] == itemId,
+                                orElse: () => {'id': itemId, 'text': ''},
+                              );
+                              listItems.add(Column(
+                                key: ValueKey('standalone_${widget.config.id}_$itemId'),
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (di > 0)
+                                    Divider(
+                                      color: isDark
+                                          ? Colors.white.withOpacity(0.07)
+                                          : Colors.black.withOpacity(0.08),
+                                      height: 1,
+                                      indent: 16,
+                                      endIndent: 16,
+                                    ),
+                                  _StandaloneMemoRow(
+                                    text: memo['text'] as String? ?? '',
+                                    isDark: isDark,
+                                    onUpdate: (t) => _updateStandaloneMemo(itemId, t),
+                                    onDelete: () => _deleteStandaloneMemo(itemId),
+                                    dragHandle: ReorderableDragStartListener(
+                                      index: di,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(right: 4),
+                                        child: Icon(
+                                          Icons.drag_indicator,
+                                          color: isDark ? Colors.white24 : Colors.black26,
+                                          size: 18,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ));
+                            }
                           }
                           return listItems;
                         })(),
@@ -2311,12 +2589,6 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 const SizedBox(height: 12),
                 // 下部ツールバー（showToolbar=true のときのみ表示）
                 if (widget.showToolbar) ...[
-                  if (_isAiGenerating)
-                    const LinearProgressIndicator(
-                      color: Colors.purpleAccent,
-                      minHeight: 2,
-                      backgroundColor: Colors.transparent,
-                    ),
                   Divider(color: Colors.white.withOpacity(0.3), height: 1),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
@@ -2329,11 +2601,20 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                           ),
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        icon: Icon(
-                          Icons.auto_awesome_outlined,
-                          color: Colors.purpleAccent.withOpacity(0.7),
-                          size: 18,
-                        ),
+                        icon: _isAiGenerating
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.purpleAccent.withOpacity(0.7),
+                                ),
+                              )
+                            : Icon(
+                                Icons.auto_awesome_outlined,
+                                color: Colors.purpleAccent.withOpacity(0.7),
+                                size: 18,
+                              ),
                         label: Text(
                           'AI生成',
                           style: TextStyle(
@@ -2341,7 +2622,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                             fontSize: 12,
                           ),
                         ),
-                        onPressed: _showAiGenerateCalcDialog,
+                        onPressed: _isAiGenerating ? null : _showAiGenerateCalcDialog,
                       ),
                       const SizedBox(width: 4),
                       TextButton.icon(
@@ -2410,10 +2691,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   void _showAiGenerateCalcDialog() async {
     final ai = GemmaAi();
-    if (!ai.isInitialized) {
+    // ローカルモデルは初期化必須。OpenRouter は常に利用可能。
+    if (ai.currentModel == AiModel.local && !ai.isInitialized) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('AIが初期化されていません。'),
+          content: Text('ローカルAIが初期化されていません。'),
           backgroundColor: Color(0xFF2A2A3A),
         ),
       );
@@ -2445,6 +2727,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     );
 
     setState(() => _isAiGenerating = true);
+    widget.onAiGeneratingChanged?.call(true);
 
     final prompt =
         """
@@ -2562,6 +2845,7 @@ Return ONLY the JSON array. Do not include any explanations.
     } finally {
       if (mounted) {
         setState(() => _isAiGenerating = false);
+        widget.onAiGeneratingChanged?.call(false);
       }
     }
   }
@@ -2583,7 +2867,10 @@ Return ONLY the JSON array. Do not include any explanations.
       return;
     }
 
-    setState(() => _isAiCounting = true);
+    setState(() {
+      _isAiCounting = true;
+      _showCalc = false; // 電卓を最小化してカメラ選択画面を隠れなくする
+    });
 
     final count = await Navigator.push<int>(
       context,

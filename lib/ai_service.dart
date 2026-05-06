@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
@@ -10,7 +11,7 @@ class GemmaAi {
   bool _isInit = false;
   static const _channel = MethodChannel('com.newluncher/litert_lm');
   AiModel _currentModel = AiModel.openrouter;
-  static const String _openRouterKey = "";
+  static const String _openRouterKey = "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";
 
   Completer<void>? _queryLock;
 
@@ -98,7 +99,7 @@ class GemmaAi {
           responseType: ResponseType.json,
         ),
         data: jsonEncode({
-          'model': 'deepseek/deepseek-v3-0324',
+          'model': 'tencent/hy3-preview:free',
           'messages': [
             {'role': 'system', 'content': sp},
             {'role': 'user', 'content': prompt},
@@ -179,7 +180,7 @@ class GemmaAi {
           responseType: ResponseType.json,
         ),
         data: jsonEncode({
-          'model': 'meta-llama/llama-4-maverick',
+          'model': 'tencent/hy3-preview:free',
           'messages': [
             {
               'role': 'user',
@@ -212,5 +213,156 @@ class GemmaAi {
       if (kDebugMode) print('countInImage error: $e');
       return null;
     }
+  }
+}
+
+// ── Grounding DINO バウンディングボックス ──────────────────────────────────────
+class BoundingBox {
+  final double xmin, ymin, xmax, ymax;
+
+  const BoundingBox({
+    required this.xmin,
+    required this.ymin,
+    required this.xmax,
+    required this.ymax,
+  });
+
+  double get width => xmax - xmin;
+  double get height => ymax - ymin;
+  double get area => width * height;
+
+  /// IoU（Intersection over Union）計算
+  double iou(BoundingBox other) {
+    final xi1 = xmin > other.xmin ? xmin : other.xmin;
+    final yi1 = ymin > other.ymin ? ymin : other.ymin;
+    final xi2 = xmax < other.xmax ? xmax : other.xmax;
+    final yi2 = ymax < other.ymax ? ymax : other.ymax;
+    final interW = xi2 - xi1;
+    final interH = yi2 - yi1;
+    if (interW <= 0 || interH <= 0) return 0.0;
+    final inter = interW * interH;
+    return inter / (area + other.area - inter);
+  }
+}
+
+// ── Grounding DINO 検出結果 ───────────────────────────────────────────────────
+class GroundingDinoDetection {
+  final double score;
+  final String label;
+  final BoundingBox box;
+
+  const GroundingDinoDetection({
+    required this.score,
+    required this.label,
+    required this.box,
+  });
+}
+
+// ── Grounding DINO 1.5 Edge サービス ─────────────────────────────────────────
+// HuggingFace Inference API で IDEA-Research/grounding-dino-base を呼び出す。
+// 検出後に Dart 実装の NMS（OpenCV の NMSBoxes 相当）で重複除去してカウントする。
+class GroundingDinoService {
+  /// HuggingFace API トークン（hf_xxx...）。
+  /// アプリ起動時または設定画面で GroundingDinoService.hfToken = '...' で設定する。
+  static String hfToken = '';
+
+  /// 使用するモデル ID（Grounding DINO base / HuggingFace 公開版）。
+  /// Grounding DINO 1.5 Edge の HF 公開モデルが利用可能になった場合は差し替え可能。
+  static const String modelId = 'IDEA-Research/grounding-dino-base';
+
+  /// 検出スコアの閾値（0〜1）。
+  static const double defaultConfidence = 0.25;
+
+  /// NMS の IoU 閾値（これ以上重なるボックスを除去 = OpenCV NMSBoxes 相当）。
+  static const double _nmsIouThreshold = 0.45;
+
+  bool get hasToken => hfToken.isNotEmpty;
+
+  /// 画像から指定ラベルの物体を検出し、NMS 適用済みの検出リストを返す。
+  Future<List<GroundingDinoDetection>> detect(
+    Uint8List imageBytes,
+    String label, {
+    double confidence = defaultConfidence,
+  }) async {
+    if (hfToken.isEmpty) {
+      throw Exception(
+        'HuggingFace APIトークンが未設定です。GroundingDinoService.hfToken を設定してください。',
+      );
+    }
+
+    final dio = Dio();
+    final base64Image = base64Encode(imageBytes);
+
+    final response = await dio
+        .post(
+          'https://api-inference.huggingface.co/models/$modelId',
+          options: Options(
+            headers: {
+              'Authorization': 'Bearer $hfToken',
+              'Content-Type': 'application/json',
+            },
+            responseType: ResponseType.json,
+          ),
+          data: jsonEncode({
+            'inputs': base64Image,
+            'parameters': {
+              'candidate_labels': [label],
+              'threshold': confidence,
+            },
+          }),
+        )
+        .timeout(const Duration(seconds: 60));
+
+    if (response.data is! List) {
+      throw Exception(
+        'APIレスポンス形式が不正です: ${response.data.runtimeType}\n${response.data}',
+      );
+    }
+
+    final raw = response.data as List;
+    final detections =
+        raw
+            .map((d) {
+              final map = Map<String, dynamic>.from(d as Map);
+              final boxMap = Map<String, dynamic>.from(map['box'] as Map);
+              return GroundingDinoDetection(
+                score: (map['score'] as num).toDouble(),
+                label: map['label']?.toString() ?? label,
+                box: BoundingBox(
+                  xmin: (boxMap['xmin'] as num).toDouble(),
+                  ymin: (boxMap['ymin'] as num).toDouble(),
+                  xmax: (boxMap['xmax'] as num).toDouble(),
+                  ymax: (boxMap['ymax'] as num).toDouble(),
+                ),
+              );
+            })
+            .where((d) => d.score >= confidence)
+            .toList();
+
+    // NMS（OpenCV の cv2.NMSBoxes と同等）で重複検出を除去してカウントを正確にする
+    return _applyNms(detections, _nmsIouThreshold);
+  }
+
+  /// Non-Maximum Suppression:
+  /// スコア降順でソートし、IoU が閾値を超える低スコアのボックスを抑制する。
+  List<GroundingDinoDetection> _applyNms(
+    List<GroundingDinoDetection> detections,
+    double iouThreshold,
+  ) {
+    if (detections.isEmpty) return [];
+    final sorted = [...detections]..sort((a, b) => b.score.compareTo(a.score));
+    final suppressed = List.filled(sorted.length, false);
+    final result = <GroundingDinoDetection>[];
+    for (int i = 0; i < sorted.length; i++) {
+      if (suppressed[i]) continue;
+      result.add(sorted[i]);
+      for (int j = i + 1; j < sorted.length; j++) {
+        if (!suppressed[j] &&
+            sorted[i].box.iou(sorted[j].box) > iouThreshold) {
+          suppressed[j] = true;
+        }
+      }
+    }
+    return result;
   }
 }

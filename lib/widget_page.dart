@@ -3,7 +3,9 @@ library widget_page;
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:convert';
+import 'dart:ui' as ui;
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -218,6 +220,8 @@ class _CalcBottomSheet extends StatefulWidget {
   final VoidCallback onClose;
   final ScrollController? scrollController;
   final DraggableScrollableController? sheetController;
+  final String? initialDisplay;
+  final Future<void> Function()? onRequestAiCount;
 
   const _CalcBottomSheet({
     required this.existingItemCount,
@@ -226,6 +230,8 @@ class _CalcBottomSheet extends StatefulWidget {
     this.isDark = true,
     this.scrollController,
     this.sheetController,
+    this.initialDisplay,
+    this.onRequestAiCount,
   });
 
   @override
@@ -233,7 +239,7 @@ class _CalcBottomSheet extends StatefulWidget {
 }
 
 class _CalcBottomSheetState extends State<_CalcBottomSheet> {
-  String _display = '0';
+  late String _display;
   double? _calcA;
   String _calcOp = '';
   double _calcLastA = 0;
@@ -243,6 +249,13 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
   bool _hasResult = false;
   String _exprStr = '';
   bool _isClearState = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _display = widget.initialDisplay ?? '0';
+    if (widget.initialDisplay != null) _isClearState = false;
+  }
   bool _isAiCounting = false;
   List<double> _termValues = [];
   List<String> _termOps = [];
@@ -408,6 +421,13 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
   }
 
   void _showAiCountDialog() async {
+    // OverlayEntry として表示されている場合、Navigator.push はオーバーレイより下に
+    // 表示されてしまうため、親に委譲して先にオーバーレイを閉じてもらう
+    if (widget.onRequestAiCount != null) {
+      await widget.onRequestAiCount!();
+      // このウィジェットはオーバーレイ除去で dispose されるため、以降は何もしない
+      return;
+    }
     final ai = GemmaAi();
     setState(() => _isAiCounting = true);
     final count = await Navigator.push<int>(
@@ -720,6 +740,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
   final _scrollController = ScrollController();
   bool _calcSheetOpen = false;
   bool _isAiGenerating = false;
+  String? _pendingCalcDisplay; // AIカウント結果を電卓再オープン時に引き渡す
   OverlayEntry? _calcSheetOverlay;
 
   @override
@@ -739,6 +760,26 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
     _calcSheetOverlay?.remove();
     _calcSheetOverlay = null;
     if (mounted) setState(() => _calcSheetOpen = false);
+  }
+
+  /// カメラボタン押下時: オーバーレイを閉じてから AIカウント画面へ遷移し、
+  /// 結果を持って電卓を再オープンする。
+  Future<void> _handleCalcAiCountRequest() async {
+    _closeCalcSheet();
+    final ai = GemmaAi();
+    if (!mounted) return;
+    final count = await Navigator.push<int>(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (ctx) => _AiCountPage(onCount: ai.countInImage),
+      ),
+    );
+    if (!mounted) return;
+    if (count != null) {
+      _pendingCalcDisplay = count.toString();
+    }
+    _openCalcSheet();
   }
 
   void _openCalcSheet() {
@@ -765,12 +806,15 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
         existingItemCount: currentItems.length,
         isDark: isDark,
         bgColor: bgColorValue,
+        initialDisplay: _pendingCalcDisplay,
+        onRequestAiCount: _handleCalcAiCountRequest,
         onAddItem: (item) {
           state?._addItemFromMap(item);
         },
         onClose: _closeCalcSheet,
       ),
     );
+    _pendingCalcDisplay = null;
     Overlay.of(context).insert(_calcSheetOverlay!);
   }
 
@@ -781,9 +825,6 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
     _scrollController.dispose();
     super.dispose();
   }
-
-  Color _toolbarIconColor(bool isActive) =>
-      isActive ? Colors.blueAccent : Colors.white54;
 
   @override
   Widget build(BuildContext context) {
@@ -818,8 +859,6 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 6),
-              Icon(Icons.edit_outlined, size: 15, color: fgColor.withOpacity(0.38)),
             ],
           ),
         ),
@@ -870,6 +909,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   showToolbar: false,
                   showHeader: false,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  onAiGeneratingChanged: (v) => setState(() => _isAiGenerating = v),
                 ),
               ),
             ),
@@ -934,6 +974,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                     icon: Icons.auto_awesome_rounded,
                     label: 'AI生成',
                     color: const Color(0xFF9E7AFF),
+                    isLoading: _isAiGenerating,
                     onTap: () {
                       _calcKey.currentState?._showAiGenerateCalcDialog();
                     },
@@ -969,6 +1010,8 @@ class _CalcDraggableSheetContent extends StatefulWidget {
   final bool isDark;
   final int? bgColor;
   final VoidCallback onClose;
+  final String? initialDisplay;
+  final Future<void> Function()? onRequestAiCount;
 
   const _CalcDraggableSheetContent({
     required this.existingItemCount,
@@ -976,6 +1019,8 @@ class _CalcDraggableSheetContent extends StatefulWidget {
     required this.isDark,
     required this.onClose,
     this.bgColor,
+    this.initialDisplay,
+    this.onRequestAiCount,
   });
 
   @override
@@ -1031,6 +1076,8 @@ class _CalcDraggableSheetContentState
               isDark: widget.isDark,
               onAddItem: widget.onAddItem,
               onClose: widget.onClose,
+              initialDisplay: widget.initialDisplay,
+              onRequestAiCount: widget.onRequestAiCount,
             ),
           ),
         );
@@ -1095,30 +1142,41 @@ class _ToolbarButton extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
+  final bool isLoading;
 
   const _ToolbarButton({
     required this.icon,
     required this.label,
     required this.color,
     required this.onTap,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: isLoading ? null : onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 24),
+            isLoading
+                ? SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: color,
+                    ),
+                  )
+                : Icon(icon, color: color, size: 24),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: color.withOpacity(0.8),
+                color: color.withOpacity(isLoading ? 0.5 : 0.8),
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.2,

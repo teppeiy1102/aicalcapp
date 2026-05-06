@@ -36,6 +36,96 @@ class _PaperPainter extends CustomPainter {
   bool shouldRepaint(covariant _PaperPainter old) => old.isDark != isDark;
 }
 
+// ── スタンドアロンメモ行ウィジェット（並び替え可能） ──
+class _StandaloneMemoRow extends StatelessWidget {
+  final String text;
+  final bool isDark;
+  final void Function(String) onUpdate;
+  final VoidCallback onDelete;
+  final Widget? dragHandle;
+
+  const _StandaloneMemoRow({
+    required this.text,
+    required this.isDark,
+    required this.onUpdate,
+    required this.onDelete,
+    this.dragHandle,
+  });
+
+  void _showEditDialog(BuildContext context) {
+    showDialog<String?>(
+      context: context,
+      builder: (ctx) => _MemoEditDialog(initialText: text),
+    ).then((result) {
+      if (result == null) return;
+      onUpdate(result);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final empty = text.trim().isEmpty;
+    return GestureDetector(
+      onTap: () => _showEditDialog(context),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.tealAccent.withOpacity(0.06)
+              : Colors.teal.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isDark
+                ? Colors.tealAccent.withOpacity(0.22)
+                : Colors.teal.withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (dragHandle != null) ...[
+              dragHandle!,
+              const SizedBox(width: 4),
+            ],
+            Padding(
+              padding: const EdgeInsets.only(top: 1),
+              child: Icon(
+                Icons.notes_rounded,
+                size: 14,
+                color: Colors.tealAccent.withOpacity(0.8),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                empty ? 'メモ（タップして編集）' : text,
+                style: TextStyle(
+                  color: empty
+                      ? (isDark ? Colors.white24 : Colors.black26)
+                      : (isDark ? Colors.white70 : Colors.black.withOpacity(0.7)),
+                  fontSize: 13,
+                  fontStyle: empty ? FontStyle.italic : FontStyle.normal,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            GestureDetector(
+              onTap: onDelete,
+              child: Icon(
+                Icons.close_rounded,
+                size: 14,
+                color: Colors.redAccent.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ── メモ行ウィジェット ──
 class _MemoRowWidget extends StatelessWidget {
   final String text;
@@ -133,15 +223,37 @@ class _AiCountPage extends StatefulWidget {
 
 class _AiCountPageState extends State<_AiCountPage> {
   Uint8List? _imageBytes;
-  bool _isCounting = false;
+  bool _isCounting = false;       // LLM カウント中
+  bool _isDinoRunning = false;    // Grounding DINO 実行中
   int? _lastCount;
-  final _instructionCtrl = TextEditingController();
+  List<GroundingDinoDetection> _detections = [];
+  Size _originalImageSize = Size.zero;
+  final _labelCtrl = TextEditingController();
   final _picker = ImagePicker();
 
   @override
   void dispose() {
-    _instructionCtrl.dispose();
+    _labelCtrl.dispose();
     super.dispose();
+  }
+
+  // 画像サイズを dart:ui でデコードして取得
+  Future<void> _decodeImageSize(Uint8List bytes) async {
+    try {
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      final img = frame.image;
+      if (mounted) {
+        setState(
+          () => _originalImageSize = Size(
+            img.width.toDouble(),
+            img.height.toDouble(),
+          ),
+        );
+      }
+      img.dispose();
+      codec.dispose();
+    } catch (_) {}
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -178,7 +290,10 @@ class _AiCountPageState extends State<_AiCountPage> {
       setState(() {
         _imageBytes = bytes;
         _lastCount = null;
+        _detections = [];
+        _originalImageSize = Size.zero;
       });
+      await _decodeImageSize(bytes);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -188,8 +303,74 @@ class _AiCountPageState extends State<_AiCountPage> {
     }
   }
 
-  Future<void> _runCount() async {
-    final instruction = _instructionCtrl.text.trim();
+  // ── Grounding DINO でカウント（主要メソッド）──
+  Future<void> _runGroundingDino() async {
+    final label = _labelCtrl.text.trim();
+    if (label.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('検出する物体名を入力してください（例: 人、ボルト）')),
+      );
+      return;
+    }
+    if (_imageBytes == null) return;
+
+    setState(() {
+      _isDinoRunning = true;
+      _detections = [];
+      _lastCount = null;
+    });
+
+    try {
+      final service = GroundingDinoService();
+      if (!service.hasToken) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'HuggingFace APIトークン未設定。\nGroundingDinoService.hfToken を設定してください。',
+            ),
+            backgroundColor: Colors.deepOrange,
+            duration: Duration(seconds: 5),
+          ),
+        );
+        return;
+      }
+      final detections = await service.detect(_imageBytes!, label);
+      if (!mounted) return;
+      setState(() {
+        _detections = detections;
+        _lastCount = detections.length;
+      });
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final status = e.response?.statusCode;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            status == 503
+                ? 'モデルが起動中です。しばらく待ってから再試行してください。'
+                : 'DINO APIエラー ($status): ${e.message}',
+          ),
+          backgroundColor: Colors.deepOrange,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Grounding DINOエラー: $e'),
+            backgroundColor: Colors.deepOrange,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isDinoRunning = false);
+    }
+  }
+
+  // ── LLM フォールバックでカウント ──
+  Future<void> _runLlmCount() async {
+    final instruction = _labelCtrl.text.trim();
     if (instruction.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('何を数えるか入力してください。')),
@@ -198,7 +379,11 @@ class _AiCountPageState extends State<_AiCountPage> {
     }
     if (_imageBytes == null) return;
 
-    setState(() => _isCounting = true);
+    setState(() {
+      _isCounting = true;
+      _detections = [];
+      _lastCount = null;
+    });
     try {
       final count = await widget.onCount(_imageBytes!, instruction);
       if (!mounted) return;
@@ -229,42 +414,48 @@ class _AiCountPageState extends State<_AiCountPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading:
-                  const Icon(Icons.camera_alt, color: Colors.tealAccent),
-              title: const Text(
-                'カメラで撮影',
-                style: TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickImage(ImageSource.camera);
-              },
+      builder:
+          (ctx) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(
+                    Icons.camera_alt,
+                    color: Colors.tealAccent,
+                  ),
+                  title: const Text(
+                    'カメラで撮影',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.photo_library,
+                    color: Colors.tealAccent,
+                  ),
+                  title: const Text(
+                    'ギャラリーから選択',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage(ImageSource.gallery);
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              leading:
-                  const Icon(Icons.photo_library, color: Colors.tealAccent),
-              title: const Text(
-                'ギャラリーから選択',
-                style: TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isBusy = _isCounting || _isDinoRunning;
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -273,12 +464,9 @@ class _AiCountPageState extends State<_AiCountPage> {
         titleSpacing: 0,
         title: const Row(
           children: [
-            Icon(Icons.camera_alt_outlined, color: Colors.tealAccent, size: 18),
+            Icon(Icons.grid_view_rounded, color: Colors.tealAccent, size: 18),
             SizedBox(width: 8),
-            Text(
-              'AIカウント',
-              style: TextStyle(color: Colors.white, fontSize: 16),
-            ),
+            Text('AIカウント', style: TextStyle(color: Colors.white, fontSize: 16)),
           ],
         ),
         actions: [
@@ -302,14 +490,11 @@ class _AiCountPageState extends State<_AiCountPage> {
       ),
       body: Column(
         children: [
-          // 画像エリア
           Expanded(
-            child: _imageBytes == null
-                ? _buildPickerArea()
-                : _buildImageArea(),
+            child:
+                _imageBytes == null ? _buildPickerArea() : _buildImageArea(),
           ),
-          // 指示入力バー（画像選択後に表示）
-          if (_imageBytes != null) _buildInstructionBar(),
+          if (_imageBytes != null) _buildInstructionBar(isBusy),
         ],
       ),
     );
@@ -320,11 +505,7 @@ class _AiCountPageState extends State<_AiCountPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.image_search,
-            color: Colors.white24,
-            size: 72,
-          ),
+          const Icon(Icons.image_search, color: Colors.white24, size: 72),
           const SizedBox(height: 20),
           const Text(
             '画像を選択してください',
@@ -364,20 +545,14 @@ class _AiCountPageState extends State<_AiCountPage> {
         decoration: BoxDecoration(
           color: Colors.teal.withOpacity(0.15),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.tealAccent.withOpacity(0.4),
-            width: 1,
-          ),
+          border: Border.all(color: Colors.tealAccent.withOpacity(0.4)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: Colors.tealAccent, size: 32),
             const SizedBox(height: 8),
-            Text(
-              label,
-              style: const TextStyle(color: Colors.tealAccent, fontSize: 13),
-            ),
+            Text(label, style: const TextStyle(color: Colors.tealAccent, fontSize: 13)),
           ],
         ),
       ),
@@ -385,11 +560,21 @@ class _AiCountPageState extends State<_AiCountPage> {
   }
 
   Widget _buildImageArea() {
+    final isBusy = _isCounting || _isDinoRunning;
     return Stack(
       fit: StackFit.expand,
       children: [
         // 画像表示
         Image.memory(_imageBytes!, fit: BoxFit.contain),
+
+        // Grounding DINO バウンディングボックスオーバーレイ
+        if (_detections.isNotEmpty && _originalImageSize != Size.zero)
+          CustomPaint(
+            painter: _BoxesPainter(
+              detections: _detections,
+              originalImageSize: _originalImageSize,
+            ),
+          ),
 
         // カウント結果バッジ
         if (_lastCount != null)
@@ -399,10 +584,7 @@ class _AiCountPageState extends State<_AiCountPage> {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
                   color: Colors.teal.withOpacity(0.88),
                   borderRadius: BorderRadius.circular(40),
@@ -414,7 +596,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                   ],
                 ),
                 child: Text(
-                  '${_lastCount}',
+                  '$_lastCount',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 48,
@@ -426,19 +608,19 @@ class _AiCountPageState extends State<_AiCountPage> {
             ),
           ),
 
-        // カウント中オーバーレイ
-        if (_isCounting)
+        // 処理中オーバーレイ
+        if (isBusy)
           Container(
             color: Colors.black54,
-            child: const Center(
+            child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(color: Colors.tealAccent),
-                  SizedBox(height: 16),
+                  const CircularProgressIndicator(color: Colors.tealAccent),
+                  const SizedBox(height: 16),
                   Text(
-                    'AIが解析中...',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                    _isDinoRunning ? 'Grounding DINOで検出中...' : 'AIが解析中...',
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ),
@@ -450,7 +632,7 @@ class _AiCountPageState extends State<_AiCountPage> {
           top: 8,
           right: 8,
           child: GestureDetector(
-            onTap: _isCounting ? null : _showSourcePicker,
+            onTap: isBusy ? null : _showSourcePicker,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
@@ -475,63 +657,120 @@ class _AiCountPageState extends State<_AiCountPage> {
     );
   }
 
-  Widget _buildInstructionBar() {
+  Widget _buildInstructionBar(bool isBusy) {
     return Container(
       color: const Color(0xFF0D0D1A),
       padding: const EdgeInsets.fromLTRB(12, 10, 8, 12),
       child: SafeArea(
         top: false,
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: TextField(
-                controller: _instructionCtrl,
-                style: const TextStyle(color: Colors.white),
-                textInputAction: TextInputAction.send,
-                onSubmitted: _isCounting ? null : (_) => _runCount(),
-                decoration: InputDecoration(
-                  hintText: '何を数えますか？（例: 人の数）',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.07),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
+            // モデル情報
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.white24, size: 12),
+                  const SizedBox(width: 4),
+                  Text(
+                    '物体検出: ${GroundingDinoService.modelId} + NMS',
+                    style: const TextStyle(color: Colors.white24, fontSize: 10),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                ),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: _isCounting ? null : _runCount,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: _isCounting
-                      ? Colors.teal.withOpacity(0.3)
-                      : Colors.teal,
-                  shape: BoxShape.circle,
-                ),
-                child: _isCounting
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(
-                        Icons.search,
-                        color: Colors.white,
-                        size: 22,
+            Row(
+              children: [
+                // ラベル入力
+                Expanded(
+                  child: TextField(
+                    controller: _labelCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: isBusy ? null : (_) => _runGroundingDino(),
+                    decoration: InputDecoration(
+                      hintText: '検出する物体（例：人、ボルト）',
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      filled: true,
+                      fillColor: Colors.white.withOpacity(0.07),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
                       ),
-              ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Grounding DINO ボタン（主）
+                GestureDetector(
+                  onTap: isBusy ? null : _runGroundingDino,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color:
+                          isBusy
+                              ? Colors.teal.withOpacity(0.3)
+                              : Colors.teal,
+                      shape: BoxShape.circle,
+                    ),
+                    child:
+                        _isDinoRunning
+                            ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : const Icon(
+                              Icons.grid_view_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                // AI LLM フォールバックボタン（副）
+                GestureDetector(
+                  onTap: isBusy ? null : _runLlmCount,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color:
+                          isBusy
+                              ? Colors.white.withOpacity(0.05)
+                              : Colors.white.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                      ),
+                    ),
+                    child:
+                        _isCounting
+                            ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white54,
+                              ),
+                            )
+                            : const Icon(
+                              Icons.auto_awesome_outlined,
+                              color: Colors.white54,
+                              size: 18,
+                            ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -540,10 +779,95 @@ class _AiCountPageState extends State<_AiCountPage> {
   }
 }
 
+// ── Grounding DINO バウンディングボックス描画 ─────────────────────────────────
+class _BoxesPainter extends CustomPainter {
+  final List<GroundingDinoDetection> detections;
+  final Size originalImageSize;
+
+  const _BoxesPainter({
+    required this.detections,
+    required this.originalImageSize,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (detections.isEmpty || originalImageSize == Size.zero) return;
+
+    // BoxFit.contain での実際の表示領域を計算（レターボックス考慮）
+    final imgAspect = originalImageSize.width / originalImageSize.height;
+    final canvasAspect = size.width / size.height;
+    double displayW, displayH, offsetX = 0, offsetY = 0;
+    if (imgAspect > canvasAspect) {
+      displayW = size.width;
+      displayH = size.width / imgAspect;
+      offsetY = (size.height - displayH) / 2;
+    } else {
+      displayH = size.height;
+      displayW = size.height * imgAspect;
+      offsetX = (size.width - displayW) / 2;
+    }
+
+    final scaleX = displayW / originalImageSize.width;
+    final scaleY = displayH / originalImageSize.height;
+
+    final boxPaint =
+        Paint()
+          ..color = Colors.tealAccent
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5;
+
+    final bgPaint = Paint()..color = Colors.teal.withOpacity(0.80);
+
+    for (final det in detections) {
+      final rect = Rect.fromLTRB(
+        offsetX + det.box.xmin * scaleX,
+        offsetY + det.box.ymin * scaleY,
+        offsetX + det.box.xmax * scaleX,
+        offsetY + det.box.ymax * scaleY,
+      );
+      canvas.drawRect(rect, boxPaint);
+
+      // スコアラベル
+      final scoreText = '${(det.score * 100).toStringAsFixed(0)}%';
+      final tp = TextPainter(
+        text: TextSpan(
+          text: scoreText,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      final labelRect = Rect.fromLTWH(
+        rect.left,
+        rect.top - tp.height - 4,
+        tp.width + 6,
+        tp.height + 4,
+      );
+      canvas.drawRect(labelRect, bgPaint);
+      tp.paint(canvas, Offset(rect.left + 3, rect.top - tp.height - 2));
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _BoxesPainter old) =>
+      old.detections != detections ||
+      old.originalImageSize != originalImageSize;
+}
+
 // ── メモ編集ダイアログ（電卓付き） ──
 class _MemoEditDialog extends StatefulWidget {
   final String initialText;
-  const _MemoEditDialog({required this.initialText});
+  final String title;
+  final String saveLabel;
+  const _MemoEditDialog({
+    required this.initialText,
+    this.title = 'メモを編集',
+    this.saveLabel = '保存',
+  });
 
   @override
   State<_MemoEditDialog> createState() => _MemoEditDialogState();
@@ -887,10 +1211,10 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
-                children: const [
-                  Icon(Icons.sticky_note_2_outlined, color: Colors.amber, size: 18),
-                  SizedBox(width: 8),
-                  Text('メモを編集', style: TextStyle(color: Colors.white, fontSize: 16)),
+                children: [
+                  const Icon(Icons.sticky_note_2_outlined, color: Colors.amber, size: 18),
+                  const SizedBox(width: 8),
+                  Text(widget.title, style: const TextStyle(color: Colors.white, fontSize: 16)),
                 ],
               ),
             ),
@@ -955,7 +1279,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                       backgroundColor: Colors.amber,
                       foregroundColor: Colors.black,
                     ),
-                    child: const Text('保存'),
+                    child: Text(widget.saveLabel),
                   ),
                 ],
               ),

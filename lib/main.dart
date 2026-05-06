@@ -2,10 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'ai_service.dart';
 import 'widget_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  GroundingDinoService.hfToken = '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';
   runApp(const MyApp());
 }
 
@@ -393,6 +395,26 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
+          Positioned(
+            bottom: 0,
+            right: 0,
+            left: 0,
+
+            child:Container(
+            height: 80,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  Colors.black,
+                  Colors.black,
+                  Colors.transparent
+                ],
+              ),
+            ),
+          )),
+
         ],
       ),
       floatingActionButton: _HomeFab(
@@ -464,7 +486,7 @@ class _WidgetCardState extends State<_WidgetCard> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
-        color: cardBgColor.withAlpha(200),
+        color: cardBgColor.withAlpha(240),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),

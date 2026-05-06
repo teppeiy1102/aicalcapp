@@ -25,6 +25,7 @@ class _CalculatorRow extends StatelessWidget {
   final bool isDark;
   final List<dynamic> allItems;
   final List<double> allResults;
+  final List<Map<String, dynamic>> constants;
   final Function(Map<String, dynamic>) onChanged;
   final VoidCallback onDelete;
   final VoidCallback onCopy;
@@ -65,6 +66,7 @@ class _CalculatorRow extends StatelessWidget {
     this.isDark = false,
     required this.allItems,
     required this.allResults,
+    this.constants = const [],
     required this.onChanged,
     required this.onDelete,
     required this.onCopy,
@@ -81,19 +83,6 @@ class _CalculatorRow extends StatelessWidget {
     this.wrapFormula = false,
   });
 
-  static const Map<String, double> commonConstants = {
-    'π (円周率)': math.pi,
-    'e (ネイピア数)': math.e,
-    'φ (黄金比)': 1.618033988749895,
-    'c (光速)': 299792458,
-    'G (万有引力定数)': 6.67430e-11,
-    'g (重力加速度)': 9.80665,
-    'h (プランク定数)': 6.62607015e-34,
-    'Na (アボガドロ定数)': 6.02214076e23,
-    'R (気体定数)': 8.314462618,
-    'k (ボルツマン定数)': 1.380649e-23,
-  };
-
   void _showMiniCalcSheet(
     BuildContext context,
     void Function(double) onSelected,
@@ -106,94 +95,6 @@ class _CalculatorRow extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => _MiniCalcSheet(onResult: onSelected),
-    );
-  }
-
-  void _showConstantPicker(
-    BuildContext context,
-    void Function(double) onSelected,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1A1A2E),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '定数を選択',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Flexible(
-              child: SingleChildScrollView(
-                child: Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: commonConstants.entries
-                      .map(
-                        (e) => InkWell(
-                          onTap: () {
-                            onSelected(e.value);
-                            Navigator.pop(ctx);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.white12),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  e.key,
-                                  style: const TextStyle(
-                                    color: Colors.blueAccent,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  e.value.toString().contains('e')
-                                      ? e.value
-                                            .toStringAsExponential(3)
-                                            .replaceFirst('e', ' × 10^')
-                                      : (e.value.toString().length > 10
-                                            ? e.value.toStringAsFixed(4)
-                                            : e.value.toString()),
-                                  style: const TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
     );
   }
 
@@ -384,6 +285,49 @@ class _CalculatorRow extends StatelessWidget {
     );
     list.removeAt(idx);
     _updateWith(newOthers: list);
+  }
+
+  /// 項1を削除：項2が新しい項1に、others[0]が新しい項2に昇格する
+  void _removeInput() {
+    if (others.isEmpty) return;
+    final firstOther = Map<String, dynamic>.from(others.first as Map);
+    final newOthers = List<dynamic>.from(others.skip(1));
+    final map = _toMap();
+    // 項2 → 新しい項1
+    map['input'] = operand;
+    map['inputLink'] = operandLink;
+    map['inputLinkSource'] = operandLinkSource;
+    map['inputTransform'] = operandTransform;
+    map['inputPowExp'] = operandPowExp;
+    map['unit1'] = unit2;
+    // others[0] → 新しい項2
+    map['op'] = firstOther['op'] ?? '+';
+    map['operand'] = (firstOther['val'] as num? ?? 0.0).toDouble();
+    map['operandLink'] = firstOther['valLink'] ?? false;
+    map['operandLinkSource'] = firstOther['valLinkSource'];
+    map['operandTransform'] = firstOther['transform'];
+    map['operandPowExp'] = (firstOther['powExp'] as num? ?? 2.0).toDouble();
+    map['unit2'] = firstOther['unit'] ?? '';
+    map['others'] = newOthers;
+    onChanged(map);
+  }
+
+  /// 項2を削除：others[0]が新しい項2に昇格する
+  void _removeOperand() {
+    if (others.isEmpty) return;
+    final firstOther = Map<String, dynamic>.from(others.first as Map);
+    final newOthers = List<dynamic>.from(others.skip(1));
+    final map = _toMap();
+    // others[0] → 新しい項2
+    map['op'] = firstOther['op'] ?? '+';
+    map['operand'] = (firstOther['val'] as num? ?? 0.0).toDouble();
+    map['operandLink'] = firstOther['valLink'] ?? false;
+    map['operandLinkSource'] = firstOther['valLinkSource'];
+    map['operandTransform'] = firstOther['transform'];
+    map['operandPowExp'] = (firstOther['powExp'] as num? ?? 2.0).toDouble();
+    map['unit2'] = firstOther['unit'] ?? '';
+    map['others'] = newOthers;
+    onChanged(map);
   }
 
   void _editDetails(BuildContext context) async {
@@ -709,6 +653,11 @@ class _CalculatorRow extends StatelessWidget {
 
   String _getSourceLabel(Map<String, dynamic>? source) {
     if (source == null) return '直前の残高（答え）';
+    if (source['type'] == 'constant') {
+      final ci = source['constIdx'] as int? ?? 0;
+      final name = ci < constants.length ? constants[ci]['name'] as String? ?? '定数' : '定数';
+      return '$name（定数）';
+    }
     final rowIdx = source['rowIdx'] as int? ?? 0;
     final target = source['target'] as String? ?? 'result';
 
@@ -733,6 +682,10 @@ class _CalculatorRow extends StatelessWidget {
 
   /// リンク元の計算行名のみを返す（値ボックス上部ラベル用）
   String _getSourceRowName(Map<String, dynamic>? source) {
+    if (source != null && source['type'] == 'constant') {
+      final ci = source['constIdx'] as int? ?? 0;
+      return ci < constants.length ? constants[ci]['name'] as String? ?? '定数' : '定数';
+    }
     if (source == null) {
       if (allItems.isEmpty) return '';
       return (allItems.last as Map)['name'] as String? ??
@@ -1689,6 +1642,7 @@ class _CalculatorRow extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 16),
+                // _editInputLinkSection
                 CheckboxListTile(
                   title: const Text(
                     '数値を他の全ての行に適用',
@@ -1751,6 +1705,45 @@ class _CalculatorRow extends StatelessWidget {
                       ),
                     ),
                   ),
+                if (constants.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    '定数からリンク',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                  const SizedBox(height: 6),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: constants.asMap().entries.map((e) {
+                        final ci = e.key;
+                        final c = e.value;
+                        final name = c['name'] as String? ?? '';
+                        final val = (c['value'] as num? ?? 0.0);
+                        final isSelected = tempLink &&
+                            tempLinkSource != null &&
+                            tempLinkSource!['type'] == 'constant' &&
+                            tempLinkSource!['constIdx'] == ci;
+                        return GestureDetector(
+                          onTap: () => setSheetState(() {
+                            tempLink = true;
+                            tempLinkSource = {'type': 'constant', 'constIdx': ci};
+                          }),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isSelected ? Colors.amberAccent.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: isSelected ? Colors.amberAccent : Colors.white24),
+                            ),
+                            child: Text('$name = $val', style: TextStyle(color: isSelected ? Colors.amberAccent : Colors.white70, fontSize: 12)),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
                 const Divider(color: Colors.white12),
                 const SizedBox(height: 4),
                 const Text(
@@ -1911,28 +1904,42 @@ class _CalculatorRow extends StatelessWidget {
                 const SizedBox(height: 8),
 
                 const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                Row(
+                  children: [
+                    if (others.isNotEmpty)
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, {'delete': true}),
+                        child: const Text(
+                          '項を削除',
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    const Spacer(),
+                    SizedBox(
+                      width: 140,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: () => Navigator.pop(ctx, {
+                          'val': ctrl.text,
+                          'unit': unitCtrl.text,
+                          'link': tempLink,
+                          'source': tempLinkSource,
+                          'transform': tempTransform,
+                          'powExp': tempPowExp,
+                          'applyToAll': tempApplyToAll,
+                          'delete': false,
+                        }),
+                        child: const Text('保存', style: TextStyle(fontSize: 16)),
+                      ),
                     ),
-                    onPressed: () => Navigator.pop(ctx, {
-                      'val': ctrl.text,
-                      'unit': unitCtrl.text,
-                      'link': tempLink,
-                      'source': tempLinkSource,
-                      'transform': tempTransform,
-                      'powExp': tempPowExp,
-                      'applyToAll': tempApplyToAll,
-                    }),
-                    child: const Text('保存', style: TextStyle(fontSize: 16)),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -1942,6 +1949,10 @@ class _CalculatorRow extends StatelessWidget {
     );
 
     if (result != null) {
+      if (result['delete'] == true) {
+        _removeInput();
+        return;
+      }
       final val = double.tryParse(result['val'] as String) ?? 0.0;
       bool skipLinked = false;
       if (result['applyToAll'] == true && _hasLinkedRowsForKey('input')) {
@@ -2089,6 +2100,7 @@ class _CalculatorRow extends StatelessWidget {
                   suggestedUnits: suggestedUnits,
                 ),
                 const SizedBox(height: 16),
+                // _editOperandLinkSection
                 CheckboxListTile(
                   title: const Text(
                     '数値を他の全ての行に適用',
@@ -2151,6 +2163,45 @@ class _CalculatorRow extends StatelessWidget {
                       ),
                     ),
                   ),
+                if (constants.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    '定数からリンク',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                  const SizedBox(height: 6),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: constants.asMap().entries.map((e) {
+                        final ci = e.key;
+                        final c = e.value;
+                        final name = c['name'] as String? ?? '';
+                        final val = (c['value'] as num? ?? 0.0);
+                        final isSelected = tempLink &&
+                            tempLinkSource != null &&
+                            tempLinkSource!['type'] == 'constant' &&
+                            tempLinkSource!['constIdx'] == ci;
+                        return GestureDetector(
+                          onTap: () => setSheetState(() {
+                            tempLink = true;
+                            tempLinkSource = {'type': 'constant', 'constIdx': ci};
+                          }),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isSelected ? Colors.amberAccent.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: isSelected ? Colors.amberAccent : Colors.white24),
+                            ),
+                            child: Text('$name = $val', style: TextStyle(color: isSelected ? Colors.amberAccent : Colors.white70, fontSize: 12)),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
                 const Divider(color: Colors.white12),
                 const SizedBox(height: 4),
                 const Text(
@@ -2310,28 +2361,42 @@ class _CalculatorRow extends StatelessWidget {
                 ],
 
                 const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                Row(
+                  children: [
+                    if (others.isNotEmpty)
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, {'delete': true}),
+                        child: const Text(
+                          '項を削除',
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    const Spacer(),
+                    SizedBox(
+                      width: 140,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: () => Navigator.pop(ctx, {
+                          'val': ctrl.text,
+                          'unit': unitCtrl.text,
+                          'link': tempLink,
+                          'source': tempLinkSource,
+                          'transform': tempTransform,
+                          'powExp': tempPowExp,
+                          'applyToAll': tempApplyToAll,
+                          'delete': false,
+                        }),
+                        child: const Text('保存', style: TextStyle(fontSize: 16)),
+                      ),
                     ),
-                    onPressed: () => Navigator.pop(ctx, {
-                      'val': ctrl.text,
-                      'unit': unitCtrl.text,
-                      'link': tempLink,
-                      'source': tempLinkSource,
-                      'transform': tempTransform,
-                      'powExp': tempPowExp,
-                      'applyToAll': tempApplyToAll,
-                    }),
-                    child: const Text('保存', style: TextStyle(fontSize: 16)),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -2341,6 +2406,10 @@ class _CalculatorRow extends StatelessWidget {
     );
 
     if (result != null) {
+      if (result['delete'] == true) {
+        _removeOperand();
+        return;
+      }
       final val = double.tryParse(result['val'] as String) ?? 0.0;
       bool skipLinked = false;
       if (result['applyToAll'] == true && _hasLinkedRowsForKey('operand')) {
@@ -2539,6 +2608,7 @@ class _CalculatorRow extends StatelessWidget {
                   suggestedUnits: suggestedUnits,
                 ),
                 const SizedBox(height: 8),
+                // _editOtherValLinkSection
                 CheckboxListTile(
                   title: const Text(
                     '数値を他の全ての行に適用',
@@ -2601,6 +2671,45 @@ class _CalculatorRow extends StatelessWidget {
                       ),
                     ),
                   ),
+                if (constants.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    '定数からリンク',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  ),
+                  const SizedBox(height: 6),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: constants.asMap().entries.map((e) {
+                        final ci = e.key;
+                        final c = e.value;
+                        final name = c['name'] as String? ?? '';
+                        final val = (c['value'] as num? ?? 0.0);
+                        final isSelected = tempLink &&
+                            tempLinkSource != null &&
+                            tempLinkSource!['type'] == 'constant' &&
+                            tempLinkSource!['constIdx'] == ci;
+                        return GestureDetector(
+                          onTap: () => setSheetState(() {
+                            tempLink = true;
+                            tempLinkSource = {'type': 'constant', 'constIdx': ci};
+                          }),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isSelected ? Colors.amberAccent.withOpacity(0.2) : Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: isSelected ? Colors.amberAccent : Colors.white24),
+                            ),
+                            child: Text('$name = $val', style: TextStyle(color: isSelected ? Colors.amberAccent : Colors.white70, fontSize: 12)),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
                 const Divider(color: Colors.white12),
                 const SizedBox(height: 4),
                 const Text(
@@ -2966,6 +3075,7 @@ class _CalculatorRow extends StatelessWidget {
           ? (allItems.last as Map)['precision'] as int? ?? 2
           : 2;
     }
+    if (linkSource['type'] == 'constant') return 2;
     final srcIdx = linkSource['rowIdx'] as int? ?? 0;
     if (srcIdx < 0 || srcIdx >= allItems.length) return 2;
     return (allItems[srcIdx] as Map)['precision'] as int? ?? 2;
@@ -3304,6 +3414,7 @@ class _CalculatorRow extends StatelessWidget {
                 // 演算子
                 GestureDetector(
                   onTapDown: (details) => _pickOp(context, details.globalPosition),
+                  onLongPress: others.isNotEmpty ? () => _removeOperand() : null,
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
@@ -3453,6 +3564,7 @@ if (dragHandle != null && !nameVisible) ...[
                   // 演算子
                   GestureDetector(
                     onTapDown: (details) => _pickOp(context, details.globalPosition),
+                    onLongPress: others.isNotEmpty ? () => _removeOperand() : null,
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
