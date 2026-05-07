@@ -41,6 +41,11 @@ class _NoteColorPreset {
 }
 
 const List<_NoteColorPreset> _kNoteColorPresets = [
+  _NoteColorPreset(0xFFF5F5F5, isDark: false),
+  _NoteColorPreset(0xFFE8F4FD, isDark: false),
+  _NoteColorPreset(0xFFFFF3E0, isDark: false),
+  _NoteColorPreset(0xFFE8F5E9, isDark: false),
+  _NoteColorPreset(0xFFFCE4EC, isDark: false),
   _NoteColorPreset(0xFF1A1A2E, isDark: true),
   _NoteColorPreset(0xFF16213E, isDark: true),
   _NoteColorPreset(0xFF0F3460, isDark: true),
@@ -50,11 +55,7 @@ const List<_NoteColorPreset> _kNoteColorPresets = [
   _NoteColorPreset(0xFF2D4A22, isDark: true),
   _NoteColorPreset(0xFF4A1942, isDark: true),
   _NoteColorPreset(0xFF3D1C02, isDark: true),
-  _NoteColorPreset(0xFFF5F5F5, isDark: false),
-  _NoteColorPreset(0xFFE8F4FD, isDark: false),
-  _NoteColorPreset(0xFFFFF3E0, isDark: false),
-  _NoteColorPreset(0xFFE8F5E9, isDark: false),
-  _NoteColorPreset(0xFFFCE4EC, isDark: false),
+
 ];
 
 // ── AI プロンプト入力シート ────────────────────────────────────────────────────
@@ -720,12 +721,16 @@ class WidgetDetailPage extends StatefulWidget {
   final WidgetConfig initialConfig;
   final void Function(Map<String, dynamic> data) onUpdate;
   final VoidCallback onDuplicate;
+  final List<Map<String, dynamic>> globalConstants;
+  final ValueNotifier<Map<String, dynamic>?>? clipboardNotifier;
 
   const WidgetDetailPage({
     super.key,
     required this.initialConfig,
     required this.onUpdate,
     required this.onDuplicate,
+    this.globalConstants = const [],
+    this.clipboardNotifier,
   });
 
   @override
@@ -746,7 +751,31 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
   void initState() {
     super.initState();
     _config = widget.initialConfig;
+    widget.clipboardNotifier?.addListener(_onClipboardChanged);
   }
+
+  @override
+  void didUpdateWidget(WidgetDetailPage old) {
+    super.didUpdateWidget(old);
+    if (old.clipboardNotifier != widget.clipboardNotifier) {
+      old.clipboardNotifier?.removeListener(_onClipboardChanged);
+      widget.clipboardNotifier?.addListener(_onClipboardChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.clipboardNotifier?.removeListener(_onClipboardChanged);
+    _calcSheetOverlay?.remove();
+    _calcSheetOverlay = null;
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onClipboardChanged() {
+    if (mounted) setState(() {});
+  }
+
 
   void _handleUpdate(Map<String, dynamic> data) {
     setState(() {
@@ -818,20 +847,12 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
   }
 
   @override
-  void dispose() {
-    _calcSheetOverlay?.remove();
-    _calcSheetOverlay = null;
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final title = _config.data['title'] as String? ?? '定型計算';
     final bgColorValue = _config.data['bgColor'] as int?;
     final scaffoldBgColor = bgColorValue != null ? Color(bgColorValue) : const Color(0xFF0D0D14);
     final isDark = scaffoldBgColor.computeLuminance() < 0.5;
-    final fgColor = isDark ? Colors.white : const Color(0xFF1A1A2E);
+    final fgColor = isDark ? Colors.white :Colors.black87;
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: scaffoldBgColor,
@@ -909,6 +930,8 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   showHeader: false,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10),
                   onAiGeneratingChanged: (v) => setState(() => _isAiGenerating = v),
+                  globalConstants: widget.globalConstants,
+                  clipboardNotifier: widget.clipboardNotifier,
                 ),
               ),
             ),
@@ -978,6 +1001,12 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // クリップボードバー
+            if (widget.clipboardNotifier?.value != null)
+              ClipboardBottomBar(
+                item: widget.clipboardNotifier!.value!,
+                onClear: () => widget.clipboardNotifier!.value = null,
+              ),
             if (_isAiGenerating)
               const LinearProgressIndicator(
                 color: Colors.purpleAccent,
@@ -1035,7 +1064,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
     final isEditMode = !isViewMode && !isTableMode;
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Colors.black87,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1164,7 +1193,7 @@ class _CalcDraggableSheetContentState
       builder: (ctx, scrollController) {
         final sheetColor = widget.bgColor != null
             ? Color(widget.bgColor!)
-            : const Color(0xFF1A1A2E);
+            : Colors.black87;
         return Material(
           color: sheetColor,
           shadowColor: Colors.black.withOpacity(0.9),
@@ -1250,6 +1279,471 @@ class CalculatorViewCard extends StatelessWidget {
   }
 }
 
+// ── 結合ビュー詳細ページ ──────────────────────────────────────────────────────
+class MergedDetailPage extends StatefulWidget {
+  final WidgetConfig mergedConfig;
+  final void Function(Map<String, dynamic>) onMergedUpdate;
+  final List<WidgetConfig> sheets;
+  final void Function(String sheetId, Map<String, dynamic>) onSheetUpdate;
+  final void Function(String sheetId) onSheetDuplicate;
+  final List<Map<String, dynamic>> globalConstants;
+  final ValueNotifier<Map<String, dynamic>?>? clipboardNotifier;
+
+  const MergedDetailPage({
+    super.key,
+    required this.mergedConfig,
+    required this.onMergedUpdate,
+    required this.sheets,
+    required this.onSheetUpdate,
+    required this.onSheetDuplicate,
+    this.globalConstants = const [],
+    this.clipboardNotifier,
+  });
+
+  @override
+  State<MergedDetailPage> createState() => _MergedDetailPageState();
+}
+
+class _MergedDetailPageState extends State<MergedDetailPage> {
+  late String _title;
+  late List<String> _sheetIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _title = widget.mergedConfig.data['title'] as String? ?? '結合ビュー';
+    _sheetIds = (widget.mergedConfig.data['sheetIds'] as List<dynamic>? ?? [])
+        .map((e) => e as String)
+        .toList();
+  }
+
+  void _removeSheet(String sheetId) {
+    setState(() => _sheetIds.remove(sheetId));
+    _persistMerged();
+  }
+
+  void _persistMerged() {
+    widget.onMergedUpdate({
+      ...widget.mergedConfig.data,
+      'title': _title,
+      'sheetIds': _sheetIds,
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D0D14),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0D0D14),
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: GestureDetector(
+          onTap: () async {
+            final ctrl = TextEditingController(text: _title);
+            final res = await showDialog<String>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: Colors.black87,
+                title: const Text('タイトル編集', style: TextStyle(color: Colors.white)),
+                content: TextField(
+                  controller: ctrl,
+                  autofocus: true,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                    focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF5E81FF))),
+                  ),
+                ),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル', style: TextStyle(color: Colors.white54))),
+                  TextButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('保存', style: TextStyle(color: Color(0xFF5E81FF)))),
+                ],
+              ),
+            );
+            if (res != null && res.isNotEmpty) {
+              setState(() => _title = res);
+              _persistMerged();
+            }
+          },
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  _title,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: _sheetIds.isEmpty
+          ? const Center(
+              child: Text('シートがありません', style: TextStyle(color: Colors.white38)),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
+              itemCount: _sheetIds.length,
+              itemBuilder: (ctx, i) {
+                final id = _sheetIds[i];
+                WidgetConfig? sheetConfig;
+                try { sheetConfig = widget.sheets.firstWhere((s) => s.id == id); }
+                catch (_) { sheetConfig = null; }
+                if (sheetConfig == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _MergedSheetSection(
+                    key: ValueKey(id),
+                    config: sheetConfig,
+                    onUpdate: (data) => widget.onSheetUpdate(id, data),
+                    onRemove: _sheetIds.length > 1 ? () => _removeSheet(id) : null,
+                    onDuplicate: () => widget.onSheetDuplicate(id),
+                    globalConstants: widget.globalConstants,
+                    clipboardNotifier: widget.clipboardNotifier,
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
+
+class _MergedSheetSection extends StatefulWidget {
+  final WidgetConfig config;
+  final void Function(Map<String, dynamic>) onUpdate;
+  final VoidCallback? onRemove;
+  final VoidCallback? onDuplicate;
+  final List<Map<String, dynamic>> globalConstants;
+  final ValueNotifier<Map<String, dynamic>?>? clipboardNotifier;
+
+  const _MergedSheetSection({
+    super.key,
+    required this.config,
+    required this.onUpdate,
+    this.onRemove,
+    this.onDuplicate,
+    this.globalConstants = const [],
+    this.clipboardNotifier,
+  });
+
+  @override
+  State<_MergedSheetSection> createState() => _MergedSheetSectionState();
+}
+
+class _MergedSheetSectionState extends State<_MergedSheetSection> {
+  final _calcKey = GlobalKey<_CalculatorWidgetState>();
+  OverlayEntry? _calcOverlay;
+  bool _calcSheetOpen = false;
+  bool _isAiGenerating = false;
+  late WidgetConfig _config;
+
+  @override
+  void initState() {
+    super.initState();
+    _config = widget.config;
+    widget.clipboardNotifier?.addListener(_onClipboardChanged);
+  }
+
+  @override
+  void didUpdateWidget(_MergedSheetSection old) {
+    super.didUpdateWidget(old);
+    if (old.clipboardNotifier != widget.clipboardNotifier) {
+      old.clipboardNotifier?.removeListener(_onClipboardChanged);
+      widget.clipboardNotifier?.addListener(_onClipboardChanged);
+    }
+  }
+
+  void _onClipboardChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    widget.clipboardNotifier?.removeListener(_onClipboardChanged);
+    _calcOverlay?.remove();
+    _calcOverlay = null;
+    super.dispose();
+  }
+
+  void _handleUpdate(Map<String, dynamic> data) {
+    setState(() => _config = _config.copyWith(data: data));
+    widget.onUpdate(data);
+  }
+
+  void _openCalcSheet() {
+    if (_calcSheetOpen) {
+      _closeCalcSheet();
+      return;
+    }
+    final state = _calcKey.currentState;
+    final currentItems =
+        state?._items ?? (_config.data['items'] as List<dynamic>? ?? []);
+    final bgColorValue = _config.data['bgColor'] as int?;
+    final isDark = bgColorValue != null
+        ? _kNoteColorPresets
+              .firstWhere(
+                (p) => p.value == bgColorValue,
+                orElse: () => _kNoteColorPresets.first,
+              )
+              .isDark
+        : true;
+
+    setState(() => _calcSheetOpen = true);
+    _calcOverlay = OverlayEntry(
+      builder: (ctx) => _CalcDraggableSheetContent(
+        existingItemCount: currentItems.length,
+        isDark: isDark,
+        bgColor: bgColorValue,
+        onAddItem: (item) => state?._addItemFromMap(item),
+        onClose: _closeCalcSheet,
+      ),
+    );
+    Overlay.of(context).insert(_calcOverlay!);
+  }
+
+  void _closeCalcSheet() {
+    _calcOverlay?.remove();
+    _calcOverlay = null;
+    if (mounted) setState(() => _calcSheetOpen = false);
+  }
+
+  void _showModePickerSheet(bool isDark) {
+    final isViewMode = _config.data['viewMode'] as bool? ?? false;
+    final isTableMode = _config.data['tableMode'] as bool? ?? false;
+    final isEditMode = !isViewMode && !isTableMode;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black87,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text('表示モードを選択', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                  IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => Navigator.pop(ctx), padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+                ],
+              ),
+            ),
+            const Divider(color: Colors.white12, height: 1),
+            ListTile(
+              leading: Icon(Icons.edit_note_rounded, color: isEditMode ? Colors.white : Colors.white54),
+              title: const Text('編集モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              trailing: isEditMode ? const Icon(Icons.check_circle_rounded, color: Color(0xFF5E81FF)) : null,
+              onTap: () { Navigator.pop(ctx); _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': false}); },
+            ),
+            ListTile(
+              leading: Icon(Icons.visibility_rounded, color: isViewMode ? const Color(0xFF5E81FF) : Colors.white54),
+              title: const Text('閲覧モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              trailing: isViewMode ? const Icon(Icons.check_circle_rounded, color: Color(0xFF5E81FF)) : null,
+              onTap: () { Navigator.pop(ctx); _handleUpdate({..._config.data, 'viewMode': true, 'tableMode': false}); },
+            ),
+            ListTile(
+              leading: Icon(Icons.table_chart_rounded, color: isTableMode ? const Color(0xFF4CAF50) : Colors.white54),
+              title: const Text('表モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              trailing: isTableMode ? const Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50)) : null,
+              onTap: () { Navigator.pop(ctx); _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': true}); },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomBar() {
+    final isViewMode = _config.data['viewMode'] as bool? ?? false;
+    final isTableMode = _config.data['tableMode'] as bool? ?? false;
+    final bgColorValue = _config.data['bgColor'] as int?;
+    final barBgColor = bgColorValue != null ? Color(bgColorValue) : const Color(0xFF161625);
+    final isDarkBar = barBgColor.computeLuminance() < 0.5;
+
+    final IconData modeIcon;
+    final String modeLabel;
+    final Color modeColor;
+    if (isTableMode) {
+      modeIcon = Icons.table_chart_rounded;
+      modeLabel = '表モード';
+      modeColor = const Color(0xFF4CAF50);
+    } else if (isViewMode) {
+      modeIcon = Icons.visibility_rounded;
+      modeLabel = '閲覧モード';
+      modeColor = const Color(0xFF5E81FF);
+    } else {
+      modeIcon = Icons.edit_note_rounded;
+      modeLabel = '編集モード';
+      modeColor = isDarkBar ? Colors.white38 : Colors.black45;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: barBgColor,
+        border: Border(
+          top: BorderSide(
+            color: isDarkBar ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.12),
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_isAiGenerating)
+            const LinearProgressIndicator(
+              color: Colors.purpleAccent,
+              minHeight: 2,
+              backgroundColor: Colors.transparent,
+            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _ToolbarButton(
+                  icon: Icons.auto_awesome_rounded,
+                  label: 'AI生成',
+                  color: const Color(0xFF9E7AFF),
+                  isLoading: _isAiGenerating,
+                  onTap: () => _calcKey.currentState?._showAiGenerateCalcDialog(),
+                ),
+                _ToolbarButton(
+                  icon: modeIcon,
+                  label: modeLabel,
+                  color: modeColor,
+                  onTap: () {
+                    if (isTableMode) {
+                      _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': false});
+                    } else if (isViewMode) {
+                      _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': true});
+                    } else {
+                      _handleUpdate({..._config.data, 'viewMode': true, 'tableMode': false});
+                    }
+                  },
+                  onLongPress: () => _showModePickerSheet(isDarkBar),
+                ),
+                _ToolbarButton(
+                  icon: Icons.calculate_rounded,
+                  label: '電卓',
+                  color: isDarkBar ? Colors.white38 : Colors.black45,
+                  onTap: _openCalcSheet,
+                ),
+                _ToolbarButton(
+                  icon: Icons.add_rounded,
+                  label: '行追加',
+                  color: isDarkBar ? Colors.white54 : Colors.black54,
+                  onTap: () => _calcKey.currentState?._addItem(),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bgColorValue = _config.data['bgColor'] as int?;
+    final cardBg = bgColorValue != null ? Color(bgColorValue) : const Color(0xFF1A1A26);
+    final isDark = cardBg.computeLuminance() < 0.5;
+    final titleColor = isDark ? Colors.white : Colors.black87;
+    final borderColor = isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.12);
+    final title = _config.data['title'] as String? ?? '定型計算';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg.withAlpha(240),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: borderColor, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
+            blurRadius: 20, offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // シートヘッダー
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 12, 8, 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _calcKey.currentState?._editTitle(),
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        color: titleColor, fontSize: 17,
+                        fontWeight: FontWeight.w800, letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_horiz_rounded, color: isDark ? Colors.white38 : Colors.black38, size: 22),
+                  color: Colors.black87,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  onSelected: (val) {
+                    if (val == 'settings') {
+                      _calcKey.currentState?._showActionSheet();
+                    } else if (val == 'remove') {
+                      widget.onRemove?.call();
+                    }
+                  },
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem(value: 'settings', child: Row(children: [Icon(Icons.settings_rounded, size: 18, color: Colors.white70), SizedBox(width: 10), Text('シート設定', style: TextStyle(color: Colors.white))])),
+                    if (widget.onRemove != null)
+                      const PopupMenuItem(value: 'remove', child: Row(children: [Icon(Icons.link_off_rounded, size: 18, color: Colors.redAccent), SizedBox(width: 10), Text('結合から外す', style: TextStyle(color: Colors.redAccent))])),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // 計算ウィジェット
+          _CalculatorWidget(
+            key: _calcKey,
+            config: _config,
+            onUpdate: _handleUpdate,
+            onDuplicate: () => widget.onDuplicate?.call(),
+            showToolbar: false,
+            showHeader: false,
+            contentPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            onAiGeneratingChanged: (v) => setState(() => _isAiGenerating = v),
+            globalConstants: widget.globalConstants,
+            clipboardNotifier: widget.clipboardNotifier,
+          ),
+          // クリップボードバー
+          if (widget.clipboardNotifier?.value != null)
+            ClipboardBottomBar(
+              item: widget.clipboardNotifier!.value!,
+              onClear: () => widget.clipboardNotifier!.value = null,
+            ),
+          // ボトムバー
+          _buildBottomBar(),
+        ],
+      ),
+    );
+  }
+}
+
 class _ToolbarButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -1300,6 +1794,62 @@ class _ToolbarButton extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// アプリ内クリップボードの内容を画面下部に表示するバー
+class ClipboardBottomBar extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final VoidCallback onClear;
+
+  const ClipboardBottomBar({required this.item, required this.onClear});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = item['name'] as String? ?? '計算';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1F3C),
+        border: Border(
+          top: BorderSide(color: Colors.blueAccent.withOpacity(0.5), width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.content_paste_rounded, color: Colors.blueAccent, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'クリップボード',
+                  style: TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                ),
+                Text(
+                  name,
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: onClear,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(Icons.close_rounded, color: Colors.white54, size: 16),
+            ),
+          ),
+        ],
       ),
     );
   }

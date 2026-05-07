@@ -29,6 +29,9 @@ class _CalculatorRow extends StatelessWidget {
   final Function(Map<String, dynamic>) onChanged;
   final VoidCallback onDelete;
   final VoidCallback onCopy;
+  final VoidCallback? onCut;
+  final VoidCallback? onPaste;
+  final bool hasClipboard;
   final VoidCallback? onMoveUp;
   final VoidCallback? onMoveDown;
   final VoidCallback onAdd;
@@ -72,6 +75,9 @@ class _CalculatorRow extends StatelessWidget {
     required this.onChanged,
     required this.onDelete,
     required this.onCopy,
+    this.onCut,
+    this.onPaste,
+    this.hasClipboard = false,
     this.onMoveUp,
     this.onMoveDown,
     required this.onAdd,
@@ -82,7 +88,7 @@ class _CalculatorRow extends StatelessWidget {
     this.onToggleName,
     this.nameVisible = true,
     this.dragHandle,
-    this.wrapFormula = false,
+    this.wrapFormula = true,
     this.termLabels,
   });
 
@@ -107,7 +113,7 @@ class _CalculatorRow extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor:Colors.black87,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -360,7 +366,7 @@ class _CalculatorRow extends StatelessWidget {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Colors.black87,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -534,7 +540,7 @@ class _CalculatorRow extends StatelessWidget {
     showDialog<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
+        backgroundColor: Colors.black87,
         title: const Text(
           '使用中の単位を選択',
           style: TextStyle(color: Colors.white, fontSize: 14),
@@ -841,7 +847,7 @@ class _CalculatorRow extends StatelessWidget {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDs) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E),
+          backgroundColor: Colors.black87,
           title: const Text(
             '値をリンクする',
             style: TextStyle(
@@ -1226,7 +1232,7 @@ class _CalculatorRow extends StatelessWidget {
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
+        backgroundColor: Colors.black87,
         title: const Text(
           'リンク設定があります',
           style: TextStyle(color: Colors.white, fontSize: 16),
@@ -1262,7 +1268,7 @@ class _CalculatorRow extends StatelessWidget {
   void _showGenreUnitPicker(BuildContext context, Function(String) onSelected) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Colors.black87,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1580,7 +1586,7 @@ class _CalculatorRow extends StatelessWidget {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Colors.black87,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -2042,7 +2048,7 @@ class _CalculatorRow extends StatelessWidget {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Colors.black87,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -2495,7 +2501,7 @@ class _CalculatorRow extends StatelessWidget {
     final String? selectedOp = await showMenu<String>(
       context: context,
       position: position,
-      color: const Color(0xFF1A1A2E),
+      color:Colors.black87,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       items: ops
           .map(
@@ -2553,7 +2559,7 @@ class _CalculatorRow extends StatelessWidget {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor:Colors.black87,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -3002,7 +3008,7 @@ class _CalculatorRow extends StatelessWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor:Colors.black87,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -3269,7 +3275,7 @@ class _CalculatorRow extends StatelessWidget {
             color: isDark ? Colors.white24 : Colors.black26,
             size: 20,
           ),
-          color: const Color(0xFF1A1A2E),
+          color:Colors.black87,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
@@ -3332,12 +3338,33 @@ class _CalculatorRow extends StatelessWidget {
               value: 'copy',
               child: Row(
                 children: [
-                  Icon(Icons.copy_all_rounded, color: Colors.blueAccent, size: 18),
+                  Icon(Icons.copy_rounded, color: Colors.blueAccent, size: 18),
                   SizedBox(width: 12),
-                  Text('複製', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  Text('コピー', style: TextStyle(color: Colors.white, fontSize: 13)),
                 ],
               ),
             ),
+            const PopupMenuItem(
+              value: 'cut',
+              child: Row(
+                children: [
+                  Icon(Icons.content_cut_rounded, color: Colors.orangeAccent, size: 18),
+                  SizedBox(width: 12),
+                  Text('移動（切り取り）', style: TextStyle(color: Colors.white, fontSize: 13)),
+                ],
+              ),
+            ),
+            if (hasClipboard)
+              const PopupMenuItem(
+                value: 'paste',
+                child: Row(
+                  children: [
+                    Icon(Icons.content_paste_rounded, color: Colors.greenAccent, size: 18),
+                    SizedBox(width: 12),
+                    Text('コピーした計算を追加', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  ],
+                ),
+              ),
             const PopupMenuItem(
               value: 'brackets',
               child: Row(
@@ -3373,6 +3400,8 @@ class _CalculatorRow extends StatelessWidget {
           onSelected: (val) {
             if (val == 'delete') onDelete();
             if (val == 'copy') onCopy();
+            if (val == 'cut') onCut?.call();
+            if (val == 'paste') onPaste?.call();
             if (val == 'brackets') onPickBrackets();
             if (val == 'link_dest') _showSetLinkDestDialog(context);
             if (val == 'move_up') onMoveUp?.call();

@@ -10,6 +10,10 @@ class _CalculatorWidget extends StatefulWidget {
   final EdgeInsetsGeometry? contentPadding;
   /// AI生成中フラグが変化したときに通知するコールバック
   final void Function(bool isGenerating)? onAiGeneratingChanged;
+  /// ホームのSettings画面で管理するユーザー定義定数
+  final List<Map<String, dynamic>> globalConstants;
+  /// アプリ内クリップボード（シートをまたいで共有）
+  final ValueNotifier<Map<String, dynamic>?>? clipboardNotifier;
 
   const _CalculatorWidget({
     super.key,
@@ -20,6 +24,8 @@ class _CalculatorWidget extends StatefulWidget {
     this.showHeader = true,
     this.contentPadding,
     this.onAiGeneratingChanged,
+    this.globalConstants = const [],
+    this.clipboardNotifier,
   });
 
   @override
@@ -31,6 +37,31 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   void _toggleExpanded() {
     widget.onUpdate({...widget.config.data, 'isExpanded': !_isExpanded});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.clipboardNotifier?.addListener(_onClipboardChanged);
+  }
+
+  @override
+  void didUpdateWidget(_CalculatorWidget old) {
+    super.didUpdateWidget(old);
+    if (old.clipboardNotifier != widget.clipboardNotifier) {
+      old.clipboardNotifier?.removeListener(_onClipboardChanged);
+      widget.clipboardNotifier?.addListener(_onClipboardChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.clipboardNotifier?.removeListener(_onClipboardChanged);
+    super.dispose();
+  }
+
+  void _onClipboardChanged() {
+    if (mounted) setState(() {});
   }
 
   // ── 電卓パネル state ──
@@ -56,7 +87,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   bool get _wrapFormula =>
-      widget.config.data['wrapFormula'] as bool? ?? false; // 折り返し表示モード
+      widget.config.data['wrapFormula'] as bool? ?? true; // 折り返し表示モード
   // 多項追跡: 入力された全ての項の値と演算子を保持
   List<double> _calcTermValues = []; // [t0, t1, t2, ...]
   List<String> _calcTermOps = []; // [op01, op12, ...] ※表示形式 (+,-,×,÷)
@@ -428,17 +459,74 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   void _duplicateItem(int calcIdx) {
+    // クリップボードにコピー（即複製しない）
+    final items = _items;
+    if (calcIdx < 0 || calcIdx >= items.length) return;
+    final copy = Map<String, dynamic>.from(items[calcIdx]);
+    widget.clipboardNotifier?.value = copy;
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('「${copy['name'] ?? '計算'}」をコピーしました'),
+          backgroundColor: const Color(0xFF1A2A4A),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _cutItem(int calcIdx) {
+    final items = _items;
+    if (calcIdx < 0 || calcIdx >= items.length) return;
+    final copy = Map<String, dynamic>.from(items[calcIdx]);
+    widget.clipboardNotifier?.value = copy;
+    _removeItem(calcIdx);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('「${copy['name'] ?? '計算'}」を切り取りました'),
+          backgroundColor: const Color(0xFF2A1A0A),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  /// 連動設定をすべて解除したコピーを返す
+  Map<String, dynamic> _unlinkItem(Map<String, dynamic> item) {
+    final copy = Map<String, dynamic>.from(item);
+    copy['inputLink'] = false;
+    copy['inputLinkSource'] = null;
+    copy['operandLink'] = false;
+    copy['operandLinkSource'] = null;
+    if (copy['others'] is List) {
+      copy['others'] = (copy['others'] as List).map((o) {
+        final oCopy = Map<String, dynamic>.from(o as Map<String, dynamic>);
+        oCopy['valLink'] = false;
+        oCopy['valLinkSource'] = null;
+        return oCopy;
+      }).toList();
+    }
+    return copy;
+  }
+
+  void _pasteFromClipboard(int insertAfterCalcIdx) {
+    final clipData = widget.clipboardNotifier?.value;
+    if (clipData == null) return;
+    final pasteItem = _unlinkItem(Map<String, dynamic>.from(clipData));
     final newItems = List<Map<String, dynamic>>.from(_items);
-    final copy = Map<String, dynamic>.from(newItems[calcIdx]);
-    copy['name'] = '${copy['name'] ?? ''} (コピー)';
     final newCalcIdx = newItems.length;
-    newItems.add(copy); // 末尾に追加（既存 rowIdx 変わらず）
-    // displayOrder で元エントリの直後に複製を挿入
+    newItems.add(pasteItem);
     final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
     int insertPos = order.length;
     for (int i = 0; i < order.length; i++) {
-      if (order[i]['type'] == 'calc' && order[i]['calcIdx'] == calcIdx) {
+      if (order[i]['type'] == 'calc' && order[i]['calcIdx'] == insertAfterCalcIdx) {
         insertPos = i + 1;
+        break;
       }
     }
     order.insert(insertPos, {'type': 'calc', 'calcIdx': newCalcIdx});
@@ -540,7 +628,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor:Colors.black87,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -673,7 +761,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   // ── 定数セクションWidget ──────────────────────────────────────────────────
   Widget _buildConstantsSection(List<Map<String, dynamic>> constants, bool isDark) {
-    final fgColor = isDark ? Colors.white : const Color(0xFF1A1A2E);
+    final fgColor = isDark ? Colors.white :Colors.black87;
     final subColor = isDark ? Colors.white54 : Colors.black45;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -752,13 +840,12 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       {'label': 'g', 'value': 9.80665},
       {'label': 'φ', 'value': 1.61803398874989},
       {'label': 'c', 'value': 299792458.0},
-      {'label': 'Nₐ', 'value': 6.02214076e23},
     ];
 
     final result = await showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Colors.black87,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -814,7 +901,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                     showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,
-                      backgroundColor: const Color(0xFF1A1A2E),
+                      backgroundColor: Colors.black87,
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                       ),
@@ -843,32 +930,62 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: physicalConstants.map((preset) {
-                  final label = preset['label'] as String;
-                  final value = preset['value'] as double;
-                  return GestureDetector(
-                    onTap: () => setSheetState(() {
-                      valCtrl.text = value.toString();
-                    }),
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.amberAccent.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.amberAccent.withOpacity(0.4)),
-                      ),
-                      child: Text(label,
-                        style: const TextStyle(
-                          color: Colors.amberAccent,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'ZenOldMincho',
+                children: [
+                  ...physicalConstants.map((preset) {
+                    final label = preset['label'] as String;
+                    final value = preset['value'] as double;
+                    return GestureDetector(
+                      onTap: () => setSheetState(() {
+                        valCtrl.text = value.toString();
+                      }),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.amberAccent.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.amberAccent.withOpacity(0.4)),
+                        ),
+                        child: Text(label,
+                          style: const TextStyle(
+                            color: Colors.amberAccent,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'ZenOldMincho',
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }),
+                  // ユーザー定義定数プリセット
+                  ...widget.globalConstants.map((uc) {
+                    final name = uc['name'] as String? ?? '';
+                    final value = (uc['value'] as num? ?? 0.0).toDouble();
+                    return GestureDetector(
+                      onTap: () => setSheetState(() {
+                        valCtrl.text = value == value.truncateToDouble() && value.abs() < 1e15
+                            ? value.toInt().toString()
+                            : value.toString();
+                      }),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF5E81FF).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF5E81FF).withOpacity(0.4)),
+                        ),
+                        child: Text(name,
+                          style: const TextStyle(
+                            color: Color(0xFF5E81FF),
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
               ),
             ),
             const SizedBox(height: 20),
@@ -921,7 +1038,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final wrapFormula = _wrapFormula;
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Colors.black87,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
@@ -1840,7 +1957,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   // ── 閲覧モード用の定数セクション（読み取り専用） ──────────────────────────
   Widget _buildViewModeConstantsSection(List<Map<String, dynamic>> constants, bool isDark) {
-    final fgColor = isDark ? Colors.white : const Color(0xFF1A1A2E);
+    final fgColor = isDark ? Colors.white : Colors.black87;
     final subColor = isDark ? Colors.white54 : Colors.black45;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -2040,12 +2157,12 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final visibleColumns = columns.where((c) => c['visible'] as bool).toList();
 
     // ── スタイル ──────────────────────────────────────────────────────────
-    final fgColor = isDark ? Colors.white : const Color(0xFF1A1A2E);
+    final fgColor = isDark ? Colors.white : Colors.black87;
     final subColor = isDark ? Colors.white54 : Colors.black54;
     final borderColor = isDark ? Colors.white.withOpacity(0.09) : Colors.black.withOpacity(0.10);
     final headerBg = isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04);
 
-    double colWidth(String key) => key == 'name' ? 130.0 : 96.0;
+    double colWidth(String key) => key == 'name' ? 150.0 : 96.0;
 
     // セルの表示文字列（リンク解決済み値・変換オプション表示対応）
     String cellValue(String key, int rowIdx) {
@@ -2132,7 +2249,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E),
+          backgroundColor: Colors.black87,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             item['name'] as String? ?? '答えの計算式',
@@ -2307,7 +2424,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     showModalBottomSheet<List<Map<String, dynamic>>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Colors.black87,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => _ColumnLabelEditSheet(
         columnKey: columnKey,
@@ -2380,6 +2497,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       onChanged: onItemChanged,
       onDelete: () {},
       onCopy: () {},
+      onCut: null,
+      onPaste: null,
+      hasClipboard: false,
       onAdd: () {},
       onPickBrackets: () {},
       onAllItemsUpdate: (newItems) =>
@@ -2404,7 +2524,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     showModalBottomSheet<List<Map<String, dynamic>>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Colors.black87,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => _ColumnSettingsSheet(columns: columns),
     ).then((newColConfig) {
@@ -2907,10 +3027,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final headerIconColor = isDark ? Colors.white70 : Colors.black54;
     return Container(
       constraints: BoxConstraints(
-        minHeight: MediaQuery.of(context).size.height-230,
+       // minHeight: MediaQuery.of(context).size.height-230,
       ),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: bgColor.withAlpha(200),
         borderRadius: BorderRadius.circular(0),
         border: Border.all(
           color: isDark
@@ -3268,6 +3388,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                     onChanged: (newItem) => _updateItem(ci, newItem),
                                     onDelete: () => _removeItem(ci),
                                     onCopy: () => _duplicateItem(ci),
+                                    onCut: () => _cutItem(ci),
+                                    onPaste: () => _pasteFromClipboard(ci),
+                                    hasClipboard: widget.clipboardNotifier?.value != null,
                                     onMoveUp: di > 0 ? () => _moveItem(di, di - 1) : null,
                                     onMoveDown: di < displayOrder.length - 1
                                         ? () => _moveItem(di, di + 1)
@@ -3675,7 +3798,7 @@ Return ONLY the JSON array. Do not include any explanations.
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            backgroundColor: const Color(0xFF1A1A2E),
+            backgroundColor: Colors.black87,
             title: const Text(
               '優先計算（ ）の範囲指定',
               style: TextStyle(color: Colors.white, fontSize: 16),
@@ -3691,7 +3814,7 @@ Return ONLY the JSON array. Do not include any explanations.
                 DropdownButton<int>(
                   value: startIdx,
                   isExpanded: true,
-                  dropdownColor: const Color(0xFF1A1A2E),
+                  dropdownColor: Colors.black87,
                   items: List.generate(
                     termCount - 1,
                     (i) => DropdownMenuItem(
@@ -3715,7 +3838,7 @@ Return ONLY the JSON array. Do not include any explanations.
                 DropdownButton<int>(
                   value: endIdx,
                   isExpanded: true,
-                  dropdownColor: const Color(0xFF1A1A2E),
+                  dropdownColor: Colors.black87,
                   items: List.generate(
                     termCount,
                     (i) => DropdownMenuItem(
@@ -4072,7 +4195,7 @@ class _ColumnVisibilityDialogState extends State<_ColumnVisibilityDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Colors.black87,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: const Text('列の表示設定',
           style: TextStyle(color: Colors.white, fontFamily: 'ZenOldMincho', fontSize: 16, fontWeight: FontWeight.bold)),

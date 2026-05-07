@@ -44,11 +44,23 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const _kPrefsKey = 'aicalc_configs_v1';
+  static const _kUserConstantsKey = 'aicalc_user_constants_v1';
 
   List<WidgetConfig> _configs = [];
+  List<Map<String, dynamic>> _userConstants = [];
   bool _isLoading = true;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   PersistentBottomSheetController? _calcSheetController;
+  bool _isSelectMode = false;
+  final Set<int> _selectedForMerge = {};
+  /// アプリ内クリップボード（シート間共有）
+  final ValueNotifier<Map<String, dynamic>?> _clipboardNotifier = ValueNotifier(null);
+
+  @override
+  void dispose() {
+    _clipboardNotifier.dispose();
+    super.dispose();
+  }
 
   // ── デフォルト初期シート ──────────────────────────────────────────────────
   static List<WidgetConfig> get _defaultConfigs => [
@@ -102,6 +114,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadConfigs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      // ユーザー定義定数を読み込む
+      final ucJsonStr = prefs.getString(_kUserConstantsKey);
+      if (ucJsonStr != null && ucJsonStr.isNotEmpty) {
+        final ucList = json.decode(ucJsonStr) as List<dynamic>;
+        _userConstants = ucList
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+      }
       final jsonStr = prefs.getString(_kPrefsKey);
       if (jsonStr != null && jsonStr.isNotEmpty) {
         final list = json.decode(jsonStr) as List<dynamic>;
@@ -144,6 +164,15 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e, st) {
       // 保存失敗をデバッグコンソールに記録（アプリはクラッシュさせない）
       debugPrint('[_saveConfigs] 保存に失敗しました: $e\n$st');
+    }
+  }
+
+  Future<void> _saveUserConstants() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kUserConstantsKey, json.encode(_userConstants));
+    } catch (e, st) {
+      debugPrint('[_saveUserConstants] 保存に失敗しました: $e\n$st');
     }
   }
 
@@ -190,6 +219,8 @@ class _HomeScreenState extends State<HomeScreen> {
           initialConfig: newConfig,
           onUpdate: (data) => _updateConfig(0, data),
           onDuplicate: () => _duplicateConfig(0),
+          globalConstants: _userConstants,
+          clipboardNotifier: _clipboardNotifier,
         ),
       ),
     );
@@ -282,13 +313,204 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openDetail(int index) {
+    final config = _configs[index];
+    if (config.type == 'merged') {
+      final sheetIds = (config.data['sheetIds'] as List<dynamic>? ?? [])
+          .map((e) => e as String)
+          .toList();
+      final sheets = sheetIds
+          .map((id) {
+            try { return _configs.firstWhere((c) => c.id == id); }
+            catch (_) { return null; }
+          })
+          .whereType<WidgetConfig>()
+          .toList();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MergedDetailPage(
+            mergedConfig: config,
+            onMergedUpdate: (data) => _updateConfig(index, data),
+            sheets: sheets,
+            onSheetUpdate: (sheetId, data) {
+              final idx = _configs.indexWhere((c) => c.id == sheetId);
+              if (idx != -1) {
+                setState(() {
+                  _configs[idx] = _configs[idx].copyWith(data: data);
+                });
+                _saveConfigs();
+              }
+            },
+            clipboardNotifier: _clipboardNotifier,
+            onSheetDuplicate: (sheetId) {
+              final srcIdx = _configs.indexWhere((c) => c.id == sheetId);
+              if (srcIdx == -1) return;
+              final src = _configs[srcIdx];
+              final newConfig = WidgetConfig(
+                id: '${DateTime.now().millisecondsSinceEpoch}',
+                type: src.type,
+                data: Map<String, dynamic>.from(src.data)
+                  ..['title'] = '${src.data['title'] ?? '定型計算'} (コピー)',
+              );
+              setState(() => _configs.insert(srcIdx + 1, newConfig));
+              _saveConfigs();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '「${src.data['title'] ?? '定型計算'}」を複製しました',
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  backgroundColor: Colors.black87,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            globalConstants: _userConstants,
+          ),
+        ),
+      );
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => WidgetDetailPage(
-          initialConfig: _configs[index],
+          initialConfig: config,
           onUpdate: (data) => _updateConfig(index, data),
           onDuplicate: () => _duplicateConfig(index),
+          globalConstants: _userConstants,
+          clipboardNotifier: _clipboardNotifier,
+        ),
+      ),
+    );
+  }
+
+  void _showMainMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor:Colors.black87,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF5E81FF).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.merge_rounded, color: Color(0xFF5E81FF), size: 22),
+                ),
+                title: const Text('計算シートを結合する', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                subtitle: Text('複数のシートを1画面に並べて表示', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _startSelectMode();
+                },
+              ),
+              const Divider(color: Colors.white10, indent: 16, endIndent: 16),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.amberAccent.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.tune_rounded, color: Colors.amberAccent, size: 22),
+                ),
+                title: const Text('設定', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                subtitle: Text('ユーザー定義定数の管理', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _openSettings();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _startSelectMode() {
+    if (_configs.isEmpty) return;
+    setState(() {
+      _isSelectMode = true;
+      _selectedForMerge.clear();
+    });
+  }
+
+  void _cancelSelectMode() {
+    setState(() {
+      _isSelectMode = false;
+      _selectedForMerge.clear();
+    });
+  }
+
+  void _toggleSelection(int index) {
+    setState(() {
+      if (_selectedForMerge.contains(index)) {
+        _selectedForMerge.remove(index);
+      } else {
+        _selectedForMerge.add(index);
+      }
+    });
+  }
+
+  void _createMergedConfig() {
+    if (_selectedForMerge.length < 2) return;
+    final sorted = _selectedForMerge.toList()..sort();
+    final selectedConfigs = sorted.map((i) => _configs[i]).toList();
+    final titles = selectedConfigs
+        .map((c) => c.data['title'] as String? ?? '定型計算')
+        .join(' + ');
+    final sheetIds = selectedConfigs.map((c) => c.id).toList();
+    final newConfig = WidgetConfig(
+      id: '${DateTime.now().millisecondsSinceEpoch}',
+      type: 'merged',
+      data: {
+        'title': titles,
+        'sheetIds': sheetIds,
+      },
+    );
+    setState(() {
+      _configs.insert(0, newConfig);
+      _isSelectMode = false;
+      _selectedForMerge.clear();
+    });
+    _saveConfigs();
+    _openDetail(0);
+  }
+
+  void _openSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _SettingsPage(
+          userConstants: List<Map<String, dynamic>>.from(_userConstants),
+          onSave: (updated) {
+            setState(() => _userConstants = updated);
+            _saveUserConstants();
+          },
         ),
       ),
     );
@@ -350,11 +572,35 @@ class _HomeScreenState extends State<HomeScreen> {
               slivers: [
                 SliverAppBar(
                   pinned: true,
-                  expandedHeight: 200,
+                  expandedHeight: _isSelectMode ? 0 : 200,
                   backgroundColor: const Color(0xFF0D0D14).withOpacity(0.9),
                   surfaceTintColor: Colors.transparent,
                   elevation: 0,
-                  flexibleSpace: FlexibleSpaceBar(
+                  actions: _isSelectMode
+                      ? [
+                          Center(
+                            child: Padding(padding: const EdgeInsets.only(right: 4), child: Text(
+                              _selectedForMerge.length < 2
+                                  ? '2件以上選択してください'
+                                  : '${_selectedForMerge.length}件選択中',
+                              style: TextStyle(
+                                color: _selectedForMerge.length >= 2 ? const Color(0xFF5E81FF) : Colors.white38,
+                                fontSize: 13, fontWeight: FontWeight.w600,
+                              ),
+                            )),
+                          ),
+                        ]
+                      : [
+                          IconButton(
+                            icon: const Icon(Icons.menu_rounded, color: Colors.white70, size: 26),
+                            onPressed: _showMainMenu,
+                            tooltip: 'メニュー',
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                  flexibleSpace: _isSelectMode
+                      ? null
+                      : FlexibleSpaceBar(
                     titlePadding: const EdgeInsets.only(left: 28, bottom: 0),
                     centerTitle: false,
                     title: Column(
@@ -368,7 +614,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 30,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w100,
                             letterSpacing: 1.2,
                           ),
                         ),
@@ -394,17 +640,43 @@ class _HomeScreenState extends State<HomeScreen> {
                     sliver: SliverReorderableList(
                       itemCount: _configs.length,
                       onReorder: _reorderConfigs,
-                      itemBuilder: (ctx, i) => Padding(
-                        key: ValueKey(_configs[i].id),
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _WidgetCard(
-                          config: _configs[i],
-                          index: i,
-                          onTap: () => _openDetail(i),
-                          onDelete: () => _deleteConfig(i),
-                          onUpdate: (data) => _updateConfig(i, data),
-                        ),
-                      ),
+                      itemBuilder: (ctx, i) {
+                        final cfg = _configs[i];
+                        List<WidgetConfig>? resolvedSheets;
+                        if (cfg.type == 'merged') {
+                          final ids = (cfg.data['sheetIds'] as List<dynamic>? ?? [])
+                              .map((e) => e as String).toList();
+                          resolvedSheets = ids
+                              .map((id) {
+                                try { return _configs.firstWhere((c) => c.id == id); }
+                                catch (_) { return null; }
+                              })
+                              .whereType<WidgetConfig>()
+                              .toList();
+                        }
+                        return Padding(
+                          key: ValueKey(cfg.id),
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _WidgetCard(
+                            config: cfg,
+                            index: i,
+                            onTap: _isSelectMode ? () => _toggleSelection(i) : () => _openDetail(i),
+                            onDelete: () => _deleteConfig(i),
+                            onUpdate: (data) => _updateConfig(i, data),
+                            isSelectMode: _isSelectMode,
+                            isSelected: _selectedForMerge.contains(i),
+                            resolvedSheets: resolvedSheets,
+                            onReorderSheets: resolvedSheets == null ? null : (oldIdx, newIdx) {
+                              final sheetIds = (cfg.data['sheetIds'] as List<dynamic>)
+                                  .map((e) => e as String).toList();
+                              if (newIdx > oldIdx) newIdx -= 1;
+                              final id = sheetIds.removeAt(oldIdx);
+                              sheetIds.insert(newIdx, id);
+                              _updateConfig(i, {...cfg.data, 'sheetIds': sheetIds});
+                            },
+                          ),
+                        );
+                      },
                     ),
                   ),
               ],
@@ -428,12 +700,28 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: _HomeFab(
-        onOpenCalc: _openHomeCalc,
-        onAddSheet: _addConfig,
-        calcActive: _calcSheetController != null,
-      ),
+      floatingActionButton: _isSelectMode
+          ? _MergeActionBar(
+              selectedCount: _selectedForMerge.length,
+              onMerge: _createMergedConfig,
+              onCancel: _cancelSelectMode,
+            )
+          : _HomeFab(
+              onOpenCalc: _openHomeCalc,
+              onAddSheet: _addConfig,
+              calcActive: _calcSheetController != null,
+            ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      bottomNavigationBar: ValueListenableBuilder<Map<String, dynamic>?>(
+        valueListenable: _clipboardNotifier,
+        builder: (ctx, clipboardItem, _) {
+          if (clipboardItem == null) return const SizedBox.shrink();
+          return ClipboardBottomBar(
+            item: clipboardItem,
+            onClear: () => _clipboardNotifier.value = null,
+          );
+        },
+      ),
     );
   }
 }
@@ -492,6 +780,10 @@ class _WidgetCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final void Function(Map<String, dynamic>) onUpdate;
+  final bool isSelectMode;
+  final bool isSelected;
+  final List<WidgetConfig>? resolvedSheets;
+  final void Function(int oldIndex, int newIndex)? onReorderSheets;
 
   const _WidgetCard({
     required this.config,
@@ -499,6 +791,10 @@ class _WidgetCard extends StatefulWidget {
     required this.onTap,
     required this.onDelete,
     required this.onUpdate,
+    this.isSelectMode = false,
+    this.isSelected = false,
+    this.resolvedSheets,
+    this.onReorderSheets,
   });
 
   static const List<Color> _accentColors = [Color(0xFF5E81FF)];
@@ -512,28 +808,66 @@ class _WidgetCardState extends State<_WidgetCard> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.config.data['title'] as String? ?? '定型計算';
+    final isMerged = widget.config.type == 'merged';
+    final title = widget.config.data['title'] as String? ?? (isMerged ? '結合ビュー' : '定型計算');
     final items = widget.config.data['items'] as List<dynamic>? ?? [];
     final memos = widget.config.data['memos'] as List<dynamic>? ?? [];
-    final accent = _WidgetCard
-        ._accentColors[widget.index % _WidgetCard._accentColors.length];
+    final resolvedSheets = widget.resolvedSheets ?? [];
+    final sheetCount = isMerged
+        ? ((widget.config.data['sheetIds'] as List?)?.length ?? resolvedSheets.length)
+        : 0;
+    final accent = _WidgetCard._accentColors[widget.index % _WidgetCard._accentColors.length];
     final bgColorValue = widget.config.data['bgColor'] as int?;
-    final cardBgColor = bgColorValue != null
-        ? Color(bgColorValue)
-        : const Color(0xFF1A1A26);
+    // For merged, derive bg from first resolved sheet
+    final effectiveBgValue = isMerged && resolvedSheets.isNotEmpty
+        ? resolvedSheets.first.data['bgColor'] as int?
+        : bgColorValue;
+    final cardBgColor = effectiveBgValue != null ? Color(effectiveBgValue) : const Color(0xFF1A1A26);
     final isDark = cardBgColor.computeLuminance() < 0.5;
-    final titleColor = isDark ? Colors.white : const Color(0xFF1A1A2E);
+    final titleColor = isDark ? Colors.white : Colors.black87;
     final subIconColor = isDark ? Colors.white24 : Colors.black26;
-    final borderColor = isDark
-        ? Colors.white.withOpacity(0.06)
-        : Colors.black.withOpacity(0.12);
-    return Container(
+    final borderColor = widget.isSelected
+        ? const Color(0xFF5E81FF)
+        : isDark
+            ? Colors.white.withOpacity(0.06)
+            : Colors.black.withOpacity(0.12);
+
+    // leading: checkbox in select mode, drag handle otherwise
+    final leading = widget.isSelectMode
+        ? AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: 24,
+            height: 24,
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: widget.isSelected ? const Color(0xFF5E81FF) : Colors.transparent,
+              border: Border.all(
+                color: widget.isSelected ? const Color(0xFF5E81FF) : (isDark ? Colors.white38 : Colors.black38),
+                width: 2,
+              ),
+            ),
+            child: widget.isSelected ? const Icon(Icons.check_rounded, size: 14, color: Colors.white) : null,
+          )
+        : ReorderableDragStartListener(
+            index: widget.index,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Icon(Icons.drag_indicator, color: subIconColor, size: 22),
+            ),
+          );
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
-        color: cardBgColor.withAlpha(240),
+        color:cardBgColor.withAlpha(240),
+        border: widget.isSelected ? Border.all(color: const Color(0xFF5E81FF), width: 2.5) : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
+            color: widget.isSelected
+                ? const Color(0xFF5E81FF).withOpacity(0.25)
+                : Colors.black.withOpacity(isDark ? 0.4 : 0.15),
             blurRadius: 24,
             offset: const Offset(0, 12),
           ),
@@ -552,45 +886,53 @@ class _WidgetCardState extends State<_WidgetCard> {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 15, 10, 15),
                 decoration: BoxDecoration(
-                  border: Border.all(color: borderColor, width: 1.5),
+                  border: Border.all(color: borderColor, width: widget.isSelected ? 0 : 1.5),
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(32),
                     topRight: const Radius.circular(32),
-                    bottomLeft: _isExpanded
-                        ? Radius.zero
-                        : const Radius.circular(32),
-                    bottomRight: _isExpanded
-                        ? Radius.zero
-                        : const Radius.circular(32),
+                    bottomLeft: _isExpanded ? Radius.zero : const Radius.circular(32),
+                    bottomRight: _isExpanded ? Radius.zero : const Radius.circular(32),
                   ),
                 ),
                 child: Row(
                   children: [
-                    ReorderableDragStartListener(
-                      index: widget.index,
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: Icon(
-                          Icons.drag_indicator,
-                          color: subIconColor,
-                          size: 22,
-                        ),
-                      ),
-                    ),
+                    leading,
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // merged indicator strip
+                          if (isMerged) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: resolvedSheets.take(5).map<Widget>((s) {
+                                  final sColor = s.data['bgColor'] as int?;
+                                  return Container(
+                                    width: 16, height: 16, margin: const EdgeInsets.only(right: 10),
+                                    decoration: BoxDecoration(
+                                      color: sColor != null ? Color(sColor) : const Color(0xFF5E81FF),
+                                      borderRadius: BorderRadius.circular(50),
+                                      border: Border.all(color: Colors.white.withOpacity(1), width: 2),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                          ],
                           Text(
                             title,
                             style: TextStyle(
-                              color: titleColor,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5,
+                              color: titleColor, fontSize: 18,
+                              fontWeight: FontWeight.w800, letterSpacing: -0.5,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2, overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 8),
                           SingleChildScrollView(
@@ -598,68 +940,62 @@ class _WidgetCardState extends State<_WidgetCard> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: accent.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.data_usage_rounded,
-                                        size: 12,
-                                        color: accent,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        items.isEmpty
-                                            ? '計算式未設定'
-                                            : '${items.length}件の計算項目',
-                                        style: TextStyle(
-                                          color: accent.withOpacity(0.9),
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (memos.isNotEmpty) ...[
-                                  const SizedBox(width: 6),
+                                if (isMerged) ...[
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 4,
-                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.amber.withOpacity(0.12),
+                                      color: const Color.fromARGB(255, 255, 94, 94).withOpacity(0.12),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(
-                                          Icons.sticky_note_2_outlined,
-                                          size: 12,
-                                          color: Colors.amber,
-                                        ),
+                                        const Icon(Icons.merge_rounded, size: 12, color: Color.fromARGB(255, 255, 94, 94)),
                                         const SizedBox(width: 6),
                                         Text(
-                                          '${memos.length}件のメモ',
-                                          style: const TextStyle(
-                                            color: Colors.amber,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                          '$sheetCountつの結合されたシート',
+                                          style: const TextStyle(color: Color.fromARGB(255, 255, 94, 94), fontSize: 11, fontWeight: FontWeight.w700),
                                         ),
                                       ],
                                     ),
                                   ),
+                                ] else ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: accent.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.data_usage_rounded, size: 12, color: accent),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          items.isEmpty ? '計算式未設定' : '${items.length}件の計算項目',
+                                          style: TextStyle(color: accent.withOpacity(0.9), fontSize: 11, fontWeight: FontWeight.w700),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (memos.isNotEmpty) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.amber.withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.sticky_note_2_outlined, size: 12, color: Colors.amber),
+                                          const SizedBox(width: 6),
+                                          Text('${memos.length}件のメモ', style: const TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.w700)),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ],
                             ),
@@ -667,42 +1003,32 @@ class _WidgetCardState extends State<_WidgetCard> {
                         ],
                       ),
                     ),
-                    Column(
-                      children: [
-                        GestureDetector(
-                          onTap: widget.onDelete,
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.03),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.delete_sweep_rounded,
-                              color: isDark
-                                  ? Colors.white.withOpacity(0.2)
-                                  : Colors.black.withOpacity(0.25),
-                              size: 22,
+                    if (!widget.isSelectMode)
+                      Column(
+                        children: [
+                          GestureDetector(
+                            onTap: widget.onDelete,
+                            child: Container(
+                              padding: const EdgeInsets.only(left:10, right: 3, top: 0, bottom: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.03),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(Icons.delete_sweep_rounded,
+                                color: isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.25),
+                                size: 22),
                             ),
                           ),
-                        ),
-                        SizedBox(height: 10),
-                        GestureDetector(
-                          onTap: () =>
-                              setState(() => _isExpanded = !_isExpanded),
-                          child: Padding(
-                            padding: const EdgeInsets.all(0),
+                          const SizedBox(height: 20),
+                          GestureDetector(
+                            onTap: () => setState(() => _isExpanded = !_isExpanded),
                             child: Icon(
-                              _isExpanded
-                                  ? Icons.keyboard_arrow_up_rounded
-                                  : Icons.keyboard_arrow_down_rounded,
-                              color: isDark ? Colors.white38 : Colors.black38,
-                              size: 22,
+                              _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                              color: isDark ? Colors.white38 : Colors.black38, size: 22,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -714,13 +1040,68 @@ class _WidgetCardState extends State<_WidgetCard> {
                 bottomLeft: Radius.circular(32),
                 bottomRight: Radius.circular(32),
               ),
-              child: CalculatorViewCard(
-                config: widget.config,
-                onUpdate: widget.onUpdate,
-                contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              ),
+              child: isMerged
+                  ? _buildMergedExpanded(resolvedSheets, isDark)
+                  : CalculatorViewCard(
+                      config: widget.config,
+                      onUpdate: widget.onUpdate,
+                      contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMergedExpanded(List<WidgetConfig> sheets, bool isDark) {
+    if (sheets.isEmpty) return const SizedBox.shrink();
+    return ClipRRect(
+      child: ReorderableListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+        itemCount: sheets.length,
+        onReorder: (oldIndex, newIndex) =>
+            widget.onReorderSheets?.call(oldIndex, newIndex),
+        itemBuilder: (ctx, idx) {
+          final s = sheets[idx];
+          final sTitle = s.data['title'] as String? ?? '定型計算';
+          final sColorVal = s.data['bgColor'] as int?;
+          final sColor = sColorVal != null ? Color(sColorVal) : const Color(0xFF1A1A26);
+          final sItemCount = (s.data['items'] as List?)?.length ?? 0;
+          return Padding(
+            key: ValueKey(s.id),
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Row(
+              children: [
+                ReorderableDragStartListener(
+                  index: idx,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 18),
+                    child: Icon(Icons.drag_indicator,
+                        color: isDark ? Colors.white24 : Colors.black26, size: 18),
+                  ),
+                ),
+                Container(
+                  width: 12, height: 12, margin: const EdgeInsets.only(right: 10),
+                  decoration: BoxDecoration(
+                    color: sColor,
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.5),
+                  ),
+                ),
+                Expanded(
+                  child: Text(sTitle,
+                    style: TextStyle(color: isDark ? Colors.white70 : Colors.black54,
+                        fontSize: 16, fontWeight: FontWeight.w600),
+                    overflow: TextOverflow.ellipsis),
+                ),
+                Text('$sItemCount件',
+                    style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 11)),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -822,6 +1203,452 @@ class _HomeFab extends StatelessWidget {
         ),
         SizedBox(width: 12),
       ],
+    );
+  }
+}
+
+// ── 結合モード用アクションバー ──────────────────────────────────────────────
+class _MergeActionBar extends StatelessWidget {
+  final int selectedCount;
+  final VoidCallback onMerge;
+  final VoidCallback onCancel;
+
+  const _MergeActionBar({
+    required this.selectedCount,
+    required this.onMerge,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final canMerge = selectedCount >= 2;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.black87,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF5E81FF).withOpacity(canMerge ? 0.2 : 0.05),
+            blurRadius: 20, offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          TextButton(
+            onPressed: onCancel,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('キャンセル', style: TextStyle(color: Colors.white54, fontSize: 14)),
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: canMerge ? onMerge : null,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                gradient: canMerge
+                    ? const LinearGradient(colors: [Color.fromARGB(255, 255, 94, 172), Color(0xFF9E7AFF)])
+                    : null,
+                color: canMerge ? null : Colors.white.withOpacity(0.06),
+              ),
+              child: Expanded(
+                child: Text(
+                  overflow: TextOverflow.ellipsis,
+                  canMerge ? '$selectedCount件のシートを結合' : '2件以上選択',
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: canMerge ? Colors.white : Colors.white38,
+                    fontSize: 14, fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── 設定ページ (ユーザー定義定数管理) ────────────────────────────────────────
+class _SettingsPage extends StatefulWidget {
+  final List<Map<String, dynamic>> userConstants;
+  final void Function(List<Map<String, dynamic>>) onSave;
+
+  const _SettingsPage({
+    required this.userConstants,
+    required this.onSave,
+  });
+
+  @override
+  State<_SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<_SettingsPage> {
+  late List<Map<String, dynamic>> _constants;
+
+  static const _builtinConstants = [
+    {'label': 'π (円周率)', 'symbol': 'π', 'value': 3.14159265358979},
+    {'label': 'e (自然対数の底)', 'symbol': 'e', 'value': 2.71828182845905},
+    {'label': 'g (重力加速度)', 'symbol': 'g', 'value': 9.80665},
+    {'label': 'φ (黄金比)', 'symbol': 'φ', 'value': 1.61803398874989},
+    {'label': 'c (光速 m/s)', 'symbol': 'c', 'value': 299792458.0},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _constants = List<Map<String, dynamic>>.from(widget.userConstants);
+  }
+
+  String _fmt(double v) {
+    if (v == v.truncateToDouble() && v.abs() < 1e15) return v.toInt().toString();
+    return v.toString();
+  }
+
+  void _addConstant() async {
+    final result = await _showEditConstantDialog(
+      context,
+      name: '',
+      value: '0',
+      isNew: true,
+    );
+    if (result != null) {
+      setState(() {
+        _constants.add({
+          'id': DateTime.now().millisecondsSinceEpoch.toString(),
+          'name': result['name'] as String,
+          'value': double.tryParse(result['value'] as String) ?? 0.0,
+        });
+      });
+      widget.onSave(_constants);
+    }
+  }
+
+  void _editConstant(int idx) async {
+    final c = _constants[idx];
+    final result = await _showEditConstantDialog(
+      context,
+      name: c['name'] as String? ?? '',
+      value: _fmt((c['value'] as num? ?? 0.0).toDouble()),
+      isNew: false,
+    );
+    if (result == null) return;
+    if (result['delete'] == true) {
+      setState(() => _constants.removeAt(idx));
+    } else {
+      setState(() {
+        _constants[idx] = {
+          'id': c['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+          'name': result['name'] as String,
+          'value': double.tryParse(result['value'] as String) ?? 0.0,
+        };
+      });
+    }
+    widget.onSave(_constants);
+  }
+
+  Future<Map<String, dynamic>?> _showEditConstantDialog(
+    BuildContext context, {
+    required String name,
+    required String value,
+    required bool isNew,
+  }) {
+    final nameCtrl = TextEditingController(text: name);
+    final valCtrl = TextEditingController(text: value);
+    return showModalBottomSheet<Map<String, dynamic>?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.black87,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (_, setSS) => Padding(
+          padding: EdgeInsets.only(
+            left: 24, right: 24, top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      isNew ? '定数を追加' : '定数を編集',
+                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.pop(ctx),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Text('名前', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              const SizedBox(height: 6),
+              TextField(
+                controller: nameCtrl,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: '例: 消費税率',
+                  hintStyle: TextStyle(color: Colors.white24),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('値', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              const SizedBox(height: 6),
+              TextField(
+                controller: valCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                style: const TextStyle(color: Colors.white, fontSize: 20),
+                decoration: const InputDecoration(
+                  hintText: '0.0',
+                  hintStyle: TextStyle(color: Colors.white24),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  if (!isNew)
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, {'delete': true}),
+                      child: const Text('削除', style: TextStyle(color: Colors.redAccent)),
+                    ),
+                  const Spacer(),
+                  SizedBox(
+                    width: 120,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: () => Navigator.pop(ctx, {
+                        'name': nameCtrl.text.trim(),
+                        'value': valCtrl.text.trim(),
+                      }),
+                      child: const Text('保存', style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D0D14),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0D0D14),
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          '設定',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+        children: [
+          // ── 組み込み定数 ────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
+            child: Text(
+              '組み込み定数',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.45),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.black87,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              children: _builtinConstants.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final c = entry.value;
+                final isLast = idx == _builtinConstants.length - 1;
+                return Column(
+                  children: [
+                    ListTile(
+                      leading: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.amberAccent.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: Text(
+                            c['symbol'] as String,
+                            style: const TextStyle(
+                              color: Colors.amberAccent,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'ZenOldMincho',
+                            ),
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        c['label'] as String,
+                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                      ),
+                      trailing: Text(
+                        _fmt((c['value'] as num).toDouble()),
+                        style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13),
+                      ),
+                    ),
+                    if (!isLast)
+                      const Divider(color: Colors.white10, height: 1, indent: 16, endIndent: 16),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ── ユーザー定義定数 ─────────────────────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+                  child: Text(
+                    'ユーザー定義定数',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.45),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _addConstant,
+                icon: const Icon(Icons.add_rounded, size: 16, color: Color(0xFF5E81FF)),
+                label: const Text(
+                  '追加',
+                  style: TextStyle(color: Color(0xFF5E81FF), fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          if (_constants.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 28),
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Center(
+                child: Text(
+                  'まだ定数がありません\n右上の「追加」から追加できます',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13),
+                ),
+              ),
+            )
+          else
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.black87,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                children: _constants.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final c = entry.value;
+                  final isLast = idx == _constants.length - 1;
+                  return Column(
+                    children: [
+                      ListTile(
+                        leading: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF5E81FF).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              () {
+                                final s = c['name'] as String? ?? '';
+                                return s.isNotEmpty ? s.substring(0, 1).toUpperCase() : '?';
+                              }(),
+                              style: const TextStyle(
+                                color: Color(0xFF5E81FF),
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          c['name'] as String? ?? '',
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _fmt((c['value'] as num? ?? 0.0).toDouble()),
+                              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(Icons.edit_outlined, size: 16, color: Colors.white.withOpacity(0.3)),
+                          ],
+                        ),
+                        onTap: () => _editConstant(idx),
+                      ),
+                      if (!isLast)
+                        const Divider(color: Colors.white10, height: 1, indent: 16, endIndent: 16),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              'ユーザー定義定数は全シートの定数追加プリセットに表示されます',
+              style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
