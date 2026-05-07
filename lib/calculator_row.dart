@@ -40,6 +40,8 @@ class _CalculatorRow extends StatelessWidget {
   final bool nameVisible;
   final Widget? dragHandle;
   final bool wrapFormula;
+  /// 表モードのカスタム列ラベル (key: 'input'/'operand'/'other_N'/'result', value: label)
+  final Map<String, String>? termLabels;
 
   const _CalculatorRow({
     required this.name,
@@ -81,7 +83,22 @@ class _CalculatorRow extends StatelessWidget {
     this.nameVisible = true,
     this.dragHandle,
     this.wrapFormula = false,
+    this.termLabels,
   });
+
+  /// termLabels 優先、なければデフォルト
+  String _termLabel(String key) {
+    final custom = termLabels?[key];
+    if (custom != null && custom.isNotEmpty) return custom;
+    if (key == 'input') return '項1';
+    if (key == 'operand') return '項2';
+    if (key == 'result') return '答え';
+    if (key.startsWith('other_')) {
+      final i = int.tryParse(key.split('_')[1]) ?? 0;
+      return '項${i + 3}';
+    }
+    return key;
+  }
 
   void _showMiniCalcSheet(
     BuildContext context,
@@ -667,14 +684,14 @@ class _CalculatorRow extends StatelessWidget {
 
     String fieldLabel = '';
     if (target == 'result') {
-      fieldLabel = '答え';
+      fieldLabel = _termLabel('result');
     } else if (target == 'input') {
-      fieldLabel = '項1';
+      fieldLabel = _termLabel('input');
     } else if (target == 'operand') {
-      fieldLabel = '項2';
+      fieldLabel = _termLabel('operand');
     } else if (target.startsWith('other_')) {
       final idx = int.tryParse(target.split('_')[1]) ?? 0;
-      fieldLabel = '項${idx + 3}';
+      fieldLabel = _termLabel('other_$idx');
     }
 
     return '$rowName の $fieldLabel';
@@ -1345,6 +1362,12 @@ class _CalculatorRow extends StatelessWidget {
         return v > 0 ? math.log(v) / math.ln10 : 0;
       case 'reciprocal':
         return v != 0 ? 1.0 / v : 0;
+      case 'sin':
+        return math.sin(v);
+      case 'cos':
+        return math.cos(v);
+      case 'tan':
+        return math.tan(v);
       default:
         return v;
     }
@@ -1371,6 +1394,12 @@ class _CalculatorRow extends StatelessWidget {
         return Colors.green; // orange-ish
       case 'reciprocal':
         return Colors.pinkAccent;
+      case 'sin':
+        return Colors.blueAccent;
+      case 'cos':
+        return Colors.orangeAccent;
+      case 'tan':
+        return Colors.yellowAccent;
       default:
         return Colors.white70;
     }
@@ -1405,6 +1434,12 @@ class _CalculatorRow extends StatelessWidget {
         return 'log10($valStr)';
       case 'reciprocal':
         return '1/($valStr)';
+      case 'sin':
+        return 'sin($valStr)';
+      case 'cos':
+        return 'cos($valStr)';
+      case 'tan':
+        return 'tan($valStr)';
       default:
         return valStr;
     }
@@ -1470,6 +1505,12 @@ class _CalculatorRow extends StatelessWidget {
         );
       case 'reciprocal':
         return Text('1/(', style: ts(13));
+      case 'sin':
+        return Text('sin(', style: ts(13));
+      case 'cos':
+        return Text('cos(', style: ts(13));
+      case 'tan':
+        return Text('tan(', style: ts(13));
       default:
         return null;
     }
@@ -1510,6 +1551,9 @@ class _CalculatorRow extends StatelessWidget {
       case 'round':
       case 'log10':
       case 'reciprocal':
+      case 'sin':
+      case 'cos':
+      case 'tan':
         return Text(')', style: ts(13));
       default:
         return null;
@@ -1555,10 +1599,10 @@ class _CalculatorRow extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        '項1の設定',
-                        style: TextStyle(
+                        '${_termLabel('input')}の設定',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -1767,6 +1811,9 @@ class _CalculatorRow extends StatelessWidget {
                         ['round 四捨五入', 'round'],
                         ['log10 対数', 'log10'],
                         ['1/x 逆数', 'reciprocal'],
+                        ['sin', 'sin'],
+                        ['cos', 'cos'],
+                        ['tan', 'tan'],
                       ])
                         Padding(
                           padding: const EdgeInsets.only(right: 8),
@@ -2014,10 +2061,10 @@ class _CalculatorRow extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        '項2の設定',
-                        style: TextStyle(
+                        '${_termLabel('operand')}の設定',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -2225,6 +2272,9 @@ class _CalculatorRow extends StatelessWidget {
                         ['round 四捨五入', 'round'],
                         ['log10 対数', 'log10'],
                         ['1/x 逆数', 'reciprocal'],
+                        ['sin', 'sin'],
+                        ['cos', 'cos'],
+                        ['tan', 'tan'],
                       ])
                         Padding(
                           padding: const EdgeInsets.only(right: 8),
@@ -2524,7 +2574,7 @@ class _CalculatorRow extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        '項${idx + 3}の設定',
+                        '${_termLabel('other_$idx')}の設定',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -2733,6 +2783,9 @@ class _CalculatorRow extends StatelessWidget {
                         ['round 四捨五入', 'round'],
                         ['log10 対数', 'log10'],
                         ['1/x 逆数', 'reciprocal'],
+                        ['sin', 'sin'],
+                        ['cos', 'cos'],
+                        ['tan', 'tan'],
                       ])
                         Padding(
                           padding: const EdgeInsets.only(right: 8),

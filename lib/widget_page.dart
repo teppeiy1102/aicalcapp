@@ -3,9 +3,7 @@ library widget_page;
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:convert';
-import 'dart:ui' as ui;
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -492,11 +490,11 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
 
     // DraggableScrollableController.size で正確なシート高さを取得
     final dsc = widget.sheetController;
-    final extent = (dsc != null && dsc.isAttached) ? dsc.size : 0.55;
+    final extent = (dsc != null && dsc.isAttached) ? dsc.size : 0.65;
     final sheetH = extent * screenH;
 
     // 固定 UI 要素の高さ（グリッド外）
-    const kFixedH = 202.0; // ハンドル12 + ヘッダー40 + gap4 + 追加ボタン40 + 表示部80 + gap6 + pad上8 + pad下16
+    const kFixedH = 242.0; // ハンドル12 + ヘッダー40 + gap4 + 追加ボタン40 + 表示部80 + gap6 + pad上8 + pad下16
     const kGridGapH = 24.0; // 4行間 × 6px
 
     final gridAvail = sheetH - kFixedH - kGridGapH - viewInsetsBottom;
@@ -525,13 +523,14 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
         padding: EdgeInsets.only(
           left: 10,
           right: 10,
-          top: 8,
-          bottom: viewInsetsBottom + 16,
+          top: 0,
+          //bottom: viewInsetsBottom + 16,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            SizedBox(height: 22),
             // ドラッグハンドル + 閉じるボタン
             SizedBox(
               height: 40,
@@ -562,7 +561,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                 ],
               ),
             ),
-
+            
             const SizedBox(height: 4),
             // 「追加」ボタン
             AnimatedOpacity(
@@ -933,9 +932,29 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
 
   Widget _buildBottomBar() {
     final isViewMode = _config.data['viewMode'] as bool? ?? false;
+    final isTableMode = _config.data['tableMode'] as bool? ?? false;
     final bgColorValue = _config.data['bgColor'] as int?;
     final barBgColor = bgColorValue != null ? Color(bgColorValue) : const Color(0xFF161625);
     final isDarkBar = barBgColor.computeLuminance() < 0.5;
+
+    // 現在のモードアイコン・ラベル・色を決定
+    final IconData modeIcon;
+    final String modeLabel;
+    final Color modeColor;
+    if (isTableMode) {
+      modeIcon = Icons.table_chart_rounded;
+      modeLabel = '表モード';
+      modeColor = const Color(0xFF4CAF50);
+    } else if (isViewMode) {
+      modeIcon = Icons.visibility_rounded;
+      modeLabel = '閲覧モード';
+      modeColor = const Color(0xFF5E81FF);
+    } else {
+      modeIcon = Icons.edit_note_rounded;
+      modeLabel = '編集モード';
+      modeColor = isDarkBar ? Colors.white38 : Colors.black45;
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: barBgColor,
@@ -980,12 +999,20 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                     },
                   ),
                   _ToolbarButton(
-                    icon: isViewMode ? Icons.edit_note_rounded : Icons.visibility_rounded,
-                    label: isViewMode ? '編集モード' : '閲覧モード',
-                    color: isViewMode ? const Color(0xFF5E81FF) : (isDarkBar ? Colors.white38 : Colors.black45),
-                    onTap: () => _handleUpdate(
-                      {..._config.data, 'viewMode': !isViewMode},
-                    ),
+                    icon: modeIcon,
+                    label: modeLabel,
+                    color: modeColor,
+                    onTap: () {
+                      // タップで順番に切り替え: 編集 → 閲覧 → 表 → 編集
+                      if (isTableMode) {
+                        _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': false});
+                      } else if (isViewMode) {
+                        _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': true});
+                      } else {
+                        _handleUpdate({..._config.data, 'viewMode': true, 'tableMode': false});
+                      }
+                    },
+                    onLongPress: () => _showModePickerSheet(isDarkBar),
                   ),
                   _ToolbarButton(
                     icon: Icons.calculate_rounded,
@@ -996,6 +1023,92 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showModePickerSheet(bool isDark) {
+    final isViewMode = _config.data['viewMode'] as bool? ?? false;
+    final isTableMode = _config.data['tableMode'] as bool? ?? false;
+    final isEditMode = !isViewMode && !isTableMode;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text('表示モードを選択', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                  IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => Navigator.pop(ctx), padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+                ],
+              ),
+            ),
+            const Divider(color: Colors.white12, height: 1),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: (isEditMode ? Colors.white : Colors.white.withOpacity(0.07)).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.edit_note_rounded, color: isEditMode ? Colors.white : Colors.white54, size: 22),
+              ),
+              title: const Text('編集モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              subtitle: const Text('計算式を編集できます', style: TextStyle(color: Colors.white38, fontSize: 12)),
+              trailing: isEditMode ? const Icon(Icons.check_circle_rounded, color: Color(0xFF5E81FF)) : null,
+              onTap: () {
+                Navigator.pop(ctx);
+                _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': false});
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: (isViewMode ? const Color(0xFF5E81FF) : Colors.white.withOpacity(0.07)).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.visibility_rounded, color: isViewMode ? const Color(0xFF5E81FF) : Colors.white54, size: 22),
+              ),
+              title: const Text('閲覧モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              subtitle: const Text('定数・メモ・計算結果を表示します', style: TextStyle(color: Colors.white38, fontSize: 12)),
+              trailing: isViewMode ? const Icon(Icons.check_circle_rounded, color: Color(0xFF5E81FF)) : null,
+              onTap: () {
+                Navigator.pop(ctx);
+                _handleUpdate({..._config.data, 'viewMode': true, 'tableMode': false});
+              },
+            ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: (isTableMode ? const Color(0xFF4CAF50) : Colors.white.withOpacity(0.07)).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.table_chart_rounded, color: isTableMode ? const Color(0xFF4CAF50) : Colors.white54, size: 22),
+              ),
+              title: const Text('表モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              subtitle: const Text('値のみをシート形式で表示・編集できます', style: TextStyle(color: Colors.white38, fontSize: 12)),
+              trailing: isTableMode ? const Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50)) : null,
+              onTap: () {
+                Navigator.pop(ctx);
+                _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': true});
+              },
+            ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -1042,12 +1155,12 @@ class _CalcDraggableSheetContentState
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
       controller: _dsc,
-      initialChildSize: 0.55,
+      initialChildSize: 0.65,
       minChildSize: 0.55,
-      maxChildSize: 0.92,
+      maxChildSize: 0.72,
       expand: true,
       snap: true,
-      snapSizes: const [0.55, 0.72],
+      snapSizes: const [0.55, 0.65,0.72],
       builder: (ctx, scrollController) {
         final sheetColor = widget.bgColor != null
             ? Color(widget.bgColor!)
@@ -1142,6 +1255,7 @@ class _ToolbarButton extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
   final bool isLoading;
 
   const _ToolbarButton({
@@ -1149,6 +1263,7 @@ class _ToolbarButton extends StatelessWidget {
     required this.label,
     required this.color,
     required this.onTap,
+    this.onLongPress,
     this.isLoading = false,
   });
 
@@ -1156,6 +1271,7 @@ class _ToolbarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: isLoading ? null : onTap,
+      onLongPress: isLoading ? null : onLongPress,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

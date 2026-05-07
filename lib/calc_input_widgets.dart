@@ -67,6 +67,7 @@ class _CalcKeyButtonState extends State<_CalcKeyButton>
       child: ScaleTransition(
         scale: _scale,
         child: Container(
+          constraints: BoxConstraints(maxHeight: 50),
           decoration: BoxDecoration(
             color: widget.bg,
             borderRadius: BorderRadius.circular(1000),

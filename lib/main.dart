@@ -3,13 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'ai_service.dart';
 import 'widget_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
-  GroundingDinoService.hfToken = dotenv.env['HF_TOKEN'] ?? '';
   runApp(const MyApp());
 }
 
@@ -27,9 +25,7 @@ class MyApp extends StatelessWidget {
           primary: Color(0xFF5E81FF),
           surface: Color.fromARGB(255, 31, 31, 31),
         ),
-        textTheme: ThemeData.dark().textTheme.apply(
-          fontFamily: 'NotoSansJP',
-        ),
+        textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'NotoSansJP'),
         primaryTextTheme: ThemeData.dark().textTheme.apply(
           fontFamily: 'NotoSansJP',
         ),
@@ -73,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
             'unit1': 'kg',
             'unit2': 'kg',
             'unitResult': 'kg',
-          }
+          },
         ],
         'isExpanded': true,
         'bgColor': 0xFF1A1A2E,
@@ -112,30 +108,38 @@ class _HomeScreenState extends State<HomeScreen> {
         final loaded = list.map((e) {
           final m = e as Map<String, dynamic>;
           return WidgetConfig(
-            id: m['id'] as String? ?? '${DateTime.now().millisecondsSinceEpoch}',
+            id:
+                m['id'] as String? ??
+                '${DateTime.now().millisecondsSinceEpoch}',
             type: m['type'] as String? ?? 'calculator',
             data: _deepCopy(m['data']) as Map<String, dynamic>,
           );
         }).toList();
-        if (mounted) setState(() { _configs = loaded; _isLoading = false; });
+        if (mounted)
+          setState(() {
+            _configs = loaded;
+            _isLoading = false;
+          });
         return;
       }
     } catch (e, st) {
       // 読み込み失敗時はデフォルトに戻す
       debugPrint('[_loadConfigs] 読み込みに失敗しました: $e\n$st');
     }
-    if (mounted) setState(() { _configs = _defaultConfigs; _isLoading = false; });
+    if (mounted)
+      setState(() {
+        _configs = _defaultConfigs;
+        _isLoading = false;
+      });
   }
 
   // ── SharedPreferences へ保存 ─────────────────────────────────────────────
   Future<void> _saveConfigs() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final list = _configs.map((c) => {
-        'id': c.id,
-        'type': c.type,
-        'data': c.data,
-      }).toList();
+      final list = _configs
+          .map((c) => {'id': c.id, 'type': c.type, 'data': c.data})
+          .toList();
       await prefs.setString(_kPrefsKey, json.encode(list));
     } catch (e, st) {
       // 保存失敗をデバッグコンソールに記録（アプリはクラッシュさせない）
@@ -236,7 +240,10 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF161625),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('シートの削除', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'シートの削除',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         content: Text(
           '「${_configs[index].data['title'] ?? '定型計算'}」を削除しますか？この操作は取り消せません。',
           style: const TextStyle(color: Colors.white60, fontSize: 14),
@@ -252,7 +259,13 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pop(ctx);
               _saveConfigs();
             },
-            child: const Text('削除する', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            child: const Text(
+              '削除する',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -286,7 +299,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Color(0xFF0D0D14),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFF5E81FF))),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF5E81FF)),
+        ),
       );
     }
     return Scaffold(
@@ -366,15 +381,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             letterSpacing: 0.2,
                           ),
                         ),
-                        Spacer(flex: 1,)
+                        Spacer(flex: 1),
                       ],
                     ),
                   ),
                 ),
                 if (_configs.isEmpty)
-                  const SliverFillRemaining(
-                    child: _EmptyState(),
-                  )
+                  const SliverFillRemaining(child: _EmptyState())
                 else
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(24, 8, 24, 140),
@@ -402,21 +415,17 @@ class _HomeScreenState extends State<HomeScreen> {
             right: 0,
             left: 0,
 
-            child:Container(
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [
-                  Colors.black,
-                  Colors.black,
-                  Colors.transparent
-                ],
+            child: Container(
+              height: 80,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [Colors.black, Colors.black, Colors.transparent],
+                ),
               ),
             ),
-          )),
-
+          ),
         ],
       ),
       floatingActionButton: _HomeFab(
@@ -447,7 +456,37 @@ class _EmptyState extends StatelessWidget {
               border: Border.all(color: Colors.white.withOpacity(0.05)),
             ),
             child: Icon(
-              Icons.auto_awesome_mosaic_rounded, color: Colors.white.withOpacity(0.15), size: 40,),), const SizedBox(height: 32), const Text( 'まだシートがありません', style: TextStyle( color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.5,),), const SizedBox(height: 12), Text( '計算を自動化する魔法を始めましょう', style: TextStyle( color: Colors.white.withOpacity(0.3), fontSize: 14, fontWeight: FontWeight.w400,),), ],),); } } class _WidgetCard extends StatefulWidget {
+              Icons.auto_awesome_mosaic_rounded,
+              color: Colors.white.withOpacity(0.15),
+              size: 40,
+            ),
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            'まだシートがありません',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '計算を自動化する魔法を始めましょう',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.3),
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WidgetCard extends StatefulWidget {
   final WidgetConfig config;
   final int index;
   final VoidCallback onTap;
@@ -462,9 +501,7 @@ class _EmptyState extends StatelessWidget {
     required this.onUpdate,
   });
 
-  static const List<Color> _accentColors = [
-    Color(0xFF5E81FF),
-  ];
+  static const List<Color> _accentColors = [Color(0xFF5E81FF)];
 
   @override
   State<_WidgetCard> createState() => _WidgetCardState();
@@ -478,83 +515,94 @@ class _WidgetCardState extends State<_WidgetCard> {
     final title = widget.config.data['title'] as String? ?? '定型計算';
     final items = widget.config.data['items'] as List<dynamic>? ?? [];
     final memos = widget.config.data['memos'] as List<dynamic>? ?? [];
-    final accent = _WidgetCard._accentColors[widget.index % _WidgetCard._accentColors.length];
+    final accent = _WidgetCard
+        ._accentColors[widget.index % _WidgetCard._accentColors.length];
     final bgColorValue = widget.config.data['bgColor'] as int?;
-    final cardBgColor = bgColorValue != null ? Color(bgColorValue) : const Color(0xFF1A1A26);
+    final cardBgColor = bgColorValue != null
+        ? Color(bgColorValue)
+        : const Color(0xFF1A1A26);
     final isDark = cardBgColor.computeLuminance() < 0.5;
     final titleColor = isDark ? Colors.white : const Color(0xFF1A1A2E);
     final subIconColor = isDark ? Colors.white24 : Colors.black26;
-    final borderColor = isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.12);
+    final borderColor = isDark
+        ? Colors.white.withOpacity(0.06)
+        : Colors.black.withOpacity(0.12);
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
         color: cardBgColor.withAlpha(240),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: widget.onTap,
-                splashColor: accent.withOpacity(0.1),
-                highlightColor: accent.withOpacity(0.05),
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(16, 15, 10, 15),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: borderColor,
-                      width: 1.5,
-                    ),
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(32),
-                      topRight: const Radius.circular(32),
-                      bottomLeft: _isExpanded ? Radius.zero : const Radius.circular(32),
-                      bottomRight: _isExpanded ? Radius.zero : const Radius.circular(32),
-                    ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              splashColor: accent.withOpacity(0.1),
+              highlightColor: accent.withOpacity(0.05),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 15, 10, 15),
+                decoration: BoxDecoration(
+                  border: Border.all(color: borderColor, width: 1.5),
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(32),
+                    topRight: const Radius.circular(32),
+                    bottomLeft: _isExpanded
+                        ? Radius.zero
+                        : const Radius.circular(32),
+                    bottomRight: _isExpanded
+                        ? Radius.zero
+                        : const Radius.circular(32),
                   ),
-                  child: Row(
-                    children: [
-                      ReorderableDragStartListener(
-                        index: widget.index,
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: Icon(
-                            Icons.drag_indicator,
-                            color: subIconColor,
-                            size: 22,
-                          ),
+                ),
+                child: Row(
+                  children: [
+                    ReorderableDragStartListener(
+                      index: widget.index,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Icon(
+                          Icons.drag_indicator,
+                          color: subIconColor,
+                          size: 22,
                         ),
                       ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              style: TextStyle(
-                                color: titleColor,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.5,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              color: titleColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.5,
                             ),
-                            const SizedBox(height: 8),
-                            Row(
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: accent.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(10),
@@ -569,7 +617,9 @@ class _WidgetCardState extends State<_WidgetCard> {
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        items.isEmpty ? '計算式未設定' : '${items.length}件の計算項目',
+                                        items.isEmpty
+                                            ? '計算式未設定'
+                                            : '${items.length}件の計算項目',
                                         style: TextStyle(
                                           color: accent.withOpacity(0.9),
                                           fontSize: 11,
@@ -579,11 +629,13 @@ class _WidgetCardState extends State<_WidgetCard> {
                                     ],
                                   ),
                                 ),
-                                if (memos.isNotEmpty) ...
-                                [
+                                if (memos.isNotEmpty) ...[
                                   const SizedBox(width: 6),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.amber.withOpacity(0.12),
                                       borderRadius: BorderRadius.circular(10),
@@ -611,62 +663,66 @@ class _WidgetCardState extends State<_WidgetCard> {
                                 ],
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-                      Column(children: [
-                    
-                      GestureDetector(
-                        onTap: widget.onDelete,
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.03),
-                            shape: BoxShape.circle,
                           ),
-                          child: Icon(
-                            Icons.delete_sweep_rounded,
-                            color: isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.25),
-                            size: 22,
-                          ),
-                        ),
+                        ],
                       ),
-                      SizedBox(height: 10,),
-        GestureDetector(
-                        onTap: () => setState(() => _isExpanded = !_isExpanded),
-                        child: Padding(
-                          padding: const EdgeInsets.all(0),
-                          child: Icon(
-                            _isExpanded
-                                ? Icons.keyboard_arrow_up_rounded
-                                : Icons.keyboard_arrow_down_rounded,
-                            color: isDark ? Colors.white38 : Colors.black38,
-                            size: 22,
+                    ),
+                    Column(
+                      children: [
+                        GestureDetector(
+                          onTap: widget.onDelete,
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.03),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.delete_sweep_rounded,
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.2)
+                                  : Colors.black.withOpacity(0.25),
+                              size: 22,
+                            ),
                           ),
                         ),
-                      ),
-      
-                      ],)
-                   ],
-                  ),
+                        SizedBox(height: 10),
+                        GestureDetector(
+                          onTap: () =>
+                              setState(() => _isExpanded = !_isExpanded),
+                          child: Padding(
+                            padding: const EdgeInsets.all(0),
+                            child: Icon(
+                              _isExpanded
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              color: isDark ? Colors.white38 : Colors.black38,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ),
-            if (_isExpanded)
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
-                ),
-                child: CalculatorViewCard(
-                  config: widget.config,
-                  onUpdate: widget.onUpdate,
-                  contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                ),
+          ),
+          if (_isExpanded)
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
               ),
-          ],
-        ),
-      );
+              child: CalculatorViewCard(
+                config: widget.config,
+                onUpdate: widget.onUpdate,
+                contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -686,7 +742,7 @@ class _HomeFab extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Spacer(),
-    
+
         // 新規シートボタン
         GestureDetector(
           onTap: onAddSheet,
@@ -730,7 +786,7 @@ class _HomeFab extends StatelessWidget {
           ),
         ),
         Spacer(),
-    // 電卓ボタン
+        // 電卓ボタン
         GestureDetector(
           onTap: onOpenCalc,
           child: AnimatedContainer(
@@ -739,7 +795,7 @@ class _HomeFab extends StatelessWidget {
             width: 64,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
-             gradient: const LinearGradient(
+              gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
@@ -749,24 +805,22 @@ class _HomeFab extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF5E81FF).withOpacity(
-                    calcActive ? 0.35 : 0.15,
-                  ),
+                  color: const Color(
+                    0xFF5E81FF,
+                  ).withOpacity(calcActive ? 0.35 : 0.15),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
               ],
             ),
             child: Icon(
-              calcActive
-                  ? Icons.calculate_rounded
-                  : Icons.calculate_outlined,
+              calcActive ? Icons.calculate_rounded : Icons.calculate_outlined,
               color: calcActive ? Colors.black : Colors.black,
               size: 28,
             ),
           ),
         ),
-        SizedBox(width: 12,)
+        SizedBox(width: 12),
       ],
     );
   }
