@@ -53,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
   PersistentBottomSheetController? _calcSheetController;
   bool _isSelectMode = false;
   final Set<int> _selectedForMerge = {};
+  String? _appendTargetSheetId;
   /// アプリ内クリップボード（シート間共有）
   final ValueNotifier<Map<String, dynamic>?> _clipboardNotifier = ValueNotifier(null);
 
@@ -333,6 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mergedConfig: config,
             onMergedUpdate: (data) => _updateConfig(index, data),
             sheets: sheets,
+            allConfigs: _configs,
             onSheetUpdate: (sheetId, data) {
               final idx = _configs.indexWhere((c) => c.id == sheetId);
               if (idx != -1) {
@@ -457,13 +459,39 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_configs.isEmpty) return;
     setState(() {
       _isSelectMode = true;
+      _appendTargetSheetId = null;
       _selectedForMerge.clear();
+    });
+  }
+
+  void _startAppendMode(String targetId) {
+    if (_configs.isEmpty) return;
+    final targetIdx = _configs.indexWhere((c) => c.id == targetId);
+    if (targetIdx == -1) return;
+    
+    final targetConfig = _configs[targetIdx];
+    final currentSheetIds = (targetConfig.data['sheetIds'] as List<dynamic>? ?? []).map((e) => e as String).toList();
+    
+    final initialSelected = <int>{};
+    for (final id in currentSheetIds) {
+      final idx = _configs.indexWhere((c) => c.id == id);
+      if (idx != -1) {
+        initialSelected.add(idx);
+      }
+    }
+
+    setState(() {
+      _isSelectMode = true;
+      _appendTargetSheetId = targetId;
+      _selectedForMerge.clear();
+      _selectedForMerge.addAll(initialSelected);
     });
   }
 
   void _cancelSelectMode() {
     setState(() {
       _isSelectMode = false;
+      _appendTargetSheetId = null;
       _selectedForMerge.clear();
     });
   }
@@ -478,7 +506,46 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _createMergedConfig() {
+  void _executeMergeOrAppend() {
+    if (_appendTargetSheetId != null) {
+      if (_selectedForMerge.isEmpty) return;
+      final targetIdx = _configs.indexWhere((c) => c.id == _appendTargetSheetId);
+      if (targetIdx != -1) {
+        final targetConfig = _configs[targetIdx];
+        final currentSheetIds = (targetConfig.data['sheetIds'] as List<dynamic>? ?? []).map((e) => e as String).toList();
+        
+        final List<String> finalSheetIds = [];
+        
+        // 既存のシートのうち、引き続き選択されているものを元の順序で追加
+        for (final id in currentSheetIds) {
+          final idx = _configs.indexWhere((c) => c.id == id);
+          if (idx != -1 && _selectedForMerge.contains(idx)) {
+            finalSheetIds.add(id);
+          }
+        }
+        
+        // 新しく選択されたシートを追加
+        final newlySelectedIdxs = _selectedForMerge.where((idx) {
+          final id = _configs[idx].id;
+          return !currentSheetIds.contains(id);
+        }).toList()..sort();
+        
+        for (final idx in newlySelectedIdxs) {
+          finalSheetIds.add(_configs[idx].id);
+        }
+        
+        final newConfig = targetConfig.copyWith(data: {...targetConfig.data, 'sheetIds': finalSheetIds});
+        setState(() {
+          _configs[targetIdx] = newConfig;
+          _isSelectMode = false;
+          _appendTargetSheetId = null;
+          _selectedForMerge.clear();
+        });
+        _saveConfigs();
+      }
+      return;
+    }
+
     if (_selectedForMerge.length < 2) return;
     final sorted = _selectedForMerge.toList()..sort();
     final selectedConfigs = sorted.map((i) => _configs[i]).toList();
@@ -662,7 +729,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: _WidgetCard(
                             config: cfg,
                             index: i,
-                            onTap: _isSelectMode ? () => _toggleSelection(i) : () => _openDetail(i),
+                            onTap: _isSelectMode
+                                ? (_appendTargetSheetId == cfg.id ? () {} : () => _toggleSelection(i))
+                                : () => _openDetail(i),
                             onDelete: () => _deleteConfig(i),
                             onUpdate: (data) => _updateConfig(i, data),
                             isSelectMode: _isSelectMode,
@@ -676,6 +745,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               sheetIds.insert(newIdx, id);
                               _updateConfig(i, {...cfg.data, 'sheetIds': sheetIds});
                             },
+                            onTapSheet: (sheetId) {
+                              final sheetIdx = _configs.indexWhere((c) => c.id == sheetId);
+                              if (sheetIdx != -1) {
+                                _openDetail(sheetIdx);
+                              }
+                            },
+                            onAppendTap: () => _startAppendMode(cfg.id),
                           ),
                         );
                       },
@@ -705,8 +781,9 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: _isSelectMode
           ? _MergeActionBar(
               selectedCount: _selectedForMerge.length,
-              onMerge: _createMergedConfig,
+              onMerge: _executeMergeOrAppend,
               onCancel: _cancelSelectMode,
+              isAppendMode: _appendTargetSheetId != null,
             )
           : _HomeFab(
               onOpenCalc: _openHomeCalc,
@@ -786,6 +863,8 @@ class _WidgetCard extends StatefulWidget {
   final bool isSelected;
   final List<WidgetConfig>? resolvedSheets;
   final void Function(int oldIndex, int newIndex)? onReorderSheets;
+  final void Function(String sheetId)? onTapSheet;
+  final VoidCallback? onAppendTap;
 
   const _WidgetCard({
     required this.config,
@@ -797,6 +876,8 @@ class _WidgetCard extends StatefulWidget {
     this.isSelected = false,
     this.resolvedSheets,
     this.onReorderSheets,
+    this.onTapSheet,
+    this.onAppendTap,
   });
 
   static const List<Color> _accentColors = [Color(0xFF5E81FF)];
@@ -1084,26 +1165,60 @@ class _WidgetCardState extends State<_WidgetCard> {
                         color: isDark ? Colors.white24 : Colors.black26, size: 18),
                   ),
                 ),
-                Container(
-                  width: 12, height: 12, margin: const EdgeInsets.only(right: 10),
-                  decoration: BoxDecoration(
-                    color: sColor,
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.5),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => widget.onTapSheet?.call(s.id),
+                    behavior: HitTestBehavior.opaque,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 12, height: 12, margin: const EdgeInsets.only(right: 10),
+                          decoration: BoxDecoration(
+                            color: sColor,
+                            borderRadius: BorderRadius.circular(30),
+                            border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.5),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(sTitle,
+                            style: TextStyle(color: isDark ? Colors.white70 : Colors.black54,
+                                fontSize: 16, fontWeight: FontWeight.w600),
+                            overflow: TextOverflow.ellipsis),
+                        ),
+                        Text('$sItemCount件',
+                            style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 11)),
+                      ],
+                    ),
                   ),
                 ),
-                Expanded(
-                  child: Text(sTitle,
-                    style: TextStyle(color: isDark ? Colors.white70 : Colors.black54,
-                        fontSize: 16, fontWeight: FontWeight.w600),
-                    overflow: TextOverflow.ellipsis),
-                ),
-                Text('$sItemCount件',
-                    style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 11)),
               ],
             ),
           );
         },
+        footer: widget.onAppendTap == null ? null : Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 8),
+          child: InkWell(
+            onTap: widget.onAppendTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add_rounded, size: 18, color: isDark ? Colors.white70 : Colors.black54),
+                  const SizedBox(width: 8),
+                  Text('シートを追加', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 13, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1214,16 +1329,18 @@ class _MergeActionBar extends StatelessWidget {
   final int selectedCount;
   final VoidCallback onMerge;
   final VoidCallback onCancel;
+  final bool isAppendMode;
 
   const _MergeActionBar({
     required this.selectedCount,
     required this.onMerge,
     required this.onCancel,
+    this.isAppendMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final canMerge = selectedCount >= 2;
+    final canMerge = isAppendMode ? selectedCount >= 1 : selectedCount >= 2;
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 0, 24, 16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1264,7 +1381,9 @@ class _MergeActionBar extends StatelessWidget {
               child: Expanded(
                 child: Text(
                   overflow: TextOverflow.ellipsis,
-                  canMerge ? '$selectedCount件のシートを結合' : '2件以上選択',
+                  canMerge 
+                      ? (isAppendMode ? '$selectedCount件のシートを追加' : '$selectedCount件のシートを結合') 
+                      : (isAppendMode ? '1件以上選択' : '2件以上選択'),
                   maxLines: 1,
                   style: TextStyle(
                     color: canMerge ? Colors.white : Colors.white38,

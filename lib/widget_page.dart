@@ -1291,6 +1291,7 @@ class MergedDetailPage extends StatefulWidget {
   final void Function(String sheetId) onSheetDuplicate;
   final List<Map<String, dynamic>> globalConstants;
   final ValueNotifier<Map<String, dynamic>?>? clipboardNotifier;
+  final List<WidgetConfig> allConfigs;
 
   const MergedDetailPage({
     super.key,
@@ -1301,6 +1302,7 @@ class MergedDetailPage extends StatefulWidget {
     required this.onSheetDuplicate,
     this.globalConstants = const [],
     this.clipboardNotifier,
+    this.allConfigs = const [],
   });
 
   @override
@@ -1519,8 +1521,10 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                     onDuplicate: () => widget.onSheetDuplicate(id),
                     globalConstants: widget.globalConstants,
                     clipboardNotifier: widget.clipboardNotifier,
-                    allConfigs: widget.sheets,
+                    allConfigs: widget.allConfigs,
                     mergedSiblingIds: _sheetIds.where((sid) => sid != id).toSet(),
+                    onSheetUpdate: widget.onSheetUpdate,
+                    onSheetDuplicate: widget.onSheetDuplicate,
                   ),
                 );
               },
@@ -1538,6 +1542,8 @@ class _MergedSheetSection extends StatefulWidget {
   final ValueNotifier<Map<String, dynamic>?>? clipboardNotifier;
   final List<WidgetConfig> allConfigs;
   final Set<String> mergedSiblingIds;
+  final void Function(String, Map<String, dynamic>)? onSheetUpdate;
+  final void Function(String)? onSheetDuplicate;
 
   const _MergedSheetSection({
     super.key,
@@ -1549,6 +1555,8 @@ class _MergedSheetSection extends StatefulWidget {
     this.clipboardNotifier,
     this.allConfigs = const [],
     this.mergedSiblingIds = const {},
+    this.onSheetUpdate,
+    this.onSheetDuplicate,
   });
 
   @override
@@ -1840,21 +1848,24 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
               ],
             ),
           ),
-          // 計算ウィジェット
-          _CalculatorWidget(
-            key: _calcKey,
-            config: _config,
-            onUpdate: _handleUpdate,
-            onDuplicate: () => widget.onDuplicate?.call(),
-            showToolbar: false,
-            showHeader: false,
-            contentPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            onAiGeneratingChanged: (v) => setState(() => _isAiGenerating = v),
-            globalConstants: widget.globalConstants,
-            clipboardNotifier: widget.clipboardNotifier,
-            allConfigs: widget.allConfigs,
-            mergedSiblingIds: widget.mergedSiblingIds,
-          ),
+          // 計算ウィジェットまたはネストされた結合シート
+          if (_config.type == 'merged')
+            _buildNestedMergedCard(context, isDark)
+          else
+            _CalculatorWidget(
+              key: _calcKey,
+              config: _config,
+              onUpdate: _handleUpdate,
+              onDuplicate: () => widget.onDuplicate?.call(),
+              showToolbar: false,
+              showHeader: false,
+              contentPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              onAiGeneratingChanged: (v) => setState(() => _isAiGenerating = v),
+              globalConstants: widget.globalConstants,
+              clipboardNotifier: widget.clipboardNotifier,
+              allConfigs: widget.allConfigs,
+              mergedSiblingIds: widget.mergedSiblingIds,
+            ),
           // クリップボードバー
           if (widget.clipboardNotifier?.value != null)
             ClipboardBottomBar(
@@ -1864,6 +1875,49 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
           // ボトムバー
           _buildBottomBar(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNestedMergedCard(BuildContext context, bool isDark) {
+    final sheetIds = (_config.data['sheetIds'] as List<dynamic>? ?? []).map((e) => e as String).toList();
+    final sheets = sheetIds
+        .map((id) {
+          try { return widget.allConfigs.firstWhere((c) => c.id == id); }
+          catch (_) { return null; }
+        })
+        .whereType<WidgetConfig>()
+        .toList();
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MergedDetailPage(
+              mergedConfig: _config,
+              onMergedUpdate: (data) => _handleUpdate(data),
+              sheets: sheets,
+              allConfigs: widget.allConfigs,
+              onSheetUpdate: widget.onSheetUpdate ?? (_, __) {},
+              clipboardNotifier: widget.clipboardNotifier,
+              onSheetDuplicate: widget.onSheetDuplicate ?? (_) {},
+              globalConstants: widget.globalConstants,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(32),
+        alignment: Alignment.center,
+        child: Column(
+          children: [
+            Icon(Icons.folder_copy_rounded, size: 56, color: isDark ? Colors.white38 : Colors.black38),
+            const SizedBox(height: 16),
+            Text('${sheets.length}つのシートが結合されています', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('タップしてさらに展開', style: TextStyle(color: isDark ? const Color(0xFF5E81FF) : const Color(0xFF5E81FF), fontSize: 13, fontWeight: FontWeight.bold)),
+          ],
+        ),
       ),
     );
   }

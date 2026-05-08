@@ -2073,7 +2073,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                 ),
                               ),
                             )
-                          : (items.length <= 1
+                          : ((selectedSrcSheetId == null && items.length <= 1)
                               ? const Center(
                                   child: Text(
                                     '他の計算式がありません',
@@ -2088,7 +2088,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                       const EdgeInsets.symmetric(vertical: 8),
                                   itemCount: items.length,
                                   itemBuilder: (context, i) {
-                                    if (i == selectedSrcCalcIdx)
+                                    if (selectedSrcSheetId == null && i == selectedSrcCalcIdx)
                                       return const SizedBox.shrink();
                                     final item = items[i];
                                     final rowName = item['name'] as String? ??
