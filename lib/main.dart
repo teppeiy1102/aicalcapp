@@ -221,6 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onDuplicate: () => _duplicateConfig(0),
           globalConstants: _userConstants,
           clipboardNotifier: _clipboardNotifier,
+          allConfigs: _configs,
         ),
       ),
     );
@@ -360,7 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     '「${src.data['title'] ?? '定型計算'}」を複製しました',
                     style: const TextStyle(color: Colors.white),
                   ),
-                  backgroundColor: Colors.black87,
+                  backgroundColor: Colors.black,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   duration: const Duration(seconds: 2),
@@ -382,6 +383,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onDuplicate: () => _duplicateConfig(index),
           globalConstants: _userConstants,
           clipboardNotifier: _clipboardNotifier,
+          allConfigs: _configs,
         ),
       ),
     );
@@ -390,7 +392,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showMainMenu() {
     showModalBottomSheet(
       context: context,
-      backgroundColor:Colors.black87,
+      backgroundColor:Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -824,7 +826,7 @@ class _WidgetCardState extends State<_WidgetCard> {
         : bgColorValue;
     final cardBgColor = effectiveBgValue != null ? Color(effectiveBgValue) : const Color(0xFF1A1A26);
     final isDark = cardBgColor.computeLuminance() < 0.5;
-    final titleColor = isDark ? Colors.white : Colors.black87;
+    final titleColor = isDark ? Colors.white : Colors.black;
     final subIconColor = isDark ? Colors.white24 : Colors.black26;
     final borderColor = widget.isSelected
         ? const Color(0xFF5E81FF)
@@ -1226,7 +1228,7 @@ class _MergeActionBar extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(24, 0, 24, 16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.black87,
+        color: Colors.black,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
         boxShadow: [
@@ -1367,7 +1369,7 @@ class _SettingsPageState extends State<_SettingsPage> {
     return showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1489,7 +1491,7 @@ class _SettingsPageState extends State<_SettingsPage> {
           ),
           Container(
             decoration: BoxDecoration(
-              color: Colors.black87,
+              color: Colors.black,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
@@ -1569,7 +1571,7 @@ class _SettingsPageState extends State<_SettingsPage> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 28),
               decoration: BoxDecoration(
-                color: Colors.black87,
+                color: Colors.black,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Center(
@@ -1583,7 +1585,7 @@ class _SettingsPageState extends State<_SettingsPage> {
           else
             Container(
               decoration: BoxDecoration(
-                color: Colors.black87,
+                color: Colors.black,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(

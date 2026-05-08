@@ -319,7 +319,7 @@ class _AiCountPageState extends State<_AiCountPage> {
   void _showSourcePicker() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor:Colors.black87,
+      backgroundColor:Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -1013,7 +1013,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       insetPadding: EdgeInsets.zero,
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(16)),
       ),

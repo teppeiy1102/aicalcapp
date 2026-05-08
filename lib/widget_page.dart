@@ -467,12 +467,12 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
 
   Widget _buildLayout(BuildContext context) {
     final isDark = widget.isDark;
-    final textColor = isDark ? Colors.white : Colors.black87;
+    final textColor = isDark ? Colors.white : Colors.black;
     final keyBg = isDark
         ? Colors.white.withOpacity(0.1)
         : Colors.white.withOpacity(1);
-    final opColor = isDark ? Colors.blueAccent : Colors.black87;
-    final eqColor = isDark ? Colors.orangeAccent : Colors.black87;
+    final opColor = isDark ? Colors.blueAccent : Colors.black;
+    final eqColor = isDark ? Colors.orangeAccent : Colors.black;
 
     String inProg = '';
     if (_termValues.isNotEmpty) {
@@ -723,6 +723,7 @@ class WidgetDetailPage extends StatefulWidget {
   final VoidCallback onDuplicate;
   final List<Map<String, dynamic>> globalConstants;
   final ValueNotifier<Map<String, dynamic>?>? clipboardNotifier;
+  final List<WidgetConfig> allConfigs;
 
   const WidgetDetailPage({
     super.key,
@@ -731,6 +732,7 @@ class WidgetDetailPage extends StatefulWidget {
     required this.onDuplicate,
     this.globalConstants = const [],
     this.clipboardNotifier,
+    this.allConfigs = const [],
   });
 
   @override
@@ -852,7 +854,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
     final bgColorValue = _config.data['bgColor'] as int?;
     final scaffoldBgColor = bgColorValue != null ? Color(bgColorValue) : const Color(0xFF0D0D14);
     final isDark = scaffoldBgColor.computeLuminance() < 0.5;
-    final fgColor = isDark ? Colors.white :Colors.black87;
+    final fgColor = isDark ? Colors.white :Colors.black;
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: scaffoldBgColor,
@@ -932,6 +934,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   onAiGeneratingChanged: (v) => setState(() => _isAiGenerating = v),
                   globalConstants: widget.globalConstants,
                   clipboardNotifier: widget.clipboardNotifier,
+                  allConfigs: widget.allConfigs,
                 ),
               ),
             ),
@@ -1064,7 +1067,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
     final isEditMode = !isViewMode && !isTableMode;
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1193,7 +1196,7 @@ class _CalcDraggableSheetContentState
       builder: (ctx, scrollController) {
         final sheetColor = widget.bgColor != null
             ? Color(widget.bgColor!)
-            : Colors.black87;
+            : Colors.black;
         return Material(
           color: sheetColor,
           shadowColor: Colors.black.withOpacity(0.9),
@@ -1307,6 +1310,9 @@ class MergedDetailPage extends StatefulWidget {
 class _MergedDetailPageState extends State<MergedDetailPage> {
   late String _title;
   late List<String> _sheetIds;
+  late List<WidgetConfig> _localSheets;
+  // 0 = 編集, 1 = 閲覧, 2 = 表
+  int _globalMode = 0;
 
   @override
   void initState() {
@@ -1315,6 +1321,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
     _sheetIds = (widget.mergedConfig.data['sheetIds'] as List<dynamic>? ?? [])
         .map((e) => e as String)
         .toList();
+    _localSheets = List<WidgetConfig>.from(widget.sheets);
   }
 
   void _removeSheet(String sheetId) {
@@ -1328,6 +1335,83 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
       'title': _title,
       'sheetIds': _sheetIds,
     });
+  }
+
+  void _applyModeToAll(int mode) {
+    final bool viewMode = mode == 1;
+    final bool tableMode = mode == 2;
+    setState(() {
+      _globalMode = mode;
+      _localSheets = _localSheets.map((s) {
+        if (_sheetIds.contains(s.id)) {
+          return s.copyWith(data: {...s.data, 'viewMode': viewMode, 'tableMode': tableMode});
+        }
+        return s;
+      }).toList();
+    });
+    for (final id in _sheetIds) {
+      final cfg = _localSheets.firstWhere((s) => s.id == id, orElse: () => WidgetConfig(id: id, type: '', data: {}));
+      if (cfg.type.isEmpty) continue;
+      widget.onSheetUpdate(id, cfg.data);
+    }
+  }
+
+  void _showAllModePicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text('全シートの表示モード', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.pop(ctx),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(color: Colors.white12, height: 1),
+            ListTile(
+              leading: Icon(Icons.edit_note_rounded, color: _globalMode == 0 ? Colors.white : Colors.white54),
+              title: const Text('編集モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              subtitle: const Text('全シートに適用', style: TextStyle(color: Colors.white38, fontSize: 11)),
+              trailing: _globalMode == 0 ? const Icon(Icons.check_circle_rounded, color: Color(0xFF5E81FF)) : null,
+              onTap: () { Navigator.pop(ctx); _applyModeToAll(0); },
+            ),
+            ListTile(
+              leading: Icon(Icons.visibility_rounded, color: _globalMode == 1 ? const Color(0xFF5E81FF) : Colors.white54),
+              title: const Text('閲覧モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              subtitle: const Text('全シートに適用', style: TextStyle(color: Colors.white38, fontSize: 11)),
+              trailing: _globalMode == 1 ? const Icon(Icons.check_circle_rounded, color: Color(0xFF5E81FF)) : null,
+              onTap: () { Navigator.pop(ctx); _applyModeToAll(1); },
+            ),
+            ListTile(
+              leading: Icon(Icons.table_chart_rounded, color: _globalMode == 2 ? const Color(0xFF4CAF50) : Colors.white54),
+              title: const Text('表モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+              subtitle: const Text('全シートに適用', style: TextStyle(color: Colors.white38, fontSize: 11)),
+              trailing: _globalMode == 2 ? const Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50)) : null,
+              onTap: () { Navigator.pop(ctx); _applyModeToAll(2); },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -1347,7 +1431,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
             final res = await showDialog<String>(
               context: context,
               builder: (ctx) => AlertDialog(
-                backgroundColor: Colors.black87,
+                backgroundColor: Colors.black,
                 title: const Text('タイトル編集', style: TextStyle(color: Colors.white)),
                 content: TextField(
                   controller: ctrl,
@@ -1382,6 +1466,30 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
             ],
           ),
         ),
+        actions: [
+          Builder(builder: (_) {
+            final IconData modeIcon;
+            final Color modeColor;
+            if (_globalMode == 2) {
+              modeIcon = Icons.table_chart_rounded;
+              modeColor = const Color(0xFF4CAF50);
+            } else if (_globalMode == 1) {
+              modeIcon = Icons.visibility_rounded;
+              modeColor = const Color(0xFF5E81FF);
+            } else {
+              modeIcon = Icons.edit_note_rounded;
+              modeColor = Colors.white38;
+            }
+            return GestureDetector(
+              onTap: () => _applyModeToAll((_globalMode + 1) % 3),
+              onLongPress: _showAllModePicker,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Icon(modeIcon, color: modeColor, size: 22),
+              ),
+            );
+          }),
+        ],
       ),
       body: _sheetIds.isEmpty
           ? const Center(
@@ -1393,7 +1501,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
               itemBuilder: (ctx, i) {
                 final id = _sheetIds[i];
                 WidgetConfig? sheetConfig;
-                try { sheetConfig = widget.sheets.firstWhere((s) => s.id == id); }
+                try { sheetConfig = _localSheets.firstWhere((s) => s.id == id); }
                 catch (_) { sheetConfig = null; }
                 if (sheetConfig == null) return const SizedBox.shrink();
                 return Padding(
@@ -1401,11 +1509,18 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                   child: _MergedSheetSection(
                     key: ValueKey(id),
                     config: sheetConfig,
-                    onUpdate: (data) => widget.onSheetUpdate(id, data),
+                    onUpdate: (data) {
+                      setState(() {
+                        _localSheets = _localSheets.map((s) => s.id == id ? s.copyWith(data: data) : s).toList();
+                      });
+                      widget.onSheetUpdate(id, data);
+                    },
                     onRemove: _sheetIds.length > 1 ? () => _removeSheet(id) : null,
                     onDuplicate: () => widget.onSheetDuplicate(id),
                     globalConstants: widget.globalConstants,
                     clipboardNotifier: widget.clipboardNotifier,
+                    allConfigs: widget.sheets,
+                    mergedSiblingIds: _sheetIds.where((sid) => sid != id).toSet(),
                   ),
                 );
               },
@@ -1421,6 +1536,8 @@ class _MergedSheetSection extends StatefulWidget {
   final VoidCallback? onDuplicate;
   final List<Map<String, dynamic>> globalConstants;
   final ValueNotifier<Map<String, dynamic>?>? clipboardNotifier;
+  final List<WidgetConfig> allConfigs;
+  final Set<String> mergedSiblingIds;
 
   const _MergedSheetSection({
     super.key,
@@ -1430,6 +1547,8 @@ class _MergedSheetSection extends StatefulWidget {
     this.onDuplicate,
     this.globalConstants = const [],
     this.clipboardNotifier,
+    this.allConfigs = const [],
+    this.mergedSiblingIds = const {},
   });
 
   @override
@@ -1456,6 +1575,10 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
     if (old.clipboardNotifier != widget.clipboardNotifier) {
       old.clipboardNotifier?.removeListener(_onClipboardChanged);
       widget.clipboardNotifier?.addListener(_onClipboardChanged);
+    }
+    if (old.config.data['viewMode'] != widget.config.data['viewMode'] ||
+        old.config.data['tableMode'] != widget.config.data['tableMode']) {
+      setState(() => _config = widget.config);
     }
   }
 
@@ -1519,7 +1642,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
     final isEditMode = !isViewMode && !isTableMode;
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1660,7 +1783,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
     final bgColorValue = _config.data['bgColor'] as int?;
     final cardBg = bgColorValue != null ? Color(bgColorValue) : const Color(0xFF1A1A26);
     final isDark = cardBg.computeLuminance() < 0.5;
-    final titleColor = isDark ? Colors.white : Colors.black87;
+    final titleColor = isDark ? Colors.white : Colors.black;
     final borderColor = isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.12);
     final title = _config.data['title'] as String? ?? '定型計算';
 
@@ -1699,7 +1822,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                 ),
                 PopupMenuButton<String>(
                   icon: Icon(Icons.more_horiz_rounded, color: isDark ? Colors.white38 : Colors.black38, size: 22),
-                  color: Colors.black87,
+                  color: Colors.black,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   onSelected: (val) {
                     if (val == 'settings') {
@@ -1729,6 +1852,8 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
             onAiGeneratingChanged: (v) => setState(() => _isAiGenerating = v),
             globalConstants: widget.globalConstants,
             clipboardNotifier: widget.clipboardNotifier,
+            allConfigs: widget.allConfigs,
+            mergedSiblingIds: widget.mergedSiblingIds,
           ),
           // クリップボードバー
           if (widget.clipboardNotifier?.value != null)

@@ -45,6 +45,10 @@ class _CalculatorRow extends StatelessWidget {
   final bool wrapFormula;
   /// 表モードのカスタム列ラベル (key: 'input'/'operand'/'other_N'/'result', value: label)
   final Map<String, String>? termLabels;
+  /// 他のシートに開放中かどうか
+  final bool exposed;
+  /// 開放状態をトグルするコールバック
+  final VoidCallback? onToggleExpose;
 
   const _CalculatorRow({
     required this.name,
@@ -90,6 +94,8 @@ class _CalculatorRow extends StatelessWidget {
     this.dragHandle,
     this.wrapFormula = true,
     this.termLabels,
+    this.exposed = false,
+    this.onToggleExpose,
   });
 
   /// termLabels 優先、なければデフォルト
@@ -113,7 +119,7 @@ class _CalculatorRow extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor:Colors.black87,
+      backgroundColor:Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -366,7 +372,7 @@ class _CalculatorRow extends StatelessWidget {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -540,7 +546,7 @@ class _CalculatorRow extends StatelessWidget {
     showDialog<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        backgroundColor: Colors.black87,
+        backgroundColor: Colors.black,
         title: const Text(
           '使用中の単位を選択',
           style: TextStyle(color: Colors.white, fontSize: 14),
@@ -719,499 +725,6 @@ class _CalculatorRow extends StatelessWidget {
     return (allItems[rowIdx] as Map)['name'] as String? ?? '計算 ${rowIdx + 1}';
   }
 
-  // ---- リンク先ダイアログ（この行の値を他の行の項目にリンクする） ----
-  Set<String> _calcSelectedDests(String srcField) {
-    final Set<String> dests = {};
-    for (int i = 0; i < allItems.length; i++) {
-      if (i == myIndex) continue;
-      final item = allItems[i] as Map;
-      bool _linkedToMe(Map? src) =>
-          src != null && src['rowIdx'] == myIndex && src['target'] == srcField;
-      if (item['inputLink'] == true &&
-          _linkedToMe(item['inputLinkSource'] as Map?))
-        dests.add('${i}_input');
-      if (item['operandLink'] == true &&
-          _linkedToMe(item['operandLinkSource'] as Map?))
-        dests.add('${i}_operand');
-      final othersList = item['others'] as List? ?? [];
-      for (int j = 0; j < othersList.length; j++) {
-        final o = othersList[j] as Map;
-        if (o['valLink'] == true && _linkedToMe(o['valLinkSource'] as Map?))
-          dests.add('${i}_other_$j');
-      }
-    }
-    return dests;
-  }
-
-  void _applyLinkDestinations(String sourceField, Set<String> selectedDests) {
-    final newItems = allItems
-        .map((item) => Map<String, dynamic>.from(item as Map))
-        .toList();
-    for (int i = 0; i < newItems.length; i++) {
-      if (i == myIndex) continue;
-      final item = newItems[i];
-      final origItem = allItems[i] as Map;
-      bool wasLinked(Map? src) =>
-          src != null && src['rowIdx'] == myIndex && src['target'] == sourceField;
-
-      // input
-      final inputDest = '${i}_input';
-      final inputWas =
-          origItem['inputLink'] == true && wasLinked(origItem['inputLinkSource'] as Map?);
-      if (selectedDests.contains(inputDest)) {
-        item['inputLink'] = true;
-        item['inputLinkSource'] = {'rowIdx': myIndex, 'target': sourceField};
-      } else if (inputWas) {
-        item['inputLink'] = false;
-        item['inputLinkSource'] = null;
-      }
-
-      // operand
-      final operandDest = '${i}_operand';
-      final operandWas =
-          origItem['operandLink'] == true && wasLinked(origItem['operandLinkSource'] as Map?);
-      if (selectedDests.contains(operandDest)) {
-        item['operandLink'] = true;
-        item['operandLinkSource'] = {'rowIdx': myIndex, 'target': sourceField};
-      } else if (operandWas) {
-        item['operandLink'] = false;
-        item['operandLinkSource'] = null;
-      }
-
-      // others
-      final othersList = ((item['others'] as List? ?? [])
-              .map((e) => Map<String, dynamic>.from(e as Map)))
-          .toList();
-      final origOthersList = origItem['others'] as List? ?? [];
-      for (int j = 0; j < othersList.length; j++) {
-        final otherDest = '${i}_other_$j';
-        final origO = j < origOthersList.length ? origOthersList[j] as Map : {};
-        final otherWas =
-            origO['valLink'] == true && wasLinked(origO['valLinkSource'] as Map?);
-        if (selectedDests.contains(otherDest)) {
-          othersList[j]['valLink'] = true;
-          othersList[j]['valLinkSource'] = {'rowIdx': myIndex, 'target': sourceField};
-        } else if (otherWas) {
-          othersList[j]['valLink'] = false;
-          othersList[j]['valLinkSource'] = null;
-        }
-      }
-      item['others'] = othersList;
-    }
-    onAllItemsUpdate(newItems);
-  }
-
-  void _showSetLinkDestDialog(BuildContext context) {
-    // リンク元候補（この行のフィールド）
-    final List<Map<String, dynamic>> srcFields = [
-      ...const [
-        {'key': 'input', 'label': '項1'},
-        {'key': 'operand', 'label': '項2'},
-      ],
-      ...List.generate(
-        others.length,
-        (i) => {'key': 'other_$i', 'label': '項${i + 3}'},
-      ),
-      const {'key': 'result', 'label': '答え'},
-    ];
-
-    // リンク元フィールドの現在値を文字列で返すヘルパー
-    String fieldValue(String key) {
-      double v;
-      if (key == 'input') {
-        v = input;
-      } else if (key == 'operand') {
-        v = operand;
-      } else if (key == 'result') {
-        v = result;
-      } else if (key.startsWith('other_')) {
-        final idx = int.tryParse(key.substring(6)) ?? 0;
-        if (idx < others.length) {
-          v = (others[idx] as Map)['val'] as double? ?? 0.0;
-        } else {
-          v = 0.0;
-        }
-      } else {
-        v = 0.0;
-      }
-      if (v == v.truncateToDouble() && v.abs() < 1e12) {
-        return v.toStringAsFixed(0);
-      }
-      return v.toStringAsFixed(precision);
-    }
-
-    String selectedSrc = 'result';
-    Set<String> selectedDests = _calcSelectedDests(selectedSrc);
-
-    showDialog<void>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDs) => AlertDialog(
-          backgroundColor: Colors.black87,
-          title: const Text(
-            '値をリンクする',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          contentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
-          content: SizedBox(
-            width: double.maxFinite,
-            height: 500,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ── リンク元セクション（青系） ──────────────────────────
-                Container(
-                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0A1628),
-                    border: Border.all(
-                      color: Colors.blueAccent.withOpacity(0.6),
-                      width: 1.5,
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.upload_rounded,
-                              size: 14,
-                              color: Colors.blueAccent,
-                            ),
-                            const SizedBox(width: 6),
-                            const Text(
-                              'リンク元',
-                              style: TextStyle(
-                                color: Colors.blueAccent,
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                '「$name」',
-                                style: const TextStyle(
-                                  color: Colors.white60,
-                                  fontSize: 12,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-                        child: Row(
-                          children: srcFields.map((sf) {
-                            final key = sf['key'] as String;
-                            final label = sf['label'] as String;
-                            final sel = selectedSrc == key;
-                            final valStr = fieldValue(key);
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: GestureDetector(
-                                onTap: () => setDs(() {
-                                  selectedSrc = key;
-                                  selectedDests = _calcSelectedDests(key);
-                                }),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 150),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: sel
-                                        ? Colors.blueAccent.withOpacity(0.22)
-                                        : Colors.white.withOpacity(0.05),
-                                    border: Border.all(
-                                      color: sel
-                                          ? Colors.blueAccent
-                                          : Colors.white24,
-                                      width: sel ? 1.5 : 1.0,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        label,
-                                        style: TextStyle(
-                                          color: sel
-                                              ? Colors.blueAccent
-                                              : Colors.white70,
-                                          fontSize: 13,
-                                          fontWeight: sel
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        valStr,
-                                        style: TextStyle(
-                                          color: sel
-                                              ? Colors.white
-                                              : Colors.white38,
-                                          fontSize: 11,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // ── リンク先セクション（シアン系） ──────────────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-                  child: Row(
-                    children: const [
-                      Icon(
-                        Icons.download_rounded,
-                        size: 14,
-                        color: Color(0xFF26C6DA),
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        'リンク先',
-                        style: TextStyle(
-                          color: Color(0xFF26C6DA),
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        '（複数選択可）',
-                        style: TextStyle(color: Colors.white54, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-                    decoration: BoxDecoration(
-                     // color: const Color(0xFF071A1A),
-                      border: Border.all(
-                        color: const Color.fromARGB(141, 250, 250, 250).withOpacity(0.5),
-                        width: 1.5,
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: allItems.length <= 1
-                        ? const Center(
-                            child: Text(
-                              '他の計算式がありません',
-                              style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 12,
-                              ),
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            itemCount: allItems.length,
-                            itemBuilder: (context, i) {
-                              if (i == myIndex) return const SizedBox.shrink();
-                              final item = allItems[i] as Map;
-                              final rowName =
-                                  item['name'] as String? ?? '計算 ${i + 1}';
-                              final itemOthers =
-                                  item['others'] as List? ?? [];
-                              final destFields = <Map<String, dynamic>>[
-                                {
-                                  'key': 'input',
-                                  'label': '項1',
-                                  'val': item['input'] as double? ?? 0.0,
-                                },
-                                {
-                                  'key': 'operand',
-                                  'label': '項2',
-                                  'val': item['operand'] as double? ?? 0.0,
-                                },
-                                ...List.generate(
-                                  itemOthers.length,
-                                  (j) => {
-                                    'key': 'other_$j',
-                                    'label': '項${j + 3}',
-                                    'val': (itemOthers[j] as Map)['val']
-                                            as double? ??
-                                        0.0,
-                                  },
-                                ),
-                              ];
-                              if (destFields.isEmpty) return const SizedBox.shrink();
-                              final destPrec =
-                                  item['precision'] as int? ?? 2;
-                              String fmtDest(double v) {
-                                if (v == v.truncateToDouble() &&
-                                    v.abs() < 1e12) {
-                                  return v.toStringAsFixed(0);
-                                }
-                                return v.toStringAsFixed(destPrec);
-                              }
-
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Padding(
-                                    padding:
-                                        const EdgeInsets.fromLTRB(12, 10, 12, 4),
-                                    child: Text(
-                                      rowName,
-                                      style: const TextStyle(
-                                        color: Color(0xFF26C6DA),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-                                    child: Wrap(
-                                      spacing: 8,
-                                      runSpacing: 6,
-                                      children: destFields.map((df) {
-                                        final fk = df['key'] as String;
-                                        final dk = '${i}_$fk';
-                                        final isSel = selectedDests.contains(dk);
-                                        final valStr = fmtDest(
-                                            df['val'] as double? ?? 0.0);
-                                        return GestureDetector(
-                                          onTap: () => setDs(() {
-                                            if (isSel) {
-                                              selectedDests.remove(dk);
-                                            } else {
-                                              selectedDests.add(dk);
-                                            }
-                                          }),
-                                          child: AnimatedContainer(
-                                            duration: const Duration(
-                                                milliseconds: 150),
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 12, vertical: 6),
-                                            decoration: BoxDecoration(
-                                              color: isSel
-                                                  ? const Color(0xFF26C6DA)
-                                                      .withOpacity(0.18)
-                                                  : Colors.white
-                                                      .withOpacity(0.05),
-                                              border: Border.all(
-                                                color: isSel
-                                                    ? const Color(0xFF26C6DA)
-                                                    : Colors.white24,
-                                                width: isSel ? 1.5 : 1.0,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    if (isSel)
-                                                      const Padding(
-                                                        padding:
-                                                            EdgeInsets.only(
-                                                                right: 4),
-                                                        child: Icon(
-                                                          Icons.check,
-                                                          size: 12,
-                                                          color: Color(
-                                                              0xFF26C6DA),
-                                                        ),
-                                                      ),
-                                                    Text(
-                                                      df['label'] as String,
-                                                      style: TextStyle(
-                                                        color: isSel
-                                                            ? const Color(
-                                                                0xFF26C6DA)
-                                                            : Colors.white70,
-                                                        fontSize: 13,
-                                                        fontWeight: isSel
-                                                            ? FontWeight.bold
-                                                            : FontWeight.normal,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 3),
-                                                Text(
-                                                  valStr,
-                                                  style: TextStyle(
-                                                    color: isSel
-                                                        ? Colors.white
-                                                        : Colors.white38,
-                                                    fontSize: 11,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ),
-                                  const Divider(color: Colors.white10, height: 12),
-                                ],
-                              );
-                            },
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                'キャンセル',
-                style: TextStyle(color: Colors.white54),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                _applyLinkDestinations(selectedSrc, selectedDests);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('設定する'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   bool _hasLinkedRowsForKey(String key, {int otherIdx = 0}) {
     for (int i = 0; i < allItems.length; i++) {
       if (i == myIndex) continue;
@@ -1232,7 +745,7 @@ class _CalculatorRow extends StatelessWidget {
     return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.black87,
+        backgroundColor: Colors.black,
         title: const Text(
           'リンク設定があります',
           style: TextStyle(color: Colors.white, fontSize: 16),
@@ -1268,7 +781,7 @@ class _CalculatorRow extends StatelessWidget {
   void _showGenreUnitPicker(BuildContext context, Function(String) onSelected) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1586,7 +1099,7 @@ class _CalculatorRow extends StatelessWidget {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -2048,7 +1561,7 @@ class _CalculatorRow extends StatelessWidget {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -2501,7 +2014,7 @@ class _CalculatorRow extends StatelessWidget {
     final String? selectedOp = await showMenu<String>(
       context: context,
       position: position,
-      color:Colors.black87,
+      color:Colors.black,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       items: ops
           .map(
@@ -2559,7 +2072,7 @@ class _CalculatorRow extends StatelessWidget {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor:Colors.black87,
+      backgroundColor:Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -3008,7 +2521,7 @@ class _CalculatorRow extends StatelessWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor:Colors.black87,
+      backgroundColor:Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -3275,7 +2788,7 @@ class _CalculatorRow extends StatelessWidget {
             color: isDark ? Colors.white24 : Colors.black26,
             size: 20,
           ),
-          color:Colors.black87,
+          color:Colors.black,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
@@ -3375,13 +2888,24 @@ class _CalculatorRow extends StatelessWidget {
                 ],
               ),
             ),
-            const PopupMenuItem(
-              value: 'link_dest',
+            const PopupMenuDivider(height: 1),
+            PopupMenuItem(
+              value: 'expose',
               child: Row(
                 children: [
-                  Icon(Icons.link_rounded, color: Colors.blueAccent, size: 18),
-                  SizedBox(width: 12),
-                  Text('リンク設定', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  Icon(
+                    exposed ? Icons.public_off_rounded : Icons.public_rounded,
+                    color: exposed ? Colors.orangeAccent : Colors.greenAccent,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    exposed ? '他シートへの開放を解除' : '他のシートに開放する',
+                    style: TextStyle(
+                      color: exposed ? Colors.orangeAccent : Colors.greenAccent,
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -3403,12 +2927,12 @@ class _CalculatorRow extends StatelessWidget {
             if (val == 'cut') onCut?.call();
             if (val == 'paste') onPaste?.call();
             if (val == 'brackets') onPickBrackets();
-            if (val == 'link_dest') _showSetLinkDestDialog(context);
             if (val == 'move_up') onMoveUp?.call();
             if (val == 'move_down') onMoveDown?.call();
             if (val == 'toggle_name') onToggleName?.call();
             if (val == 'insert_below') onInsertBelow?.call();
             if (val == 'insert_memo_below') onInsertMemoBelow?.call();
+            if (val == 'expose') onToggleExpose?.call();
           },
         ),
       ],
@@ -3444,14 +2968,29 @@ class _CalculatorRow extends StatelessWidget {
                     Expanded(
                       child: GestureDetector(
                         onTap: () => _editDetails(context),
-                        child: Text(
-                          name.isEmpty ? '名称未設定' : name,
-                          style: TextStyle(
-                            color: isDark ? Colors.white.withOpacity(0.9) : Colors.black87,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.2,
-                          ),
+                        child: Row(
+                          children: [
+                            if (exposed)
+                              const Padding(
+                                padding: EdgeInsets.only(right: 5),
+                                child: Icon(
+                                  Icons.public_rounded,
+                                  color: Colors.greenAccent,
+                                  size: 13,
+                                ),
+                              ),
+                            Expanded(
+                              child: Text(
+                                name.isEmpty ? '名称未設定' : name,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white.withOpacity(0.9) : Colors.black,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

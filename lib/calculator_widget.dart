@@ -14,6 +14,10 @@ class _CalculatorWidget extends StatefulWidget {
   final List<Map<String, dynamic>> globalConstants;
   /// アプリ内クリップボード（シートをまたいで共有）
   final ValueNotifier<Map<String, dynamic>?>? clipboardNotifier;
+  /// 全シートの設定（シート間リンク用）
+  final List<WidgetConfig> allConfigs;
+  /// 結合ビュー内の兄弟シートID（開放不要でリンク元参照可）
+  final Set<String> mergedSiblingIds;
 
   const _CalculatorWidget({
     super.key,
@@ -26,6 +30,8 @@ class _CalculatorWidget extends StatefulWidget {
     this.onAiGeneratingChanged,
     this.globalConstants = const [],
     this.clipboardNotifier,
+    this.allConfigs = const [],
+    this.mergedSiblingIds = const {},
   });
 
   @override
@@ -628,7 +634,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor:Colors.black87,
+      backgroundColor:Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -761,7 +767,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   // ── 定数セクションWidget ──────────────────────────────────────────────────
   Widget _buildConstantsSection(List<Map<String, dynamic>> constants, bool isDark) {
-    final fgColor = isDark ? Colors.white :Colors.black87;
+    final fgColor = isDark ? Colors.white :Colors.black;
     final subColor = isDark ? Colors.white54 : Colors.black45;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -845,7 +851,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final result = await showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -901,7 +907,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                     showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,
-                      backgroundColor: Colors.black87,
+                      backgroundColor: Colors.black,
                       shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                       ),
@@ -1038,11 +1044,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final wrapFormula = _wrapFormula;
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
-      builder: (ctx) => SafeArea(
+      builder: (ctx) => SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1142,8 +1148,1169 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 _copyAsCsv();
               },
             ),
+            const Divider(color: Colors.white12, height: 1),
+            ListTile(
+              leading: const Icon(Icons.link_rounded, color: Colors.blueAccent),
+              title: const Text(
+                'リンク設定',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                Future.delayed(
+                  const Duration(milliseconds: 300),
+                  _showSheetLinkSettingsDialog,
+                );
+              },
+            ),
             const SizedBox(height: 8),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ── シートレベルのリンク設定ダイアログ ────────────────────────────────────
+
+  Set<String> _calcSelectedDestsForRow(int srcRowIdx, String srcField) {
+    final items = _items;
+    final Set<String> dests = {};
+    for (int i = 0; i < items.length; i++) {
+      if (i == srcRowIdx) continue;
+      final item = items[i];
+      bool linkedToMe(Map? src) =>
+          src != null && src['rowIdx'] == srcRowIdx && src['target'] == srcField;
+      if (item['inputLink'] == true && linkedToMe(item['inputLinkSource'] as Map?))
+        dests.add('${i}_input');
+      if (item['operandLink'] == true && linkedToMe(item['operandLinkSource'] as Map?))
+        dests.add('${i}_operand');
+      final othersList = item['others'] as List? ?? [];
+      for (int j = 0; j < othersList.length; j++) {
+        final o = othersList[j] as Map;
+        if (o['valLink'] == true && linkedToMe(o['valLinkSource'] as Map?))
+          dests.add('${i}_other_$j');
+      }
+    }
+    return dests;
+  }
+
+  void _applyLinkDestsForRow(
+    int srcRowIdx,
+    String srcField,
+    Set<String> selectedDests,
+  ) {
+    final items = _items;
+    final newItems = items.map((item) => Map<String, dynamic>.from(item)).toList();
+    for (int i = 0; i < newItems.length; i++) {
+      if (i == srcRowIdx) continue;
+      final item = newItems[i];
+      final origItem = items[i];
+      bool wasLinked(Map? src) =>
+          src != null && src['rowIdx'] == srcRowIdx && src['target'] == srcField;
+
+      // input
+      final inputDest = '${i}_input';
+      final inputWas = origItem['inputLink'] == true &&
+          wasLinked(origItem['inputLinkSource'] as Map?);
+      if (selectedDests.contains(inputDest)) {
+        item['inputLink'] = true;
+        item['inputLinkSource'] = {'rowIdx': srcRowIdx, 'target': srcField};
+      } else if (inputWas) {
+        item['inputLink'] = false;
+        item['inputLinkSource'] = null;
+      }
+
+      // operand
+      final operandDest = '${i}_operand';
+      final operandWas = origItem['operandLink'] == true &&
+          wasLinked(origItem['operandLinkSource'] as Map?);
+      if (selectedDests.contains(operandDest)) {
+        item['operandLink'] = true;
+        item['operandLinkSource'] = {'rowIdx': srcRowIdx, 'target': srcField};
+      } else if (operandWas) {
+        item['operandLink'] = false;
+        item['operandLinkSource'] = null;
+      }
+
+      // others
+      final othersList = ((item['others'] as List? ?? [])
+              .map((e) => Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final origOthersList = origItem['others'] as List? ?? [];
+      for (int j = 0; j < othersList.length; j++) {
+        final otherDest = '${i}_other_$j';
+        final origO =
+            j < origOthersList.length ? origOthersList[j] as Map : {};
+        final otherWas =
+            origO['valLink'] == true && wasLinked(origO['valLinkSource'] as Map?);
+        if (selectedDests.contains(otherDest)) {
+          othersList[j]['valLink'] = true;
+          othersList[j]['valLinkSource'] = {
+            'rowIdx': srcRowIdx,
+            'target': srcField,
+          };
+        } else if (otherWas) {
+          othersList[j]['valLink'] = false;
+          othersList[j]['valLinkSource'] = null;
+        }
+      }
+      item['others'] = othersList;
+    }
+    widget.onUpdate({...widget.config.data, 'items': newItems});
+  }
+
+  // ---- 他シート開放 --------------------------------------------------------
+
+  void _toggleExposed(int calcIdx) {
+    final newItems = List<Map<String, dynamic>>.from(_items);
+    if (calcIdx < 0 || calcIdx >= newItems.length) return;
+    final current = newItems[calcIdx]['exposed'] as bool? ?? false;
+    newItems[calcIdx] = {...newItems[calcIdx], 'exposed': !current};
+    widget.onUpdate({...widget.config.data, 'items': newItems});
+  }
+
+  /// 別シートの指定行・フィールドの値を返す
+  double _resolveExternalValue(String sheetId, int rowIdx, String target) {
+    final srcConfig = widget.allConfigs.firstWhere(
+      (c) => c.id == sheetId,
+      orElse: () => widget.config,
+    );
+    if (srcConfig.id == widget.config.id) return 0.0;
+    final srcItems = (srcConfig.data['items'] as List<dynamic>? ?? [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+    if (rowIdx < 0 || rowIdx >= srcItems.length) return 0.0;
+    final sItem = srcItems[rowIdx];
+    if (target == 'input') return (sItem['input'] as num? ?? 0.0).toDouble();
+    if (target == 'operand') return (sItem['operand'] as num? ?? 0.0).toDouble();
+    if (target.startsWith('other_')) {
+      final idx = int.tryParse(target.split('_')[1]) ?? 0;
+      final sOthers = sItem['others'] as List? ?? [];
+      if (idx < sOthers.length) {
+        return ((sOthers[idx] as Map)['val'] as num? ?? 0.0).toDouble();
+      }
+      return 0.0;
+    }
+    if (target == 'result') {
+      final inp = (sItem['input'] as num? ?? 0.0).toDouble();
+      final ope = (sItem['operand'] as num? ?? 0.0).toDouble();
+      final op = sItem['op'] as String? ?? '+';
+      final others = (sItem['others'] as List? ?? []).map((e) {
+        final m = Map<String, dynamic>.from(e as Map);
+        m['val'] = (m['val'] as num? ?? 0.0).toDouble();
+        return m;
+      }).toList();
+      return _calculate(
+        _CalculatorRow._applyTermTransform(
+          inp,
+          sItem['inputTransform'] as String?,
+          (sItem['inputPowExp'] as num? ?? 2.0).toDouble(),
+        ),
+        op,
+        _CalculatorRow._applyTermTransform(
+          ope,
+          sItem['operandTransform'] as String?,
+          (sItem['operandPowExp'] as num? ?? 2.0).toDouble(),
+        ),
+        others,
+        sItem['brackets'] as List? ?? [],
+      );
+    }
+    return 0.0;
+  }
+
+  /// 別シートの行/フィールドが現在シートのどの欄にリンクされているか返す
+  Set<String> _calcSelectedDestsForExternalRow(
+    String sheetId,
+    int srcRowIdx,
+    String srcField,
+  ) {
+    final items = _items;
+    final Set<String> dests = {};
+    for (int i = 0; i < items.length; i++) {
+      final item = items[i];
+      bool linkedToSrc(Map? src) =>
+          src != null &&
+          src['sheetId'] == sheetId &&
+          src['rowIdx'] == srcRowIdx &&
+          src['target'] == srcField;
+      if (item['inputLink'] == true &&
+          linkedToSrc(item['inputLinkSource'] as Map?))
+        dests.add('${i}_input');
+      if (item['operandLink'] == true &&
+          linkedToSrc(item['operandLinkSource'] as Map?))
+        dests.add('${i}_operand');
+      final othersList = item['others'] as List? ?? [];
+      for (int j = 0; j < othersList.length; j++) {
+        final o = othersList[j] as Map;
+        if (o['valLink'] == true && linkedToSrc(o['valLinkSource'] as Map?))
+          dests.add('${i}_other_$j');
+      }
+    }
+    return dests;
+  }
+
+  /// 別シートの行/フィールドのリンク先を現在シートに保存する
+  void _applyLinkDestsForExternalRow(
+    String sheetId,
+    int srcRowIdx,
+    String srcField,
+    Set<String> selectedDests,
+  ) {
+    final linkSource = {
+      'sheetId': sheetId,
+      'rowIdx': srcRowIdx,
+      'target': srcField,
+    };
+    final items = _items;
+    final newItems =
+        items.map((item) => Map<String, dynamic>.from(item)).toList();
+    for (int i = 0; i < newItems.length; i++) {
+      final item = newItems[i];
+      final origItem = items[i];
+      bool wasLinked(Map? src) =>
+          src != null &&
+          src['sheetId'] == sheetId &&
+          src['rowIdx'] == srcRowIdx &&
+          src['target'] == srcField;
+
+      final inputDest = '${i}_input';
+      final inputWas = origItem['inputLink'] == true &&
+          wasLinked(origItem['inputLinkSource'] as Map?);
+      if (selectedDests.contains(inputDest)) {
+        item['inputLink'] = true;
+        item['inputLinkSource'] = linkSource;
+      } else if (inputWas) {
+        item['inputLink'] = false;
+        item['inputLinkSource'] = null;
+      }
+
+      final operandDest = '${i}_operand';
+      final operandWas = origItem['operandLink'] == true &&
+          wasLinked(origItem['operandLinkSource'] as Map?);
+      if (selectedDests.contains(operandDest)) {
+        item['operandLink'] = true;
+        item['operandLinkSource'] = linkSource;
+      } else if (operandWas) {
+        item['operandLink'] = false;
+        item['operandLinkSource'] = null;
+      }
+
+      final othersList = ((item['others'] as List? ?? [])
+              .map((e) => Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final origOthersList = origItem['others'] as List? ?? [];
+      for (int j = 0; j < othersList.length; j++) {
+        final otherDest = '${i}_other_$j';
+        final origO =
+            j < origOthersList.length ? origOthersList[j] as Map : {};
+        final otherWas =
+            origO['valLink'] == true && wasLinked(origO['valLinkSource'] as Map?);
+        if (selectedDests.contains(otherDest)) {
+          othersList[j]['valLink'] = true;
+          othersList[j]['valLinkSource'] = linkSource;
+        } else if (otherWas) {
+          othersList[j]['valLink'] = false;
+          othersList[j]['valLinkSource'] = null;
+        }
+      }
+      item['others'] = othersList;
+    }
+    widget.onUpdate({...widget.config.data, 'items': newItems});
+  }
+
+  void _showSheetLinkSettingsDialog() {
+    final items = _items;
+    if (items.isEmpty) return;
+
+    int? selectedSrcCalcIdx;
+    String selectedSrcField = 'result';
+    Set<String> selectedDests = {};
+    String? selectedSrcSheetId; // null = 現在シート
+    // 0=このシート, 1=開放された式, 2=結合シート
+    int _srcTab = 0;
+
+    List<Map<String, dynamic>> fieldsFor(int idx) {
+      final item = items[idx];
+      final others = item['others'] as List? ?? [];
+      return [
+        {'key': 'input', 'label': '項1'},
+        {'key': 'operand', 'label': '項2'},
+        ...List.generate(others.length, (i) => {'key': 'other_$i', 'label': '項${i + 3}'}),
+        {'key': 'result', 'label': '答え'},
+      ];
+    }
+
+    List<Map<String, dynamic>> fieldsForExternal(String sheetId, int idx) {
+      final srcConfig = widget.allConfigs.firstWhere(
+        (c) => c.id == sheetId,
+        orElse: () => widget.config,
+      );
+      final srcItems = (srcConfig.data['items'] as List<dynamic>? ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      if (idx < 0 || idx >= srcItems.length) return [];
+      final sItem = srcItems[idx];
+      final others = sItem['others'] as List? ?? [];
+      return [
+        {'key': 'input', 'label': '項1'},
+        {'key': 'operand', 'label': '項2'},
+        ...List.generate(others.length, (i) => {'key': 'other_$i', 'label': '項${i + 3}'}),
+        {'key': 'result', 'label': '答え'},
+      ];
+    }
+
+    String fieldValueStr(int calcIdx, String fieldKey, [String? sheetId]) {
+      final Map<String, dynamic> item;
+      if (sheetId != null) {
+        final srcConfig = widget.allConfigs.firstWhere(
+          (c) => c.id == sheetId,
+          orElse: () => widget.config,
+        );
+        final srcItems = (srcConfig.data['items'] as List<dynamic>? ?? [])
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+        if (calcIdx < 0 || calcIdx >= srcItems.length) return '0';
+        item = srcItems[calcIdx];
+      } else {
+        item = items[calcIdx];
+      }
+      final precision = item['precision'] as int? ?? 2;
+      double v;
+      if (fieldKey == 'input') {
+        v = (item['input'] as num? ?? 0.0).toDouble();
+      } else if (fieldKey == 'operand') {
+        v = (item['operand'] as num? ?? 0.0).toDouble();
+      } else if (fieldKey == 'result') {
+        final inp = (item['input'] as num? ?? 0.0).toDouble();
+        final ope = (item['operand'] as num? ?? 0.0).toDouble();
+        final op = item['op'] as String? ?? '+';
+        final others = (item['others'] as List? ?? []).map((e) {
+          final m = Map<String, dynamic>.from(e as Map);
+          m['val'] = (m['val'] as num? ?? 0.0).toDouble();
+          return m;
+        }).toList();
+        v = _calculate(
+          _CalculatorRow._applyTermTransform(
+            inp,
+            item['inputTransform'] as String?,
+            (item['inputPowExp'] as num? ?? 2.0).toDouble(),
+          ),
+          op,
+          _CalculatorRow._applyTermTransform(
+            ope,
+            item['operandTransform'] as String?,
+            (item['operandPowExp'] as num? ?? 2.0).toDouble(),
+          ),
+          others,
+          item['brackets'] as List? ?? [],
+        );
+      } else if (fieldKey.startsWith('other_')) {
+        final idx = int.tryParse(fieldKey.substring(6)) ?? 0;
+        final others = item['others'] as List? ?? [];
+        v = idx < others.length
+            ? ((others[idx] as Map)['val'] as num? ?? 0.0).toDouble()
+            : 0.0;
+      } else {
+        v = 0.0;
+      }
+      if (v == v.truncateToDouble() && v.abs() < 1e12) return v.toStringAsFixed(0);
+      return v.toStringAsFixed(precision);
+    }
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDs) => Dialog(
+          insetPadding: EdgeInsets.zero,
+          backgroundColor: Colors.transparent,
+          child: SafeArea(
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: const Color(0xFF0D0D14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── ヘッダー ──────────────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.link_rounded,
+                          color: Colors.blueAccent,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            '値をリンクする',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white54),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // ── リンク元セクション（タブ切り替え） ─────────────────
+                  Builder(builder: (_) {
+                    final exposedSheets = widget.allConfigs.where((c) {
+                      if (c.id == widget.config.id) return false;
+                      if (c.type != 'calculator') return false;
+                      if (widget.mergedSiblingIds.contains(c.id)) return false;
+                      final si = c.data['items'] as List? ?? [];
+                      return si.any((e) => (e as Map)['exposed'] == true);
+                    }).toList();
+                    final mergedSheets = widget.allConfigs.where((c) {
+                      if (c.id == widget.config.id) return false;
+                      if (c.type != 'calculator') return false;
+                      return widget.mergedSiblingIds.contains(c.id);
+                    }).toList();
+
+                    final tabs = <Map<String, dynamic>>[
+                      {'idx': 0, 'label': 'このシート', 'icon': Icons.upload_rounded, 'color': Colors.blueAccent},
+                      if (exposedSheets.isNotEmpty)
+                        {'idx': 1, 'label': '開放された式', 'icon': Icons.public_rounded, 'color': Colors.greenAccent},
+                      if (mergedSheets.isNotEmpty)
+                        {'idx': 2, 'label': '結合シート', 'icon': Icons.link_rounded, 'color': const Color(0xFF26C6DA)},
+                    ];
+
+                    final activeColor = tabs.firstWhere(
+                      (t) => t['idx'] == _srcTab,
+                      orElse: () => tabs.first,
+                    )['color'] as Color;
+                    final bgColor = _srcTab == 2
+                        ? Colors.cyan.withOpacity(0.04)
+                        : _srcTab == 1
+                            ? Colors.green.withOpacity(0.04)
+                            : const Color(0xFF0A1628);
+
+                    return Container(
+                      margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+                      decoration: BoxDecoration(
+                        color: bgColor,
+                        border: Border.all(color: activeColor.withOpacity(0.6), width: 1.5),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // タブバー（複数タブがある場合のみ表示）
+                          if (tabs.length > 1)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: tabs.map((tab) {
+                                    final tIdx = tab['idx'] as int;
+                                    final isSel = _srcTab == tIdx;
+                                    final tColor = tab['color'] as Color;
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: GestureDetector(
+                                        onTap: () => setDs(() {
+                                          _srcTab = tIdx;
+                                          selectedSrcCalcIdx = null;
+                                          selectedSrcSheetId = null;
+                                          selectedSrcField = 'result';
+                                          selectedDests = {};
+                                        }),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(milliseconds: 150),
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                          decoration: BoxDecoration(
+                                            color: isSel ? tColor.withOpacity(0.18) : Colors.white.withOpacity(0.05),
+                                            border: Border.all(
+                                              color: isSel ? tColor : Colors.white24,
+                                              width: isSel ? 1.5 : 1.0,
+                                            ),
+                                            borderRadius: BorderRadius.circular(20),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(tab['icon'] as IconData, size: 12, color: isSel ? tColor : Colors.white38),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                tab['label'] as String,
+                                                style: TextStyle(
+                                                  color: isSel ? tColor : Colors.white38,
+                                                  fontSize: 11,
+                                                  fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ),
+                          if (tabs.length == 1)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.upload_rounded, size: 14, color: Colors.blueAccent),
+                                  const SizedBox(width: 6),
+                                  const Text('リンク元　計算式を選択',
+                                      style: TextStyle(color: Colors.blueAccent, fontSize: 13, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+
+                          // ── このシート ──
+                          if (_srcTab == 0) ...[
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                              child: Row(
+                                children: List.generate(items.length, (i) {
+                                  final calcName = items[i]['name'] as String? ?? '計算 ${i + 1}';
+                                  final isSel = selectedSrcCalcIdx == i && selectedSrcSheetId == null;
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: GestureDetector(
+                                      onTap: () => setDs(() {
+                                        selectedSrcSheetId = null;
+                                        selectedSrcCalcIdx = i;
+                                        selectedSrcField = 'result';
+                                        selectedDests = _calcSelectedDestsForRow(i, 'result');
+                                      }),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 150),
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                        decoration: BoxDecoration(
+                                          color: isSel ? Colors.blueAccent.withOpacity(0.22) : Colors.white.withOpacity(0.05),
+                                          border: Border.all(
+                                            color: isSel ? Colors.blueAccent : Colors.white24,
+                                            width: isSel ? 1.5 : 1.0,
+                                          ),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Text(calcName,
+                                            style: TextStyle(
+                                              color: isSel ? Colors.blueAccent : Colors.white70,
+                                              fontSize: 13,
+                                              fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                            )),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                            ),
+                            if (selectedSrcCalcIdx != null && selectedSrcSheetId == null) ...[
+                              const Padding(
+                                padding: EdgeInsets.fromLTRB(12, 0, 12, 4),
+                                child: Text('項目を選択', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                              ),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                                child: Row(
+                                  children: fieldsFor(selectedSrcCalcIdx!).map((sf) {
+                                    final key = sf['key'] as String;
+                                    final label = sf['label'] as String;
+                                    final isSel = selectedSrcField == key;
+                                    final valStr = fieldValueStr(selectedSrcCalcIdx!, key);
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: GestureDetector(
+                                        onTap: () => setDs(() {
+                                          selectedSrcField = key;
+                                          selectedDests = _calcSelectedDestsForRow(selectedSrcCalcIdx!, key);
+                                        }),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(milliseconds: 150),
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: isSel ? Colors.blueAccent.withOpacity(0.22) : Colors.white.withOpacity(0.05),
+                                            border: Border.all(
+                                              color: isSel ? Colors.blueAccent : Colors.white24,
+                                              width: isSel ? 1.5 : 1.0,
+                                            ),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(label,
+                                                  style: TextStyle(
+                                                    color: isSel ? Colors.blueAccent : Colors.white70,
+                                                    fontSize: 13,
+                                                    fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                                  )),
+                                              const SizedBox(height: 4),
+                                              Text(valStr,
+                                                  style: TextStyle(
+                                                    color: isSel ? Colors.white : Colors.white38,
+                                                    fontSize: 11,
+                                                  )),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          ],
+
+                          // ── 開放された式 ──
+                          if (_srcTab == 1) ...[
+                            ...exposedSheets.map((cfg) {
+                              final sheetTitle = cfg.data['title'] as String? ?? cfg.id;
+                              final sheetItems = (cfg.data['items'] as List? ?? [])
+                                  .map((e) => Map<String, dynamic>.from(e as Map))
+                                  .toList();
+                              final visibleItems = sheetItems.asMap().entries
+                                  .where((en) => en.value['exposed'] == true)
+                                  .toList();
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+                                    child: Text(sheetTitle, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                                  ),
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                                    child: Row(
+                                      children: visibleItems.map((en) {
+                                        final i = en.key;
+                                        final calcName = en.value['name'] as String? ?? '計算 ${i + 1}';
+                                        final isSelExt = selectedSrcSheetId == cfg.id && selectedSrcCalcIdx == i;
+                                        return Padding(
+                                          padding: const EdgeInsets.only(right: 8),
+                                          child: GestureDetector(
+                                            onTap: () => setDs(() {
+                                              selectedSrcSheetId = cfg.id;
+                                              selectedSrcCalcIdx = i;
+                                              selectedSrcField = 'result';
+                                              selectedDests = _calcSelectedDestsForExternalRow(cfg.id, i, 'result');
+                                            }),
+                                            child: AnimatedContainer(
+                                              duration: const Duration(milliseconds: 150),
+                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                              decoration: BoxDecoration(
+                                                color: isSelExt ? Colors.greenAccent.withOpacity(0.18) : Colors.white.withOpacity(0.05),
+                                                border: Border.all(
+                                                  color: isSelExt ? Colors.greenAccent : Colors.white24,
+                                                  width: isSelExt ? 1.5 : 1.0,
+                                                ),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(Icons.public_rounded, color: isSelExt ? Colors.greenAccent : Colors.white38, size: 12),
+                                                  const SizedBox(width: 6),
+                                                  Text(calcName,
+                                                      style: TextStyle(
+                                                        color: isSelExt ? Colors.greenAccent : Colors.white70,
+                                                        fontSize: 13,
+                                                        fontWeight: isSelExt ? FontWeight.bold : FontWeight.normal,
+                                                      )),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }),
+                            if (selectedSrcSheetId != null && selectedSrcCalcIdx != null &&
+                                exposedSheets.any((c) => c.id == selectedSrcSheetId)) ...[
+                              const Padding(
+                                padding: EdgeInsets.fromLTRB(12, 0, 12, 4),
+                                child: Text('項目を選択', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                              ),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                                child: Row(
+                                  children: fieldsForExternal(selectedSrcSheetId!, selectedSrcCalcIdx!).map((sf) {
+                                    final key = sf['key'] as String;
+                                    final label = sf['label'] as String;
+                                    final isSel = selectedSrcField == key;
+                                    final valStr = fieldValueStr(selectedSrcCalcIdx!, key, selectedSrcSheetId);
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: GestureDetector(
+                                        onTap: () => setDs(() {
+                                          selectedSrcField = key;
+                                          selectedDests = _calcSelectedDestsForExternalRow(selectedSrcSheetId!, selectedSrcCalcIdx!, key);
+                                        }),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(milliseconds: 150),
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: isSel ? Colors.greenAccent.withOpacity(0.18) : Colors.white.withOpacity(0.05),
+                                            border: Border.all(
+                                              color: isSel ? Colors.greenAccent : Colors.white24,
+                                              width: isSel ? 1.5 : 1.0,
+                                            ),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(label,
+                                                  style: TextStyle(
+                                                    color: isSel ? Colors.greenAccent : Colors.white70,
+                                                    fontSize: 13,
+                                                    fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                                  )),
+                                              const SizedBox(height: 4),
+                                              Text(valStr,
+                                                  style: TextStyle(
+                                                    color: isSel ? Colors.white : Colors.white38,
+                                                    fontSize: 11,
+                                                  )),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          ],
+
+                          // ── 結合シート ──
+                          if (_srcTab == 2) ...[
+                            ...mergedSheets.map((cfg) {
+                              final sheetTitle = cfg.data['title'] as String? ?? cfg.id;
+                              final sheetItems = (cfg.data['items'] as List? ?? [])
+                                  .map((e) => Map<String, dynamic>.from(e as Map))
+                                  .toList();
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+                                    child: Text(sheetTitle, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                                  ),
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                                    child: Row(
+                                      children: sheetItems.asMap().entries.map((en) {
+                                        final i = en.key;
+                                        final calcName = en.value['name'] as String? ?? '計算 ${i + 1}';
+                                        final isSelExt = selectedSrcSheetId == cfg.id && selectedSrcCalcIdx == i;
+                                        const chipColor = Color(0xFF26C6DA);
+                                        return Padding(
+                                          padding: const EdgeInsets.only(right: 8),
+                                          child: GestureDetector(
+                                            onTap: () => setDs(() {
+                                              selectedSrcSheetId = cfg.id;
+                                              selectedSrcCalcIdx = i;
+                                              selectedSrcField = 'result';
+                                              selectedDests = _calcSelectedDestsForExternalRow(cfg.id, i, 'result');
+                                            }),
+                                            child: AnimatedContainer(
+                                              duration: const Duration(milliseconds: 150),
+                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                              decoration: BoxDecoration(
+                                                color: isSelExt ? chipColor.withOpacity(0.18) : Colors.white.withOpacity(0.05),
+                                                border: Border.all(
+                                                  color: isSelExt ? chipColor : Colors.white24,
+                                                  width: isSelExt ? 1.5 : 1.0,
+                                                ),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(Icons.link_rounded, color: isSelExt ? chipColor : Colors.white38, size: 12),
+                                                  const SizedBox(width: 6),
+                                                  Text(calcName,
+                                                      style: TextStyle(
+                                                        color: isSelExt ? chipColor : Colors.white70,
+                                                        fontSize: 13,
+                                                        fontWeight: isSelExt ? FontWeight.bold : FontWeight.normal,
+                                                      )),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }),
+                            if (selectedSrcSheetId != null && selectedSrcCalcIdx != null &&
+                                mergedSheets.any((c) => c.id == selectedSrcSheetId)) ...[
+                              const Padding(
+                                padding: EdgeInsets.fromLTRB(12, 0, 12, 4),
+                                child: Text('項目を選択', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                              ),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                                child: Row(
+                                  children: fieldsForExternal(selectedSrcSheetId!, selectedSrcCalcIdx!).map((sf) {
+                                    final key = sf['key'] as String;
+                                    final label = sf['label'] as String;
+                                    final isSel = selectedSrcField == key;
+                                    final valStr = fieldValueStr(selectedSrcCalcIdx!, key, selectedSrcSheetId);
+                                    const chipColor = Color(0xFF26C6DA);
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: GestureDetector(
+                                        onTap: () => setDs(() {
+                                          selectedSrcField = key;
+                                          selectedDests = _calcSelectedDestsForExternalRow(selectedSrcSheetId!, selectedSrcCalcIdx!, key);
+                                        }),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(milliseconds: 150),
+                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: isSel ? chipColor.withOpacity(0.18) : Colors.white.withOpacity(0.05),
+                                            border: Border.all(
+                                              color: isSel ? chipColor : Colors.white24,
+                                              width: isSel ? 1.5 : 1.0,
+                                            ),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(label,
+                                                  style: TextStyle(
+                                                    color: isSel ? chipColor : Colors.white70,
+                                                    fontSize: 13,
+                                                    fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                                  )),
+                                              const SizedBox(height: 4),
+                                              Text(valStr,
+                                                  style: TextStyle(
+                                                    color: isSel ? Colors.white : Colors.white38,
+                                                    fontSize: 11,
+                                                  )),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ],
+                      ),
+                    );
+                  }),
+                const SizedBox(height: 8),
+                  // ── リンク先セクション（シアン系） ─────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                    child: Row(
+                      children: const [
+                        Icon(
+                          Icons.download_rounded,
+                          size: 14,
+                          color: Color(0xFF26C6DA),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'リンク先',
+                          style: TextStyle(
+                            color: Color(0xFF26C6DA),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          '（複数選択可）',
+                          style: TextStyle(color: Colors.white54, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color.fromARGB(141, 250, 250, 250)
+                              .withOpacity(0.5),
+                          width: 1.5,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: selectedSrcCalcIdx == null
+                          ? const Center(
+                              child: Text(
+                                'リンク元の計算式を選択してください',
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            )
+                          : (items.length <= 1
+                              ? const Center(
+                                  child: Text(
+                                    '他の計算式がありません',
+                                    style: TextStyle(
+                                      color: Colors.white38,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                )
+                              : ListView.builder(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8),
+                                  itemCount: items.length,
+                                  itemBuilder: (context, i) {
+                                    if (i == selectedSrcCalcIdx)
+                                      return const SizedBox.shrink();
+                                    final item = items[i];
+                                    final rowName = item['name'] as String? ??
+                                        '計算 ${i + 1}';
+                                    final itemOthers =
+                                        item['others'] as List? ?? [];
+                                    final destFields =
+                                        <Map<String, dynamic>>[
+                                      {
+                                        'key': 'input',
+                                        'label': '項1',
+                                        'val': (item['input'] as num? ?? 0.0)
+                                            .toDouble(),
+                                      },
+                                      {
+                                        'key': 'operand',
+                                        'label': '項2',
+                                        'val':
+                                            (item['operand'] as num? ?? 0.0)
+                                                .toDouble(),
+                                      },
+                                      ...List.generate(
+                                        itemOthers.length,
+                                        (j) => {
+                                          'key': 'other_$j',
+                                          'label': '項${j + 3}',
+                                          'val': ((itemOthers[j] as Map)[
+                                                          'val'] as num? ??
+                                                      0.0)
+                                                  .toDouble(),
+                                        },
+                                      ),
+                                    ];
+                                    if (destFields.isEmpty)
+                                      return const SizedBox.shrink();
+                                    final destPrec =
+                                        item['precision'] as int? ?? 2;
+                                    String fmtDest(double v) {
+                                      if (v == v.truncateToDouble() &&
+                                          v.abs() < 1e12)
+                                        return v.toStringAsFixed(0);
+                                      return v.toStringAsFixed(destPrec);
+                                    }
+
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                              12, 10, 12, 4),
+                                          child: Text(
+                                            rowName,
+                                            style: const TextStyle(
+                                              color: Color(0xFF26C6DA),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                              12, 0, 12, 4),
+                                          child: Wrap(
+                                            spacing: 8,
+                                            runSpacing: 6,
+                                            children: destFields.map((df) {
+                                              final fk =
+                                                  df['key'] as String;
+                                              final dk = '${i}_$fk';
+                                              final isSel = selectedDests
+                                                  .contains(dk);
+                                              final valStr = fmtDest(
+                                                  df['val'] as double? ??
+                                                      0.0);
+                                              return GestureDetector(
+                                                onTap: () => setDs(() {
+                                                  if (isSel) {
+                                                    selectedDests.remove(dk);
+                                                  } else {
+                                                    selectedDests.add(dk);
+                                                  }
+                                                }),
+                                                child: AnimatedContainer(
+                                                  duration: const Duration(
+                                                      milliseconds: 150),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 6,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: isSel
+                                                        ? const Color(
+                                                                0xFF26C6DA)
+                                                            .withOpacity(0.18)
+                                                        : Colors.white
+                                                            .withOpacity(
+                                                                0.05),
+                                                    border: Border.all(
+                                                      color: isSel
+                                                          ? const Color(
+                                                              0xFF26C6DA)
+                                                          : Colors.white24,
+                                                      width:
+                                                          isSel ? 1.5 : 1.0,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                  ),
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          if (isSel)
+                                                            const Padding(
+                                                              padding: EdgeInsets
+                                                                  .only(
+                                                                      right:
+                                                                          4),
+                                                              child: Icon(
+                                                                Icons.check,
+                                                                size: 12,
+                                                                color: Color(
+                                                                    0xFF26C6DA),
+                                                              ),
+                                                            ),
+                                                          Text(
+                                                            df['label']
+                                                                as String,
+                                                            style: TextStyle(
+                                                              color: isSel
+                                                                  ? const Color(
+                                                                      0xFF26C6DA)
+                                                                  : Colors
+                                                                      .white70,
+                                                              fontSize: 13,
+                                                              fontWeight: isSel
+                                                                  ? FontWeight
+                                                                      .bold
+                                                                  : FontWeight
+                                                                      .normal,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(height: 3),
+                                                      Text(
+                                                        valStr,
+                                                        style: TextStyle(
+                                                          color: isSel
+                                                              ? Colors.white
+                                                              : Colors.white38,
+                                                          fontSize: 11,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              );
+                                            }).toList(),
+                                          ),
+                                        ),
+                                        const Divider(
+                                          color: Colors.white10,
+                                          height: 12,
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                )),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // ── アクションボタン ───────────────────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text(
+                            'キャンセル',
+                            style: TextStyle(color: Colors.white54),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: selectedSrcCalcIdx == null
+                              ? null
+                              : () {
+                                  final srcIdx = selectedSrcCalcIdx!;
+                                  final srcField = selectedSrcField;
+                                  final srcSheetId = selectedSrcSheetId;
+                                  final dests = Set<String>.from(selectedDests);
+                                  Navigator.pop(ctx);
+                                  if (srcSheetId != null) {
+                                    _applyLinkDestsForExternalRow(
+                                        srcSheetId, srcIdx, srcField, dests);
+                                  } else {
+                                    _applyLinkDestsForRow(srcIdx, srcField, dests);
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blueAccent,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('設定する'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -1205,6 +2372,14 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       if (!isLink) return fallback;
       if (source == null) {
         return finalResults.isNotEmpty ? finalResults.last : fallback;
+      }
+      // クロスシートリンク
+      if (source['sheetId'] != null) {
+        return _resolveExternalValue(
+          source['sheetId'] as String,
+          source['rowIdx'] as int? ?? 0,
+          source['target'] as String? ?? 'result',
+        );
       }
       final int sRowIdx = source['rowIdx'] as int? ?? 0;
       final String sTarget = source['target'] as String? ?? 'result';
@@ -1731,12 +2906,12 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         final double displayFontSize = (52.0 * scale).clamp(28.0, 52.0);
         final double subtitleFontSize = (20.0 * scale).clamp(12.0, 20.0);
 
-        final textColor = isDark ? Colors.white : Colors.black87;
+        final textColor = isDark ? Colors.white : Colors.black;
         final keyBg = isDark
             ? Colors.white.withOpacity(0.1)
             : Colors.black.withOpacity(0.07);
-        final opColor = isDark ? Colors.blueAccent : Colors.black87;
-        final eqColor = isDark ? Colors.orangeAccent : Colors.black87;
+        final opColor = isDark ? Colors.blueAccent : Colors.black;
+        final eqColor = isDark ? Colors.orangeAccent : Colors.black;
 
         Widget calcKey(String label, {Color? bg, Color? fg}) {
           final actualLabel = (label == 'C' || label == 'AC')
@@ -1957,7 +3132,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   // ── 閲覧モード用の定数セクション（読み取り専用） ──────────────────────────
   Widget _buildViewModeConstantsSection(List<Map<String, dynamic>> constants, bool isDark) {
-    final fgColor = isDark ? Colors.white : Colors.black87;
+    final fgColor = isDark ? Colors.white : Colors.black;
     final subColor = isDark ? Colors.white54 : Colors.black45;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -2054,6 +3229,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         double resolveLink(Map<String, dynamic>? source, bool isLink, double fallback) {
           if (!isLink) return fallback;
           if (source == null) return finalResults.isNotEmpty ? finalResults.last : fallback;
+          if (source['sheetId'] != null) {
+            return _resolveExternalValue(
+              source['sheetId'] as String,
+              source['rowIdx'] as int? ?? 0,
+              source['target'] as String? ?? 'result',
+            );
+          }
           if (source['type'] == 'constant') {
             final constIdx = source['constIdx'] as int? ?? 0;
             final consts = _constants;
@@ -2157,7 +3339,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final visibleColumns = columns.where((c) => c['visible'] as bool).toList();
 
     // ── スタイル ──────────────────────────────────────────────────────────
-    final fgColor = isDark ? Colors.white : Colors.black87;
+    final fgColor = isDark ? Colors.white : Colors.black;
     final subColor = isDark ? Colors.white54 : Colors.black54;
     final borderColor = isDark ? Colors.white.withOpacity(0.09) : Colors.black.withOpacity(0.10);
     final headerBg = isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04);
@@ -2249,7 +3431,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: Colors.black87,
+          backgroundColor: Colors.black,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             item['name'] as String? ?? '答えの計算式',
@@ -2284,7 +3466,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           if (widget.showHeader) ...[
             Row(
               children: [
-                Expanded(child: Text(title, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'ZenOldMincho', letterSpacing: 1.2))),
+                Expanded(child: Text(title, style: TextStyle(color: isDark ? Colors.white70 : Colors.black, fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'ZenOldMincho', letterSpacing: 1.2))),
                 IconButton(
                   icon: const Icon(Icons.view_column_rounded, size: 20),
                   tooltip: '列の設定',
@@ -2398,7 +3580,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: isRes ? fgColor : (isDark ? Colors.white70 : Colors.black87),
+                                      color: isRes ? fgColor : (isDark ? Colors.white70 : Colors.black),
                                       fontSize: isRes ? 16 : 15,
                                       fontWeight: isRes ? FontWeight.w700 : FontWeight.w400,
                                       fontFamily: 'ZenOldMincho',
@@ -2424,7 +3606,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     showModalBottomSheet<List<Map<String, dynamic>>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => _ColumnLabelEditSheet(
         columnKey: columnKey,
@@ -2524,7 +3706,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     showModalBottomSheet<List<Map<String, dynamic>>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => _ColumnSettingsSheet(columns: columns),
     ).then((newColConfig) {
@@ -2607,6 +3789,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       if (!isLink) return fallback;
       if (source == null)
         return finalResults.isNotEmpty ? finalResults.last : fallback;
+      if (source['sheetId'] != null) {
+        return _resolveExternalValue(
+          source['sheetId'] as String,
+          source['rowIdx'] as int? ?? 0,
+          source['target'] as String? ?? 'result',
+        );
+      }
       if (source['type'] == 'constant') {
         final constIdx = source['constIdx'] as int? ?? 0;
         if (constIdx >= 0 && constIdx < constants.length) {
@@ -2782,7 +3971,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                   child: Text(
                     title,
                     style: TextStyle(
-                      color: isDark ? Colors.white70 : Colors.black87,
+                      color: isDark ? Colors.white70 : Colors.black,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       fontFamily: 'ZenOldMincho',
@@ -2940,7 +4129,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                             TextSpan(
                               text: resultStr,
                               style: TextStyle(
-                                color: isDark ? Colors.white : Colors.black87,
+                                color: isDark ? Colors.white : Colors.black,
                                 fontSize: 19,
                                 fontWeight: FontWeight.w700,
                                 fontFamily: 'ZenOldMincho',
@@ -3192,6 +4381,14 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                             ? finalResults.last
                             : fallback;
                       }
+                      // クロスシートリンク
+                      if (source['sheetId'] != null) {
+                        return _resolveExternalValue(
+                          source['sheetId'] as String,
+                          source['rowIdx'] as int? ?? 0,
+                          source['target'] as String? ?? 'result',
+                        );
+                      }
                       // 定数リンク
                       if (source['type'] == 'constant') {
                         final constIdx = source['constIdx'] as int? ?? 0;
@@ -3407,6 +4604,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                     onToggleName: () => _toggleNameVisible(ci),
                                     wrapFormula: _wrapFormula,
                                     termLabels: _effectiveTermLabels.isNotEmpty ? _effectiveTermLabels : null,
+                                    exposed: item['exposed'] as bool? ?? false,
+                                    onToggleExpose: () => _toggleExposed(ci),
                                     dragHandle: ReorderableDragStartListener(
                                       index: di,
                                       child: Padding(
@@ -3798,7 +4997,7 @@ Return ONLY the JSON array. Do not include any explanations.
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            backgroundColor: Colors.black87,
+            backgroundColor: Colors.black,
             title: const Text(
               '優先計算（ ）の範囲指定',
               style: TextStyle(color: Colors.white, fontSize: 16),
@@ -3814,7 +5013,7 @@ Return ONLY the JSON array. Do not include any explanations.
                 DropdownButton<int>(
                   value: startIdx,
                   isExpanded: true,
-                  dropdownColor: Colors.black87,
+                  dropdownColor: Colors.black,
                   items: List.generate(
                     termCount - 1,
                     (i) => DropdownMenuItem(
@@ -3838,7 +5037,7 @@ Return ONLY the JSON array. Do not include any explanations.
                 DropdownButton<int>(
                   value: endIdx,
                   isExpanded: true,
-                  dropdownColor: Colors.black87,
+                  dropdownColor: Colors.black,
                   items: List.generate(
                     termCount,
                     (i) => DropdownMenuItem(
@@ -4195,7 +5394,7 @@ class _ColumnVisibilityDialogState extends State<_ColumnVisibilityDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.black,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: const Text('列の表示設定',
           style: TextStyle(color: Colors.white, fontFamily: 'ZenOldMincho', fontSize: 16, fontWeight: FontWeight.bold)),
