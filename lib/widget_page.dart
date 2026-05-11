@@ -3,6 +3,7 @@ library widget_page;
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -55,7 +56,6 @@ const List<_NoteColorPreset> _kNoteColorPresets = [
   _NoteColorPreset(0xFF2D4A22, isDark: true),
   _NoteColorPreset(0xFF4A1942, isDark: true),
   _NoteColorPreset(0xFF3D1C02, isDark: true),
-
 ];
 
 // ── AI プロンプト入力シート ────────────────────────────────────────────────────
@@ -170,10 +170,10 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
               onPressed: () {
                 final text = _ctrl.text.trim();
                 if (text.isEmpty) return;
-                Navigator.pop(
-                  context,
-                  (instruction: text, isModify: _isModify),
-                );
+                Navigator.pop(context, (
+                  instruction: text,
+                  isModify: _isModify,
+                ));
               },
               child: const Text('生成', style: TextStyle(fontSize: 16)),
             ),
@@ -255,6 +255,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
     _display = widget.initialDisplay ?? '0';
     if (widget.initialDisplay != null) _isClearState = false;
   }
+
   bool _isAiCounting = false;
   List<double> _termValues = [];
   List<String> _termOps = [];
@@ -262,7 +263,8 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
   String _fmt(double v) {
     if (v.isInfinite || v.isNaN) return '0';
     if (v == 0) return '0';
-    if (v == v.truncateToDouble() && v.abs() < 1e15) return v.toInt().toString();
+    if (v == v.truncateToDouble() && v.abs() < 1e15)
+      return v.toInt().toString();
     if (v.abs() < 1e-15 || v.abs() >= 1e15) return v.toString();
     String s = v.toStringAsFixed(15);
     return s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
@@ -270,19 +272,27 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
 
   double _evalSimple(double a, String op, double b) {
     switch (op) {
-      case '+': return a + b;
-      case '-': return a - b;
-      case '×': return a * b;
-      case '÷': return b != 0 ? a / b : 0;
-      default: return a;
+      case '+':
+        return a + b;
+      case '-':
+        return a - b;
+      case '×':
+        return a * b;
+      case '÷':
+        return b != 0 ? a / b : 0;
+      default:
+        return a;
     }
   }
 
   String _opToDart(String op) {
     switch (op) {
-      case '×': return 'x';
-      case '÷': return '/';
-      default: return op;
+      case '×':
+        return 'x';
+      case '÷':
+        return '/';
+      default:
+        return op;
     }
   }
 
@@ -290,17 +300,26 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
     setState(() {
       if (key == 'C' || key == 'AC') {
         if (_display == '0' || key == 'AC') {
-          _display = '0'; _calcA = null; _calcOp = ''; _newEntry = true;
-          _hasResult = false; _exprStr = ''; _termValues = []; _termOps = [];
+          _display = '0';
+          _calcA = null;
+          _calcOp = '';
+          _newEntry = true;
+          _hasResult = false;
+          _exprStr = '';
+          _termValues = [];
+          _termOps = [];
           _isClearState = true;
         } else {
-          _display = '0'; _newEntry = true; _isClearState = true;
+          _display = '0';
+          _newEntry = true;
+          _isClearState = true;
         }
       } else if (key == '⌫') {
         if (!_newEntry && _display.length > 1) {
           _display = _display.substring(0, _display.length - 1);
         } else {
-          _display = '0'; _newEntry = true;
+          _display = '0';
+          _newEntry = true;
         }
       } else if (key == '+/-') {
         _isClearState = false;
@@ -325,7 +344,8 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
             _calcLastB = b;
           }
           double result;
-          if (allTerms.length == effectiveOps.length + 1 && allTerms.length >= 2) {
+          if (allTerms.length == effectiveOps.length + 1 &&
+              allTerms.length >= 2) {
             result = allTerms[0];
             for (int i = 0; i < effectiveOps.length; i++) {
               result = _evalSimple(result, effectiveOps[i], allTerms[i + 1]);
@@ -341,8 +361,11 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
           _exprStr = '${parts.join(' ')} = ${_fmt(result)}';
           _termValues = allTerms;
           _termOps = effectiveOps;
-          _calcA = result; _calcOp = ''; _display = _fmt(result);
-          _hasResult = true; _newEntry = true;
+          _calcA = result;
+          _calcOp = '';
+          _display = _fmt(result);
+          _hasResult = true;
+          _newEntry = true;
         } else {
           if (_display != '0' || _calcA != null) _hasResult = true;
         }
@@ -365,11 +388,15 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
           _termValues = [_calcA!];
           _termOps = [key];
         }
-        _calcOp = key; _newEntry = true; _hasResult = false;
+        _calcOp = key;
+        _newEntry = true;
+        _hasResult = false;
       } else if (key == '.') {
         _isClearState = false;
         if (_newEntry) {
-          _display = '0.'; _newEntry = false; _hasResult = false;
+          _display = '0.';
+          _newEntry = false;
+          _hasResult = false;
         } else if (!_display.contains('.')) {
           _display += '.';
         }
@@ -377,9 +404,13 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
         _isClearState = false;
         if (_newEntry || _display == '0') {
           if (_hasResult && _calcOp.isEmpty) {
-            _termValues = []; _termOps = []; _calcA = null;
+            _termValues = [];
+            _termOps = [];
+            _calcA = null;
           }
-          _display = key; _newEntry = false; _hasResult = false;
+          _display = key;
+          _newEntry = false;
+          _hasResult = false;
         } else if (_display.length < 12) {
           _display += key;
         }
@@ -392,11 +423,14 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
     final name = '計算 ${widget.existingItemCount + 1}';
     Map<String, dynamic> item;
     if (_termValues.length >= 3 && _termOps.length == _termValues.length - 1) {
-      final others = List.generate(_termValues.length - 2, (i) => {
-        'op': _opToDart(_termOps[i + 1]),
-        'val': _termValues[i + 2],
-        'unit': '',
-      });
+      final others = List.generate(
+        _termValues.length - 2,
+        (i) => {
+          'op': _opToDart(_termOps[i + 1]),
+          'val': _termValues[i + 2],
+          'unit': '',
+        },
+      );
       item = {
         'name': name,
         'input': _termValues[0],
@@ -495,7 +529,8 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
     final sheetH = extent * screenH;
 
     // 固定 UI 要素の高さ（グリッド外）
-    const kFixedH = 242.0; // ハンドル12 + ヘッダー40 + gap4 + 追加ボタン40 + 表示部80 + gap6 + pad上8 + pad下16
+    const kFixedH =
+        242.0; // ハンドル12 + ヘッダー40 + gap4 + 追加ボタン40 + 表示部80 + gap6 + pad上8 + pad下16
     const kGridGapH = 24.0; // 4行間 × 6px
 
     final gridAvail = sheetH - kFixedH - kGridGapH - viewInsetsBottom;
@@ -562,7 +597,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 4),
             // 「追加」ボタン
             AnimatedOpacity(
@@ -692,20 +727,29 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                calcKey('C',
-                    bg: Colors.redAccent.withOpacity(0.18),
-                    fg: Colors.redAccent),
+                calcKey(
+                  'C',
+                  bg: Colors.redAccent.withOpacity(0.18),
+                  fg: Colors.redAccent,
+                ),
                 calcKey('+/-', bg: keyBg),
                 calcKey('%', bg: keyBg),
                 calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
-                calcKey('7'), calcKey('8'), calcKey('9'),
+                calcKey('7'),
+                calcKey('8'),
+                calcKey('9'),
                 calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
-                calcKey('4'), calcKey('5'), calcKey('6'),
+                calcKey('4'),
+                calcKey('5'),
+                calcKey('6'),
                 calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
-                calcKey('1'), calcKey('2'), calcKey('3'),
+                calcKey('1'),
+                calcKey('2'),
+                calcKey('3'),
                 calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
                 calcKey('⌫', bg: keyBg),
-                calcKey('0'), calcKey('.'),
+                calcKey('0'),
+                calcKey('.'),
                 calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
               ],
             ),
@@ -777,7 +821,6 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
   void _onClipboardChanged() {
     if (mounted) setState(() {});
   }
-
 
   void _handleUpdate(Map<String, dynamic> data) {
     setState(() {
@@ -852,9 +895,11 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
   Widget build(BuildContext context) {
     final title = _config.data['title'] as String? ?? '定型計算';
     final bgColorValue = _config.data['bgColor'] as int?;
-    final scaffoldBgColor = bgColorValue != null ? Color(bgColorValue) : const Color(0xFF0D0D14);
+    final scaffoldBgColor = bgColorValue != null
+        ? Color(bgColorValue)
+        : const Color(0xFF0D0D14);
     final isDark = scaffoldBgColor.computeLuminance() < 0.5;
-    final fgColor = isDark ? Colors.white :Colors.black;
+    final fgColor = isDark ? Colors.white : Colors.black;
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: scaffoldBgColor,
@@ -885,6 +930,12 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.link_rounded, size: 22),
+            onPressed: () =>
+                _calcKey.currentState?._showSheetLinkSettingsDialog(),
+            tooltip: '値をリンク',
+          ),
           IconButton(
             icon: const Icon(Icons.more_horiz_rounded, size: 24),
             onPressed: () => _calcKey.currentState?._showActionSheet(),
@@ -931,7 +982,8 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   showToolbar: false,
                   showHeader: false,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                  onAiGeneratingChanged: (v) => setState(() => _isAiGenerating = v),
+                  onAiGeneratingChanged: (v) =>
+                      setState(() => _isAiGenerating = v),
                   globalConstants: widget.globalConstants,
                   clipboardNotifier: widget.clipboardNotifier,
                   allConfigs: widget.allConfigs,
@@ -948,7 +1000,9 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
           backgroundColor: isDark ? Colors.white : Colors.black,
           foregroundColor: scaffoldBgColor,
           elevation: 12,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
           child: const Icon(Icons.add_rounded, size: 30),
         ),
       ),
@@ -960,7 +1014,9 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
     final isViewMode = _config.data['viewMode'] as bool? ?? false;
     final isTableMode = _config.data['tableMode'] as bool? ?? false;
     final bgColorValue = _config.data['bgColor'] as int?;
-    final barBgColor = bgColorValue != null ? Color(bgColorValue) : const Color(0xFF161625);
+    final barBgColor = bgColorValue != null
+        ? Color(bgColorValue)
+        : const Color(0xFF161625);
     final isDarkBar = barBgColor.computeLuminance() < 0.5;
 
     // 現在のモードアイコン・ラベル・色を決定
@@ -1037,11 +1093,23 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                     onTap: () {
                       // タップで順番に切り替え: 編集 → 閲覧 → 表 → 編集
                       if (isTableMode) {
-                        _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': false});
+                        _handleUpdate({
+                          ..._config.data,
+                          'viewMode': false,
+                          'tableMode': false,
+                        });
                       } else if (isViewMode) {
-                        _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': true});
+                        _handleUpdate({
+                          ..._config.data,
+                          'viewMode': false,
+                          'tableMode': true,
+                        });
                       } else {
-                        _handleUpdate({..._config.data, 'viewMode': true, 'tableMode': false});
+                        _handleUpdate({
+                          ..._config.data,
+                          'viewMode': true,
+                          'tableMode': false,
+                        });
                       }
                     },
                     onLongPress: () => _showModePickerSheet(isDarkBar),
@@ -1082,9 +1150,21 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
               child: Row(
                 children: [
                   const Expanded(
-                    child: Text('表示モードを選択', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      '表示モードを選択',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => Navigator.pop(ctx), padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.pop(ctx),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
                 ],
               ),
             ),
@@ -1093,51 +1173,129 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: (isEditMode ? Colors.white : Colors.white.withOpacity(0.07)).withOpacity(0.08),
+                  color:
+                      (isEditMode
+                              ? Colors.white
+                              : Colors.white.withOpacity(0.07))
+                          .withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.edit_note_rounded, color: isEditMode ? Colors.white : Colors.white54, size: 22),
+                child: Icon(
+                  Icons.edit_note_rounded,
+                  color: isEditMode ? Colors.white : Colors.white54,
+                  size: 22,
+                ),
               ),
-              title: const Text('編集モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              subtitle: const Text('計算式を編集できます', style: TextStyle(color: Colors.white38, fontSize: 12)),
-              trailing: isEditMode ? const Icon(Icons.check_circle_rounded, color: Color(0xFF5E81FF)) : null,
+              title: const Text(
+                '編集モード',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: const Text(
+                '計算式を編集できます',
+                style: TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+              trailing: isEditMode
+                  ? const Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF5E81FF),
+                    )
+                  : null,
               onTap: () {
                 Navigator.pop(ctx);
-                _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': false});
+                _handleUpdate({
+                  ..._config.data,
+                  'viewMode': false,
+                  'tableMode': false,
+                });
               },
             ),
             ListTile(
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: (isViewMode ? const Color(0xFF5E81FF) : Colors.white.withOpacity(0.07)).withOpacity(0.15),
+                  color:
+                      (isViewMode
+                              ? const Color(0xFF5E81FF)
+                              : Colors.white.withOpacity(0.07))
+                          .withOpacity(0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.visibility_rounded, color: isViewMode ? const Color(0xFF5E81FF) : Colors.white54, size: 22),
+                child: Icon(
+                  Icons.visibility_rounded,
+                  color: isViewMode ? const Color(0xFF5E81FF) : Colors.white54,
+                  size: 22,
+                ),
               ),
-              title: const Text('閲覧モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              subtitle: const Text('定数・メモ・計算結果を表示します', style: TextStyle(color: Colors.white38, fontSize: 12)),
-              trailing: isViewMode ? const Icon(Icons.check_circle_rounded, color: Color(0xFF5E81FF)) : null,
+              title: const Text(
+                '閲覧モード',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: const Text(
+                '定数・メモ・計算結果を表示します',
+                style: TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+              trailing: isViewMode
+                  ? const Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF5E81FF),
+                    )
+                  : null,
               onTap: () {
                 Navigator.pop(ctx);
-                _handleUpdate({..._config.data, 'viewMode': true, 'tableMode': false});
+                _handleUpdate({
+                  ..._config.data,
+                  'viewMode': true,
+                  'tableMode': false,
+                });
               },
             ),
             ListTile(
               leading: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: (isTableMode ? const Color(0xFF4CAF50) : Colors.white.withOpacity(0.07)).withOpacity(0.15),
+                  color:
+                      (isTableMode
+                              ? const Color(0xFF4CAF50)
+                              : Colors.white.withOpacity(0.07))
+                          .withOpacity(0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.table_chart_rounded, color: isTableMode ? const Color(0xFF4CAF50) : Colors.white54, size: 22),
+                child: Icon(
+                  Icons.table_chart_rounded,
+                  color: isTableMode ? const Color(0xFF4CAF50) : Colors.white54,
+                  size: 22,
+                ),
               ),
-              title: const Text('表モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              subtitle: const Text('値のみをシート形式で表示・編集できます', style: TextStyle(color: Colors.white38, fontSize: 12)),
-              trailing: isTableMode ? const Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50)) : null,
+              title: const Text(
+                '表モード',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: const Text(
+                '値のみをシート形式で表示・編集できます',
+                style: TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+              trailing: isTableMode
+                  ? const Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF4CAF50),
+                    )
+                  : null,
               onTap: () {
                 Navigator.pop(ctx);
-                _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': true});
+                _handleUpdate({
+                  ..._config.data,
+                  'viewMode': false,
+                  'tableMode': true,
+                });
               },
             ),
             const SizedBox(height: 8),
@@ -1192,7 +1350,7 @@ class _CalcDraggableSheetContentState
       maxChildSize: 0.72,
       expand: true,
       snap: true,
-      snapSizes: const [0.55, 0.65,0.72],
+      snapSizes: const [0.55, 0.65, 0.72],
       builder: (ctx, scrollController) {
         final sheetColor = widget.bgColor != null
             ? Color(widget.bgColor!)
@@ -1204,7 +1362,9 @@ class _CalcDraggableSheetContentState
           clipBehavior: Clip.antiAlias,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
               color: widget.isDark ? Colors.black12 : Colors.white12,
               boxShadow: [
                 BoxShadow(
@@ -1277,7 +1437,8 @@ class CalculatorViewCard extends StatelessWidget {
       onDuplicate: () {},
       showToolbar: false,
       showHeader: false,
-      contentPadding: contentPadding ?? const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      contentPadding:
+          contentPadding ?? const EdgeInsets.fromLTRB(16, 8, 16, 16),
     );
   }
 }
@@ -1346,13 +1507,18 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
       _globalMode = mode;
       _localSheets = _localSheets.map((s) {
         if (_sheetIds.contains(s.id)) {
-          return s.copyWith(data: {...s.data, 'viewMode': viewMode, 'tableMode': tableMode});
+          return s.copyWith(
+            data: {...s.data, 'viewMode': viewMode, 'tableMode': tableMode},
+          );
         }
         return s;
       }).toList();
     });
     for (final id in _sheetIds) {
-      final cfg = _localSheets.firstWhere((s) => s.id == id, orElse: () => WidgetConfig(id: id, type: '', data: {}));
+      final cfg = _localSheets.firstWhere(
+        (s) => s.id == id,
+        orElse: () => WidgetConfig(id: id, type: '', data: {}),
+      );
       if (cfg.type.isEmpty) continue;
       widget.onSheetUpdate(id, cfg.data);
     }
@@ -1376,7 +1542,14 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
               child: Row(
                 children: [
                   const Expanded(
-                    child: Text('全シートの表示モード', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      '全シートの表示モード',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.white54),
@@ -1389,25 +1562,89 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
             ),
             const Divider(color: Colors.white12, height: 1),
             ListTile(
-              leading: Icon(Icons.edit_note_rounded, color: _globalMode == 0 ? Colors.white : Colors.white54),
-              title: const Text('編集モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              subtitle: const Text('全シートに適用', style: TextStyle(color: Colors.white38, fontSize: 11)),
-              trailing: _globalMode == 0 ? const Icon(Icons.check_circle_rounded, color: Color(0xFF5E81FF)) : null,
-              onTap: () { Navigator.pop(ctx); _applyModeToAll(0); },
+              leading: Icon(
+                Icons.edit_note_rounded,
+                color: _globalMode == 0 ? Colors.white : Colors.white54,
+              ),
+              title: const Text(
+                '編集モード',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: const Text(
+                '全シートに適用',
+                style: TextStyle(color: Colors.white38, fontSize: 11),
+              ),
+              trailing: _globalMode == 0
+                  ? const Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF5E81FF),
+                    )
+                  : null,
+              onTap: () {
+                Navigator.pop(ctx);
+                _applyModeToAll(0);
+              },
             ),
             ListTile(
-              leading: Icon(Icons.visibility_rounded, color: _globalMode == 1 ? const Color(0xFF5E81FF) : Colors.white54),
-              title: const Text('閲覧モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              subtitle: const Text('全シートに適用', style: TextStyle(color: Colors.white38, fontSize: 11)),
-              trailing: _globalMode == 1 ? const Icon(Icons.check_circle_rounded, color: Color(0xFF5E81FF)) : null,
-              onTap: () { Navigator.pop(ctx); _applyModeToAll(1); },
+              leading: Icon(
+                Icons.visibility_rounded,
+                color: _globalMode == 1
+                    ? const Color(0xFF5E81FF)
+                    : Colors.white54,
+              ),
+              title: const Text(
+                '閲覧モード',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: const Text(
+                '全シートに適用',
+                style: TextStyle(color: Colors.white38, fontSize: 11),
+              ),
+              trailing: _globalMode == 1
+                  ? const Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF5E81FF),
+                    )
+                  : null,
+              onTap: () {
+                Navigator.pop(ctx);
+                _applyModeToAll(1);
+              },
             ),
             ListTile(
-              leading: Icon(Icons.table_chart_rounded, color: _globalMode == 2 ? const Color(0xFF4CAF50) : Colors.white54),
-              title: const Text('表モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              subtitle: const Text('全シートに適用', style: TextStyle(color: Colors.white38, fontSize: 11)),
-              trailing: _globalMode == 2 ? const Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50)) : null,
-              onTap: () { Navigator.pop(ctx); _applyModeToAll(2); },
+              leading: Icon(
+                Icons.table_chart_rounded,
+                color: _globalMode == 2
+                    ? const Color(0xFF4CAF50)
+                    : Colors.white54,
+              ),
+              title: const Text(
+                '表モード',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: const Text(
+                '全シートに適用',
+                style: TextStyle(color: Colors.white38, fontSize: 11),
+              ),
+              trailing: _globalMode == 2
+                  ? const Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF4CAF50),
+                    )
+                  : null,
+              onTap: () {
+                Navigator.pop(ctx);
+                _applyModeToAll(2);
+              },
             ),
             const SizedBox(height: 8),
           ],
@@ -1424,7 +1661,10 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
         backgroundColor: const Color(0xFF0D0D14),
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white70,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: GestureDetector(
@@ -1434,19 +1674,38 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
               context: context,
               builder: (ctx) => AlertDialog(
                 backgroundColor: Colors.black,
-                title: const Text('タイトル編集', style: TextStyle(color: Colors.white)),
+                title: const Text(
+                  'タイトル編集',
+                  style: TextStyle(color: Colors.white),
+                ),
                 content: TextField(
                   controller: ctrl,
                   autofocus: true,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
-                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
-                    focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF5E81FF))),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.white24),
+                    ),
+                    focusedBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF5E81FF)),
+                    ),
                   ),
                 ),
                 actions: [
-                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル', style: TextStyle(color: Colors.white54))),
-                  TextButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('保存', style: TextStyle(color: Color(0xFF5E81FF)))),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text(
+                      'キャンセル',
+                      style: TextStyle(color: Colors.white54),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+                    child: const Text(
+                      '保存',
+                      style: TextStyle(color: Color(0xFF5E81FF)),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -1461,7 +1720,11 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
               Flexible(
                 child: Text(
                   _title,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 18,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -1469,28 +1732,34 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
           ),
         ),
         actions: [
-          Builder(builder: (_) {
-            final IconData modeIcon;
-            final Color modeColor;
-            if (_globalMode == 2) {
-              modeIcon = Icons.table_chart_rounded;
-              modeColor = const Color(0xFF4CAF50);
-            } else if (_globalMode == 1) {
-              modeIcon = Icons.visibility_rounded;
-              modeColor = const Color(0xFF5E81FF);
-            } else {
-              modeIcon = Icons.edit_note_rounded;
-              modeColor = Colors.white38;
-            }
-            return GestureDetector(
-              onTap: () => _applyModeToAll((_globalMode + 1) % 3),
-              onLongPress: _showAllModePicker,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: Icon(modeIcon, color: modeColor, size: 22),
-              ),
-            );
-          }),
+          // リンク設定は個別のシートのアクションメニューまたは機能を使用
+          Builder(
+            builder: (_) {
+              final IconData modeIcon;
+              final Color modeColor;
+              if (_globalMode == 2) {
+                modeIcon = Icons.table_chart_rounded;
+                modeColor = const Color(0xFF4CAF50);
+              } else if (_globalMode == 1) {
+                modeIcon = Icons.visibility_rounded;
+                modeColor = const Color(0xFF5E81FF);
+              } else {
+                modeIcon = Icons.edit_note_rounded;
+                modeColor = Colors.white38;
+              }
+              return GestureDetector(
+                onTap: () => _applyModeToAll((_globalMode + 1) % 3),
+                onLongPress: _showAllModePicker,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: Icon(modeIcon, color: modeColor, size: 22),
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: _sheetIds.isEmpty
@@ -1503,8 +1772,11 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
               itemBuilder: (ctx, i) {
                 final id = _sheetIds[i];
                 WidgetConfig? sheetConfig;
-                try { sheetConfig = _localSheets.firstWhere((s) => s.id == id); }
-                catch (_) { sheetConfig = null; }
+                try {
+                  sheetConfig = _localSheets.firstWhere((s) => s.id == id);
+                } catch (_) {
+                  sheetConfig = null;
+                }
                 if (sheetConfig == null) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16),
@@ -1513,16 +1785,22 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                     config: sheetConfig,
                     onUpdate: (data) {
                       setState(() {
-                        _localSheets = _localSheets.map((s) => s.id == id ? s.copyWith(data: data) : s).toList();
+                        _localSheets = _localSheets
+                            .map((s) => s.id == id ? s.copyWith(data: data) : s)
+                            .toList();
                       });
                       widget.onSheetUpdate(id, data);
                     },
-                    onRemove: _sheetIds.length > 1 ? () => _removeSheet(id) : null,
+                    onRemove: _sheetIds.length > 1
+                        ? () => _removeSheet(id)
+                        : null,
                     onDuplicate: () => widget.onSheetDuplicate(id),
                     globalConstants: widget.globalConstants,
                     clipboardNotifier: widget.clipboardNotifier,
                     allConfigs: widget.allConfigs,
-                    mergedSiblingIds: _sheetIds.where((sid) => sid != id).toSet(),
+                    mergedSiblingIds: _sheetIds
+                        .where((sid) => sid != id)
+                        .toSet(),
                     onSheetUpdate: widget.onSheetUpdate,
                     onSheetDuplicate: widget.onSheetDuplicate,
                   ),
@@ -1665,30 +1943,105 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
               child: Row(
                 children: [
                   const Expanded(
-                    child: Text('表示モードを選択', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      '表示モードを選択',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                  IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => Navigator.pop(ctx), padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.pop(ctx),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
                 ],
               ),
             ),
             const Divider(color: Colors.white12, height: 1),
             ListTile(
-              leading: Icon(Icons.edit_note_rounded, color: isEditMode ? Colors.white : Colors.white54),
-              title: const Text('編集モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              trailing: isEditMode ? const Icon(Icons.check_circle_rounded, color: Color(0xFF5E81FF)) : null,
-              onTap: () { Navigator.pop(ctx); _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': false}); },
+              leading: Icon(
+                Icons.edit_note_rounded,
+                color: isEditMode ? Colors.white : Colors.white54,
+              ),
+              title: const Text(
+                '編集モード',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              trailing: isEditMode
+                  ? const Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF5E81FF),
+                    )
+                  : null,
+              onTap: () {
+                Navigator.pop(ctx);
+                _handleUpdate({
+                  ..._config.data,
+                  'viewMode': false,
+                  'tableMode': false,
+                });
+              },
             ),
             ListTile(
-              leading: Icon(Icons.visibility_rounded, color: isViewMode ? const Color(0xFF5E81FF) : Colors.white54),
-              title: const Text('閲覧モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              trailing: isViewMode ? const Icon(Icons.check_circle_rounded, color: Color(0xFF5E81FF)) : null,
-              onTap: () { Navigator.pop(ctx); _handleUpdate({..._config.data, 'viewMode': true, 'tableMode': false}); },
+              leading: Icon(
+                Icons.visibility_rounded,
+                color: isViewMode ? const Color(0xFF5E81FF) : Colors.white54,
+              ),
+              title: const Text(
+                '閲覧モード',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              trailing: isViewMode
+                  ? const Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF5E81FF),
+                    )
+                  : null,
+              onTap: () {
+                Navigator.pop(ctx);
+                _handleUpdate({
+                  ..._config.data,
+                  'viewMode': true,
+                  'tableMode': false,
+                });
+              },
             ),
             ListTile(
-              leading: Icon(Icons.table_chart_rounded, color: isTableMode ? const Color(0xFF4CAF50) : Colors.white54),
-              title: const Text('表モード', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-              trailing: isTableMode ? const Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50)) : null,
-              onTap: () { Navigator.pop(ctx); _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': true}); },
+              leading: Icon(
+                Icons.table_chart_rounded,
+                color: isTableMode ? const Color(0xFF4CAF50) : Colors.white54,
+              ),
+              title: const Text(
+                '表モード',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              trailing: isTableMode
+                  ? const Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF4CAF50),
+                    )
+                  : null,
+              onTap: () {
+                Navigator.pop(ctx);
+                _handleUpdate({
+                  ..._config.data,
+                  'viewMode': false,
+                  'tableMode': true,
+                });
+              },
             ),
             const SizedBox(height: 8),
           ],
@@ -1701,7 +2054,9 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
     final isViewMode = _config.data['viewMode'] as bool? ?? false;
     final isTableMode = _config.data['tableMode'] as bool? ?? false;
     final bgColorValue = _config.data['bgColor'] as int?;
-    final barBgColor = bgColorValue != null ? Color(bgColorValue) : const Color(0xFF161625);
+    final barBgColor = bgColorValue != null
+        ? Color(bgColorValue)
+        : const Color(0xFF161625);
     final isDarkBar = barBgColor.computeLuminance() < 0.5;
 
     final IconData modeIcon;
@@ -1726,7 +2081,9 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
         color: barBgColor,
         border: Border(
           top: BorderSide(
-            color: isDarkBar ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.12),
+            color: isDarkBar
+                ? Colors.white.withOpacity(0.08)
+                : Colors.black.withOpacity(0.12),
           ),
         ),
       ),
@@ -1749,7 +2106,8 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                   label: 'AI生成',
                   color: const Color(0xFF9E7AFF),
                   isLoading: _isAiGenerating,
-                  onTap: () => _calcKey.currentState?._showAiGenerateCalcDialog(),
+                  onTap: () =>
+                      _calcKey.currentState?._showAiGenerateCalcDialog(),
                 ),
                 _ToolbarButton(
                   icon: modeIcon,
@@ -1757,11 +2115,23 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                   color: modeColor,
                   onTap: () {
                     if (isTableMode) {
-                      _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': false});
+                      _handleUpdate({
+                        ..._config.data,
+                        'viewMode': false,
+                        'tableMode': false,
+                      });
                     } else if (isViewMode) {
-                      _handleUpdate({..._config.data, 'viewMode': false, 'tableMode': true});
+                      _handleUpdate({
+                        ..._config.data,
+                        'viewMode': false,
+                        'tableMode': true,
+                      });
                     } else {
-                      _handleUpdate({..._config.data, 'viewMode': true, 'tableMode': false});
+                      _handleUpdate({
+                        ..._config.data,
+                        'viewMode': true,
+                        'tableMode': false,
+                      });
                     }
                   },
                   onLongPress: () => _showModePickerSheet(isDarkBar),
@@ -1789,10 +2159,14 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
   @override
   Widget build(BuildContext context) {
     final bgColorValue = _config.data['bgColor'] as int?;
-    final cardBg = bgColorValue != null ? Color(bgColorValue) : const Color(0xFF1A1A26);
+    final cardBg = bgColorValue != null
+        ? Color(bgColorValue)
+        : const Color(0xFF1A1A26);
     final isDark = cardBg.computeLuminance() < 0.5;
     final titleColor = isDark ? Colors.white : Colors.black;
-    final borderColor = isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.12);
+    final borderColor = isDark
+        ? Colors.white.withOpacity(0.06)
+        : Colors.black.withOpacity(0.12);
     final title = _config.data['title'] as String? ?? '定型計算';
 
     return Container(
@@ -1803,7 +2177,8 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(isDark ? 0.4 : 0.15),
-            blurRadius: 20, offset: const Offset(0, 8),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -1822,16 +2197,36 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                     child: Text(
                       title,
                       style: TextStyle(
-                        color: titleColor, fontSize: 17,
-                        fontWeight: FontWeight.w800, letterSpacing: -0.3,
+                        color: titleColor,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
                       ),
                     ),
                   ),
                 ),
+                IconButton(
+                  icon: Icon(
+                    Icons.link_rounded,
+                    color: isDark ? Colors.blueAccent : Colors.blue,
+                    size: 20,
+                  ),
+                  onPressed: () =>
+                      _calcKey.currentState?._showSheetLinkSettingsDialog(),
+                  tooltip: '値をリンク',
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
+                ),
                 PopupMenuButton<String>(
-                  icon: Icon(Icons.more_horiz_rounded, color: isDark ? Colors.white38 : Colors.black38, size: 22),
+                  icon: Icon(
+                    Icons.more_horiz_rounded,
+                    color: isDark ? Colors.white38 : Colors.black38,
+                    size: 22,
+                  ),
                   color: Colors.black,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   onSelected: (val) {
                     if (val == 'settings') {
                       _calcKey.currentState?._showActionSheet();
@@ -1840,9 +2235,38 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                     }
                   },
                   itemBuilder: (ctx) => [
-                    const PopupMenuItem(value: 'settings', child: Row(children: [Icon(Icons.settings_rounded, size: 18, color: Colors.white70), SizedBox(width: 10), Text('シート設定', style: TextStyle(color: Colors.white))])),
+                    const PopupMenuItem(
+                      value: 'settings',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.settings_rounded,
+                            size: 18,
+                            color: Colors.white70,
+                          ),
+                          SizedBox(width: 10),
+                          Text('シート設定', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    ),
                     if (widget.onRemove != null)
-                      const PopupMenuItem(value: 'remove', child: Row(children: [Icon(Icons.link_off_rounded, size: 18, color: Colors.redAccent), SizedBox(width: 10), Text('結合から外す', style: TextStyle(color: Colors.redAccent))])),
+                      const PopupMenuItem(
+                        value: 'remove',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.link_off_rounded,
+                              size: 18,
+                              color: Colors.redAccent,
+                            ),
+                            SizedBox(width: 10),
+                            Text(
+                              '結合から外す',
+                              style: TextStyle(color: Colors.redAccent),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ],
@@ -1865,6 +2289,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
               clipboardNotifier: widget.clipboardNotifier,
               allConfigs: widget.allConfigs,
               mergedSiblingIds: widget.mergedSiblingIds,
+              onSheetUpdate: widget.onSheetUpdate,
             ),
           // クリップボードバー
           if (widget.clipboardNotifier?.value != null)
@@ -1880,11 +2305,16 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
   }
 
   Widget _buildNestedMergedCard(BuildContext context, bool isDark) {
-    final sheetIds = (_config.data['sheetIds'] as List<dynamic>? ?? []).map((e) => e as String).toList();
+    final sheetIds = (_config.data['sheetIds'] as List<dynamic>? ?? [])
+        .map((e) => e as String)
+        .toList();
     final sheets = sheetIds
         .map((id) {
-          try { return widget.allConfigs.firstWhere((c) => c.id == id); }
-          catch (_) { return null; }
+          try {
+            return widget.allConfigs.firstWhere((c) => c.id == id);
+          } catch (_) {
+            return null;
+          }
         })
         .whereType<WidgetConfig>()
         .toList();
@@ -1911,11 +2341,31 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
         alignment: Alignment.center,
         child: Column(
           children: [
-            Icon(Icons.folder_copy_rounded, size: 56, color: isDark ? Colors.white38 : Colors.black38),
+            Icon(
+              Icons.folder_copy_rounded,
+              size: 56,
+              color: isDark ? Colors.white38 : Colors.black38,
+            ),
             const SizedBox(height: 16),
-            Text('${sheets.length}つのシートが結合されています', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              '${sheets.length}つのシートが結合されています',
+              style: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black87,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text('タップしてさらに展開', style: TextStyle(color: isDark ? const Color(0xFF5E81FF) : const Color(0xFF5E81FF), fontSize: 13, fontWeight: FontWeight.bold)),
+            Text(
+              'タップしてさらに展開',
+              style: TextStyle(
+                color: isDark
+                    ? const Color(0xFF5E81FF)
+                    : const Color(0xFF5E81FF),
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),
@@ -1998,7 +2448,11 @@ class ClipboardBottomBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.content_paste_rounded, color: Colors.blueAccent, size: 16),
+          const Icon(
+            Icons.content_paste_rounded,
+            color: Colors.blueAccent,
+            size: 16,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -2007,7 +2461,12 @@ class ClipboardBottomBar extends StatelessWidget {
               children: [
                 const Text(
                   'クリップボード',
-                  style: TextStyle(color: Colors.blueAccent, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                  style: TextStyle(
+                    color: Colors.blueAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 Text(
                   name,
@@ -2025,7 +2484,11 @@ class ClipboardBottomBar extends StatelessWidget {
                 color: Colors.white.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: const Icon(Icons.close_rounded, color: Colors.white54, size: 16),
+              child: const Icon(
+                Icons.close_rounded,
+                color: Colors.white54,
+                size: 16,
+              ),
             ),
           ),
         ],

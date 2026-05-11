@@ -1,4 +1,6 @@
+
 part of 'widget_page.dart';
+
 
 // ---- 定型計算ウィジェット ----
 class _CalculatorWidget extends StatefulWidget {
@@ -8,16 +10,24 @@ class _CalculatorWidget extends StatefulWidget {
   final bool showToolbar;
   final bool showHeader;
   final EdgeInsetsGeometry? contentPadding;
+
   /// AI生成中フラグが変化したときに通知するコールバック
   final void Function(bool isGenerating)? onAiGeneratingChanged;
+
   /// ホームのSettings画面で管理するユーザー定義定数
   final List<Map<String, dynamic>> globalConstants;
+
   /// アプリ内クリップボード（シートをまたいで共有）
   final ValueNotifier<Map<String, dynamic>?>? clipboardNotifier;
+
   /// 全シートの設定（シート間リンク用）
   final List<WidgetConfig> allConfigs;
+
   /// 結合ビュー内の兄弟シートID（開放不要でリンク元参照可）
   final Set<String> mergedSiblingIds;
+
+  /// 結合ビュー内の別シートデータ更新コールバック（シート間リンク用）
+  final void Function(String sheetId, Map<String, dynamic> data)? onSheetUpdate;
 
   const _CalculatorWidget({
     super.key,
@@ -32,6 +42,7 @@ class _CalculatorWidget extends StatefulWidget {
     this.clipboardNotifier,
     this.allConfigs = const [],
     this.mergedSiblingIds = const {},
+    this.onSheetUpdate,
   });
 
   @override
@@ -118,7 +129,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   /// tableColumnConfig から項名マップを返す
   Map<String, String> get _effectiveTermLabels {
-    final rawColConfig = widget.config.data['tableColumnConfig'] as List<dynamic>? ?? [];
+    final rawColConfig =
+        widget.config.data['tableColumnConfig'] as List<dynamic>? ?? [];
     return {
       for (final c in rawColConfig.whereType<Map>())
         if ((c['label'] as String? ?? '').isNotEmpty)
@@ -162,7 +174,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     });
     final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
     order.add({'type': 'calc', 'calcIdx': newCalcIdx});
-    widget.onUpdate({...widget.config.data, 'items': newItems, 'displayOrder': order});
+    widget.onUpdate({
+      ...widget.config.data,
+      'items': newItems,
+      'displayOrder': order,
+    });
   }
 
   void _addItemFromMap(Map<String, dynamic> item) {
@@ -171,7 +187,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     newItems.add(item);
     final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
     order.add({'type': 'calc', 'calcIdx': newCalcIdx});
-    widget.onUpdate({...widget.config.data, 'items': newItems, 'displayOrder': order});
+    widget.onUpdate({
+      ...widget.config.data,
+      'items': newItems,
+      'displayOrder': order,
+    });
   }
 
   void _insertItemAfter(int calcIdx) {
@@ -194,7 +214,12 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       }
     }
     order.insert(insertPos, {'type': 'calc', 'calcIdx': newCalcIdx});
-    widget.onUpdate({...widget.config.data, 'items': newItems, 'displayOrder': order, 'memos': _memos});
+    widget.onUpdate({
+      ...widget.config.data,
+      'items': newItems,
+      'displayOrder': order,
+      'memos': _memos,
+    });
   }
 
   // ── メモ管理 ──────────────────────────────────────────────────────────────
@@ -224,11 +249,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       if (!mounted) return;
       showDialog<String?>(
         context: this.context,
-        builder: (ctx) => _MemoEditDialog(
-          initialText: '',
-          title: 'メモを追加',
-          saveLabel: '追加',
-        ),
+        builder: (ctx) =>
+            _MemoEditDialog(initialText: '', title: 'メモを追加', saveLabel: '追加'),
       ).then((result) {
         if (result == null || !mounted) return;
         final newMemos = List<Map<String, dynamic>>.from(_memos);
@@ -262,8 +284,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   void _toggleAllNamesVisible() {
     final items = _items;
-    final allVisible =
-        items.every((item) => item['nameVisible'] as bool? ?? true);
+    final allVisible = items.every(
+      (item) => item['nameVisible'] as bool? ?? true,
+    );
     final newItems = items.map((item) {
       final updated = Map<String, dynamic>.from(item);
       updated['nameVisible'] = !allVisible;
@@ -276,11 +299,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   void _addConstant() {
     final consts = List<Map<String, dynamic>>.from(_constants);
     final newId = DateTime.now().millisecondsSinceEpoch.toString();
-    consts.add({
-      'id': newId,
-      'name': '定数${consts.length + 1}',
-      'value': 0.0,
-    });
+    consts.add({'id': newId, 'name': '定数${consts.length + 1}', 'value': 0.0});
     widget.onUpdate({...widget.config.data, 'constants': consts});
   }
 
@@ -303,12 +322,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     Future.delayed(const Duration(milliseconds: 350), () {
       if (!mounted) return;
       showDialog<String?>(
-        context: this.context,
-        builder: (ctx) => _MemoEditDialog(
-          initialText: '',
-          title: 'メモを追加',
-          saveLabel: '追加',
-        ),
+        context: context,
+        builder: (ctx) =>
+            _MemoEditDialog(initialText: '', title: 'メモを追加', saveLabel: '追加'),
       ).then((result) {
         if (result == null || !mounted) return;
         final newId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -453,7 +469,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     // 全て削除したらサンプルを追加
     if (newItems.isEmpty) {
       newItems = List<Map<String, dynamic>>.from(_sampleItems);
-      order = [{'type': 'calc', 'calcIdx': 0}];
+      order = [
+        {'type': 'calc', 'calcIdx': 0},
+      ];
     }
     // 削除した計算のメモも削除し、以降のインデックスを繰り上げ
     final newMemos = _remapMemoIndices(_memos, (old) {
@@ -461,7 +479,12 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       if (old > calcIdx) return old - 1;
       return old;
     });
-    widget.onUpdate({...widget.config.data, 'items': newItems, 'displayOrder': order, 'memos': newMemos});
+    widget.onUpdate({
+      ...widget.config.data,
+      'items': newItems,
+      'displayOrder': order,
+      'memos': newMemos,
+    });
   }
 
   void _duplicateItem(int calcIdx) {
@@ -476,7 +499,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           content: Text('「${copy['name'] ?? '計算'}」をコピーしました'),
           backgroundColor: const Color(0xFF1A2A4A),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -495,7 +520,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           content: Text('「${copy['name'] ?? '計算'}」を切り取りました'),
           backgroundColor: const Color(0xFF2A1A0A),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -530,19 +557,27 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
     int insertPos = order.length;
     for (int i = 0; i < order.length; i++) {
-      if (order[i]['type'] == 'calc' && order[i]['calcIdx'] == insertAfterCalcIdx) {
+      if (order[i]['type'] == 'calc' &&
+          order[i]['calcIdx'] == insertAfterCalcIdx) {
         insertPos = i + 1;
         break;
       }
     }
     order.insert(insertPos, {'type': 'calc', 'calcIdx': newCalcIdx});
-    widget.onUpdate({...widget.config.data, 'items': newItems, 'displayOrder': order, 'memos': _memos});
+    widget.onUpdate({
+      ...widget.config.data,
+      'items': newItems,
+      'displayOrder': order,
+      'memos': _memos,
+    });
   }
 
   /// 表示順上の from 位置を to 位置へ移動する（displayOrder のみ更新）
   void _moveItem(int from, int to) {
     final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
-    if (from < 0 || to < 0 || from >= order.length || to >= order.length) return;
+    if (from < 0 || to < 0 || from >= order.length || to >= order.length) {
+      return;
+    }
     final entry = order.removeAt(from);
     order.insert(to, entry);
     widget.onUpdate({...widget.config.data, 'displayOrder': order});
@@ -568,8 +603,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             final otherIdx = int.parse(parts[1]);
             final othersList = item['others'] as List? ?? [];
             if (otherIdx < othersList.length &&
-                (othersList[otherIdx] as Map)['valLink'] == true)
+                (othersList[otherIdx] as Map)['valLink'] == true) {
               return item;
+            }
           }
         }
 
@@ -634,7 +670,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor:Colors.black,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -766,8 +802,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   // ── 定数セクションWidget ──────────────────────────────────────────────────
-  Widget _buildConstantsSection(List<Map<String, dynamic>> constants, bool isDark) {
-    final fgColor = isDark ? Colors.white :Colors.black;
+  Widget _buildConstantsSection(
+    List<Map<String, dynamic>> constants,
+    bool isDark,
+  ) {
+    final fgColor = isDark ? Colors.white : Colors.black;
     final subColor = isDark ? Colors.white54 : Colors.black45;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -782,13 +821,28 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         children: [
           Row(
             children: [
-              const Icon(Icons.push_pin_outlined, size: 14, color: Colors.amberAccent),
+              const Icon(
+                Icons.push_pin_outlined,
+                size: 14,
+                color: Colors.amberAccent,
+              ),
               const SizedBox(width: 6),
-              Text('定数', style: TextStyle(color: Colors.amberAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+              Text(
+                '定数',
+                style: TextStyle(
+                  color: Colors.amberAccent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const Spacer(),
               GestureDetector(
                 onTap: _addConstant,
-                child: const Icon(Icons.add_rounded, size: 18, color: Colors.amberAccent),
+                child: const Icon(
+                  Icons.add_rounded,
+                  size: 18,
+                  color: Colors.amberAccent,
+                ),
               ),
             ],
           ),
@@ -801,26 +855,50 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               final c = entry.value;
               final name = c['name'] as String? ?? '';
               final value = (c['value'] as num? ?? 0.0).toDouble();
-              final valStr = value == value.truncateToDouble() && value.abs() < 1e12
+              final valStr =
+                  value == value.truncateToDouble() && value.abs() < 1e12
                   ? value.toInt().toString()
-                  : value.toStringAsFixed(4).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+                  : value
+                        .toStringAsFixed(4)
+                        .replaceAll(RegExp(r'0+$'), '')
+                        .replaceAll(RegExp(r'\.$'), '');
               return GestureDetector(
                 onTap: () => _editConstant(idx),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04),
+                    color: isDark
+                        ? Colors.white.withOpacity(0.05)
+                        : Colors.black.withOpacity(0.04),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.amberAccent.withOpacity(0.35)),
+                    border: Border.all(
+                      color: Colors.amberAccent.withOpacity(0.35),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(name, style: TextStyle(color: subColor, fontSize: 12)),
+                      Text(
+                        name,
+                        style: TextStyle(color: subColor, fontSize: 12),
+                      ),
                       const SizedBox(width: 6),
-                      Text('=', style: TextStyle(color: subColor, fontSize: 12)),
+                      Text(
+                        '=',
+                        style: TextStyle(color: subColor, fontSize: 12),
+                      ),
                       const SizedBox(width: 4),
-                      Text(valStr, style: TextStyle(color: fgColor, fontSize: 13, fontWeight: FontWeight.bold)),
+                      Text(
+                        valStr,
+                        style: TextStyle(
+                          color: fgColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -837,7 +915,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     if (idx < 0 || idx >= consts.length) return;
     final c = consts[idx];
     final nameCtrl = TextEditingController(text: c['name'] as String? ?? '');
-    final valCtrl = TextEditingController(text: (c['value'] as num? ?? 0.0).toString());
+    final valCtrl = TextEditingController(
+      text: (c['value'] as num? ?? 0.0).toString(),
+    );
 
     // 物理・数学定数プリセット
     const physicalConstants = [
@@ -857,172 +937,225 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setSheetState) => Padding(
-        padding: EdgeInsets.only(
-          left: 24, right: 24, top: 24,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text('定数の設定', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white54),
-                  onPressed: () => Navigator.pop(ctx),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text('名前', style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 6),
-            TextField(
-              controller: nameCtrl,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(hintText: '例: 税率', hintStyle: TextStyle(color: Colors.white24)),
-            ),
-            const SizedBox(height: 16),
-            const Text('値', style: TextStyle(color: Colors.white54, fontSize: 12)),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: valCtrl,
-                    autofocus: true,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: const TextStyle(color: Colors.white, fontSize: 20),
-                    decoration: const InputDecoration(hintText: '0.0', hintStyle: TextStyle(color: Colors.white24)),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.calculate_outlined, color: Colors.blueAccent),
-                  tooltip: '計算機',
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.black,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                      ),
-                      builder: (calcCtx) => _MiniCalcSheet(onResult: (v) {
-                        setSheetState(() {
-                          if (v == v.truncateToDouble() && v.abs() < 1e15) {
-                            valCtrl.text = v.toInt().toString();
-                          } else {
-                            valCtrl.text = v.toStringAsFixed(15)
-                                .replaceAll(RegExp(r'0+$'), '')
-                                .replaceAll(RegExp(r'\.$'), '');
-                          }
-                        });
-                      }),
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.backspace_outlined, color: Colors.white54),
-                  onPressed: () => setSheetState(() => valCtrl.clear()),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // 物理・数学定数プリセットボタン
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  ...physicalConstants.map((preset) {
-                    final label = preset['label'] as String;
-                    final value = preset['value'] as double;
-                    return GestureDetector(
-                      onTap: () => setSheetState(() {
-                        valCtrl.text = value.toString();
-                      }),
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.amberAccent.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.amberAccent.withOpacity(0.4)),
-                        ),
-                        child: Text(label,
-                          style: const TextStyle(
-                            color: Colors.amberAccent,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'ZenOldMincho',
-                          ),
-                        ),
+                  const Expanded(
+                    child: Text(
+                      '定数の設定',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                    );
-                  }),
-                  // ユーザー定義定数プリセット
-                  ...widget.globalConstants.map((uc) {
-                    final name = uc['name'] as String? ?? '';
-                    final value = (uc['value'] as num? ?? 0.0).toDouble();
-                    return GestureDetector(
-                      onTap: () => setSheetState(() {
-                        valCtrl.text = value == value.truncateToDouble() && value.abs() < 1e15
-                            ? value.toInt().toString()
-                            : value.toString();
-                      }),
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF5E81FF).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF5E81FF).withOpacity(0.4)),
-                        ),
-                        child: Text(name,
-                          style: const TextStyle(
-                            color: Color(0xFF5E81FF),
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.pop(ctx),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
                 ],
               ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, {'delete': true}),
-                  child: const Text('削除', style: TextStyle(color: Colors.redAccent)),
+              const SizedBox(height: 16),
+              const Text(
+                '名前',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: nameCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: '例: 税率',
+                  hintStyle: TextStyle(color: Colors.white24),
                 ),
-                const Spacer(),
-                SizedBox(
-                  width: 120,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '値',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: valCtrl,
+                      autofocus: true,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      style: const TextStyle(color: Colors.white, fontSize: 20),
+                      decoration: const InputDecoration(
+                        hintText: '0.0',
+                        hintStyle: TextStyle(color: Colors.white24),
+                      ),
                     ),
-                    onPressed: () => Navigator.pop(ctx, {
-                      'name': nameCtrl.text,
-                      'value': valCtrl.text,
-                    }),
-                    child: const Text('保存', style: TextStyle(fontSize: 16)),
                   ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.calculate_outlined,
+                      color: Colors.blueAccent,
+                    ),
+                    tooltip: '計算機',
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.black,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(20),
+                          ),
+                        ),
+                        builder: (calcCtx) => _MiniCalcSheet(
+                          onResult: (v) {
+                            setSheetState(() {
+                              if (v == v.truncateToDouble() && v.abs() < 1e15) {
+                                valCtrl.text = v.toInt().toString();
+                              } else {
+                                valCtrl.text = v
+                                    .toStringAsFixed(15)
+                                    .replaceAll(RegExp(r'0+$'), '')
+                                    .replaceAll(RegExp(r'\.$'), '');
+                              }
+                            });
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.backspace_outlined,
+                      color: Colors.white54,
+                    ),
+                    onPressed: () => setSheetState(() => valCtrl.clear()),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // 物理・数学定数プリセットボタン
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    ...physicalConstants.map((preset) {
+                      final label = preset['label'] as String;
+                      final value = preset['value'] as double;
+                      return GestureDetector(
+                        onTap: () => setSheetState(() {
+                          valCtrl.text = value.toString();
+                        }),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amberAccent.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Colors.amberAccent.withOpacity(0.4),
+                            ),
+                          ),
+                          child: Text(
+                            label,
+                            style: const TextStyle(
+                              color: Colors.amberAccent,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'ZenOldMincho',
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                    // ユーザー定義定数プリセット
+                    ...widget.globalConstants.map((uc) {
+                      final name = uc['name'] as String? ?? '';
+                      final value = (uc['value'] as num? ?? 0.0).toDouble();
+                      return GestureDetector(
+                        onTap: () => setSheetState(() {
+                          valCtrl.text =
+                              value == value.truncateToDouble() &&
+                                  value.abs() < 1e15
+                              ? value.toInt().toString()
+                              : value.toString();
+                        }),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF5E81FF).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: const Color(0xFF5E81FF).withOpacity(0.4),
+                            ),
+                          ),
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              color: Color(0xFF5E81FF),
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, {'delete': true}),
+                    child: const Text(
+                      '削除',
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: 120,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: () => Navigator.pop(ctx, {
+                        'name': nameCtrl.text,
+                        'value': valCtrl.text,
+                      }),
+                      child: const Text('保存', style: TextStyle(fontSize: 16)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
     if (result == null) return;
@@ -1039,8 +1172,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   void _showActionSheet() {
     final items = _items;
-    final allNamesVisible =
-        items.every((item) => item['nameVisible'] as bool? ?? true);
+    final allNamesVisible = items.every(
+      (item) => item['nameVisible'] as bool? ?? true,
+    );
     final wrapFormula = _wrapFormula;
     showModalBottomSheet(
       context: context,
@@ -1054,7 +1188,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           children: [
             SizedBox(height: 14),
             ListTile(
-              leading: const Icon(Icons.push_pin_outlined, color: Colors.amberAccent),
+              leading: const Icon(
+                Icons.push_pin_outlined,
+                color: Colors.amberAccent,
+              ),
               title: const Text('定数を追加', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(ctx);
@@ -1062,7 +1199,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.sticky_note_2_outlined, color: Colors.tealAccent),
+              leading: const Icon(
+                Icons.sticky_note_2_outlined,
+                color: Colors.tealAccent,
+              ),
               title: const Text('メモを追加', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(ctx);
@@ -1078,9 +1218,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 color: Colors.white70,
               ),
               title: Text(
-                allNamesVisible
-                    ? 'すべての計算名を非表示'
-                    : 'すべての計算名を表示',
+                allNamesVisible ? 'すべての計算名を非表示' : 'すべての計算名を表示',
                 style: const TextStyle(color: Colors.white),
               ),
               onTap: () {
@@ -1101,7 +1239,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 style: const TextStyle(color: Colors.white),
               ),
               trailing: wrapFormula
-                  ? const Icon(Icons.check_rounded, color: Colors.blueAccent, size: 18)
+                  ? const Icon(
+                      Icons.check_rounded,
+                      color: Colors.blueAccent,
+                      size: 18,
+                    )
                   : null,
               onTap: () {
                 Navigator.pop(ctx);
@@ -1151,10 +1293,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             const Divider(color: Colors.white12, height: 1),
             ListTile(
               leading: const Icon(Icons.link_rounded, color: Colors.blueAccent),
-              title: const Text(
-                'リンク設定',
-                style: TextStyle(color: Colors.white),
-              ),
+              title: const Text('リンク設定', style: TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(ctx);
                 Future.delayed(
@@ -1172,6 +1311,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   // ── シートレベルのリンク設定ダイアログ ────────────────────────────────────
 
+  // ignore: unused_element
   Set<String> _calcSelectedDestsForRow(int srcRowIdx, String srcField) {
     final items = _items;
     final Set<String> dests = {};
@@ -1179,16 +1319,23 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       if (i == srcRowIdx) continue;
       final item = items[i];
       bool linkedToMe(Map? src) =>
-          src != null && src['rowIdx'] == srcRowIdx && src['target'] == srcField;
-      if (item['inputLink'] == true && linkedToMe(item['inputLinkSource'] as Map?))
+          src != null &&
+          src['rowIdx'] == srcRowIdx &&
+          src['target'] == srcField;
+      if (item['inputLink'] == true &&
+          linkedToMe(item['inputLinkSource'] as Map?)) {
         dests.add('${i}_input');
-      if (item['operandLink'] == true && linkedToMe(item['operandLinkSource'] as Map?))
+      }
+      if (item['operandLink'] == true &&
+          linkedToMe(item['operandLinkSource'] as Map?)) {
         dests.add('${i}_operand');
+      }
       final othersList = item['others'] as List? ?? [];
       for (int j = 0; j < othersList.length; j++) {
         final o = othersList[j] as Map;
-        if (o['valLink'] == true && linkedToMe(o['valLinkSource'] as Map?))
+        if (o['valLink'] == true && linkedToMe(o['valLinkSource'] as Map?)) {
           dests.add('${i}_other_$j');
+        }
       }
     }
     return dests;
@@ -1200,17 +1347,22 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     Set<String> selectedDests,
   ) {
     final items = _items;
-    final newItems = items.map((item) => Map<String, dynamic>.from(item)).toList();
+    final newItems = items
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
     for (int i = 0; i < newItems.length; i++) {
       if (i == srcRowIdx) continue;
       final item = newItems[i];
       final origItem = items[i];
       bool wasLinked(Map? src) =>
-          src != null && src['rowIdx'] == srcRowIdx && src['target'] == srcField;
+          src != null &&
+          src['rowIdx'] == srcRowIdx &&
+          src['target'] == srcField;
 
       // input
       final inputDest = '${i}_input';
-      final inputWas = origItem['inputLink'] == true &&
+      final inputWas =
+          origItem['inputLink'] == true &&
           wasLinked(origItem['inputLinkSource'] as Map?);
       if (selectedDests.contains(inputDest)) {
         item['inputLink'] = true;
@@ -1222,7 +1374,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
       // operand
       final operandDest = '${i}_operand';
-      final operandWas = origItem['operandLink'] == true &&
+      final operandWas =
+          origItem['operandLink'] == true &&
           wasLinked(origItem['operandLinkSource'] as Map?);
       if (selectedDests.contains(operandDest)) {
         item['operandLink'] = true;
@@ -1233,16 +1386,16 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       }
 
       // others
-      final othersList = ((item['others'] as List? ?? [])
-              .map((e) => Map<String, dynamic>.from(e as Map)))
-          .toList();
+      final othersList = ((item['others'] as List? ?? []).map(
+        (e) => Map<String, dynamic>.from(e as Map),
+      )).toList();
       final origOthersList = origItem['others'] as List? ?? [];
       for (int j = 0; j < othersList.length; j++) {
         final otherDest = '${i}_other_$j';
-        final origO =
-            j < origOthersList.length ? origOthersList[j] as Map : {};
+        final origO = j < origOthersList.length ? origOthersList[j] as Map : {};
         final otherWas =
-            origO['valLink'] == true && wasLinked(origO['valLinkSource'] as Map?);
+            origO['valLink'] == true &&
+            wasLinked(origO['valLinkSource'] as Map?);
         if (selectedDests.contains(otherDest)) {
           othersList[j]['valLink'] = true;
           othersList[j]['valLinkSource'] = {
@@ -1282,7 +1435,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     if (rowIdx < 0 || rowIdx >= srcItems.length) return 0.0;
     final sItem = srcItems[rowIdx];
     if (target == 'input') return (sItem['input'] as num? ?? 0.0).toDouble();
-    if (target == 'operand') return (sItem['operand'] as num? ?? 0.0).toDouble();
+    if (target == 'operand') {
+      return (sItem['operand'] as num? ?? 0.0).toDouble();
+    }
     if (target.startsWith('other_')) {
       final idx = int.tryParse(target.split('_')[1]) ?? 0;
       final sOthers = sItem['others'] as List? ?? [];
@@ -1320,6 +1475,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   /// 別シートの行/フィールドが現在シートのどの欄にリンクされているか返す
+  // ignore: unused_element
   Set<String> _calcSelectedDestsForExternalRow(
     String sheetId,
     int srcRowIdx,
@@ -1335,16 +1491,19 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           src['rowIdx'] == srcRowIdx &&
           src['target'] == srcField;
       if (item['inputLink'] == true &&
-          linkedToSrc(item['inputLinkSource'] as Map?))
+          linkedToSrc(item['inputLinkSource'] as Map?)) {
         dests.add('${i}_input');
+      }
       if (item['operandLink'] == true &&
-          linkedToSrc(item['operandLinkSource'] as Map?))
+          linkedToSrc(item['operandLinkSource'] as Map?)) {
         dests.add('${i}_operand');
+      }
       final othersList = item['others'] as List? ?? [];
       for (int j = 0; j < othersList.length; j++) {
         final o = othersList[j] as Map;
-        if (o['valLink'] == true && linkedToSrc(o['valLinkSource'] as Map?))
+        if (o['valLink'] == true && linkedToSrc(o['valLinkSource'] as Map?)) {
           dests.add('${i}_other_$j');
+        }
       }
     }
     return dests;
@@ -1363,8 +1522,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       'target': srcField,
     };
     final items = _items;
-    final newItems =
-        items.map((item) => Map<String, dynamic>.from(item)).toList();
+    final newItems = items
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
     for (int i = 0; i < newItems.length; i++) {
       final item = newItems[i];
       final origItem = items[i];
@@ -1375,7 +1535,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           src['target'] == srcField;
 
       final inputDest = '${i}_input';
-      final inputWas = origItem['inputLink'] == true &&
+      final inputWas =
+          origItem['inputLink'] == true &&
           wasLinked(origItem['inputLinkSource'] as Map?);
       if (selectedDests.contains(inputDest)) {
         item['inputLink'] = true;
@@ -1386,7 +1547,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       }
 
       final operandDest = '${i}_operand';
-      final operandWas = origItem['operandLink'] == true &&
+      final operandWas =
+          origItem['operandLink'] == true &&
           wasLinked(origItem['operandLinkSource'] as Map?);
       if (selectedDests.contains(operandDest)) {
         item['operandLink'] = true;
@@ -1396,16 +1558,16 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         item['operandLinkSource'] = null;
       }
 
-      final othersList = ((item['others'] as List? ?? [])
-              .map((e) => Map<String, dynamic>.from(e as Map)))
-          .toList();
+      final othersList = ((item['others'] as List? ?? []).map(
+        (e) => Map<String, dynamic>.from(e as Map),
+      )).toList();
       final origOthersList = origItem['others'] as List? ?? [];
       for (int j = 0; j < othersList.length; j++) {
         final otherDest = '${i}_other_$j';
-        final origO =
-            j < origOthersList.length ? origOthersList[j] as Map : {};
+        final origO = j < origOthersList.length ? origOthersList[j] as Map : {};
         final otherWas =
-            origO['valLink'] == true && wasLinked(origO['valLinkSource'] as Map?);
+            origO['valLink'] == true &&
+            wasLinked(origO['valLinkSource'] as Map?);
         if (selectedDests.contains(otherDest)) {
           othersList[j]['valLink'] = true;
           othersList[j]['valLinkSource'] = linkSource;
@@ -1428,15 +1590,43 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     Set<String> selectedDests = {};
     String? selectedSrcSheetId; // null = 現在シート
     // 0=このシート, 1=開放された式, 2=結合シート
-    int _srcTab = 0;
+    int srcTab = 0;
+    // リンク先シート（null=現在シート、結合ビュー内の兄弟シートID）
+    String? destSheetId;
+    final siblingConfigs = widget.allConfigs
+        .where(
+          (c) =>
+              widget.mergedSiblingIds.contains(c.id) &&
+              c.type == 'calculator',
+        )
+        .toList();
 
     List<Map<String, dynamic>> fieldsFor(int idx) {
       final item = items[idx];
       final others = item['others'] as List? ?? [];
       return [
-        {'key': 'input', 'label': '項1'},
-        {'key': 'operand', 'label': '項2'},
-        ...List.generate(others.length, (i) => {'key': 'other_$i', 'label': '項${i + 3}'}),
+        {
+          'key': 'input',
+          'label': '項1',
+          'op': item['operator'] as String? ?? '+',
+        },
+        {
+          'key': 'operand',
+          'label': '項2',
+          'op': others.isNotEmpty
+              ? ((others[0] as Map)['operator'] as String? ?? '+')
+              : null,
+        },
+        ...List.generate(
+          others.length,
+          (i) => {
+            'key': 'other_$i',
+            'label': '項${i + 3}',
+            'op': (i + 1 < others.length)
+                ? ((others[i + 1] as Map)['operator'] as String? ?? '+')
+                : null,
+          },
+        ),
         {'key': 'result', 'label': '答え'},
       ];
     }
@@ -1453,9 +1643,28 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       final sItem = srcItems[idx];
       final others = sItem['others'] as List? ?? [];
       return [
-        {'key': 'input', 'label': '項1'},
-        {'key': 'operand', 'label': '項2'},
-        ...List.generate(others.length, (i) => {'key': 'other_$i', 'label': '項${i + 3}'}),
+        {
+          'key': 'input',
+          'label': '項1',
+          'op': sItem['operator'] as String? ?? '+',
+        },
+        {
+          'key': 'operand',
+          'label': '項2',
+          'op': others.isNotEmpty
+              ? ((others[0] as Map)['operator'] as String? ?? '+')
+              : null,
+        },
+        ...List.generate(
+          others.length,
+          (i) => {
+            'key': 'other_$i',
+            'label': '項${i + 3}',
+            'op': (i + 1 < others.length)
+                ? ((others[i + 1] as Map)['operator'] as String? ?? '+')
+                : null,
+          },
+        ),
         {'key': 'result', 'label': '答え'},
       ];
     }
@@ -1514,517 +1723,1184 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       } else {
         v = 0.0;
       }
-      if (v == v.truncateToDouble() && v.abs() < 1e12) return v.toStringAsFixed(0);
+      if (v == v.truncateToDouble() && v.abs() < 1e12) {
+        return v.toStringAsFixed(0);
+      }
       return v.toStringAsFixed(precision);
     }
 
     showDialog<void>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.6),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDs) => Dialog(
-          insetPadding: EdgeInsets.zero,
           backgroundColor: Colors.transparent,
-          child: SafeArea(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+
             child: Container(
               width: double.infinity,
               height: double.infinity,
-              color: const Color(0xFF0D0D14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF161622).withOpacity(0.85),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.12),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.4),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // ── ヘッダー ──────────────────────────────────────────
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                    padding: const EdgeInsets.fromLTRB(24, 20, 16, 12),
                     child: Row(
                       children: [
-                        const Icon(
-                          Icons.link_rounded,
-                          color: Colors.blueAccent,
-                          size: 20,
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blueAccent.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.link_rounded,
+                            color: Colors.blueAccent,
+                            size: 20,
+                          ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
                         const Expanded(
                           child: Text(
-                            '値をリンクする',
+                            '値をリンク',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
                             ),
                           ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.close, color: Colors.white54),
+                          splashRadius: 20,
                           onPressed: () => Navigator.pop(ctx),
                         ),
                       ],
                     ),
                   ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                    child: Row(
+                      children: const [
+                        Icon(
+                          Icons.upload_rounded,
+                          size: 20,
+                          color: Color.fromARGB(255, 38, 95, 218),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'リンク先',
+                          style: TextStyle(
+                            color: Color.fromARGB(255, 38, 95, 218),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+
+
+
+
+
+
+
+
+
                   // ── リンク元セクション（タブ切り替え） ─────────────────
-                  Builder(builder: (_) {
-                    final exposedSheets = widget.allConfigs.where((c) {
-                      if (c.id == widget.config.id) return false;
-                      if (c.type != 'calculator') return false;
-                      if (widget.mergedSiblingIds.contains(c.id)) return false;
-                      final si = c.data['items'] as List? ?? [];
-                      return si.any((e) => (e as Map)['exposed'] == true);
-                    }).toList();
-                    final mergedSheets = widget.allConfigs.where((c) {
-                      if (c.id == widget.config.id) return false;
-                      if (c.type != 'calculator') return false;
-                      return widget.mergedSiblingIds.contains(c.id);
-                    }).toList();
+                  Builder(
+                    builder: (_) {
+                      final exposedSheets = widget.allConfigs.where((c) {
+                        if (c.id == widget.config.id) return false;
+                        if (c.type != 'calculator') return false;
+                        if (widget.mergedSiblingIds.contains(c.id)) {
+                          return false;
+                        }
+                        final si = c.data['items'] as List? ?? [];
+                        return si.any((e) => (e as Map)['exposed'] == true);
+                      }).toList();
+                      final mergedSheets = widget.allConfigs.where((c) {
+                        if (c.id == widget.config.id) return false;
+                        if (c.type != 'calculator') return false;
+                        return widget.mergedSiblingIds.contains(c.id);
+                      }).toList();
 
-                    final tabs = <Map<String, dynamic>>[
-                      {'idx': 0, 'label': 'このシート', 'icon': Icons.upload_rounded, 'color': Colors.blueAccent},
-                      if (exposedSheets.isNotEmpty)
-                        {'idx': 1, 'label': '開放された式', 'icon': Icons.public_rounded, 'color': Colors.greenAccent},
-                      if (mergedSheets.isNotEmpty)
-                        {'idx': 2, 'label': '結合シート', 'icon': Icons.link_rounded, 'color': const Color(0xFF26C6DA)},
-                    ];
+                      final tabs = <Map<String, dynamic>>[
+                        {
+                          'idx': 0,
+                          'label': 'このシート',
+                          'icon': Icons.upload_rounded,
+                          'color': Colors.blueAccent,
+                        },
+                        if (exposedSheets.isNotEmpty)
+                          {
+                            'idx': 1,
+                            'label': '開放された式',
+                            'icon': Icons.public_rounded,
+                            'color': Colors.greenAccent,
+                          },
+                        if (mergedSheets.isNotEmpty)
+                          {
+                            'idx': 2,
+                            'label': '結合シート',
+                            'icon': Icons.link_rounded,
+                            'color': const Color(0xFF26C6DA),
+                          },
+                      ];
 
-                    final activeColor = tabs.firstWhere(
-                      (t) => t['idx'] == _srcTab,
-                      orElse: () => tabs.first,
-                    )['color'] as Color;
-                    final bgColor = _srcTab == 2
-                        ? Colors.cyan.withOpacity(0.04)
-                        : _srcTab == 1
-                            ? Colors.green.withOpacity(0.04)
-                            : const Color(0xFF0A1628);
+                      final activeColor =
+                          tabs.firstWhere(
+                                (t) => t['idx'] == srcTab,
+                                orElse: () => tabs.first,
+                              )['color']
+                              as Color;
+                      final bgColor = srcTab == 2
+                          ? Colors.cyan.withOpacity(0.04)
+                          : srcTab == 1
+                          ? Colors.green.withOpacity(0.04)
+                          : const Color(0xFF0A1628);
 
-                    return Container(
-                      margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-                      decoration: BoxDecoration(
-                        color: bgColor,
-                        border: Border.all(color: activeColor.withOpacity(0.6), width: 1.5),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // タブバー（複数タブがある場合のみ表示）
-                          if (tabs.length > 1)
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  children: tabs.map((tab) {
-                                    final tIdx = tab['idx'] as int;
-                                    final isSel = _srcTab == tIdx;
-                                    final tColor = tab['color'] as Color;
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: GestureDetector(
-                                        onTap: () => setDs(() {
-                                          _srcTab = tIdx;
-                                          selectedSrcCalcIdx = null;
-                                          selectedSrcSheetId = null;
-                                          selectedSrcField = 'result';
-                                          selectedDests = {};
-                                        }),
-                                        child: AnimatedContainer(
-                                          duration: const Duration(milliseconds: 150),
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                          decoration: BoxDecoration(
-                                            color: isSel ? tColor.withOpacity(0.18) : Colors.white.withOpacity(0.05),
-                                            border: Border.all(
-                                              color: isSel ? tColor : Colors.white24,
-                                              width: isSel ? 1.5 : 1.0,
+                      return Flexible(
+                        flex: 0,
+                        child: Container(
+                         
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // タブバー（複数タブがある場合のみ表示）
+                                if (tabs.length > 1)
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      12,
+                                      10,
+                                      12,
+                                      8,
+                                    ),
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: Row(
+                                        children: tabs.map((tab) {
+                                          final tIdx = tab['idx'] as int;
+                                          final isSel = srcTab == tIdx;
+                                          final tColor = tab['color'] as Color;
+                                          return Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 8,
                                             ),
-                                            borderRadius: BorderRadius.circular(20),
+                                            child: GestureDetector(
+                                              onTap: () => setDs(() {
+                                                srcTab = tIdx;
+                                                selectedSrcCalcIdx = null;
+                                                selectedSrcSheetId = null;
+                                                selectedSrcField = 'result';
+                                              }),
+                                              child: AnimatedContainer(
+                                                duration: const Duration(
+                                                  milliseconds: 150,
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 5,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: isSel
+                                                      ? tColor.withOpacity(0.18)
+                                                      : Colors.white
+                                                            .withOpacity(0.05),
+                                                  border: Border.all(
+                                                    color: isSel
+                                                        ? tColor
+                                                        : Colors.white24,
+                                                    width: isSel ? 1.5 : 1.0,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(40),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      tab['icon'] as IconData,
+                                                      size: 12,
+                                                      color: isSel
+                                                          ? tColor
+                                                          : Colors.white38,
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Text(
+                                                      tab['label'] as String,
+                                                      style: TextStyle(
+                                                        color: isSel
+                                                            ? tColor
+                                                            : Colors.white70,
+                                                        fontSize: 12,
+                                                        fontWeight: isSel
+                                                            ? FontWeight.bold
+                                                            : FontWeight.normal,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
+                                  ),
+                                if (tabs.length == 1)
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(
+                                      12,
+                                      10,
+                                      12,
+                                      6,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.upload_rounded,
+                                          size: 14,
+                                          color: Colors.blueAccent,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        const Text(
+                                          'リンク元　計算式を選択',
+                                          style: TextStyle(
+                                            color: Colors.blueAccent,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+
+                                  Container(
+ margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                          width: double.infinity,
+                          constraints: const BoxConstraints(maxHeight: 300),
+                          decoration: BoxDecoration(
+                            color: bgColor,
+                            border: Border.all(
+                              color: activeColor.withOpacity(0.4),
+                              //   width: 1.5,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                                    child: Column(
+                                      
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      
+                                      children: [
+
+ // ── このシート ──
+                                if (srcTab == 0) ...[
+                                  SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    padding: const EdgeInsets.fromLTRB(
+                                      12,
+                                      6,
+                                      12,
+                                      6,
+                                    ),
+                                    child: Row(
+                                      children: List.generate(items.length, (
+                                        i,
+                                      ) {
+                                        final calcName =
+                                            items[i]['name'] as String? ??
+                                            '計算 ${i + 1}';
+                                        final isSel =
+                                            selectedSrcCalcIdx == i &&
+                                            selectedSrcSheetId == null;
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 8,
+                                          ),
+                                          child: GestureDetector(
+                                            onTap: () => setDs(() {
+                                              selectedSrcSheetId = null;
+                                              selectedSrcCalcIdx = i;
+                                              selectedSrcField = 'result';
+                                            }),
+                                            child: AnimatedContainer(
+                                              duration: const Duration(
+                                                milliseconds: 150,
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 14,
+                                                    vertical: 8,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: isSel
+                                                    ? Colors.blueAccent
+                                                          .withOpacity(0.22)
+                                                    : Colors.white.withOpacity(
+                                                        0.05,
+                                                      ),
+                                                border: Border.all(
+                                                  color: isSel
+                                                      ? Colors.blueAccent
+                                                      : Colors.white24,
+                                                  width: isSel ? 1.5 : 1.0,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(30),
+                                              ),
+                                              child: Text(
+                                                calcName,
+                                                style: TextStyle(
+                                                  color: isSel
+                                                      ? Colors.blueAccent
+                                                      : Colors.white70,
+                                                  fontSize: 13,
+                                                  fontWeight: isSel
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }),
+                                    ),
+                                  ),
+                                  if (selectedSrcCalcIdx != null &&
+                                      selectedSrcSheetId == null) ...[
+                                    const Padding(
+                                      padding: EdgeInsets.fromLTRB(
+                                        12,
+                                        0,
+                                        12,
+                                        4,
+                                      ),
+                                      child: Text(
+                                        '項目を選択',
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      padding: const EdgeInsets.fromLTRB(
+                                        12,
+                                        0,
+                                        12,
+                                        12,
+                                      ),
+                                      child: Row(
+                                        children: fieldsFor(selectedSrcCalcIdx!).expand((
+                                          sf,
+                                        ) {
+                                          final key = sf['key'] as String;
+                                          final label = sf['label'] as String;
+                                          final op = sf['op'] as String?;
+                                          final isSel = selectedSrcField == key;
+                                          final valStr = fieldValueStr(
+                                            selectedSrcCalcIdx!,
+                                            key,
+                                          );
+
+                                          final itemWidget = Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 8,
+                                            ),
+                                            child: GestureDetector(
+                                              onTap: () => setDs(() {
+                                                selectedSrcField = key;
+                                              }),
+                                              child: AnimatedContainer(
+                                                duration: const Duration(
+                                                  milliseconds: 150,
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 14,
+                                                      vertical: 8,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: isSel
+                                                      ? Colors.blueAccent
+                                                            .withOpacity(0.22)
+                                                      : Colors.white
+                                                            .withOpacity(0.05),
+                                                  border: Border.all(
+                                                    color: isSel
+                                                        ? Colors.blueAccent
+                                                        : Colors.white24,
+                                                    width: isSel ? 1.5 : 1.0,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      label,
+                                                      style: TextStyle(
+                                                        color: isSel
+                                                            ? Colors.blueAccent
+                                                            : Colors.white70,
+                                                        fontSize: 11,
+                                                        fontWeight: isSel
+                                                            ? FontWeight.bold
+                                                            : FontWeight.normal,
+                                                      ),
+                                                    ),
+                                                    //const SizedBox(height: 4),
+                                                    Text(
+                                                      valStr,
+                                                      style: TextStyle(
+                                                        color: isSel
+                                                            ? Colors.white
+                                                            : Colors.white70,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                          if (key == 'result') {
+                                            return [
+                                              const Padding(
+                                                padding: EdgeInsets.only(
+                                                  right: 8,
+                                                ),
+                                                child: Text(
+                                                  '=',
+                                                  style: TextStyle(
+                                                    color: Colors.white54,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              itemWidget,
+                                            ];
+                                          } else if (op != null) {
+                                            return [
+                                              itemWidget,
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 8,
+                                                ),
+                                                child: Text(
+                                                  op,
+                                                  style: const TextStyle(
+                                                    color: Colors.white54,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ];
+                                          }
+                                          return [itemWidget];
+                                        }).toList(),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+
+                                // ── 開放された式 ──
+                                if (srcTab == 1) ...[
+                                  ...exposedSheets.map((cfg) {
+                                    final sheetTitle =
+                                        cfg.data['title'] as String? ?? cfg.id;
+                                    final sheetItems =
+                                        (cfg.data['items'] as List? ?? [])
+                                            .map(
+                                              (e) => Map<String, dynamic>.from(
+                                                e as Map,
+                                              ),
+                                            )
+                                            .toList();
+                                    final visibleItems = sheetItems
+                                        .asMap()
+                                        .entries
+                                        .where(
+                                          (en) => en.value['exposed'] == true,
+                                        )
+                                        .toList();
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.fromLTRB(
+                                                      12,
+                                                      4,
+                                                      12,
+                                                      2,
+                                                    ),
+                                                child: Text(
+                                                  sheetTitle,
+                                                  style: const TextStyle(
+                                                    color: Colors.white38,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                              ),
+                                              SingleChildScrollView(
+                                                scrollDirection:
+                                                    Axis.horizontal,
+                                                padding:
+                                                    const EdgeInsets.fromLTRB(
+                                                      12,
+                                                      0,
+                                                      12,
+                                                      8,
+                                                    ),
+                                                child: Row(
+                                                  children: visibleItems.map((
+                                                    en,
+                                                  ) {
+                                                    final i = en.key;
+                                                    final calcName =
+                                                        en.value['name']
+                                                            as String? ??
+                                                        '計算 ${i + 1}';
+                                                    final isSelExt =
+                                                        selectedSrcSheetId ==
+                                                            cfg.id &&
+                                                        selectedSrcCalcIdx == i;
+                                                    return Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            right: 8,
+                                                          ),
+                                                      child: GestureDetector(
+                                                        onTap: () => setDs(() {
+                                                          selectedSrcSheetId =
+                                                              cfg.id;
+                                                          selectedSrcCalcIdx =
+                                                              i;
+                                                          selectedSrcField =
+                                                              'result';
+                                                        }),
+                                                        child: AnimatedContainer(
+                                                          duration:
+                                                              const Duration(
+                                                                milliseconds:
+                                                                    150,
+                                                              ),
+                                                          padding:
+                                                              const EdgeInsets.symmetric(
+                                                                horizontal: 14,
+                                                                vertical: 8,
+                                                              ),
+                                                          decoration: BoxDecoration(
+                                                            color: isSelExt
+                                                                ? Colors
+                                                                      .greenAccent
+                                                                      .withOpacity(
+                                                                        0.18,
+                                                                      )
+                                                                : Colors.white
+                                                                      .withOpacity(
+                                                                        0.05,
+                                                                      ),
+                                                            border: Border.all(
+                                                              color: isSelExt
+                                                                  ? Colors
+                                                                        .greenAccent
+                                                                  : Colors
+                                                                        .white24,
+                                                              width: isSelExt
+                                                                  ? 1.5
+                                                                  : 1.0,
+                                                            ),
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  8,
+                                                                ),
+                                                          ),
+                                                          child: Row(
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
+                                                            children: [
+                                                              Icon(
+                                                                Icons
+                                                                    .public_rounded,
+                                                                color: isSelExt
+                                                                    ? Colors
+                                                                          .greenAccent
+                                                                    : Colors
+                                                                          .white38,
+                                                                size: 12,
+                                                              ),
+                                                              const SizedBox(
+                                                                width: 6,
+                                                              ),
+                                                              Text(
+                                                                calcName,
+                                                                style: TextStyle(
+                                                                  color:
+                                                                      isSelExt
+                                                                      ? Colors
+                                                                            .greenAccent
+                                                                      : Colors
+                                                                            .white70,
+                                                                  fontSize: 13,
+                                                                  fontWeight:
+                                                                      isSelExt
+                                                                      ? FontWeight
+                                                                            .bold
+                                                                      : FontWeight
+                                                                            .normal,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }).toList(),
+                                                ),
+                                              ),
+                                            ],
+                                    );
+                                  }),
+                                  if (selectedSrcSheetId != null &&
+                                      selectedSrcCalcIdx != null &&
+                                      exposedSheets.any(
+                                        (c) => c.id == selectedSrcSheetId,
+                                      )) ...[
+                                    Divider(),
+                                    const Padding(
+                                      padding: EdgeInsets.fromLTRB(
+                                        12,
+                                        0,
+                                        12,
+                                        4,
+                                      ),
+                                      child: Text(
+                                        '項目を選択',
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      padding: const EdgeInsets.fromLTRB(
+                                        12,
+                                        0,
+                                        12,
+                                        12,
+                                      ),
+                                      child: Row(
+                                        children:
+                                            fieldsForExternal(
+                                              selectedSrcSheetId!,
+                                              selectedSrcCalcIdx!,
+                                            ).expand((sf) {
+                                              final key = sf['key'] as String;
+                                              final label =
+                                                  sf['label'] as String;
+                                              final op = sf['op'] as String?;
+                                              final isSel =
+                                                  selectedSrcField == key;
+                                              final valStr = fieldValueStr(
+                                                selectedSrcCalcIdx!,
+                                                key,
+                                                selectedSrcSheetId,
+                                              );
+                                              final itemWidget = Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 8,
+                                                ),
+                                                child: GestureDetector(
+                                                  onTap: () => setDs(() {
+                                                    selectedSrcField = key;
+                                                  }),
+                                                  child: AnimatedContainer(
+                                                    duration: const Duration(
+                                                      milliseconds: 150,
+                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 14,
+                                                          vertical: 8,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: isSel
+                                                          ? Colors.greenAccent
+                                                                .withOpacity(
+                                                                  0.18,
+                                                                )
+                                                          : Colors.white
+                                                                .withOpacity(
+                                                                  0.05,
+                                                                ),
+                                                      border: Border.all(
+                                                        color: isSel
+                                                            ? Colors.greenAccent
+                                                            : Colors.white24,
+                                                        width: isSel
+                                                            ? 1.5
+                                                            : 1.0,
+                                                      ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                    child: Column(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Text(
+                                                          label,
+                                                          style: TextStyle(
+                                                            color: isSel
+                                                                ? Colors
+                                                                      .greenAccent
+                                                                : Colors
+                                                                      .white70,
+                                                            fontSize: 13,
+                                                            fontWeight: isSel
+                                                                ? FontWeight
+                                                                      .bold
+                                                                : FontWeight
+                                                                      .normal,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 4,
+                                                        ),
+                                                        Text(
+                                                          valStr,
+                                                          style: TextStyle(
+                                                            color: isSel
+                                                                ? Colors.white
+                                                                : Colors
+                                                                      .white38,
+                                                            fontSize: 11,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                              if (key == 'result') {
+                                                return [
+                                                  const Padding(
+                                                    padding: EdgeInsets.only(
+                                                      right: 8,
+                                                    ),
+                                                    child: Text(
+                                                      '=',
+                                                      style: TextStyle(
+                                                        color: Colors.white54,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  itemWidget,
+                                                ];
+                                              } else if (op != null) {
+                                                return [
+                                                  itemWidget,
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          right: 8,
+                                                        ),
+                                                    child: Text(
+                                                      op,
+                                                      style: const TextStyle(
+                                                        color: Colors.white54,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ];
+                                              }
+                                              return [itemWidget];
+                                            }).toList(),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+
+                                // ── 結合シート ──
+                                if (srcTab == 2) ...[
+                                  ...mergedSheets.map((cfg) {
+                                    final sheetTitle =
+                                        cfg.data['title'] as String? ?? cfg.id;
+                                    final sheetItems =
+                                        (cfg.data['items'] as List? ?? [])
+                                            .map(
+                                              (e) => Map<String, dynamic>.from(
+                                                e as Map,
+                                              ),
+                                            )
+                                            .toList();
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                            12,
+                                            4,
+                                            12,
+                                            2,
+                                          ),
+                                          child: Text(
+                                            sheetTitle,
+                                            style: const TextStyle(
+                                              color: Colors.white38,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ),
+                                        SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          padding: const EdgeInsets.fromLTRB(
+                                            12,
+                                            0,
+                                            12,
+                                            8,
                                           ),
                                           child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(tab['icon'] as IconData, size: 12, color: isSel ? tColor : Colors.white38),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                tab['label'] as String,
-                                                style: TextStyle(
-                                                  color: isSel ? tColor : Colors.white38,
-                                                  fontSize: 11,
-                                                  fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                                            children: sheetItems.asMap().entries.map((
+                                              en,
+                                            ) {
+                                              final i = en.key;
+                                              final calcName =
+                                                  en.value['name'] as String? ??
+                                                  '計算 ${i + 1}';
+                                              final isSelExt =
+                                                  selectedSrcSheetId ==
+                                                      cfg.id &&
+                                                  selectedSrcCalcIdx == i;
+                                              const chipColor = Color(
+                                                0xFF26C6DA,
+                                              );
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 8,
                                                 ),
-                                              ),
-                                            ],
+                                                child: GestureDetector(
+                                                  onTap: () => setDs(() {
+                                                    selectedSrcSheetId = cfg.id;
+                                                    selectedSrcCalcIdx = i;
+                                                    selectedSrcField = 'result';
+                                                  }),
+                                                  child: AnimatedContainer(
+                                                    duration: const Duration(
+                                                      milliseconds: 150,
+                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 14,
+                                                          vertical: 8,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: isSelExt
+                                                          ? chipColor
+                                                                .withOpacity(
+                                                                  0.18,
+                                                                )
+                                                          : Colors.white
+                                                                .withOpacity(
+                                                                  0.05,
+                                                                ),
+                                                      border: Border.all(
+                                                        color: isSelExt
+                                                            ? chipColor
+                                                            : Colors.white24,
+                                                        width: isSelExt
+                                                            ? 1.5
+                                                            : 1.0,
+                                                      ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          Icons.link_rounded,
+                                                          color: isSelExt
+                                                              ? chipColor
+                                                              : Colors.white38,
+                                                          size: 12,
+                                                        ),
+                                                        const SizedBox(
+                                                          width: 6,
+                                                        ),
+                                                        Text(
+                                                          calcName,
+                                                          style: TextStyle(
+                                                            color: isSelExt
+                                                                ? chipColor
+                                                                : Colors
+                                                                      .white70,
+                                                            fontSize: 13,
+                                                            fontWeight: isSelExt
+                                                                ? FontWeight
+                                                                      .bold
+                                                                : FontWeight
+                                                                      .normal,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            }).toList(),
                                           ),
                                         ),
-                                      ),
+                                      ],
                                     );
-                                  }).toList(),
-                                ),
-                              ),
-                            ),
-                          if (tabs.length == 1)
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.upload_rounded, size: 14, color: Colors.blueAccent),
-                                  const SizedBox(width: 6),
-                                  const Text('リンク元　計算式を選択',
-                                      style: TextStyle(color: Colors.blueAccent, fontSize: 13, fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ),
-
-                          // ── このシート ──
-                          if (_srcTab == 0) ...[
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                              child: Row(
-                                children: List.generate(items.length, (i) {
-                                  final calcName = items[i]['name'] as String? ?? '計算 ${i + 1}';
-                                  final isSel = selectedSrcCalcIdx == i && selectedSrcSheetId == null;
-                                  return Padding(
-                                    padding: const EdgeInsets.only(right: 8),
-                                    child: GestureDetector(
-                                      onTap: () => setDs(() {
-                                        selectedSrcSheetId = null;
-                                        selectedSrcCalcIdx = i;
-                                        selectedSrcField = 'result';
-                                        selectedDests = _calcSelectedDestsForRow(i, 'result');
-                                      }),
-                                      child: AnimatedContainer(
-                                        duration: const Duration(milliseconds: 150),
-                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                        decoration: BoxDecoration(
-                                          color: isSel ? Colors.blueAccent.withOpacity(0.22) : Colors.white.withOpacity(0.05),
-                                          border: Border.all(
-                                            color: isSel ? Colors.blueAccent : Colors.white24,
-                                            width: isSel ? 1.5 : 1.0,
-                                          ),
-                                          borderRadius: BorderRadius.circular(8),
+                                  }),
+                                  if (selectedSrcSheetId != null &&
+                                      selectedSrcCalcIdx != null &&
+                                      mergedSheets.any(
+                                        (c) => c.id == selectedSrcSheetId,
+                                      )) ...[
+                                    const Padding(
+                                      padding: EdgeInsets.fromLTRB(
+                                        12,
+                                        0,
+                                        12,
+                                        4,
+                                      ),
+                                      child: Text(
+                                        '項目を選択',
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 12,
                                         ),
-                                        child: Text(calcName,
-                                            style: TextStyle(
-                                              color: isSel ? Colors.blueAccent : Colors.white70,
-                                              fontSize: 13,
-                                              fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                                            )),
                                       ),
                                     ),
-                                  );
-                                }),
-                              ),
-                            ),
-                            if (selectedSrcCalcIdx != null && selectedSrcSheetId == null) ...[
-                              const Padding(
-                                padding: EdgeInsets.fromLTRB(12, 0, 12, 4),
-                                child: Text('項目を選択', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                              ),
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                                child: Row(
-                                  children: fieldsFor(selectedSrcCalcIdx!).map((sf) {
-                                    final key = sf['key'] as String;
-                                    final label = sf['label'] as String;
-                                    final isSel = selectedSrcField == key;
-                                    final valStr = fieldValueStr(selectedSrcCalcIdx!, key);
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: GestureDetector(
-                                        onTap: () => setDs(() {
-                                          selectedSrcField = key;
-                                          selectedDests = _calcSelectedDestsForRow(selectedSrcCalcIdx!, key);
-                                        }),
-                                        child: AnimatedContainer(
-                                          duration: const Duration(milliseconds: 150),
-                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                          decoration: BoxDecoration(
-                                            color: isSel ? Colors.blueAccent.withOpacity(0.22) : Colors.white.withOpacity(0.05),
-                                            border: Border.all(
-                                              color: isSel ? Colors.blueAccent : Colors.white24,
-                                              width: isSel ? 1.5 : 1.0,
-                                            ),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(label,
-                                                  style: TextStyle(
-                                                    color: isSel ? Colors.blueAccent : Colors.white70,
-                                                    fontSize: 13,
-                                                    fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                                                  )),
-                                              const SizedBox(height: 4),
-                                              Text(valStr,
-                                                  style: TextStyle(
-                                                    color: isSel ? Colors.white : Colors.white38,
-                                                    fontSize: 11,
-                                                  )),
-                                            ],
-                                          ),
-                                        ),
+                                    SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      padding: const EdgeInsets.fromLTRB(
+                                        12,
+                                        0,
+                                        12,
+                                        12,
                                       ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                            ],
-                          ],
-
-                          // ── 開放された式 ──
-                          if (_srcTab == 1) ...[
-                            ...exposedSheets.map((cfg) {
-                              final sheetTitle = cfg.data['title'] as String? ?? cfg.id;
-                              final sheetItems = (cfg.data['items'] as List? ?? [])
-                                  .map((e) => Map<String, dynamic>.from(e as Map))
-                                  .toList();
-                              final visibleItems = sheetItems.asMap().entries
-                                  .where((en) => en.value['exposed'] == true)
-                                  .toList();
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
-                                    child: Text(sheetTitle, style: const TextStyle(color: Colors.white38, fontSize: 11)),
-                                  ),
-                                  SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                                    child: Row(
-                                      children: visibleItems.map((en) {
-                                        final i = en.key;
-                                        final calcName = en.value['name'] as String? ?? '計算 ${i + 1}';
-                                        final isSelExt = selectedSrcSheetId == cfg.id && selectedSrcCalcIdx == i;
-                                        return Padding(
-                                          padding: const EdgeInsets.only(right: 8),
-                                          child: GestureDetector(
-                                            onTap: () => setDs(() {
-                                              selectedSrcSheetId = cfg.id;
-                                              selectedSrcCalcIdx = i;
-                                              selectedSrcField = 'result';
-                                              selectedDests = _calcSelectedDestsForExternalRow(cfg.id, i, 'result');
-                                            }),
-                                            child: AnimatedContainer(
-                                              duration: const Duration(milliseconds: 150),
-                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                              decoration: BoxDecoration(
-                                                color: isSelExt ? Colors.greenAccent.withOpacity(0.18) : Colors.white.withOpacity(0.05),
-                                                border: Border.all(
-                                                  color: isSelExt ? Colors.greenAccent : Colors.white24,
-                                                  width: isSelExt ? 1.5 : 1.0,
+                                      child: Row(
+                                        children:
+                                            fieldsForExternal(
+                                              selectedSrcSheetId!,
+                                              selectedSrcCalcIdx!,
+                                            ).expand((sf) {
+                                              final key = sf['key'] as String;
+                                              final label =
+                                                  sf['label'] as String;
+                                              final op = sf['op'] as String?;
+                                              final isSel =
+                                                  selectedSrcField == key;
+                                              final valStr = fieldValueStr(
+                                                selectedSrcCalcIdx!,
+                                                key,
+                                                selectedSrcSheetId,
+                                              );
+                                              const chipColor = Color(
+                                                0xFF26C6DA,
+                                              );
+                                              final itemWidget = Padding(
+                                                padding: const EdgeInsets.only(
+                                                  right: 8,
                                                 ),
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(Icons.public_rounded, color: isSelExt ? Colors.greenAccent : Colors.white38, size: 12),
-                                                  const SizedBox(width: 6),
-                                                  Text(calcName,
+                                                child: GestureDetector(
+                                                  onTap: () => setDs(() {
+                                                    selectedSrcField = key;
+                                                  }),
+                                                  child: AnimatedContainer(
+                                                    duration: const Duration(
+                                                      milliseconds: 150,
+                                                    ),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 14,
+                                                          vertical: 8,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: isSel
+                                                          ? chipColor
+                                                                .withOpacity(
+                                                                  0.18,
+                                                                )
+                                                          : Colors.white
+                                                                .withOpacity(
+                                                                  0.05,
+                                                                ),
+                                                      border: Border.all(
+                                                        color: isSel
+                                                            ? chipColor
+                                                            : Colors.white24,
+                                                        width: isSel
+                                                            ? 1.5
+                                                            : 1.0,
+                                                      ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            8,
+                                                          ),
+                                                    ),
+                                                    child: Column(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Text(
+                                                          label,
+                                                          style: TextStyle(
+                                                            color: isSel
+                                                                ? chipColor
+                                                                : Colors
+                                                                      .white70,
+                                                            fontSize: 13,
+                                                            fontWeight: isSel
+                                                                ? FontWeight
+                                                                      .bold
+                                                                : FontWeight
+                                                                      .normal,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 4,
+                                                        ),
+                                                        Text(
+                                                          valStr,
+                                                          style: TextStyle(
+                                                            color: isSel
+                                                                ? Colors.white
+                                                                : Colors
+                                                                      .white38,
+                                                            fontSize: 11,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                              if (key == 'result') {
+                                                return [
+                                                  const Padding(
+                                                    padding: EdgeInsets.only(
+                                                      right: 8,
+                                                    ),
+                                                    child: Text(
+                                                      '=',
                                                       style: TextStyle(
-                                                        color: isSelExt ? Colors.greenAccent : Colors.white70,
-                                                        fontSize: 13,
-                                                        fontWeight: isSelExt ? FontWeight.bold : FontWeight.normal,
-                                                      )),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }),
-                            if (selectedSrcSheetId != null && selectedSrcCalcIdx != null &&
-                                exposedSheets.any((c) => c.id == selectedSrcSheetId)) ...[
-                              const Padding(
-                                padding: EdgeInsets.fromLTRB(12, 0, 12, 4),
-                                child: Text('項目を選択', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                              ),
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                                child: Row(
-                                  children: fieldsForExternal(selectedSrcSheetId!, selectedSrcCalcIdx!).map((sf) {
-                                    final key = sf['key'] as String;
-                                    final label = sf['label'] as String;
-                                    final isSel = selectedSrcField == key;
-                                    final valStr = fieldValueStr(selectedSrcCalcIdx!, key, selectedSrcSheetId);
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: GestureDetector(
-                                        onTap: () => setDs(() {
-                                          selectedSrcField = key;
-                                          selectedDests = _calcSelectedDestsForExternalRow(selectedSrcSheetId!, selectedSrcCalcIdx!, key);
-                                        }),
-                                        child: AnimatedContainer(
-                                          duration: const Duration(milliseconds: 150),
-                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                          decoration: BoxDecoration(
-                                            color: isSel ? Colors.greenAccent.withOpacity(0.18) : Colors.white.withOpacity(0.05),
-                                            border: Border.all(
-                                              color: isSel ? Colors.greenAccent : Colors.white24,
-                                              width: isSel ? 1.5 : 1.0,
-                                            ),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(label,
-                                                  style: TextStyle(
-                                                    color: isSel ? Colors.greenAccent : Colors.white70,
-                                                    fontSize: 13,
-                                                    fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                                                  )),
-                                              const SizedBox(height: 4),
-                                              Text(valStr,
-                                                  style: TextStyle(
-                                                    color: isSel ? Colors.white : Colors.white38,
-                                                    fontSize: 11,
-                                                  )),
-                                            ],
-                                          ),
-                                        ),
+                                                        color: Colors.white54,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  itemWidget,
+                                                ];
+                                              } else if (op != null) {
+                                                return [
+                                                  itemWidget,
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          right: 8,
+                                                        ),
+                                                    child: Text(
+                                                      op,
+                                                      style: const TextStyle(
+                                                        color: Colors.white54,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ];
+                                              }
+                                              return [itemWidget];
+                                            }).toList(),
                                       ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                            ],
-                          ],
+                                    ),
+                                  ],
+                                ],
 
-                          // ── 結合シート ──
-                          if (_srcTab == 2) ...[
-                            ...mergedSheets.map((cfg) {
-                              final sheetTitle = cfg.data['title'] as String? ?? cfg.id;
-                              final sheetItems = (cfg.data['items'] as List? ?? [])
-                                  .map((e) => Map<String, dynamic>.from(e as Map))
-                                  .toList();
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
-                                    child: Text(sheetTitle, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                    ],),
                                   ),
-                                  SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                                    child: Row(
-                                      children: sheetItems.asMap().entries.map((en) {
-                                        final i = en.key;
-                                        final calcName = en.value['name'] as String? ?? '計算 ${i + 1}';
-                                        final isSelExt = selectedSrcSheetId == cfg.id && selectedSrcCalcIdx == i;
-                                        const chipColor = Color(0xFF26C6DA);
-                                        return Padding(
-                                          padding: const EdgeInsets.only(right: 8),
-                                          child: GestureDetector(
-                                            onTap: () => setDs(() {
-                                              selectedSrcSheetId = cfg.id;
-                                              selectedSrcCalcIdx = i;
-                                              selectedSrcField = 'result';
-                                              selectedDests = _calcSelectedDestsForExternalRow(cfg.id, i, 'result');
-                                            }),
-                                            child: AnimatedContainer(
-                                              duration: const Duration(milliseconds: 150),
-                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                              decoration: BoxDecoration(
-                                                color: isSelExt ? chipColor.withOpacity(0.18) : Colors.white.withOpacity(0.05),
-                                                border: Border.all(
-                                                  color: isSelExt ? chipColor : Colors.white24,
-                                                  width: isSelExt ? 1.5 : 1.0,
-                                                ),
-                                                borderRadius: BorderRadius.circular(8),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(Icons.link_rounded, color: isSelExt ? chipColor : Colors.white38, size: 12),
-                                                  const SizedBox(width: 6),
-                                                  Text(calcName,
-                                                      style: TextStyle(
-                                                        color: isSelExt ? chipColor : Colors.white70,
-                                                        fontSize: 13,
-                                                        fontWeight: isSelExt ? FontWeight.bold : FontWeight.normal,
-                                                      )),
-                                                ],
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }),
-                            if (selectedSrcSheetId != null && selectedSrcCalcIdx != null &&
-                                mergedSheets.any((c) => c.id == selectedSrcSheetId)) ...[
-                              const Padding(
-                                padding: EdgeInsets.fromLTRB(12, 0, 12, 4),
-                                child: Text('項目を選択', style: TextStyle(color: Colors.white54, fontSize: 12)),
-                              ),
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                                child: Row(
-                                  children: fieldsForExternal(selectedSrcSheetId!, selectedSrcCalcIdx!).map((sf) {
-                                    final key = sf['key'] as String;
-                                    final label = sf['label'] as String;
-                                    final isSel = selectedSrcField == key;
-                                    final valStr = fieldValueStr(selectedSrcCalcIdx!, key, selectedSrcSheetId);
-                                    const chipColor = Color(0xFF26C6DA);
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: GestureDetector(
-                                        onTap: () => setDs(() {
-                                          selectedSrcField = key;
-                                          selectedDests = _calcSelectedDestsForExternalRow(selectedSrcSheetId!, selectedSrcCalcIdx!, key);
-                                        }),
-                                        child: AnimatedContainer(
-                                          duration: const Duration(milliseconds: 150),
-                                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                          decoration: BoxDecoration(
-                                            color: isSel ? chipColor.withOpacity(0.18) : Colors.white.withOpacity(0.05),
-                                            border: Border.all(
-                                              color: isSel ? chipColor : Colors.white24,
-                                              width: isSel ? 1.5 : 1.0,
-                                            ),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(label,
-                                                  style: TextStyle(
-                                                    color: isSel ? chipColor : Colors.white70,
-                                                    fontSize: 13,
-                                                    fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
-                                                  )),
-                                              const SizedBox(height: 4),
-                                              Text(valStr,
-                                                  style: TextStyle(
-                                                    color: isSel ? Colors.white : Colors.white38,
-                                                    fontSize: 11,
-                                                  )),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ],
-                      ),
-                    );
-                  }),
-                const SizedBox(height: 8),
+
+                               
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
                   // ── リンク先セクション（シアン系） ─────────────────────
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
@@ -2052,13 +2928,115 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                       ],
                     ),
                   ),
+                  // ── リンク先シート選択（結合ビューの場合） ─────────
+                  if (siblingConfigs.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            // このシートボタン
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: GestureDetector(
+                                onTap: () => setDs(() => destSheetId = null),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: destSheetId == null
+                                        ? const Color(0xFF26C6DA).withOpacity(0.18)
+                                        : Colors.white.withOpacity(0.05),
+                                    border: Border.all(
+                                      color: destSheetId == null
+                                          ? const Color(0xFF26C6DA)
+                                          : Colors.white24,
+                                      width: destSheetId == null ? 1.5 : 1.0,
+                                    ),
+                                    borderRadius: BorderRadius.circular(40),
+                                  ),
+                                  child: Text(
+                                    'このシート',
+                                    style: TextStyle(
+                                      color: destSheetId == null
+                                          ? const Color(0xFF26C6DA)
+                                          : Colors.white70,
+                                      fontSize: 12,
+                                      fontWeight: destSheetId == null
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            // 各兄弟シートボタン
+                            ...siblingConfigs.map((sc) {
+                              final isSelDest = destSheetId == sc.id;
+                              final scTitle =
+                                  sc.data['title'] as String? ?? sc.id;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      setDs(() => destSheetId = sc.id),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(
+                                      milliseconds: 150,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSelDest
+                                          ? const Color(0xFF26C6DA)
+                                                .withOpacity(0.18)
+                                          : Colors.white.withOpacity(0.05),
+                                      border: Border.all(
+                                        color: isSelDest
+                                            ? const Color(0xFF26C6DA)
+                                            : Colors.white24,
+                                        width: isSelDest ? 1.5 : 1.0,
+                                      ),
+                                      borderRadius:
+                                          BorderRadius.circular(40),
+                                    ),
+                                    child: Text(
+                                      scTitle,
+                                      style: TextStyle(
+                                        color: isSelDest
+                                            ? const Color(0xFF26C6DA)
+                                            : Colors.white70,
+                                        fontSize: 12,
+                                        fontWeight: isSelDest
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                      ),
+                    ),
                   Expanded(
                     child: Container(
                       margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: const Color.fromARGB(141, 250, 250, 250)
-                              .withOpacity(0.5),
+                          color: const Color.fromARGB(
+                            141,
+                            250,
+                            250,
+                            250,
+                          ).withOpacity(0.5),
                           width: 1.5,
                         ),
                         borderRadius: BorderRadius.circular(10),
@@ -2073,215 +3051,390 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                 ),
                               ),
                             )
-                          : ((selectedSrcSheetId == null && items.length <= 1)
-                              ? const Center(
-                                  child: Text(
-                                    '他の計算式がありません',
-                                    style: TextStyle(
-                                      color: Colors.white38,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                )
-                              : ListView.builder(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 8),
-                                  itemCount: items.length,
-                                  itemBuilder: (context, i) {
-                                    if (selectedSrcSheetId == null && i == selectedSrcCalcIdx)
-                                      return const SizedBox.shrink();
-                                    final item = items[i];
-                                    final rowName = item['name'] as String? ??
-                                        '計算 ${i + 1}';
-                                    final itemOthers =
-                                        item['others'] as List? ?? [];
-                                    final destFields =
-                                        <Map<String, dynamic>>[
-                                      {
-                                        'key': 'input',
-                                        'label': '項1',
-                                        'val': (item['input'] as num? ?? 0.0)
-                                            .toDouble(),
-                                      },
-                                      {
-                                        'key': 'operand',
-                                        'label': '項2',
-                                        'val':
-                                            (item['operand'] as num? ?? 0.0)
-                                                .toDouble(),
-                                      },
-                                      ...List.generate(
-                                        itemOthers.length,
-                                        (j) => {
-                                          'key': 'other_$j',
-                                          'label': '項${j + 3}',
-                                          'val': ((itemOthers[j] as Map)[
-                                                          'val'] as num? ??
-                                                      0.0)
-                                                  .toDouble(),
-                                        },
+                          : Builder(
+                              builder: (ctx2) {
+                                // 表示するリンク先アイテムを決定
+                                final List<Map<String, dynamic>> destItems;
+                                if (destSheetId != null) {
+                                  final dc = widget.allConfigs.firstWhere(
+                                    (c) => c.id == destSheetId,
+                                    orElse: () => widget.config,
+                                  );
+                                  destItems = (dc.data['items']
+                                              as List? ??
+                                          [])
+                                      .map(
+                                        (e) => Map<String, dynamic>.from(
+                                          e as Map,
+                                        ),
+                                      )
+                                      .toList();
+                                } else {
+                                  destItems = items;
+                                }
+                                if (destSheetId == null &&
+                                    destItems.length <= 1 &&
+                                    selectedSrcSheetId == null) {
+                                  return const Center(
+                                    child: Text(
+                                      '他の計算式がありません',
+                                      style: TextStyle(
+                                        color: Colors.white38,
+                                        fontSize: 12,
                                       ),
-                                    ];
-                                    if (destFields.isEmpty)
-                                      return const SizedBox.shrink();
-                                    final destPrec =
-                                        item['precision'] as int? ?? 2;
-                                    String fmtDest(double v) {
-                                      if (v == v.truncateToDouble() &&
-                                          v.abs() < 1e12)
-                                        return v.toStringAsFixed(0);
-                                      return v.toStringAsFixed(destPrec);
-                                    }
+                                    ),
+                                  );
+                                }
+                                return ListView.builder(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    itemCount: destItems.length,
+                                    itemBuilder: (context, i) {
+                                      // 同一シート内のリンク元行はスキップ
+                                      if (destSheetId == null &&
+                                          selectedSrcSheetId == null &&
+                                          i == selectedSrcCalcIdx) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      final item = destItems[i];
+                                      final rowName =
+                                          item['name'] as String? ??
+                                          '計算 ${i + 1}';
+                                      final itemOthers =
+                                          item['others'] as List? ?? [];
+                                      final resultVal =
+                                          (item['result'] as num? ?? 0.0)
+                                              .toDouble();
+                                      final destFields = <Map<String, dynamic>>[
+                                        {
+                                          'key': 'input',
+                                          'label': '項1',
+                                          'val': (item['input'] as num? ?? 0.0)
+                                              .toDouble(),
+                                          'op':
+                                              item['operator'] as String? ??
+                                              '+',
+                                        },
+                                        {
+                                          'key': 'operand',
+                                          'label': '項2',
+                                          'val':
+                                              (item['operand'] as num? ?? 0.0)
+                                                  .toDouble(),
+                                          'op': itemOthers.isNotEmpty
+                                              ? ((itemOthers[0]
+                                                            as Map)['operator']
+                                                        as String? ??
+                                                    '+')
+                                              : null,
+                                        },
+                                        ...List.generate(
+                                          itemOthers.length,
+                                          (j) => {
+                                            'key': 'other_$j',
+                                            'label': '項${j + 3}',
+                                            'val':
+                                                ((itemOthers[j] as Map)['val']
+                                                            as num? ??
+                                                        0.0)
+                                                    .toDouble(),
+                                            'op': (j + 1 < itemOthers.length)
+                                                ? ((itemOthers[j + 1]
+                                                              as Map)['operator']
+                                                          as String? ??
+                                                      '+')
+                                                : null,
+                                          },
+                                        ),
+                                      ];
+                                      if (destFields.isEmpty) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      final destPrec =
+                                          item['precision'] as int? ?? 2;
+                                      String fmtDest(double v) {
+                                        if (v == v.truncateToDouble() &&
+                                            v.abs() < 1e12) {
+                                          return v.toStringAsFixed(0);
+                                        }
+                                        return v.toStringAsFixed(destPrec);
+                                      }
 
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                              12, 10, 12, 4),
-                                          child: Text(
-                                            rowName,
-                                            style: const TextStyle(
-                                              color: Color(0xFF26C6DA),
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
+                                      return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                              12,
+                                              10,
+                                              12,
+                                              4,
+                                            ),
+                                            child: Text(
+                                              rowName,
+                                              style: const TextStyle(
+                                                color: Color(0xFF26C6DA),
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                              12, 0, 12, 4),
-                                          child: Wrap(
-                                            spacing: 8,
-                                            runSpacing: 6,
-                                            children: destFields.map((df) {
-                                              final fk =
-                                                  df['key'] as String;
-                                              final dk = '${i}_$fk';
-                                              final isSel = selectedDests
-                                                  .contains(dk);
-                                              final valStr = fmtDest(
-                                                  df['val'] as double? ??
-                                                      0.0);
-                                              return GestureDetector(
-                                                onTap: () => setDs(() {
-                                                  if (isSel) {
-                                                    selectedDests.remove(dk);
-                                                  } else {
-                                                    selectedDests.add(dk);
+                                          Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                              12,
+                                              0,
+                                              12,
+                                              4,
+                                            ),
+                                            child: Wrap(
+                                              spacing: 8,
+                                              runSpacing: 6,
+                                              crossAxisAlignment:
+                                                  WrapCrossAlignment.center,
+                                              children: [
+                                                ...destFields.asMap().entries.expand((
+                                                  en,
+                                                ) {
+                                                  final df = en.value;
+                                                  final fk =
+                                                      df['key'] as String;
+                                                  final dk = destSheetId != null
+                                                      ? '${destSheetId}__${i}_$fk'
+                                                      : '${i}_$fk';
+                                                  final isSel = selectedDests
+                                                      .contains(dk);
+                                                  final valStr = fmtDest(
+                                                    df['val'] as double? ?? 0.0,
+                                                  );
+                                                  final op =
+                                                      df['op'] as String?;
+                                                  final itemWidget = GestureDetector(
+                                                    onTap: () => setDs(() {
+                                                      if (isSel) {
+                                                        selectedDests.remove(
+                                                          dk,
+                                                        );
+                                                      } else {
+                                                        selectedDests.add(dk);
+                                                      }
+                                                    }),
+                                                    child: AnimatedContainer(
+                                                      duration: const Duration(
+                                                        milliseconds: 150,
+                                                      ),
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 14,
+                                                            vertical: 8,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: isSel
+                                                            ? const Color(
+                                                                0xFF26C6DA,
+                                                              ).withOpacity(
+                                                                0.18,
+                                                              )
+                                                            : Colors.white
+                                                                  .withOpacity(
+                                                                    0.05,
+                                                                  ),
+                                                        border: Border.all(
+                                                          color: isSel
+                                                              ? const Color(
+                                                                  0xFF26C6DA,
+                                                                )
+                                                              : Colors.white24,
+                                                          width: isSel
+                                                              ? 1.5
+                                                              : 1.0,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                      child: Column(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Row(
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
+                                                            children: [
+                                                              if (isSel)
+                                                                const Padding(
+                                                                  padding:
+                                                                      EdgeInsets.only(
+                                                                        right:
+                                                                            4,
+                                                                      ),
+                                                                  child: Icon(
+                                                                    Icons.check,
+                                                                    size: 12,
+                                                                    color: Color(
+                                                                      0xFF26C6DA,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              Text(
+                                                                df['label']
+                                                                    as String,
+                                                                style: TextStyle(
+                                                                  color: isSel
+                                                                      ? const Color(
+                                                                          0xFF26C6DA,
+                                                                        )
+                                                                      : Colors
+                                                                            .white70,
+                                                                  fontSize: 13,
+                                                                  fontWeight:
+                                                                      isSel
+                                                                      ? FontWeight
+                                                                            .bold
+                                                                      : FontWeight
+                                                                            .normal,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 3,
+                                                          ),
+                                                          Text(
+                                                            valStr,
+                                                            style: TextStyle(
+                                                              color: isSel
+                                                                  ? Colors.white
+                                                                  : Colors
+                                                                        .white38,
+                                                              fontSize: 11,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  );
+                                                  if (op != null) {
+                                                    return [
+                                                      itemWidget,
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 4,
+                                                            ),
+                                                        child: Text(
+                                                          op,
+                                                          style:
+                                                              const TextStyle(
+                                                                color: Colors
+                                                                    .white54,
+                                                                fontSize: 18,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ];
                                                   }
+                                                  return [itemWidget];
                                                 }),
-                                                child: AnimatedContainer(
-                                                  duration: const Duration(
-                                                      milliseconds: 150),
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                    horizontal: 12,
-                                                    vertical: 6,
+                                                const Padding(
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: 4,
                                                   ),
+                                                  child: Text(
+                                                    '=',
+                                                    style: TextStyle(
+                                                      color: Colors.white54,
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Container(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 14,
+                                                        vertical: 8,
+                                                      ),
                                                   decoration: BoxDecoration(
-                                                    color: isSel
-                                                        ? const Color(
-                                                                0xFF26C6DA)
-                                                            .withOpacity(0.18)
-                                                        : Colors.white
-                                                            .withOpacity(
-                                                                0.05),
+                                                    color: Colors.white
+                                                        .withOpacity(0.02),
                                                     border: Border.all(
-                                                      color: isSel
-                                                          ? const Color(
-                                                              0xFF26C6DA)
-                                                          : Colors.white24,
-                                                      width:
-                                                          isSel ? 1.5 : 1.0,
+                                                      color: Colors.white10,
+                                                      width: 1.0,
                                                     ),
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                            8),
+                                                          8,
+                                                        ),
                                                   ),
                                                   child: Column(
                                                     mainAxisSize:
                                                         MainAxisSize.min,
                                                     children: [
-                                                      Row(
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          if (isSel)
-                                                            const Padding(
-                                                              padding: EdgeInsets
-                                                                  .only(
-                                                                      right:
-                                                                          4),
-                                                              child: Icon(
-                                                                Icons.check,
-                                                                size: 12,
-                                                                color: Color(
-                                                                    0xFF26C6DA),
-                                                              ),
-                                                            ),
-                                                          Text(
-                                                            df['label']
-                                                                as String,
-                                                            style: TextStyle(
-                                                              color: isSel
-                                                                  ? const Color(
-                                                                      0xFF26C6DA)
-                                                                  : Colors
-                                                                      .white70,
-                                                              fontSize: 13,
-                                                              fontWeight: isSel
-                                                                  ? FontWeight
-                                                                      .bold
-                                                                  : FontWeight
-                                                                      .normal,
-                                                            ),
-                                                          ),
-                                                        ],
+                                                      const Text(
+                                                        '答え',
+                                                        style: TextStyle(
+                                                          color: Colors.white38,
+                                                          fontSize: 11,
+                                                        ),
                                                       ),
                                                       const SizedBox(height: 3),
                                                       Text(
-                                                        valStr,
-                                                        style: TextStyle(
-                                                          color: isSel
-                                                              ? Colors.white
-                                                              : Colors.white38,
-                                                          fontSize: 11,
+                                                        fmtDest(resultVal),
+                                                        style: const TextStyle(
+                                                          color: Colors.white70,
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                         ),
                                                       ),
                                                     ],
                                                   ),
                                                 ),
-                                              );
-                                            }).toList(),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        const Divider(
-                                          color: Colors.white10,
-                                          height: 12,
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                )),
+                                          const Divider(
+                                            color: Colors.white10,
+                                            height: 12,
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                              },
+                            ),
                     ),
                   ),
                   const SizedBox(height: 8),
                   // ── アクションボタン ───────────────────────────────────
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            foregroundColor: Colors.white54,
+                          ),
                           child: const Text(
                             'キャンセル',
-                            style: TextStyle(color: Colors.white54),
+                            style: TextStyle(fontWeight: FontWeight.w500),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
                         ElevatedButton(
                           onPressed: selectedSrcCalcIdx == null
                               ? null
@@ -2291,18 +3444,65 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                   final srcSheetId = selectedSrcSheetId;
                                   final dests = Set<String>.from(selectedDests);
                                   Navigator.pop(ctx);
+                                  // 現在シート宛のdests
+                                  final currentDests = dests
+                                      .where((d) => !d.contains('__'))
+                                      .toSet();
+                                  // 兄弟シート宛のdestsをシートIDごとに分類
+                                  final sibDestsMap = <String, Set<String>>{};
+                                  for (final d in dests.where(
+                                    (d) => d.contains('__'),
+                                  )) {
+                                    final sep = d.indexOf('__');
+                                    final sid = d.substring(0, sep);
+                                    final dk = d.substring(sep + 2);
+                                    sibDestsMap.putIfAbsent(sid, () => {}).add(dk);
+                                  }
+                                  // 現在シートへ適用
                                   if (srcSheetId != null) {
                                     _applyLinkDestsForExternalRow(
-                                        srcSheetId, srcIdx, srcField, dests);
+                                      srcSheetId,
+                                      srcIdx,
+                                      srcField,
+                                      currentDests,
+                                    );
                                   } else {
-                                    _applyLinkDestsForRow(srcIdx, srcField, dests);
+                                    _applyLinkDestsForRow(
+                                      srcIdx,
+                                      srcField,
+                                      currentDests,
+                                    );
+                                  }
+                                  // 兄弟シートへ適用
+                                  for (final e in sibDestsMap.entries) {
+                                    _applyLinkDestsToSiblingSheet(
+                                      e.key,
+                                      srcSheetId,
+                                      srcIdx,
+                                      srcField,
+                                      e.value,
+                                    );
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blueAccent,
                             foregroundColor: Colors.white,
+                            disabledBackgroundColor: Colors.blueAccent
+                                .withOpacity(0.3),
+                            disabledForegroundColor: Colors.white38,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 28,
+                              vertical: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
                           ),
-                          child: const Text('設定する'),
+                          child: const Text(
+                            'リンクを設定',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ],
                     ),
@@ -2313,6 +3513,75 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           ),
         ),
       ),
+    );
+  }
+
+  /// 兄弟シートのアイテムにリンク先として設定する
+  void _applyLinkDestsToSiblingSheet(
+    String destSheetId,
+    String? srcSheetId,
+    int srcRowIdx,
+    String srcField,
+    Set<String> selectedDests,
+  ) {
+    final destConfig = widget.allConfigs.firstWhere(
+      (c) => c.id == destSheetId,
+      orElse: () => widget.config,
+    );
+    if (destConfig.id == widget.config.id) return;
+    final destItems = (destConfig.data['items'] as List<dynamic>? ?? [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+    // リンク元情報（現在シートまたは別シート）
+    final linkSource = srcSheetId != null
+        ? {'sheetId': srcSheetId, 'rowIdx': srcRowIdx, 'target': srcField}
+        : {'sheetId': widget.config.id, 'rowIdx': srcRowIdx, 'target': srcField};
+    bool wasLinked(Map? src) {
+      if (src == null) return false;
+      final sid = srcSheetId ?? widget.config.id;
+      return src['sheetId'] == sid &&
+          src['rowIdx'] == srcRowIdx &&
+          src['target'] == srcField;
+    }
+    for (int i = 0; i < destItems.length; i++) {
+      final item = destItems[i];
+      final origItem = Map<String, dynamic>.from(item);
+      final inputDest = '${i}_input';
+      if (selectedDests.contains(inputDest)) {
+        item['inputLink'] = true;
+        item['inputLinkSource'] = linkSource;
+      } else if (wasLinked(origItem['inputLinkSource'] as Map?)) {
+        item['inputLink'] = false;
+        item['inputLinkSource'] = null;
+      }
+      final operandDest = '${i}_operand';
+      if (selectedDests.contains(operandDest)) {
+        item['operandLink'] = true;
+        item['operandLinkSource'] = linkSource;
+      } else if (wasLinked(origItem['operandLinkSource'] as Map?)) {
+        item['operandLink'] = false;
+        item['operandLinkSource'] = null;
+      }
+      final othersList = ((item['others'] as List? ?? [])
+              .map((e) => Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final origOthers = origItem['others'] as List? ?? [];
+      for (int j = 0; j < othersList.length; j++) {
+        final otherDest = '${i}_other_$j';
+        final origO = j < origOthers.length ? origOthers[j] as Map : {};
+        if (selectedDests.contains(otherDest)) {
+          othersList[j]['valLink'] = true;
+          othersList[j]['valLinkSource'] = linkSource;
+        } else if (wasLinked(origO['valLinkSource'] as Map?)) {
+          othersList[j]['valLink'] = false;
+          othersList[j]['valLinkSource'] = null;
+        }
+      }
+      item['others'] = othersList;
+    }
+    widget.onSheetUpdate?.call(
+      destSheetId,
+      {...destConfig.data, 'items': destItems},
     );
   }
 
@@ -2387,8 +3656,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       final sItem = items[sRowIdx];
       if (sTarget == 'result') return finalResults[sRowIdx];
       if (sTarget == 'input') return (sItem['input'] as num? ?? 0.0).toDouble();
-      if (sTarget == 'operand')
+      if (sTarget == 'operand') {
         return (sItem['operand'] as num? ?? 0.0).toDouble();
+      }
       if (sTarget.startsWith('other_')) {
         final idx = int.tryParse(sTarget.split('_')[1]) ?? 0;
         final sOthers = sItem['others'] as List? ?? [];
@@ -2481,8 +3751,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     }
 
     String fmtNum(double v, int precision) {
-      if (v == v.truncateToDouble() && v.abs() < 1e12)
+      if (v == v.truncateToDouble() && v.abs() < 1e12) {
         return v.toInt().toString();
+      }
       return v.toStringAsFixed(precision);
     }
 
@@ -2994,15 +4265,17 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                         opacity: _isAiCounting ? 0.4 : 1.0,
                         duration: const Duration(milliseconds: 150),
                         child: Container(
-                          width:70,
+                          width: 70,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: Colors.teal.withOpacity(isDark ? 0.25 : 0.12),
+                            color: Colors.teal.withOpacity(
+                              isDark ? 0.25 : 0.12,
+                            ),
                             border: Border.all(
                               color: Colors.tealAccent.withOpacity(0.45),
                               width: 0.8,
                             ),
-                            shape: BoxShape.circle
+                            shape: BoxShape.circle,
                           ),
                           child: Stack(
                             alignment: Alignment.center,
@@ -3010,7 +4283,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                               Icon(
                                 Icons.camera_alt_outlined,
                                 color: Colors.tealAccent,
-                                size:22,
+                                size: 22,
                               ),
                               if (_isAiCounting)
                                 SizedBox(
@@ -3109,12 +4382,15 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                     calcKey('⌫', bg: keyBg),
                     calcKey('0'),
                     calcKey('.'),
-                    calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
+                    calcKey(
+                      '=',
+                      bg: eqColor.withOpacity(0.8),
+                      fg: Colors.white,
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 8),
-          
             ],
           ),
         );
@@ -3131,7 +4407,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   // ── 閲覧モード用の定数セクション（読み取り専用） ──────────────────────────
-  Widget _buildViewModeConstantsSection(List<Map<String, dynamic>> constants, bool isDark) {
+  Widget _buildViewModeConstantsSection(
+    List<Map<String, dynamic>> constants,
+    bool isDark,
+  ) {
     final fgColor = isDark ? Colors.white : Colors.black;
     final subColor = isDark ? Colors.white54 : Colors.black45;
     return Container(
@@ -3146,9 +4425,21 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         children: [
           Row(
             children: [
-              const Icon(Icons.push_pin_outlined, size: 12, color: Colors.amberAccent),
+              const Icon(
+                Icons.push_pin_outlined,
+                size: 12,
+                color: Colors.amberAccent,
+              ),
               const SizedBox(width: 5),
-              Text('定数', style: TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold, fontFamily: 'ZenOldMincho')),
+              Text(
+                '定数',
+                style: TextStyle(
+                  color: Colors.amberAccent,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'ZenOldMincho',
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 6),
@@ -3158,24 +4449,54 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             children: constants.map((c) {
               final name = c['name'] as String? ?? '';
               final value = (c['value'] as num? ?? 0.0).toDouble();
-              final valStr = value == value.truncateToDouble() && value.abs() < 1e12
+              final valStr =
+                  value == value.truncateToDouble() && value.abs() < 1e12
                   ? value.toInt().toString()
-                  : value.toStringAsFixed(4).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+                  : value
+                        .toStringAsFixed(4)
+                        .replaceAll(RegExp(r'0+$'), '')
+                        .replaceAll(RegExp(r'\.$'), '');
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04),
+                  color: isDark
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.black.withOpacity(0.04),
                   borderRadius: BorderRadius.circular(7),
-                  border: Border.all(color: Colors.amberAccent.withOpacity(0.3)),
+                  border: Border.all(
+                    color: Colors.amberAccent.withOpacity(0.3),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(name, style: TextStyle(color: subColor, fontSize: 11, fontFamily: 'ZenOldMincho')),
+                    Text(
+                      name,
+                      style: TextStyle(
+                        color: subColor,
+                        fontSize: 11,
+                        fontFamily: 'ZenOldMincho',
+                      ),
+                    ),
                     const SizedBox(width: 5),
-                    Text('=', style: TextStyle(color: subColor, fontSize: 11, fontFamily: 'ZenOldMincho')),
+                    Text(
+                      '=',
+                      style: TextStyle(
+                        color: subColor,
+                        fontSize: 11,
+                        fontFamily: 'ZenOldMincho',
+                      ),
+                    ),
                     const SizedBox(width: 3),
-                    Text(valStr, style: TextStyle(color: fgColor, fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'ZenOldMincho')),
+                    Text(
+                      valStr,
+                      style: TextStyle(
+                        color: fgColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'ZenOldMincho',
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -3192,9 +4513,16 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final title = widget.config.data['title'] as String? ?? '定型計算';
     final bgColorValue = widget.config.data['bgColor'] as int?;
     final isDark = bgColorValue != null
-        ? _kNoteColorPresets.firstWhere((p) => p.value == bgColorValue, orElse: () => _kNoteColorPresets.first).isDark
+        ? _kNoteColorPresets
+              .firstWhere(
+                (p) => p.value == bgColorValue,
+                orElse: () => _kNoteColorPresets.first,
+              )
+              .isDark
         : true;
-    final bgColor = bgColorValue != null ? Color(bgColorValue) : (isDark ? const Color(0xFF1A1A22) : const Color(0xFFFAFAFA));
+    final bgColor = bgColorValue != null
+        ? Color(bgColorValue)
+        : (isDark ? const Color(0xFF1A1A22) : const Color(0xFFFAFAFA));
 
     // ── 結果計算 ──────────────────────────────────────────────────────────
     final List<double> provisionalResults = List.filled(items.length, 0.0);
@@ -3206,10 +4534,19 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         return m;
       }).toList();
       provisionalResults[pi] = _calculate(
-        _CalculatorRow._applyTermTransform((pItem['input'] as num? ?? 0.0).toDouble(), pItem['inputTransform'] as String?, (pItem['inputPowExp'] as num? ?? 2.0).toDouble()),
+        _CalculatorRow._applyTermTransform(
+          (pItem['input'] as num? ?? 0.0).toDouble(),
+          pItem['inputTransform'] as String?,
+          (pItem['inputPowExp'] as num? ?? 2.0).toDouble(),
+        ),
         pItem['op'] as String? ?? '+',
-        _CalculatorRow._applyTermTransform((pItem['operand'] as num? ?? 0.0).toDouble(), pItem['operandTransform'] as String?, (pItem['operandPowExp'] as num? ?? 2.0).toDouble()),
-        pOthers, pItem['brackets'] as List? ?? [],
+        _CalculatorRow._applyTermTransform(
+          (pItem['operand'] as num? ?? 0.0).toDouble(),
+          pItem['operandTransform'] as String?,
+          (pItem['operandPowExp'] as num? ?? 2.0).toDouble(),
+        ),
+        pOthers,
+        pItem['brackets'] as List? ?? [],
       );
     }
     final List<double> finalResults = List<double>.from(provisionalResults);
@@ -3219,16 +4556,26 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       (i) => <String, dynamic>{
         'input': (items[i]['input'] as num? ?? 0.0).toDouble(),
         'operand': (items[i]['operand'] as num? ?? 0.0).toDouble(),
-        'others': List<Map<String, dynamic>>.from((items[i]['others'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map))),
+        'others': List<Map<String, dynamic>>.from(
+          (items[i]['others'] as List? ?? []).map(
+            (e) => Map<String, dynamic>.from(e as Map),
+          ),
+        ),
       },
     );
     for (int pass = 0; pass < items.length; pass++) {
       bool anyChange = false;
       for (int i = 0; i < items.length; i++) {
         final item = items[i];
-        double resolveLink(Map<String, dynamic>? source, bool isLink, double fallback) {
+        double resolveLink(
+          Map<String, dynamic>? source,
+          bool isLink,
+          double fallback,
+        ) {
           if (!isLink) return fallback;
-          if (source == null) return finalResults.isNotEmpty ? finalResults.last : fallback;
+          if (source == null) {
+            return finalResults.isNotEmpty ? finalResults.last : fallback;
+          }
           if (source['sheetId'] != null) {
             return _resolveExternalValue(
               source['sheetId'] as String,
@@ -3248,77 +4595,145 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           final String sTarget = source['target'] as String? ?? 'result';
           if (sRowIdx < 0 || sRowIdx >= items.length) return fallback;
           if (sTarget == 'result') return finalResults[sRowIdx];
-          if (sTarget == 'input') return (items[sRowIdx]['input'] as num? ?? 0.0).toDouble();
-          if (sTarget == 'operand') return (items[sRowIdx]['operand'] as num? ?? 0.0).toDouble();
+          if (sTarget == 'input') {
+            return (items[sRowIdx]['input'] as num? ?? 0.0).toDouble();
+          }
+          if (sTarget == 'operand') {
+            return (items[sRowIdx]['operand'] as num? ?? 0.0).toDouble();
+          }
           if (sTarget.startsWith('other_')) {
             final idx = int.tryParse(sTarget.split('_')[1]) ?? 0;
             final sOthers = items[sRowIdx]['others'] as List? ?? [];
-            if (idx < sOthers.length) return (sOthers[idx]['val'] as num? ?? 0.0).toDouble();
+            if (idx < sOthers.length) {
+              return (sOthers[idx]['val'] as num? ?? 0.0).toDouble();
+            }
           }
           return fallback;
         }
-        final inputValue = resolveLink(item['inputLinkSource'] as Map<String, dynamic>?, item['inputLink'] == true, (item['input'] as num? ?? 0.0).toDouble());
-        final operandValue = resolveLink(item['operandLinkSource'] as Map<String, dynamic>?, item['operandLink'] == true, (item['operand'] as num? ?? 0.0).toDouble());
+
+        final inputValue = resolveLink(
+          item['inputLinkSource'] as Map<String, dynamic>?,
+          item['inputLink'] == true,
+          (item['input'] as num? ?? 0.0).toDouble(),
+        );
+        final operandValue = resolveLink(
+          item['operandLinkSource'] as Map<String, dynamic>?,
+          item['operandLink'] == true,
+          (item['operand'] as num? ?? 0.0).toDouble(),
+        );
         final othersValue = List.from(item['others'] as List? ?? []).map((e) {
           final map = Map<String, dynamic>.from(e as Map);
-          map['val'] = resolveLink(map['valLinkSource'] as Map<String, dynamic>?, map['valLink'] == true, (map['val'] as num? ?? 0.0).toDouble());
+          map['val'] = resolveLink(
+            map['valLinkSource'] as Map<String, dynamic>?,
+            map['valLink'] == true,
+            (map['val'] as num? ?? 0.0).toDouble(),
+          );
           return map;
         }).toList();
         final res = _calculate(
-          _CalculatorRow._applyTermTransform(inputValue, item['inputTransform'] as String?, (item['inputPowExp'] as num? ?? 2.0).toDouble()),
+          _CalculatorRow._applyTermTransform(
+            inputValue,
+            item['inputTransform'] as String?,
+            (item['inputPowExp'] as num? ?? 2.0).toDouble(),
+          ),
           item['op'] as String? ?? '+',
-          _CalculatorRow._applyTermTransform(operandValue, item['operandTransform'] as String?, (item['operandPowExp'] as num? ?? 2.0).toDouble()),
-          othersValue.map((e) { final m = Map<String, dynamic>.from(e); m['val'] = _CalculatorRow._applyTermTransform((m['val'] as double), m['transform'] as String?, (m['powExp'] as num? ?? 2.0).toDouble()); return m; }).toList(),
+          _CalculatorRow._applyTermTransform(
+            operandValue,
+            item['operandTransform'] as String?,
+            (item['operandPowExp'] as num? ?? 2.0).toDouble(),
+          ),
+          othersValue.map((e) {
+            final m = Map<String, dynamic>.from(e);
+            m['val'] = _CalculatorRow._applyTermTransform(
+              (m['val'] as double),
+              m['transform'] as String?,
+              (m['powExp'] as num? ?? 2.0).toDouble(),
+            );
+            return m;
+          }).toList(),
           item['brackets'] as List? ?? [],
         );
         if ((res - finalResults[i]).abs() > 1e-10) anyChange = true;
         finalResults[i] = res;
-        resolvedRows[i] = {'input': inputValue, 'operand': operandValue, 'others': othersValue};
+        resolvedRows[i] = {
+          'input': inputValue,
+          'operand': operandValue,
+          'others': othersValue,
+        };
       }
       if (!anyChange) break;
     }
 
     String fmtNum(double v, int precision) {
       if (v.isNaN || v.isInfinite) return '0';
-      if (v == v.truncateToDouble() && v.abs() < 1e12) return v.toInt().toString();
+      if (v == v.truncateToDouble() && v.abs() < 1e12) {
+        return v.toInt().toString();
+      }
       return v.toStringAsFixed(precision);
     }
 
     // 変換オプション付きの値表示文字列
-    String termWithTransform(double rawV, String? transform, double powExp, int precision) {
+    String termWithTransform(
+      double rawV,
+      String? transform,
+      double powExp,
+      int precision,
+    ) {
       final s = fmtNum(rawV, precision);
       if (transform == null) return s;
       switch (transform) {
-        case 'sqrt': return '√$s';
+        case 'sqrt':
+          return '√$s';
         case 'pow':
-          final expStr = powExp == powExp.truncateToDouble() ? powExp.toInt().toString() : fmtNum(powExp, 1);
+          final expStr = powExp == powExp.truncateToDouble()
+              ? powExp.toInt().toString()
+              : fmtNum(powExp, 1);
           return '$s^$expStr';
         case 'nroot':
-          final expStr = powExp == powExp.truncateToDouble() ? powExp.toInt().toString() : fmtNum(powExp, 1);
-          return '${expStr}√$s';
-        case 'abs': return '|$s|';
-        case 'floor': return '⌊$s⌋';
-        case 'ceil': return '⌈$s⌉';
-        case 'round': return '≈$s';
-        case 'log10': return 'log($s)';
-        case 'reciprocal': return '1/$s';
-        case 'sin': return 'sin($s)';
-        case 'cos': return 'cos($s)';
-        case 'tan': return 'tan($s)';
-        default: return s;
+          final expStr = powExp == powExp.truncateToDouble()
+              ? powExp.toInt().toString()
+              : fmtNum(powExp, 1);
+          return '$expStr√$s';
+        case 'abs':
+          return '|$s|';
+        case 'floor':
+          return '⌊$s⌋';
+        case 'ceil':
+          return '⌈$s⌉';
+        case 'round':
+          return '≈$s';
+        case 'log10':
+          return 'log($s)';
+        case 'reciprocal':
+          return '1/$s';
+        case 'sin':
+          return 'sin($s)';
+        case 'cos':
+          return 'cos($s)';
+        case 'tan':
+          return 'tan($s)';
+        default:
+          return s;
       }
     }
 
     // ── カラム定義を生成 ──────────────────────────────────────────────────
     // 行 = 計算式、列 = 名前 | 項1 | 項2 | 項3... | 答え
-    final maxOthers = items.fold(0, (int acc, item) => math.max(acc, (item['others'] as List? ?? []).length));
+    final maxOthers = items.fold(
+      0,
+      (int acc, item) => math.max(acc, (item['others'] as List? ?? []).length),
+    );
     final allColumnKeys = <String>['name', 'input', 'operand'];
-    for (int i = 0; i < maxOthers; i++) allColumnKeys.add('other_$i');
+    for (int i = 0; i < maxOthers; i++) {
+      allColumnKeys.add('other_$i');
+    }
     allColumnKeys.add('result');
 
-    final rawColConfig = widget.config.data['tableColumnConfig'] as List<dynamic>? ?? [];
+    final rawColConfig =
+        widget.config.data['tableColumnConfig'] as List<dynamic>? ?? [];
     final colConfigMap = <String, Map<String, dynamic>>{
-      for (final c in rawColConfig.whereType<Map>()) c['key'] as String: Map<String, dynamic>.from(c),
+      for (final c in rawColConfig.whereType<Map>())
+        c['key'] as String: Map<String, dynamic>.from(c),
     };
 
     String defaultLabel(String key) {
@@ -3330,19 +4745,28 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       return '項${i + 3}';
     }
 
-    final columns = allColumnKeys.map((key) => <String, dynamic>{
-      'key': key,
-      'label': colConfigMap[key]?['label'] as String? ?? defaultLabel(key),
-      'visible': colConfigMap[key]?['visible'] as bool? ?? true,
-    }).toList();
+    final columns = allColumnKeys
+        .map(
+          (key) => <String, dynamic>{
+            'key': key,
+            'label':
+                colConfigMap[key]?['label'] as String? ?? defaultLabel(key),
+            'visible': colConfigMap[key]?['visible'] as bool? ?? true,
+          },
+        )
+        .toList();
 
     final visibleColumns = columns.where((c) => c['visible'] as bool).toList();
 
     // ── スタイル ──────────────────────────────────────────────────────────
     final fgColor = isDark ? Colors.white : Colors.black;
     final subColor = isDark ? Colors.white54 : Colors.black54;
-    final borderColor = isDark ? Colors.white.withOpacity(0.09) : Colors.black.withOpacity(0.10);
-    final headerBg = isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04);
+    final borderColor = isDark
+        ? Colors.white.withOpacity(0.09)
+        : Colors.black.withOpacity(0.10);
+    final headerBg = isDark
+        ? Colors.white.withOpacity(0.05)
+        : Colors.black.withOpacity(0.04);
 
     double colWidth(String key) => key == 'name' ? 150.0 : 96.0;
 
@@ -3359,16 +4783,19 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         final v = resolved['input'] as double;
         final transform = item['inputTransform'] as String?;
         final powExp = (item['inputPowExp'] as num? ?? 2.0).toDouble();
-        return termWithTransform(v, transform, powExp, precision) + (unit1.isNotEmpty ? ' $unit1' : '');
+        return termWithTransform(v, transform, powExp, precision) +
+            (unit1.isNotEmpty ? ' $unit1' : '');
       }
       if (key == 'operand') {
         final v = resolved['operand'] as double;
         final transform = item['operandTransform'] as String?;
         final powExp = (item['operandPowExp'] as num? ?? 2.0).toDouble();
-        return termWithTransform(v, transform, powExp, precision) + (unit2.isNotEmpty ? ' $unit2' : '');
+        return termWithTransform(v, transform, powExp, precision) +
+            (unit2.isNotEmpty ? ' $unit2' : '');
       }
       if (key == 'result') {
-        return fmtNum(finalResults[rowIdx], precision) + (unitResult.isNotEmpty ? ' $unitResult' : '');
+        return fmtNum(finalResults[rowIdx], precision) +
+            (unitResult.isNotEmpty ? ' $unitResult' : '');
       }
       if (key.startsWith('other_')) {
         final i = int.tryParse(key.split('_')[1]) ?? 0;
@@ -3377,10 +4804,17 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         if (i < resolvedOthers.length) {
           final o = resolvedOthers[i] as Map;
           final v = (o['val'] as num? ?? 0.0).toDouble();
-          final unit = i < rawOthers.length ? (rawOthers[i] as Map)['unit'] as String? ?? '' : '';
-          final transform = i < rawOthers.length ? (rawOthers[i] as Map)['transform'] as String? : null;
-          final powExp = i < rawOthers.length ? ((rawOthers[i] as Map)['powExp'] as num? ?? 2.0).toDouble() : 2.0;
-          return termWithTransform(v, transform, powExp, precision) + (unit.isNotEmpty ? ' $unit' : '');
+          final unit = i < rawOthers.length
+              ? (rawOthers[i] as Map)['unit'] as String? ?? ''
+              : '';
+          final transform = i < rawOthers.length
+              ? (rawOthers[i] as Map)['transform'] as String?
+              : null;
+          final powExp = i < rawOthers.length
+              ? ((rawOthers[i] as Map)['powExp'] as num? ?? 2.0).toDouble()
+              : 2.0;
+          return termWithTransform(v, transform, powExp, precision) +
+              (unit.isNotEmpty ? ' $unit' : '');
         }
         return '-';
       }
@@ -3405,7 +4839,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
       // 列ラベルを取得（カスタム設定があればそれを使用）
       String colLabel(String colKey) {
-        final col = columns.firstWhere((c) => c['key'] == colKey, orElse: () => <String, dynamic>{'label': colKey});
+        final col = columns.firstWhere(
+          (c) => c['key'] == colKey,
+          orElse: () => <String, dynamic>{'label': colKey},
+        );
         return col['label'] as String;
       }
 
@@ -3414,37 +4851,62 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
       // 式の各パーツを構築
       final parts = <String>[];
-      parts.add('${colLabel('input')}: ${termWithTransform(inputRaw, inputTransform, inputPowExp, precision)}${unit1.isNotEmpty ? ' $unit1' : ''}');
-      parts.add('  $op ${colLabel('operand')}: ${termWithTransform(operandRaw, operandTransform, operandPowExp, precision)}${unit2.isNotEmpty ? ' $unit2' : ''}');
+      parts.add(
+        '${colLabel('input')}: ${termWithTransform(inputRaw, inputTransform, inputPowExp, precision)}${unit1.isNotEmpty ? ' $unit1' : ''}',
+      );
+      parts.add(
+        '  $op ${colLabel('operand')}: ${termWithTransform(operandRaw, operandTransform, operandPowExp, precision)}${unit2.isNotEmpty ? ' $unit2' : ''}',
+      );
       for (int i = 0; i < resolvedOthers.length; i++) {
         final o = resolvedOthers[i] as Map;
-        final rawO = i < rawOthers.length ? rawOthers[i] as Map : <String, dynamic>{};
+        final rawO = i < rawOthers.length
+            ? rawOthers[i] as Map
+            : <String, dynamic>{};
         final oVal = (o['val'] as num? ?? 0.0).toDouble();
         final oOp = rawO['op'] as String? ?? '+';
         final oTransform = rawO['transform'] as String?;
         final oPowExp = (rawO['powExp'] as num? ?? 2.0).toDouble();
         final oUnit = rawO['unit'] as String? ?? '';
-        parts.add('  $oOp ${colLabel('other_$i')}: ${termWithTransform(oVal, oTransform, oPowExp, precision)}${oUnit.isNotEmpty ? ' $oUnit' : ''}');
+        parts.add(
+          '  $oOp ${colLabel('other_$i')}: ${termWithTransform(oVal, oTransform, oPowExp, precision)}${oUnit.isNotEmpty ? ' $oUnit' : ''}',
+        );
       }
-      parts.add('= ${fmtNum(finalResults[rowIdx], precision)}${unitResult.isNotEmpty ? ' $unitResult' : ''}');
+      parts.add(
+        '= ${fmtNum(finalResults[rowIdx], precision)}${unitResult.isNotEmpty ? ' $unitResult' : ''}',
+      );
 
       showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: Colors.black,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Text(
             item['name'] as String? ?? '答えの計算式',
-            style: const TextStyle(color: Colors.white, fontFamily: 'ZenOldMincho', fontSize: 16, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Colors.white,
+              fontFamily: 'ZenOldMincho',
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           content: Text(
             parts.join('\n'),
-            style: const TextStyle(color: Colors.white70, fontFamily: 'ZenOldMincho', fontSize: 15, height: 1.9),
+            style: const TextStyle(
+              color: Colors.white70,
+              fontFamily: 'ZenOldMincho',
+              fontSize: 15,
+              height: 1.9,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('閉じる', style: TextStyle(color: Color(0xFF5E81FF))),
+              child: const Text(
+                '閉じる',
+                style: TextStyle(color: Color(0xFF5E81FF)),
+              ),
             ),
           ],
         ),
@@ -3454,11 +4916,17 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     bool isResultCol(String key) => key == 'result';
 
     return Container(
-      padding: widget.contentPadding ?? const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      padding:
+          widget.contentPadding ??
+          const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03)),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.03)
+              : Colors.black.withOpacity(0.03),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -3466,11 +4934,23 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           if (widget.showHeader) ...[
             Row(
               children: [
-                Expanded(child: Text(title, style: TextStyle(color: isDark ? Colors.white70 : Colors.black, fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'ZenOldMincho', letterSpacing: 1.2))),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: isDark ? Colors.white70 : Colors.black,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'ZenOldMincho',
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
                 IconButton(
                   icon: const Icon(Icons.view_column_rounded, size: 20),
                   tooltip: '列の設定',
-                  onPressed: () => _showTableColumnSettingsSheet(columns, isDark),
+                  onPressed: () =>
+                      _showTableColumnSettingsSheet(columns, isDark),
                   color: isDark ? Colors.white38 : Colors.black38,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -3478,7 +4958,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 const SizedBox(width: 4),
                 IconButton(
                   icon: const Icon(Icons.edit_note_rounded, size: 20),
-                  onPressed: () => widget.onUpdate({...widget.config.data, 'viewMode': false, 'tableMode': false}),
+                  onPressed: () => widget.onUpdate({
+                    ...widget.config.data,
+                    'viewMode': false,
+                    'tableMode': false,
+                  }),
                   color: isDark ? Colors.white24 : Colors.black26,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -3486,12 +4970,22 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               ],
             ),
             const SizedBox(height: 8),
-            Divider(color: isDark ? Colors.white10 : Colors.black12, thickness: 0.5),
+            Divider(
+              color: isDark ? Colors.white10 : Colors.black12,
+              thickness: 0.5,
+            ),
             const SizedBox(height: 12),
           ],
           if (visibleColumns.isEmpty || items.isEmpty)
-            Center(child: Text(items.isEmpty ? '計算式がありません' : '表示する列がありません',
-                style: TextStyle(color: isDark ? Colors.white24 : Colors.black26, fontFamily: 'ZenOldMincho')))
+            Center(
+              child: Text(
+                items.isEmpty ? '計算式がありません' : '表示する列がありません',
+                style: TextStyle(
+                  color: isDark ? Colors.white24 : Colors.black26,
+                  fontFamily: 'ZenOldMincho',
+                ),
+              ),
+            )
           else
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -3510,15 +5004,26 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                       return GestureDetector(
                         onTap: isNameCol
                             ? () => _showColumnVisibilityDialog(columns, isDark)
-                            : (isEditable ? () => _showTableColumnLabelEdit(key, label, columns) : null),
+                            : (isEditable
+                                  ? () => _showTableColumnLabelEdit(
+                                      key,
+                                      label,
+                                      columns,
+                                    )
+                                  : null),
                         child: Container(
                           width: w,
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
                             color: headerBg,
                             border: Border(
                               bottom: BorderSide(color: borderColor),
-                              right: isLast ? BorderSide.none : BorderSide(color: borderColor),
+                              right: isLast
+                                  ? BorderSide.none
+                                  : BorderSide(color: borderColor),
                             ),
                           ),
                           child: Row(
@@ -3526,18 +5031,38 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Flexible(
-                                child: Text(label,
+                                child: Text(
+                                  label,
                                   textAlign: TextAlign.center,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(color: subColor, fontSize: 11, fontWeight: FontWeight.w600, fontFamily: 'ZenOldMincho', letterSpacing: 0.3)),
+                                  style: TextStyle(
+                                    color: subColor,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'ZenOldMincho',
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
                               ),
                               if (isNameCol) ...[
                                 const SizedBox(width: 3),
-                                Icon(Icons.view_column_rounded, size: 8, color: isDark ? Colors.white12 : Colors.black12),
+                                Icon(
+                                  Icons.view_column_rounded,
+                                  size: 8,
+                                  color: isDark
+                                      ? Colors.white12
+                                      : Colors.black12,
+                                ),
                               ] else if (isEditable) ...[
                                 const SizedBox(width: 3),
-                                Icon(Icons.edit_rounded, size: 8, color: isDark ? Colors.white12 : Colors.black12),
+                                Icon(
+                                  Icons.edit_rounded,
+                                  size: 8,
+                                  color: isDark
+                                      ? Colors.white12
+                                      : Colors.black12,
+                                ),
                               ],
                             ],
                           ),
@@ -3560,31 +5085,56 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                         return GestureDetector(
                           onTap: isRes
                               ? () => showResultFormula(rowIdx)
-                              : (editable ? () => _showTableItemEditSheet(rowIdx, key, col['label'] as String) : null),
+                              : (editable
+                                    ? () => _showTableItemEditSheet(
+                                        rowIdx,
+                                        key,
+                                        col['label'] as String,
+                                      )
+                                    : null),
                           child: Container(
                             width: w,
-                            padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 1,
+                              vertical: 14,
+                            ),
                             decoration: BoxDecoration(
-                              color: isRes ? (isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.02)) : Colors.transparent,
+                              color: isRes
+                                  ? (isDark
+                                        ? Colors.white.withOpacity(0.03)
+                                        : Colors.black.withOpacity(0.02))
+                                  : Colors.transparent,
                               border: Border(
-                                bottom: isLastRow ? BorderSide.none : BorderSide(color: borderColor),
-                                right: isLastCol ? BorderSide.none : BorderSide(color: borderColor),
+                                bottom: isLastRow
+                                    ? BorderSide.none
+                                    : BorderSide(color: borderColor),
+                                right: isLastCol
+                                    ? BorderSide.none
+                                    : BorderSide(color: borderColor),
                               ),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Flexible(
-                                  child: Text(val,
+                                  child: Text(
+                                    val,
                                     textAlign: TextAlign.center,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: isRes ? fgColor : (isDark ? Colors.white70 : Colors.black),
+                                      color: isRes
+                                          ? fgColor
+                                          : (isDark
+                                                ? Colors.white70
+                                                : Colors.black),
                                       fontSize: isRes ? 16 : 15,
-                                      fontWeight: isRes ? FontWeight.w700 : FontWeight.w400,
+                                      fontWeight: isRes
+                                          ? FontWeight.w700
+                                          : FontWeight.w400,
                                       fontFamily: 'ZenOldMincho',
-                                    )),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -3592,7 +5142,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                         );
                       }).toList(),
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             ),
@@ -3602,12 +5152,18 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   /// 列ヘッダーのラベルをインラインで編集するシート（表モード専用）
-  void _showTableColumnLabelEdit(String columnKey, String currentLabel, List<Map<String, dynamic>> allColumns) {
+  void _showTableColumnLabelEdit(
+    String columnKey,
+    String currentLabel,
+    List<Map<String, dynamic>> allColumns,
+  ) {
     showModalBottomSheet<List<Map<String, dynamic>>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.black,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => _ColumnLabelEditSheet(
         columnKey: columnKey,
         currentLabel: currentLabel,
@@ -3615,33 +5171,49 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       ),
     ).then((newColConfig) {
       if (newColConfig == null || !mounted) return;
-      widget.onUpdate({...widget.config.data, 'tableColumnConfig': newColConfig});
+      widget.onUpdate({
+        ...widget.config.data,
+        'tableColumnConfig': newColConfig,
+      });
     });
   }
 
   /// セルをタップしたときに値/名前を編集するシート（編集モードと同じ詳細シートを使用）
-  void _showTableItemEditSheet(int rowIdx, String columnKey, String columnLabel) {
+  void _showTableItemEditSheet(
+    int rowIdx,
+    String columnKey,
+    String columnLabel,
+  ) {
     final items = _items;
     if (rowIdx < 0 || rowIdx >= items.length) return;
     final item = items[rowIdx];
     final constants = _constants;
     final bgColorValue = widget.config.data['bgColor'] as int?;
     final isDark = bgColorValue != null
-        ? _kNoteColorPresets.firstWhere((p) => p.value == bgColorValue, orElse: () => _kNoteColorPresets.first).isDark
+        ? _kNoteColorPresets
+              .firstWhere(
+                (p) => p.value == bgColorValue,
+                orElse: () => _kNoteColorPresets.first,
+              )
+              .isDark
         : true;
 
     // 簡易結果計算（リンク未解決）
-    final allResults = items.map((it) => _calculate(
-      (it['input'] as num? ?? 0.0).toDouble(),
-      it['op'] as String? ?? '+',
-      (it['operand'] as num? ?? 0.0).toDouble(),
-      (it['others'] as List? ?? []).map((e) {
-        final m = Map<String, dynamic>.from(e as Map);
-        m['val'] = (m['val'] as num? ?? 0.0).toDouble();
-        return m;
-      }).toList(),
-      it['brackets'] as List? ?? [],
-    )).toList();
+    final allResults = items
+        .map(
+          (it) => _calculate(
+            (it['input'] as num? ?? 0.0).toDouble(),
+            it['op'] as String? ?? '+',
+            (it['operand'] as num? ?? 0.0).toDouble(),
+            (it['others'] as List? ?? []).map((e) {
+              final m = Map<String, dynamic>.from(e as Map);
+              m['val'] = (m['val'] as num? ?? 0.0).toDouble();
+              return m;
+            }).toList(),
+            it['brackets'] as List? ?? [],
+          ),
+        )
+        .toList();
 
     void onItemChanged(Map<String, dynamic> newItem) {
       final latestItems = _items;
@@ -3702,28 +5274,42 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   /// 列の表示・非表示と列名を設定するシート
-  void _showTableColumnSettingsSheet(List<Map<String, dynamic>> columns, bool isDark) {
+  void _showTableColumnSettingsSheet(
+    List<Map<String, dynamic>> columns,
+    bool isDark,
+  ) {
     showModalBottomSheet<List<Map<String, dynamic>>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.black,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => _ColumnSettingsSheet(columns: columns),
     ).then((newColConfig) {
       if (newColConfig == null || !mounted) return;
-      widget.onUpdate({...widget.config.data, 'tableColumnConfig': newColConfig});
+      widget.onUpdate({
+        ...widget.config.data,
+        'tableColumnConfig': newColConfig,
+      });
     });
   }
 
   /// 表の左上「名前」ヘッダータップ時：列の表示/非表示をアラートで切り替える
-  void _showColumnVisibilityDialog(List<Map<String, dynamic>> columns, bool isDark) {
+  void _showColumnVisibilityDialog(
+    List<Map<String, dynamic>> columns,
+    bool isDark,
+  ) {
     showDialog<void>(
       context: context,
       builder: (ctx) => _ColumnVisibilityDialog(
         columns: columns,
         onSave: (newConfig) {
           if (mounted) {
-            widget.onUpdate({...widget.config.data, 'tableColumnConfig': newConfig});
+            widget.onUpdate({
+              ...widget.config.data,
+              'tableColumnConfig': newConfig,
+            });
           }
         },
       ),
@@ -3787,8 +5373,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       double fallback,
     ) {
       if (!isLink) return fallback;
-      if (source == null)
+      if (source == null) {
         return finalResults.isNotEmpty ? finalResults.last : fallback;
+      }
       if (source['sheetId'] != null) {
         return _resolveExternalValue(
           source['sheetId'] as String,
@@ -3809,13 +5396,15 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       final sItem = items[sRowIdx];
       if (sTarget == 'result') return finalResults[sRowIdx];
       if (sTarget == 'input') return (sItem['input'] as num? ?? 0.0).toDouble();
-      if (sTarget == 'operand')
+      if (sTarget == 'operand') {
         return (sItem['operand'] as num? ?? 0.0).toDouble();
+      }
       if (sTarget.startsWith('other_')) {
         final idx = int.tryParse(sTarget.split('_')[1]) ?? 0;
         final sOthers = sItem['others'] as List? ?? [];
-        if (idx < sOthers.length)
+        if (idx < sOthers.length) {
           return (sOthers[idx]['val'] as num? ?? 0.0).toDouble();
+        }
       }
       return fallback;
     }
@@ -3883,8 +5472,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     // 数値フォーマット
     String fmtNum(double v, int precision) {
       if (v.isNaN || v.isInfinite) return '0';
-      if (v == v.truncateToDouble() && v.abs() < 1e12)
+      if (v == v.truncateToDouble() && v.abs() < 1e12) {
         return v.toInt().toString();
+      }
       return v.toStringAsFixed(precision);
     }
 
@@ -3906,7 +5496,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       final String? inputTr = item['inputTransform'] as String?;
       final double inputPow = (item['inputPowExp'] as num? ?? 2.0).toDouble();
       final String? operandTr = item['operandTransform'] as String?;
-      final double operandPow = (item['operandPowExp'] as num? ?? 2.0).toDouble();
+      final double operandPow = (item['operandPowExp'] as num? ?? 2.0)
+          .toDouble();
 
       bool hasStart(int idx) => bks.any((b) => (b as Map)['start'] == idx);
       bool hasEnd(int idx) => bks.any((b) => (b as Map)['end'] == idx);
@@ -3953,12 +5544,16 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         : (isDark ? const Color(0xFF1A1A22) : const Color(0xFFFAFAFA));
 
     return Container(
-      padding: widget.contentPadding ?? const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      padding:
+          widget.contentPadding ??
+          const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
+          color: isDark
+              ? Colors.white.withOpacity(0.03)
+              : Colors.black.withOpacity(0.03),
         ),
       ),
       child: Column(
@@ -3981,7 +5576,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.edit_note_rounded, size: 20),
-                  onPressed: () => widget.onUpdate({...widget.config.data, 'viewMode': false}),
+                  onPressed: () => widget.onUpdate({
+                    ...widget.config.data,
+                    'viewMode': false,
+                  }),
                   color: isDark ? Colors.white24 : Colors.black26,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -3989,10 +5587,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               ],
             ),
             const SizedBox(height: 8),
-            Divider(color: isDark ? Colors.white10 : Colors.black12, thickness: 0.5),
+            Divider(
+              color: isDark ? Colors.white10 : Colors.black12,
+              thickness: 0.5,
+            ),
             const SizedBox(height: 24),
           ],
-          
+
           if (constants.isNotEmpty) ...[
             _buildViewModeConstantsSection(constants, isDark),
             const SizedBox(height: 16),
@@ -4012,7 +5613,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             ...() {
               final memos = _memos;
               final widgets = <Widget>[];
-              for (int orderIdx = 0; orderIdx < displayOrder.length; orderIdx++) {
+              for (
+                int orderIdx = 0;
+                orderIdx < displayOrder.length;
+                orderIdx++
+              ) {
                 final entry = displayOrder[orderIdx];
                 final isFirst = orderIdx == 0;
 
@@ -4026,45 +5631,57 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                   final text = sm['text'] as String? ?? '';
                   if (text.isEmpty) continue;
                   if (!isFirst) {
-                    widgets.add(Padding(
-                      padding: const EdgeInsets.only(top: 2, bottom: 6),
-                      child: Divider(
-                        color: isDark ? Colors.white.withOpacity(0.03) : Colors.black.withOpacity(0.03),
-                        thickness: 0.5,
-                      ),
-                    ));
-                  }
-                  widgets.add(Padding(
-                    padding: const EdgeInsets.only(left: 10, bottom: 4),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.sticky_note_2_outlined,
-                          size: 13,
-                          color: isDark ? Colors.tealAccent.withOpacity(0.6) : Colors.teal.shade700.withOpacity(0.7),
+                    widgets.add(
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2, bottom: 6),
+                        child: Divider(
+                          color: isDark
+                              ? Colors.white.withOpacity(0.03)
+                              : Colors.black.withOpacity(0.03),
+                          thickness: 0.5,
                         ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            text,
-                            style: TextStyle(
-                              color: isDark ? Colors.white.withOpacity(0.55) : Colors.black.withOpacity(0.55),
-                              fontSize: 13,
-                              fontFamily: 'ZenOldMincho',
-                              height: 1.6,
+                      ),
+                    );
+                  }
+                  widgets.add(
+                    Padding(
+                      padding: const EdgeInsets.only(left: 10, bottom: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.sticky_note_2_outlined,
+                            size: 13,
+                            color: isDark
+                                ? Colors.tealAccent.withOpacity(0.6)
+                                : Colors.teal.shade700.withOpacity(0.7),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              text,
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.white.withOpacity(0.55)
+                                    : Colors.black.withOpacity(0.55),
+                                fontSize: 13,
+                                fontFamily: 'ZenOldMincho',
+                                height: 1.6,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ));
+                  );
                   continue;
                 }
 
                 // type == 'calc'
                 final ci = entry['calcIdx'] as int? ?? 0;
-                if (ci < 0 || ci >= items.length || ci >= resolvedRows.length) continue;
+                if (ci < 0 || ci >= items.length || ci >= resolvedRows.length) {
+                  continue;
+                }
 
                 final item = items[ci];
                 final resolved = resolvedRows[ci];
@@ -4077,106 +5694,116 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                     '${fmtNum(result, precision)}${unitResult.isNotEmpty ? ' $unitResult' : ''}';
 
                 if (!isFirst) {
-                  widgets.add(Padding(
-                    padding: const EdgeInsets.only(top: 2, bottom: 6),
-                    child: Divider(
-                      color: isDark
-                          ? Colors.white.withOpacity(0.03)
-                          : Colors.black.withOpacity(0.03),
-                      thickness: 0.5,
+                  widgets.add(
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2, bottom: 6),
+                      child: Divider(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.03)
+                            : Colors.black.withOpacity(0.03),
+                        thickness: 0.5,
+                      ),
                     ),
-                  ));
+                  );
                 }
 
-                widgets.add(Padding(
-                  padding: const EdgeInsets.only(bottom: 4, left: 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (name.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Text(
-                            name,
-                            style: TextStyle(
-                              color: isDark ? Colors.white38 : Colors.black45,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              fontFamily: 'ZenOldMincho',
-                              letterSpacing: 0.5,
+                widgets.add(
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4, left: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (name.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Text(
+                              name,
+                              style: TextStyle(
+                                color: isDark ? Colors.white38 : Colors.black45,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'ZenOldMincho',
+                                letterSpacing: 0.5,
+                              ),
                             ),
                           ),
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: formula,
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white60
+                                      : Colors.black54,
+                                  fontSize: 14,
+                                  fontFamily: 'ZenOldMincho',
+                                  height: 1.5,
+                                ),
+                              ),
+                              TextSpan(
+                                text: ' = ',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white24
+                                      : Colors.black12,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              TextSpan(
+                                text: resultStr,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black,
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w700,
+                                  fontFamily: 'ZenOldMincho',
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: formula,
-                              style: TextStyle(
-                                color: isDark ? Colors.white60 : Colors.black54,
-                                fontSize: 14,
-                                fontFamily: 'ZenOldMincho',
-                                height: 1.5,
-                              ),
-                            ),
-                            TextSpan(
-                              text: ' = ',
-                              style: TextStyle(
-                                color: isDark ? Colors.white24 : Colors.black12,
-                                fontSize: 16,
-                              ),
-                            ),
-                            TextSpan(
-                              text: resultStr,
-                              style: TextStyle(
-                                color: isDark ? Colors.white : Colors.black,
-                                fontSize: 19,
-                                fontWeight: FontWeight.w700,
-                                fontFamily: 'ZenOldMincho',
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ));
+                );
 
                 // この計算行に紐付いたメモを表示（閲覧モードは読み取り専用）
                 for (final memo in memos) {
                   if ((memo['afterCalcIdx'] as int? ?? -1) == ci) {
                     final text = memo['text'] as String? ?? '';
                     if (text.isNotEmpty) {
-                      widgets.add(Padding(
-                        padding: const EdgeInsets.only(left: 10, bottom: 4),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.sticky_note_2_outlined,
-                              size: 13,
-                              color: isDark
-                                  ? Colors.amber.withOpacity(0.5)
-                                  : Colors.amber.shade700.withOpacity(0.6),
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                text,
-                                style: TextStyle(
-                                  color: isDark
-                                      ? Colors.white.withOpacity(0.45)
-                                      : Colors.black.withOpacity(0.45),
-                                  fontSize: 12,
-                                  fontFamily: 'ZenOldMincho',
-                                  height: 1.5,
+                      widgets.add(
+                        Padding(
+                          padding: const EdgeInsets.only(left: 10, bottom: 4),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.sticky_note_2_outlined,
+                                size: 13,
+                                color: isDark
+                                    ? Colors.amber.withOpacity(0.5)
+                                    : Colors.amber.shade700.withOpacity(0.6),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  text,
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white.withOpacity(0.45)
+                                        : Colors.black.withOpacity(0.45),
+                                    fontSize: 12,
+                                    fontFamily: 'ZenOldMincho',
+                                    height: 1.5,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ));
+                      );
                     }
                   }
                 }
@@ -4216,7 +5843,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final headerIconColor = isDark ? Colors.white70 : Colors.black54;
     return Container(
       constraints: BoxConstraints(
-       // minHeight: MediaQuery.of(context).size.height-230,
+        // minHeight: MediaQuery.of(context).size.height-230,
       ),
       decoration: BoxDecoration(
         color: bgColor.withAlpha(200),
@@ -4241,529 +5868,662 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         child: CustomPaint(
           painter: _PaperPainter(isDark: isDark),
           child: Padding(
-            padding: widget.contentPadding ??
+            padding:
+                widget.contentPadding ??
                 const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             child: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ヘッダー（折りたたみ可能）
-              if (widget.showHeader)
-                GestureDetector(
-                  onTap: _toggleExpanded,
-                  behavior: HitTestBehavior.opaque,
-                  child: Row(
-                    children: [
-                      Icon(
-                        _isExpanded
-                            ? Icons.keyboard_arrow_down
-                            : Icons.keyboard_arrow_right,
-                        color: headerIconColor,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.calculate_outlined,
-                        color: headerTextColor,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          widget.config.data['title'] as String? ?? '定型計算',
-                          style: TextStyle(
-                            color: headerTextColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ヘッダー（折りたたみ可能）
+                    if (widget.showHeader)
                       GestureDetector(
-                        onTap: () => widget.onUpdate(
-                            {...widget.config.data, 'viewMode': true}),
+                        onTap: _toggleExpanded,
                         behavior: HitTestBehavior.opaque,
-                        child: Padding(
-                          padding: const EdgeInsets.all(4),
-                          child: Icon(
-                            Icons.visibility_outlined,
-                            color: headerIconColor,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      GestureDetector(
-                        onTap: _showActionSheet,
-                        behavior: HitTestBehavior.opaque,
-                        child: Padding(
-                          padding: const EdgeInsets.all(4),
-                          child: Icon(
-                            Icons.more_vert,
-                            color: headerIconColor,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (widget.showHeader ? _isExpanded : true) ...[
-                // 定数セクション
-                if (constants.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  _buildConstantsSection(constants, isDark),
-                ],
-
-                // 「計算式がありません」または行リスト
-                if (items.isEmpty && displayOrder.every((e) => e['type'] == 'calc'))
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Center(
-                      child: Text(
-                        '計算式がありません',
-                        style: TextStyle(color: Colors.white24, fontSize: 12),
-                      ),
-                    ),
-                  )
-                else
-                  ...(() {
-                    // Pass 1: 暫定計算（リンクなし）
-                    final List<double> provisionalResults = List.filled(
-                      items.length,
-                      0.0,
-                    );
-                    for (int pi = 0; pi < items.length; pi++) {
-                      final pItem = items[pi];
-                      final pInput = (pItem['input'] as num? ?? 0.0)
-                          .toDouble();
-                      final pOperand = (pItem['operand'] as num? ?? 0.0)
-                          .toDouble();
-                      final pOthers = (pItem['others'] as List? ?? []).map((
-                        e,
-                      ) {
-                        final m = Map<String, dynamic>.from(e as Map);
-                        m['val'] = (m['val'] as num? ?? 0.0).toDouble();
-                        return m;
-                      }).toList();
-                      final r = _calculate(
-                        _CalculatorRow._applyTermTransform(
-                          pInput,
-                          pItem['inputTransform'] as String?,
-                          (pItem['inputPowExp'] as num? ?? 2.0).toDouble(),
-                        ),
-                        pItem['op'] as String? ?? '+',
-                        _CalculatorRow._applyTermTransform(
-                          pOperand,
-                          pItem['operandTransform'] as String?,
-                          (pItem['operandPowExp'] as num? ?? 2.0).toDouble(),
-                        ),
-                        pOthers,
-                        pItem['brackets'] as List? ?? [],
-                      );
-                      provisionalResults[pi] = r;
-                    }
-
-                    // Pass 2: 反復収束によりチェーンリンクを正しく解決
-                    final List<double> finalResults =
-                        List<double>.from(provisionalResults);
-                    var resolvedRows = <Map<String, dynamic>>[];
-
-                    double resolveLink(
-                      Map<String, dynamic>? source,
-                      bool isLink,
-                      double fallback,
-                    ) {
-                      if (!isLink) return fallback;
-                      if (source == null) {
-                        return finalResults.isNotEmpty
-                            ? finalResults.last
-                            : fallback;
-                      }
-                      // クロスシートリンク
-                      if (source['sheetId'] != null) {
-                        return _resolveExternalValue(
-                          source['sheetId'] as String,
-                          source['rowIdx'] as int? ?? 0,
-                          source['target'] as String? ?? 'result',
-                        );
-                      }
-                      // 定数リンク
-                      if (source['type'] == 'constant') {
-                        final constIdx = source['constIdx'] as int? ?? 0;
-                        if (constIdx >= 0 && constIdx < constants.length) {
-                          return (constants[constIdx]['value'] as num? ?? 0.0).toDouble();
-                        }
-                        return fallback;
-                      }
-                      final int sRowIdx = source['rowIdx'] as int? ?? 0;
-                      final String sTarget =
-                          source['target'] as String? ?? 'result';
-                      if (sRowIdx < 0 || sRowIdx >= items.length)
-                        return fallback;
-
-                      final sItem = items[sRowIdx];
-                      if (sTarget == 'result') {
-                        return finalResults[sRowIdx];
-                      }
-                      if (sTarget == 'input') {
-                        return (sItem['input'] as num? ?? 0.0).toDouble();
-                      }
-                      if (sTarget == 'operand') {
-                        return (sItem['operand'] as num? ?? 0.0).toDouble();
-                      }
-                      if (sTarget.startsWith('other_')) {
-                        final idx = int.tryParse(sTarget.split('_')[1]) ?? 0;
-                        final sOthers = sItem['others'] as List? ?? [];
-                        if (idx < sOthers.length) {
-                          return (sOthers[idx]['val'] as num? ?? 0.0)
-                              .toDouble();
-                        }
-                      }
-                      return fallback;
-                    }
-
-                    for (int pass = 0; pass < items.length; pass++) {
-                      resolvedRows = [];
-                      bool anyChange = false;
-
-                      for (int i = 0; i < items.length; i++) {
-                        final item = items[i];
-
-                        final double inputValue = resolveLink(
-                          item['inputLinkSource'],
-                          item['inputLink'] == true,
-                          (item['input'] as num? ?? 0.0).toDouble(),
-                        );
-                        final double operandValue = resolveLink(
-                          item['operandLinkSource'],
-                          item['operandLink'] == true,
-                          (item['operand'] as num? ?? 0.0).toDouble(),
-                        );
-                        final othersValue =
-                            List.from(item['others'] as List? ?? []).map((e) {
-                              final map = Map<String, dynamic>.from(e as Map);
-                              map['val'] = resolveLink(
-                                map['valLinkSource'],
-                                map['valLink'] == true,
-                                (map['val'] as num? ?? 0.0).toDouble(),
-                              );
-                              return map;
-                            }).toList();
-
-                        // 変換（指数/平方根）を計算用に適用（表示値は変換前を保持）
-                        final inputTransform =
-                            item['inputTransform'] as String?;
-                        final inputPowExp =
-                            (item['inputPowExp'] as num? ?? 2.0).toDouble();
-                        final operandTransform =
-                            item['operandTransform'] as String?;
-                        final operandPowExp =
-                            (item['operandPowExp'] as num? ?? 2.0).toDouble();
-                        final inputForCalc = _CalculatorRow._applyTermTransform(
-                          inputValue,
-                          inputTransform,
-                          inputPowExp,
-                        );
-                        final operandForCalc =
-                            _CalculatorRow._applyTermTransform(
-                              operandValue,
-                              operandTransform,
-                              operandPowExp,
-                            );
-                        final othersForCalc = othersValue.map((e) {
-                          final m = Map<String, dynamic>.from(e);
-                          final t = m['transform'] as String?;
-                          final exp =
-                              (m['powExp'] as num? ?? 2.0).toDouble();
-                          m['val'] = _CalculatorRow._applyTermTransform(
-                            (m['val'] as double),
-                            t,
-                            exp,
-                          );
-                          return m;
-                        }).toList();
-
-                        final res = _calculate(
-                          inputForCalc,
-                          item['op'] as String? ?? '+',
-                          operandForCalc,
-                          othersForCalc,
-                          item['brackets'] as List? ?? [],
-                        );
-                        if ((res - finalResults[i]).abs() > 1e-10)
-                          anyChange = true;
-                        finalResults[i] = res;
-                        resolvedRows.add({
-                          'input': inputValue,
-                          'operand': operandValue,
-                          'others': othersValue,
-                          'result': res,
-                        });
-                      }
-                      if (!anyChange) break;
-                    }
-
-                    return [
-                      ReorderableListView(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        buildDefaultDragHandles: false,
-                        padding: EdgeInsets.zero,
-                        onReorder: (int oldIndex, int newIndex) {
-                          if (newIndex > oldIndex) newIndex -= 1;
-                          _moveItem(oldIndex, newIndex);
-                        },
-                        children: (() {
-                          final memos = _memos;
-                          final listItems = <Widget>[];
-                          int displayIdx = 0;
-                          for (final entry in displayOrder) {
-                            final di = displayIdx++;
-                            if (entry['type'] == 'calc') {
-                              final ci = entry['calcIdx'] as int;
-                              if (ci < 0 || ci >= items.length || ci >= resolvedRows.length) continue;
-                              final item = items[ci];
-                              final resolved = resolvedRows[ci];
-                              final memoWidgets = <Widget>[];
-                              for (int mi = 0; mi < memos.length; mi++) {
-                                if ((memos[mi]['afterCalcIdx'] as int? ?? -1) == ci) {
-                                  final memoIdx = mi;
-                                  memoWidgets.add(_MemoRowWidget(
-                                    key: ValueKey('memo_${widget.config.id}_$memoIdx'),
-                                    text: memos[mi]['text'] as String? ?? '',
-                                    isDark: isDark,
-                                    onUpdate: (t) => _updateMemo(memoIdx, t),
-                                    onDelete: () => _deleteMemo(memoIdx),
-                                  ));
-                                }
-                              }
-                              listItems.add(Column(
-                                key: ValueKey('calc_${widget.config.id}_$ci'),
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (di > 0)
-                                    Divider(
-                                      color: isDark
-                                          ? Colors.white.withOpacity(0.07)
-                                          : Colors.black.withOpacity(0.08),
-                                      height: 1,
-                                      indent: 16,
-                                      endIndent: 16,
-                                    ),
-                                  _CalculatorRow(
-                                    name: item['name'] as String? ?? '',
-                                    myIndex: ci,
-                                    isFirst: di == 0,
-                                    input: resolved['input'],
-                                    inputLink: item['inputLink'] as bool? ?? false,
-                                    inputLinkSource:
-                                        item['inputLinkSource'] as Map<String, dynamic>?,
-                                    inputTransform: item['inputTransform'] as String?,
-                                    inputPowExp: (item['inputPowExp'] as num? ?? 2.0)
-                                        .toDouble(),
-                                    op: item['op'] as String? ?? '+',
-                                    operand: resolved['operand'],
-                                    operandLink: item['operandLink'] as bool? ?? false,
-                                    operandLinkSource:
-                                        item['operandLinkSource'] as Map<String, dynamic>?,
-                                    operandTransform: item['operandTransform'] as String?,
-                                    operandPowExp: (item['operandPowExp'] as num? ?? 2.0)
-                                        .toDouble(),
-                                    others: resolved['others'],
-                                    result: resolved['result'],
-                                    precision: item['precision'] as int? ?? 2,
-                                    unit1: item['unit1'] as String? ?? '',
-                                    unit2: item['unit2'] as String? ?? '',
-                                    unitResult: item['unitResult'] as String? ?? '',
-                                    isDark: isDark,
-                                    brackets: item['brackets'] as List? ?? [],
-                                    allItems: items,
-                                    allResults: finalResults,
-                                    constants: constants,
-                                    onChanged: (newItem) => _updateItem(ci, newItem),
-                                    onDelete: () => _removeItem(ci),
-                                    onCopy: () => _duplicateItem(ci),
-                                    onCut: () => _cutItem(ci),
-                                    onPaste: () => _pasteFromClipboard(ci),
-                                    hasClipboard: widget.clipboardNotifier?.value != null,
-                                    onMoveUp: di > 0 ? () => _moveItem(di, di - 1) : null,
-                                    onMoveDown: di < displayOrder.length - 1
-                                        ? () => _moveItem(di, di + 1)
-                                        : null,
-                                    onAdd: () => _addTerm(ci),
-                                    onPickBrackets: () => _pickBracketsFor(ci),
-                                    onAllItemsUpdate: (newItems) => widget.onUpdate(
-                                      {...widget.config.data, 'items': newItems},
-                                    ),
-                                    nameVisible: item['nameVisible'] as bool? ?? true,
-                                    onInsertBelow: () => _insertItemAfter(ci),
-                                    onInsertMemoBelow: () =>
-                                        _insertMemoAfter(ci, context),
-                                    onToggleName: () => _toggleNameVisible(ci),
-                                    wrapFormula: _wrapFormula,
-                                    termLabels: _effectiveTermLabels.isNotEmpty ? _effectiveTermLabels : null,
-                                    exposed: item['exposed'] as bool? ?? false,
-                                    onToggleExpose: () => _toggleExposed(ci),
-                                    dragHandle: ReorderableDragStartListener(
-                                      index: di,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(right: 4),
-                                        child: Icon(
-                                          Icons.drag_indicator,
-                                          color: isDark ? Colors.white24 : Colors.black26,
-                                          size: 18,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  ...memoWidgets,
-                                ],
-                              ));
-                            } else {
-                              // スタンドアロンメモ
-                              final itemId = entry['itemId'] as String? ?? '';
-                              final memo = standaloneItems.firstWhere(
-                                (e) => e['id'] == itemId,
-                                orElse: () => {'id': itemId, 'text': ''},
-                              );
-                              listItems.add(Column(
-                                key: ValueKey('standalone_${widget.config.id}_$itemId'),
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (di > 0)
-                                    Divider(
-                                      color: isDark
-                                          ? Colors.white.withOpacity(0.07)
-                                          : Colors.black.withOpacity(0.08),
-                                      height: 1,
-                                      indent: 16,
-                                      endIndent: 16,
-                                    ),
-                                  _StandaloneMemoRow(
-                                    text: memo['text'] as String? ?? '',
-                                    isDark: isDark,
-                                    onUpdate: (t) => _updateStandaloneMemo(itemId, t),
-                                    onDelete: () => _deleteStandaloneMemo(itemId),
-                                    dragHandle: ReorderableDragStartListener(
-                                      index: di,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(right: 4),
-                                        child: Icon(
-                                          Icons.drag_indicator,
-                                          color: isDark ? Colors.white24 : Colors.black26,
-                                          size: 18,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ));
-                            }
-                          }
-                          return listItems;
-                        })(),
-                      ),
-                    ];
-                  })(),
-                const SizedBox(height: 12),
-                // 下部ツールバー（showToolbar=true のときのみ表示）
-                if (widget.showToolbar) ...[
-                  Divider(color: Colors.white.withOpacity(0.3), height: 1),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        icon: _isAiGenerating
-                            ? SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.purpleAccent.withOpacity(0.7),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _isExpanded
+                                  ? Icons.keyboard_arrow_down
+                                  : Icons.keyboard_arrow_right,
+                              color: headerIconColor,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.calculate_outlined,
+                              color: headerTextColor,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                widget.config.data['title'] as String? ??
+                                    '定型計算',
+                                style: TextStyle(
+                                  color: headerTextColor,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                              )
-                            : Icon(
-                                Icons.auto_awesome_outlined,
-                                color: Colors.purpleAccent.withOpacity(0.7),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => widget.onUpdate({
+                                ...widget.config.data,
+                                'viewMode': true,
+                              }),
+                              behavior: HitTestBehavior.opaque,
+                              child: Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: Icon(
+                                  Icons.visibility_outlined,
+                                  color: headerIconColor,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            GestureDetector(
+                              onTap: _showActionSheet,
+                              behavior: HitTestBehavior.opaque,
+                              child: Padding(
+                                padding: const EdgeInsets.all(4),
+                                child: Icon(
+                                  Icons.more_vert,
+                                  color: headerIconColor,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (widget.showHeader ? _isExpanded : true) ...[
+                      // 定数セクション
+                      if (constants.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        _buildConstantsSection(constants, isDark),
+                      ],
+
+                      // 「計算式がありません」または行リスト
+                      if (items.isEmpty &&
+                          displayOrder.every((e) => e['type'] == 'calc'))
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: Text(
+                              '計算式がありません',
+                              style: TextStyle(
+                                color: Colors.white24,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        ...(() {
+                          // Pass 1: 暫定計算（リンクなし）
+                          final List<double> provisionalResults = List.filled(
+                            items.length,
+                            0.0,
+                          );
+                          for (int pi = 0; pi < items.length; pi++) {
+                            final pItem = items[pi];
+                            final pInput = (pItem['input'] as num? ?? 0.0)
+                                .toDouble();
+                            final pOperand = (pItem['operand'] as num? ?? 0.0)
+                                .toDouble();
+                            final pOthers = (pItem['others'] as List? ?? [])
+                                .map((e) {
+                                  final m = Map<String, dynamic>.from(e as Map);
+                                  m['val'] = (m['val'] as num? ?? 0.0)
+                                      .toDouble();
+                                  return m;
+                                })
+                                .toList();
+                            final r = _calculate(
+                              _CalculatorRow._applyTermTransform(
+                                pInput,
+                                pItem['inputTransform'] as String?,
+                                (pItem['inputPowExp'] as num? ?? 2.0)
+                                    .toDouble(),
+                              ),
+                              pItem['op'] as String? ?? '+',
+                              _CalculatorRow._applyTermTransform(
+                                pOperand,
+                                pItem['operandTransform'] as String?,
+                                (pItem['operandPowExp'] as num? ?? 2.0)
+                                    .toDouble(),
+                              ),
+                              pOthers,
+                              pItem['brackets'] as List? ?? [],
+                            );
+                            provisionalResults[pi] = r;
+                          }
+
+                          // Pass 2: 反復収束によりチェーンリンクを正しく解決
+                          final List<double> finalResults = List<double>.from(
+                            provisionalResults,
+                          );
+                          var resolvedRows = <Map<String, dynamic>>[];
+
+                          double resolveLink(
+                            Map<String, dynamic>? source,
+                            bool isLink,
+                            double fallback,
+                          ) {
+                            if (!isLink) return fallback;
+                            if (source == null) {
+                              return finalResults.isNotEmpty
+                                  ? finalResults.last
+                                  : fallback;
+                            }
+                            // クロスシートリンク
+                            if (source['sheetId'] != null) {
+                              return _resolveExternalValue(
+                                source['sheetId'] as String,
+                                source['rowIdx'] as int? ?? 0,
+                                source['target'] as String? ?? 'result',
+                              );
+                            }
+                            // 定数リンク
+                            if (source['type'] == 'constant') {
+                              final constIdx = source['constIdx'] as int? ?? 0;
+                              if (constIdx >= 0 &&
+                                  constIdx < constants.length) {
+                                return (constants[constIdx]['value'] as num? ??
+                                        0.0)
+                                    .toDouble();
+                              }
+                              return fallback;
+                            }
+                            final int sRowIdx = source['rowIdx'] as int? ?? 0;
+                            final String sTarget =
+                                source['target'] as String? ?? 'result';
+                            if (sRowIdx < 0 || sRowIdx >= items.length) {
+                              return fallback;
+                            }
+
+                            final sItem = items[sRowIdx];
+                            if (sTarget == 'result') {
+                              return finalResults[sRowIdx];
+                            }
+                            if (sTarget == 'input') {
+                              return (sItem['input'] as num? ?? 0.0).toDouble();
+                            }
+                            if (sTarget == 'operand') {
+                              return (sItem['operand'] as num? ?? 0.0)
+                                  .toDouble();
+                            }
+                            if (sTarget.startsWith('other_')) {
+                              final idx =
+                                  int.tryParse(sTarget.split('_')[1]) ?? 0;
+                              final sOthers = sItem['others'] as List? ?? [];
+                              if (idx < sOthers.length) {
+                                return (sOthers[idx]['val'] as num? ?? 0.0)
+                                    .toDouble();
+                              }
+                            }
+                            return fallback;
+                          }
+
+                          for (int pass = 0; pass < items.length; pass++) {
+                            resolvedRows = [];
+                            bool anyChange = false;
+
+                            for (int i = 0; i < items.length; i++) {
+                              final item = items[i];
+
+                              final double inputValue = resolveLink(
+                                item['inputLinkSource'],
+                                item['inputLink'] == true,
+                                (item['input'] as num? ?? 0.0).toDouble(),
+                              );
+                              final double operandValue = resolveLink(
+                                item['operandLinkSource'],
+                                item['operandLink'] == true,
+                                (item['operand'] as num? ?? 0.0).toDouble(),
+                              );
+                              final othersValue =
+                                  List.from(item['others'] as List? ?? []).map((
+                                    e,
+                                  ) {
+                                    final map = Map<String, dynamic>.from(
+                                      e as Map,
+                                    );
+                                    map['val'] = resolveLink(
+                                      map['valLinkSource'],
+                                      map['valLink'] == true,
+                                      (map['val'] as num? ?? 0.0).toDouble(),
+                                    );
+                                    return map;
+                                  }).toList();
+
+                              // 変換（指数/平方根）を計算用に適用（表示値は変換前を保持）
+                              final inputTransform =
+                                  item['inputTransform'] as String?;
+                              final inputPowExp =
+                                  (item['inputPowExp'] as num? ?? 2.0)
+                                      .toDouble();
+                              final operandTransform =
+                                  item['operandTransform'] as String?;
+                              final operandPowExp =
+                                  (item['operandPowExp'] as num? ?? 2.0)
+                                      .toDouble();
+                              final inputForCalc =
+                                  _CalculatorRow._applyTermTransform(
+                                    inputValue,
+                                    inputTransform,
+                                    inputPowExp,
+                                  );
+                              final operandForCalc =
+                                  _CalculatorRow._applyTermTransform(
+                                    operandValue,
+                                    operandTransform,
+                                    operandPowExp,
+                                  );
+                              final othersForCalc = othersValue.map((e) {
+                                final m = Map<String, dynamic>.from(e);
+                                final t = m['transform'] as String?;
+                                final exp = (m['powExp'] as num? ?? 2.0)
+                                    .toDouble();
+                                m['val'] = _CalculatorRow._applyTermTransform(
+                                  (m['val'] as double),
+                                  t,
+                                  exp,
+                                );
+                                return m;
+                              }).toList();
+
+                              final res = _calculate(
+                                inputForCalc,
+                                item['op'] as String? ?? '+',
+                                operandForCalc,
+                                othersForCalc,
+                                item['brackets'] as List? ?? [],
+                              );
+                              if ((res - finalResults[i]).abs() > 1e-10) {
+                                anyChange = true;
+                              }
+                              finalResults[i] = res;
+                              resolvedRows.add({
+                                'input': inputValue,
+                                'operand': operandValue,
+                                'others': othersValue,
+                                'result': res,
+                              });
+                            }
+                            if (!anyChange) break;
+                          }
+
+                          return [
+                            ReorderableListView(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              buildDefaultDragHandles: false,
+                              padding: EdgeInsets.zero,
+                              onReorder: (int oldIndex, int newIndex) {
+                                if (newIndex > oldIndex) newIndex -= 1;
+                                _moveItem(oldIndex, newIndex);
+                              },
+                              children: (() {
+                                final memos = _memos;
+                                final listItems = <Widget>[];
+                                int displayIdx = 0;
+                                for (final entry in displayOrder) {
+                                  final di = displayIdx++;
+                                  if (entry['type'] == 'calc') {
+                                    final ci = entry['calcIdx'] as int;
+                                    if (ci < 0 ||
+                                        ci >= items.length ||
+                                        ci >= resolvedRows.length) {
+                                      continue;
+                                    }
+                                    final item = items[ci];
+                                    final resolved = resolvedRows[ci];
+                                    final memoWidgets = <Widget>[];
+                                    for (int mi = 0; mi < memos.length; mi++) {
+                                      if ((memos[mi]['afterCalcIdx'] as int? ??
+                                              -1) ==
+                                          ci) {
+                                        final memoIdx = mi;
+                                        memoWidgets.add(
+                                          _MemoRowWidget(
+                                            key: ValueKey(
+                                              'memo_${widget.config.id}_$memoIdx',
+                                            ),
+                                            text:
+                                                memos[mi]['text'] as String? ??
+                                                '',
+                                            isDark: isDark,
+                                            onUpdate: (t) =>
+                                                _updateMemo(memoIdx, t),
+                                            onDelete: () =>
+                                                _deleteMemo(memoIdx),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                    listItems.add(
+                                      Column(
+                                        key: ValueKey(
+                                          'calc_${widget.config.id}_$ci',
+                                        ),
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (di > 0)
+                                            Divider(
+                                              color: isDark
+                                                  ? Colors.white.withOpacity(
+                                                      0.07,
+                                                    )
+                                                  : Colors.black.withOpacity(
+                                                      0.08,
+                                                    ),
+                                              height: 1,
+                                              indent: 16,
+                                              endIndent: 16,
+                                            ),
+                                          _CalculatorRow(
+                                            name: item['name'] as String? ?? '',
+                                            myIndex: ci,
+                                            isFirst: di == 0,
+                                            input: resolved['input'],
+                                            inputLink:
+                                                item['inputLink'] as bool? ??
+                                                false,
+                                            inputLinkSource:
+                                                item['inputLinkSource']
+                                                    as Map<String, dynamic>?,
+                                            inputTransform:
+                                                item['inputTransform']
+                                                    as String?,
+                                            inputPowExp:
+                                                (item['inputPowExp'] as num? ??
+                                                        2.0)
+                                                    .toDouble(),
+                                            op: item['op'] as String? ?? '+',
+                                            operand: resolved['operand'],
+                                            operandLink:
+                                                item['operandLink'] as bool? ??
+                                                false,
+                                            operandLinkSource:
+                                                item['operandLinkSource']
+                                                    as Map<String, dynamic>?,
+                                            operandTransform:
+                                                item['operandTransform']
+                                                    as String?,
+                                            operandPowExp:
+                                                (item['operandPowExp']
+                                                            as num? ??
+                                                        2.0)
+                                                    .toDouble(),
+                                            others: resolved['others'],
+                                            result: resolved['result'],
+                                            precision:
+                                                item['precision'] as int? ?? 2,
+                                            unit1:
+                                                item['unit1'] as String? ?? '',
+                                            unit2:
+                                                item['unit2'] as String? ?? '',
+                                            unitResult:
+                                                item['unitResult'] as String? ??
+                                                '',
+                                            isDark: isDark,
+                                            brackets:
+                                                item['brackets'] as List? ?? [],
+                                            allItems: items,
+                                            allResults: finalResults,
+                                            constants: constants,
+                                            onChanged: (newItem) =>
+                                                _updateItem(ci, newItem),
+                                            onDelete: () => _removeItem(ci),
+                                            onCopy: () => _duplicateItem(ci),
+                                            onCut: () => _cutItem(ci),
+                                            onPaste: () =>
+                                                _pasteFromClipboard(ci),
+                                            hasClipboard:
+                                                widget
+                                                    .clipboardNotifier
+                                                    ?.value !=
+                                                null,
+                                            onMoveUp: di > 0
+                                                ? () => _moveItem(di, di - 1)
+                                                : null,
+                                            onMoveDown:
+                                                di < displayOrder.length - 1
+                                                ? () => _moveItem(di, di + 1)
+                                                : null,
+                                            onAdd: () => _addTerm(ci),
+                                            onPickBrackets: () =>
+                                                _pickBracketsFor(ci),
+                                            onAllItemsUpdate: (newItems) =>
+                                                widget.onUpdate({
+                                                  ...widget.config.data,
+                                                  'items': newItems,
+                                                }),
+                                            nameVisible:
+                                                item['nameVisible'] as bool? ??
+                                                true,
+                                            onInsertBelow: () =>
+                                                _insertItemAfter(ci),
+                                            onInsertMemoBelow: () =>
+                                                _insertMemoAfter(ci, context),
+                                            onToggleName: () =>
+                                                _toggleNameVisible(ci),
+                                            wrapFormula: _wrapFormula,
+                                            termLabels:
+                                                _effectiveTermLabels.isNotEmpty
+                                                ? _effectiveTermLabels
+                                                : null,
+                                            exposed:
+                                                item['exposed'] as bool? ??
+                                                false,
+                                            onToggleExpose: () =>
+                                                _toggleExposed(ci),
+                                            dragHandle:
+                                                ReorderableDragStartListener(
+                                                  index: di,
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          right: 4,
+                                                        ),
+                                                    child: Icon(
+                                                      Icons.drag_indicator,
+                                                      color: isDark
+                                                          ? Colors.white24
+                                                          : Colors.black26,
+                                                      size: 18,
+                                                    ),
+                                                  ),
+                                                ),
+                                          ),
+                                          ...memoWidgets,
+                                        ],
+                                      ),
+                                    );
+                                  } else {
+                                    // スタンドアロンメモ
+                                    final itemId =
+                                        entry['itemId'] as String? ?? '';
+                                    final memo = standaloneItems.firstWhere(
+                                      (e) => e['id'] == itemId,
+                                      orElse: () => {'id': itemId, 'text': ''},
+                                    );
+                                    listItems.add(
+                                      Column(
+                                        key: ValueKey(
+                                          'standalone_${widget.config.id}_$itemId',
+                                        ),
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (di > 0)
+                                            Divider(
+                                              color: isDark
+                                                  ? Colors.white.withOpacity(
+                                                      0.07,
+                                                    )
+                                                  : Colors.black.withOpacity(
+                                                      0.08,
+                                                    ),
+                                              height: 1,
+                                              indent: 16,
+                                              endIndent: 16,
+                                            ),
+                                          _StandaloneMemoRow(
+                                            text: memo['text'] as String? ?? '',
+                                            isDark: isDark,
+                                            onUpdate: (t) =>
+                                                _updateStandaloneMemo(
+                                                  itemId,
+                                                  t,
+                                                ),
+                                            onDelete: () =>
+                                                _deleteStandaloneMemo(itemId),
+                                            dragHandle:
+                                                ReorderableDragStartListener(
+                                                  index: di,
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          right: 4,
+                                                        ),
+                                                    child: Icon(
+                                                      Icons.drag_indicator,
+                                                      color: isDark
+                                                          ? Colors.white24
+                                                          : Colors.black26,
+                                                      size: 18,
+                                                    ),
+                                                  ),
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+                                }
+                                return listItems;
+                              })(),
+                            ),
+                          ];
+                        })(),
+                      const SizedBox(height: 12),
+                      // 下部ツールバー（showToolbar=true のときのみ表示）
+                      if (widget.showToolbar) ...[
+                        Divider(
+                          color: Colors.white.withOpacity(0.3),
+                          height: 1,
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              icon: _isAiGenerating
+                                  ? SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.purpleAccent.withOpacity(
+                                          0.7,
+                                        ),
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.auto_awesome_outlined,
+                                      color: Colors.purpleAccent.withOpacity(
+                                        0.7,
+                                      ),
+                                      size: 18,
+                                    ),
+                              label: Text(
+                                'AI生成',
+                                style: TextStyle(
+                                  color: Colors.purpleAccent.withOpacity(0.7),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              onPressed: _isAiGenerating
+                                  ? null
+                                  : _showAiGenerateCalcDialog,
+                            ),
+                            const SizedBox(width: 4),
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              icon: Icon(
+                                Icons.add_circle_outline,
+                                color: isDark ? Colors.white54 : Colors.black45,
                                 size: 18,
                               ),
-                        label: Text(
-                          'AI生成',
-                          style: TextStyle(
-                            color: Colors.purpleAccent.withOpacity(0.7),
-                            fontSize: 12,
-                          ),
+                              label: Text(
+                                '追加',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white54
+                                      : Colors.black45,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              onPressed: () => _addItem(),
+                            ),
+                            const SizedBox(width: 4),
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              icon: Icon(
+                                Icons.calculate,
+                                color: _showCalc
+                                    ? Colors.blueAccent
+                                    : (isDark
+                                          ? Colors.white54
+                                          : Colors.black45),
+                                size: 18,
+                              ),
+                              label: Text(
+                                '電卓',
+                                style: TextStyle(
+                                  color: _showCalc
+                                      ? Colors.blueAccent
+                                      : (isDark
+                                            ? Colors.white54
+                                            : Colors.black45),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              onPressed: () =>
+                                  setState(() => _showCalc = !_showCalc),
+                            ),
+                          ],
                         ),
-                        onPressed: _isAiGenerating ? null : _showAiGenerateCalcDialog,
-                      ),
-                      const SizedBox(width: 4),
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        icon: Icon(
-                          Icons.add_circle_outline,
-                          color: isDark ? Colors.white54 : Colors.black45,
-                          size: 18,
-                        ),
-                        label: Text(
-                          '追加',
-                          style: TextStyle(
-                            color: isDark ? Colors.white54 : Colors.black45,
-                            fontSize: 12,
-                          ),
-                        ),
-                        onPressed: () => _addItem(),
-                      ),
-                      const SizedBox(width: 4),
-                      TextButton.icon(
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        icon: Icon(
-                          Icons.calculate,
-                          color: _showCalc
-                              ? Colors.blueAccent
-                              : (isDark ? Colors.white54 : Colors.black45),
-                          size: 18,
-                        ),
-                        label: Text(
-                          '電卓',
-                          style: TextStyle(
-                            color: _showCalc
-                                ? Colors.blueAccent
-                                : (isDark ? Colors.white54 : Colors.black45),
-                            fontSize: 12,
-                          ),
-                        ),
-                        onPressed: () => setState(() => _showCalc = !_showCalc),
-                      ),
+                        if (_showCalc) ...[_buildInlineCalc(isDark)],
+                      ],
                     ],
-                  ),
-                  if (_showCalc) ...[_buildInlineCalc(isDark)],
-                ],
+                  ],
+                ),
               ],
-            ],
-          ),
-        ],
-      ),
+            ),
           ),
         ),
       ),
@@ -5180,7 +6940,9 @@ class _ColumnLabelEditSheetState extends State<_ColumnLabelEditSheet> {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(
-        left: 24, right: 24, top: 24,
+        left: 24,
+        right: 24,
+        top: 24,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
       child: Column(
@@ -5190,8 +6952,14 @@ class _ColumnLabelEditSheetState extends State<_ColumnLabelEditSheet> {
           Row(
             children: [
               const Expanded(
-                child: Text('列名の編集',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text(
+                  '列名の編集',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.white54),
@@ -5212,8 +6980,13 @@ class _ColumnLabelEditSheetState extends State<_ColumnLabelEditSheet> {
               filled: true,
               fillColor: Colors.white.withOpacity(0.06),
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -5223,7 +6996,9 @@ class _ColumnLabelEditSheetState extends State<_ColumnLabelEditSheet> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF5E81FF),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               onPressed: () {
@@ -5231,7 +7006,9 @@ class _ColumnLabelEditSheetState extends State<_ColumnLabelEditSheet> {
                   final key = col['key'] as String;
                   return <String, dynamic>{
                     'key': key,
-                    'label': key == widget.columnKey ? _ctrl.text : col['label'],
+                    'label': key == widget.columnKey
+                        ? _ctrl.text
+                        : col['label'],
                     'visible': col['visible'] ?? true,
                   };
                 }).toList();
@@ -5263,7 +7040,9 @@ class _ColumnSettingsSheetState extends State<_ColumnSettingsSheet> {
   @override
   void initState() {
     super.initState();
-    _localCols = widget.columns.map((c) => Map<String, dynamic>.from(c)).toList();
+    _localCols = widget.columns
+        .map((c) => Map<String, dynamic>.from(c))
+        .toList();
     _labelControllers = {
       for (final c in _localCols)
         c['key'] as String: TextEditingController(text: c['label'] as String),
@@ -5272,7 +7051,9 @@ class _ColumnSettingsSheetState extends State<_ColumnSettingsSheet> {
 
   @override
   void dispose() {
-    for (final ctrl in _labelControllers.values) ctrl.dispose();
+    for (final ctrl in _labelControllers.values) {
+      ctrl.dispose();
+    }
     super.dispose();
   }
 
@@ -5302,13 +7083,24 @@ class _ColumnSettingsSheetState extends State<_ColumnSettingsSheet> {
             child: Row(
               children: [
                 const Expanded(
-                  child: Text('列の設定',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    '列の設定',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 TextButton(
                   onPressed: _save,
-                  child: const Text('保存',
-                      style: TextStyle(color: Color(0xFF5E81FF), fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    '保存',
+                    style: TextStyle(
+                      color: Color(0xFF5E81FF),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close, color: Colors.white54),
@@ -5329,32 +7121,45 @@ class _ColumnSettingsSheetState extends State<_ColumnSettingsSheet> {
                 final key = col['key'] as String;
                 final visible = col['visible'] as bool;
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
                   child: Row(
                     children: [
                       Switch(
                         value: visible,
-                        onChanged: (val) =>
-                            setState(() => _localCols[i] = {..._localCols[i], 'visible': val}),
-                        activeColor: const Color(0xFF5E81FF),
+                        onChanged: (val) => setState(
+                          () => _localCols[i] = {
+                            ..._localCols[i],
+                            'visible': val,
+                          },
+                        ),
+                        activeThumbColor: const Color(0xFF5E81FF),
                         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextField(
                           controller: _labelControllers[key],
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
                           decoration: InputDecoration(
                             hintText: '列名',
                             hintStyle: const TextStyle(color: Colors.white24),
                             isDense: true,
-                            contentPadding:
-                                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                             filled: true,
                             fillColor: Colors.white.withOpacity(0.06),
                             border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide.none),
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide.none,
+                            ),
                             enabled: visible,
                           ),
                         ),
@@ -5379,7 +7184,8 @@ class _ColumnVisibilityDialog extends StatefulWidget {
   const _ColumnVisibilityDialog({required this.columns, required this.onSave});
 
   @override
-  State<_ColumnVisibilityDialog> createState() => _ColumnVisibilityDialogState();
+  State<_ColumnVisibilityDialog> createState() =>
+      _ColumnVisibilityDialogState();
 }
 
 class _ColumnVisibilityDialogState extends State<_ColumnVisibilityDialog> {
@@ -5388,7 +7194,9 @@ class _ColumnVisibilityDialogState extends State<_ColumnVisibilityDialog> {
   @override
   void initState() {
     super.initState();
-    _localCols = widget.columns.map((c) => Map<String, dynamic>.from(c)).toList();
+    _localCols = widget.columns
+        .map((c) => Map<String, dynamic>.from(c))
+        .toList();
   }
 
   @override
@@ -5396,8 +7204,15 @@ class _ColumnVisibilityDialogState extends State<_ColumnVisibilityDialog> {
     return AlertDialog(
       backgroundColor: Colors.black,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Text('列の表示設定',
-          style: TextStyle(color: Colors.white, fontFamily: 'ZenOldMincho', fontSize: 16, fontWeight: FontWeight.bold)),
+      title: const Text(
+        '列の表示設定',
+        style: TextStyle(
+          color: Colors.white,
+          fontFamily: 'ZenOldMincho',
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
       content: SizedBox(
         width: 280,
         child: SingleChildScrollView(
@@ -5410,8 +7225,14 @@ class _ColumnVisibilityDialogState extends State<_ColumnVisibilityDialog> {
               return SwitchListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                title: Text(label,
-                    style: const TextStyle(color: Colors.white70, fontFamily: 'ZenOldMincho', fontSize: 14)),
+                title: Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontFamily: 'ZenOldMincho',
+                    fontSize: 14,
+                  ),
+                ),
                 value: visible,
                 onChanged: (val) => setState(() {
                   _localCols = _localCols.map((c) {
@@ -5419,7 +7240,7 @@ class _ColumnVisibilityDialogState extends State<_ColumnVisibilityDialog> {
                     return c;
                   }).toList();
                 }),
-                activeColor: const Color(0xFF5E81FF),
+                activeThumbColor: const Color(0xFF5E81FF),
               );
             }).toList(),
           ),
@@ -5435,10 +7256,15 @@ class _ColumnVisibilityDialogState extends State<_ColumnVisibilityDialog> {
             Navigator.pop(context);
             widget.onSave(_localCols);
           },
-          child: const Text('保存', style: TextStyle(color: Color(0xFF5E81FF), fontWeight: FontWeight.bold)),
+          child: const Text(
+            '保存',
+            style: TextStyle(
+              color: Color(0xFF5E81FF),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ],
     );
   }
 }
-
