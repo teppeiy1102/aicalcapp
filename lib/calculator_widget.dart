@@ -1290,18 +1290,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 _copyAsCsv();
               },
             ),
-            const Divider(color: Colors.white12, height: 1),
-            ListTile(
-              leading: const Icon(Icons.link_rounded, color: Colors.blueAccent),
-              title: const Text('リンク設定', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                Navigator.pop(ctx);
-                Future.delayed(
-                  const Duration(milliseconds: 300),
-                  _showSheetLinkSettingsDialog,
-                );
-              },
-            ),
+           
             const SizedBox(height: 8),
           ],
         ),
@@ -1800,7 +1789,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
                     child: Row(
                       children: const [
                         Icon(
@@ -1810,7 +1799,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                         ),
                         SizedBox(width: 6),
                         Text(
-                          'リンク先',
+                          'リンク元',
                           style: TextStyle(
                             color: Color.fromARGB(255, 38, 95, 218),
                             fontSize: 13,
@@ -1974,39 +1963,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                       ),
                                     ),
                                   ),
-                                if (tabs.length == 1)
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      12,
-                                      10,
-                                      12,
-                                      6,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.upload_rounded,
-                                          size: 14,
-                                          color: Colors.blueAccent,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        const Text(
-                                          'リンク元　計算式を選択',
-                                          style: TextStyle(
-                                            color: Colors.blueAccent,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
 
                                   Container(
- margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+ margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
                           width: double.infinity,
-                          constraints: const BoxConstraints(maxHeight: 300),
+                          constraints: const BoxConstraints(maxHeight: 200),
                           decoration: BoxDecoration(
                             color: bgColor,
                             border: Border.all(
@@ -2015,131 +1976,43 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                             ),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                                    child: Column(
+                                    child: SingleChildScrollView(
+                                      child: Column(
+                                        
+                                        mainAxisAlignment: MainAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        
+                                        children: [
                                       
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      
-                                      children: [
-
- // ── このシート ──
-                                if (srcTab == 0) ...[
-                                  SingleChildScrollView(
-                                    scrollDirection: Axis.horizontal,
-                                    padding: const EdgeInsets.fromLTRB(
-                                      12,
-                                      6,
-                                      12,
-                                      6,
-                                    ),
-                                    child: Row(
-                                      children: List.generate(items.length, (
-                                        i,
-                                      ) {
-                                        final calcName =
-                                            items[i]['name'] as String? ??
-                                            '計算 ${i + 1}';
-                                        final isSel =
-                                            selectedSrcCalcIdx == i &&
-                                            selectedSrcSheetId == null;
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                            right: 8,
-                                          ),
-                                          child: GestureDetector(
-                                            onTap: () => setDs(() {
-                                              selectedSrcSheetId = null;
-                                              selectedSrcCalcIdx = i;
-                                              selectedSrcField = 'result';
-                                            }),
-                                            child: AnimatedContainer(
-                                              duration: const Duration(
-                                                milliseconds: 150,
-                                              ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 14,
-                                                    vertical: 8,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: isSel
-                                                    ? Colors.blueAccent
-                                                          .withOpacity(0.22)
-                                                    : Colors.white.withOpacity(
-                                                        0.05,
-                                                      ),
-                                                border: Border.all(
-                                                  color: isSel
-                                                      ? Colors.blueAccent
-                                                      : Colors.white24,
-                                                  width: isSel ? 1.5 : 1.0,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(30),
-                                              ),
-                                              child: Text(
-                                                calcName,
-                                                style: TextStyle(
-                                                  color: isSel
-                                                      ? Colors.blueAccent
-                                                      : Colors.white70,
-                                                  fontSize: 13,
-                                                  fontWeight: isSel
-                                                      ? FontWeight.bold
-                                                      : FontWeight.normal,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      }),
-                                    ),
-                                  ),
-                                  if (selectedSrcCalcIdx != null &&
-                                      selectedSrcSheetId == null) ...[
-                                    const Padding(
-                                      padding: EdgeInsets.fromLTRB(
-                                        12,
-                                        0,
-                                        12,
-                                        4,
-                                      ),
-                                      child: Text(
-                                        '項目を選択',
-                                        style: TextStyle(
-                                          color: Colors.white54,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                    SingleChildScrollView(
+                                       // ── このシート ──
+                                                                      if (srcTab == 0) ...[
+                                                                        SingleChildScrollView(
                                       scrollDirection: Axis.horizontal,
                                       padding: const EdgeInsets.fromLTRB(
                                         12,
-                                        0,
+                                        6,
                                         12,
-                                        12,
+                                        6,
                                       ),
                                       child: Row(
-                                        children: fieldsFor(selectedSrcCalcIdx!).expand((
-                                          sf,
+                                        children: List.generate(items.length, (
+                                          i,
                                         ) {
-                                          final key = sf['key'] as String;
-                                          final label = sf['label'] as String;
-                                          final op = sf['op'] as String?;
-                                          final isSel = selectedSrcField == key;
-                                          final valStr = fieldValueStr(
-                                            selectedSrcCalcIdx!,
-                                            key,
-                                          );
-
-                                          final itemWidget = Padding(
+                                          final calcName =
+                                              items[i]['name'] as String? ??
+                                              '計算 ${i + 1}';
+                                          final isSel =
+                                              selectedSrcCalcIdx == i &&
+                                              selectedSrcSheetId == null;
+                                          return Padding(
                                             padding: const EdgeInsets.only(
                                               right: 8,
                                             ),
                                             child: GestureDetector(
                                               onTap: () => setDs(() {
-                                                selectedSrcField = key;
+                                                selectedSrcSheetId = null;
+                                                selectedSrcCalcIdx = i;
+                                                selectedSrcField = 'result';
                                               }),
                                               child: AnimatedContainer(
                                                 duration: const Duration(
@@ -2154,8 +2027,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                   color: isSel
                                                       ? Colors.blueAccent
                                                             .withOpacity(0.22)
-                                                      : Colors.white
-                                                            .withOpacity(0.05),
+                                                      : Colors.white.withOpacity(
+                                                          0.05,
+                                                        ),
                                                   border: Border.all(
                                                     color: isSel
                                                         ? Colors.blueAccent
@@ -2163,733 +2037,832 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                     width: isSel ? 1.5 : 1.0,
                                                   ),
                                                   borderRadius:
-                                                      BorderRadius.circular(8),
+                                                      BorderRadius.circular(30),
                                                 ),
-                                                child: Column(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Text(
-                                                      label,
-                                                      style: TextStyle(
-                                                        color: isSel
-                                                            ? Colors.blueAccent
-                                                            : Colors.white70,
-                                                        fontSize: 11,
-                                                        fontWeight: isSel
-                                                            ? FontWeight.bold
-                                                            : FontWeight.normal,
-                                                      ),
-                                                    ),
-                                                    //const SizedBox(height: 4),
-                                                    Text(
-                                                      valStr,
-                                                      style: TextStyle(
-                                                        color: isSel
-                                                            ? Colors.white
-                                                            : Colors.white70,
-                                                        fontSize: 13,
-                                                      ),
-                                                    ),
-                                                  ],
+                                                child: Text(
+                                                  calcName,
+                                                  style: TextStyle(
+                                                    color: isSel
+                                                        ? Colors.blueAccent
+                                                        : Colors.white70,
+                                                    fontSize: 13,
+                                                    fontWeight: isSel
+                                                        ? FontWeight.bold
+                                                        : FontWeight.normal,
+                                                  ),
                                                 ),
                                               ),
                                             ),
                                           );
-                                          if (key == 'result') {
-                                            return [
-                                              const Padding(
-                                                padding: EdgeInsets.only(
-                                                  right: 8,
-                                                ),
-                                                child: Text(
-                                                  '=',
-                                                  style: TextStyle(
-                                                    color: Colors.white54,
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                              itemWidget,
-                                            ];
-                                          } else if (op != null) {
-                                            return [
-                                              itemWidget,
-                                              Padding(
-                                                padding: const EdgeInsets.only(
-                                                  right: 8,
-                                                ),
-                                                child: Text(
-                                                  op,
-                                                  style: const TextStyle(
-                                                    color: Colors.white54,
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ];
-                                          }
-                                          return [itemWidget];
-                                        }).toList(),
+                                        }),
                                       ),
-                                    ),
-                                  ],
-                                ],
-
-                                // ── 開放された式 ──
-                                if (srcTab == 1) ...[
-                                  ...exposedSheets.map((cfg) {
-                                    final sheetTitle =
-                                        cfg.data['title'] as String? ?? cfg.id;
-                                    final sheetItems =
-                                        (cfg.data['items'] as List? ?? [])
-                                            .map(
-                                              (e) => Map<String, dynamic>.from(
-                                                e as Map,
+                                                                        ),
+                                                                        if (selectedSrcCalcIdx != null &&
+                                        selectedSrcSheetId == null) ...[
+                                      const Padding(
+                                        padding: EdgeInsets.fromLTRB(
+                                          12,
+                                          0,
+                                          12,
+                                          4,
+                                        ),
+                                        child: Text(
+                                          '項目を選択',
+                                          style: TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                      SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        padding: const EdgeInsets.fromLTRB(
+                                          12,
+                                          0,
+                                          12,
+                                          12,
+                                        ),
+                                        child: Row(
+                                          children: fieldsFor(selectedSrcCalcIdx!).expand((
+                                            sf,
+                                          ) {
+                                            final key = sf['key'] as String;
+                                            final label = sf['label'] as String;
+                                            final op = sf['op'] as String?;
+                                            final isSel = selectedSrcField == key;
+                                            final valStr = fieldValueStr(
+                                              selectedSrcCalcIdx!,
+                                              key,
+                                            );
+                                      
+                                            final itemWidget = Padding(
+                                              padding: const EdgeInsets.only(
+                                                right: 8,
                                               ),
-                                            )
-                                            .toList();
-                                    final visibleItems = sheetItems
-                                        .asMap()
-                                        .entries
-                                        .where(
-                                          (en) => en.value['exposed'] == true,
-                                        )
-                                        .toList();
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsets.fromLTRB(
-                                                      12,
-                                                      4,
-                                                      12,
-                                                      2,
+                                              child: GestureDetector(
+                                                onTap: () => setDs(() {
+                                                  selectedSrcField = key;
+                                                }),
+                                                child: AnimatedContainer(
+                                                  duration: const Duration(
+                                                    milliseconds: 150,
+                                                  ),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 14,
+                                                        vertical: 8,
+                                                      ),
+                                                  decoration: BoxDecoration(
+                                                    color: isSel
+                                                        ? Colors.blueAccent
+                                                              .withOpacity(0.22)
+                                                        : Colors.white
+                                                              .withOpacity(0.05),
+                                                    border: Border.all(
+                                                      color: isSel
+                                                          ? Colors.blueAccent
+                                                          : Colors.white24,
+                                                      width: isSel ? 1.5 : 1.0,
                                                     ),
-                                                child: Text(
-                                                  sheetTitle,
-                                                  style: const TextStyle(
-                                                    color: Colors.white38,
-                                                    fontSize: 11,
+                                                    borderRadius:
+                                                        BorderRadius.circular(8),
+                                                  ),
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Text(
+                                                        label,
+                                                        style: TextStyle(
+                                                          color: isSel
+                                                              ? Colors.blueAccent
+                                                              : Colors.white70,
+                                                          fontSize: 11,
+                                                          fontWeight: isSel
+                                                              ? FontWeight.bold
+                                                              : FontWeight.normal,
+                                                        ),
+                                                      ),
+                                                      //const SizedBox(height: 4),
+                                                      Text(
+                                                        valStr,
+                                                        style: TextStyle(
+                                                          color: isSel
+                                                              ? Colors.white
+                                                              : Colors.white70,
+                                                          fontSize: 13,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                               ),
-                                              SingleChildScrollView(
-                                                scrollDirection:
-                                                    Axis.horizontal,
-                                                padding:
-                                                    const EdgeInsets.fromLTRB(
-                                                      12,
-                                                      0,
-                                                      12,
-                                                      8,
+                                            );
+                                            if (key == 'result') {
+                                              return [
+                                                const Padding(
+                                                  padding: EdgeInsets.only(
+                                                    right: 8,
+                                                  ),
+                                                  child: Text(
+                                                    '=',
+                                                    style: TextStyle(
+                                                      color: Colors.white54,
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.bold,
                                                     ),
-                                                child: Row(
-                                                  children: visibleItems.map((
-                                                    en,
-                                                  ) {
-                                                    final i = en.key;
-                                                    final calcName =
-                                                        en.value['name']
-                                                            as String? ??
-                                                        '計算 ${i + 1}';
-                                                    final isSelExt =
-                                                        selectedSrcSheetId ==
-                                                            cfg.id &&
-                                                        selectedSrcCalcIdx == i;
-                                                    return Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                            right: 8,
-                                                          ),
-                                                      child: GestureDetector(
-                                                        onTap: () => setDs(() {
-                                                          selectedSrcSheetId =
-                                                              cfg.id;
-                                                          selectedSrcCalcIdx =
-                                                              i;
-                                                          selectedSrcField =
-                                                              'result';
-                                                        }),
-                                                        child: AnimatedContainer(
-                                                          duration:
-                                                              const Duration(
-                                                                milliseconds:
-                                                                    150,
-                                                              ),
-                                                          padding:
-                                                              const EdgeInsets.symmetric(
-                                                                horizontal: 14,
-                                                                vertical: 8,
-                                                              ),
-                                                          decoration: BoxDecoration(
-                                                            color: isSelExt
-                                                                ? Colors
-                                                                      .greenAccent
-                                                                      .withOpacity(
-                                                                        0.18,
-                                                                      )
-                                                                : Colors.white
-                                                                      .withOpacity(
-                                                                        0.05,
-                                                                      ),
-                                                            border: Border.all(
+                                                  ),
+                                                ),
+                                                itemWidget,
+                                              ];
+                                            } else if (op != null) {
+                                              return [
+                                                itemWidget,
+                                                Padding(
+                                                  padding: const EdgeInsets.only(
+                                                    right: 8,
+                                                  ),
+                                                  child: Text(
+                                                    op,
+                                                    style: const TextStyle(
+                                                      color: Colors.white54,
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ];
+                                            }
+                                            return [itemWidget];
+                                          }).toList(),
+                                        ),
+                                      ),
+                                                                        ],
+                                                                      ],
+                                      
+                                                                      // ── 開放された式 ──
+                                                                      if (srcTab == 1) ...[
+                                                                        ...exposedSheets.map((cfg) {
+                                      final sheetTitle =
+                                          cfg.data['title'] as String? ?? cfg.id;
+                                      final sheetItems =
+                                          (cfg.data['items'] as List? ?? [])
+                                              .map(
+                                                (e) => Map<String, dynamic>.from(
+                                                  e as Map,
+                                                ),
+                                              )
+                                              .toList();
+                                      final visibleItems = sheetItems
+                                          .asMap()
+                                          .entries
+                                          .where(
+                                            (en) => en.value['exposed'] == true,
+                                          )
+                                          .toList();
+
+                                      return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.fromLTRB(
+                                                        12,
+                                                        4,
+                                                        12,
+                                                        2,
+                                                      ),
+                                                  child: Text(
+                                                    sheetTitle,
+                                                    style: const TextStyle(
+                                                      color: Colors.white38,
+                                                      fontSize: 11,
+                                                    ),
+                                                  ),
+                                                ),
+                                                SingleChildScrollView(
+                                                  scrollDirection:
+                                                      Axis.horizontal,
+                                                  padding:
+                                                      const EdgeInsets.fromLTRB(
+                                                        12,
+                                                        0,
+                                                        12,
+                                                        8,
+                                                      ),
+                                                  child: Row(
+                                                    children: visibleItems.map((
+                                                      en,
+                                                    ) {
+                                                      final i = en.key;
+                                                      final calcName =
+                                                          en.value['name']
+                                                              as String? ??
+                                                          '計算 ${i + 1}';
+                                                      final isSelExt =
+                                                          selectedSrcSheetId ==
+                                                              cfg.id &&
+                                                          selectedSrcCalcIdx == i;
+                                                      return Padding(
+                                                        padding:
+                                                            const EdgeInsets.only(
+                                                              right: 8,
+                                                            ),
+                                                        child: GestureDetector(
+                                                          onTap: () => setDs(() {
+                                                            selectedSrcSheetId =
+                                                                cfg.id;
+                                                            selectedSrcCalcIdx =
+                                                                i;
+                                                            selectedSrcField =
+                                                                'result';
+                                                          }),
+                                                          child: AnimatedContainer(
+                                                            duration:
+                                                                const Duration(
+                                                                  milliseconds:
+                                                                      150,
+                                                                ),
+                                                            padding:
+                                                                const EdgeInsets.symmetric(
+                                                                  horizontal: 14,
+                                                                  vertical: 8,
+                                                                ),
+                                                            decoration: BoxDecoration(
                                                               color: isSelExt
                                                                   ? Colors
                                                                         .greenAccent
-                                                                  : Colors
-                                                                        .white24,
-                                                              width: isSelExt
-                                                                  ? 1.5
-                                                                  : 1.0,
-                                                            ),
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                  8,
-                                                                ),
-                                                          ),
-                                                          child: Row(
-                                                            mainAxisSize:
-                                                                MainAxisSize
-                                                                    .min,
-                                                            children: [
-                                                              Icon(
-                                                                Icons
-                                                                    .public_rounded,
+                                                                        .withOpacity(
+                                                                          0.18,
+                                                                        )
+                                                                  : Colors.white
+                                                                        .withOpacity(
+                                                                          0.05,
+                                                                        ),
+                                                              border: Border.all(
                                                                 color: isSelExt
                                                                     ? Colors
                                                                           .greenAccent
                                                                     : Colors
-                                                                          .white38,
-                                                                size: 12,
+                                                                          .white24,
+                                                                width: isSelExt
+                                                                    ? 1.5
+                                                                    : 1.0,
                                                               ),
-                                                              const SizedBox(
-                                                                width: 6,
-                                                              ),
-                                                              Text(
-                                                                calcName,
-                                                                style: TextStyle(
-                                                                  color:
-                                                                      isSelExt
+                                                              borderRadius:
+                                                                  BorderRadius.circular(
+                                                                    8,
+                                                                  ),
+                                                            ),
+                                                            child: Row(
+                                                              mainAxisSize:
+                                                                  MainAxisSize
+                                                                      .min,
+                                                              children: [
+                                                                Icon(
+                                                                  Icons
+                                                                      .public_rounded,
+                                                                  color: isSelExt
                                                                       ? Colors
                                                                             .greenAccent
                                                                       : Colors
-                                                                            .white70,
-                                                                  fontSize: 13,
-                                                                  fontWeight:
-                                                                      isSelExt
-                                                                      ? FontWeight
-                                                                            .bold
-                                                                      : FontWeight
-                                                                            .normal,
+                                                                            .white38,
+                                                                  size: 12,
                                                                 ),
-                                                              ),
-                                                            ],
+                                                                const SizedBox(
+                                                                  width: 6,
+                                                                ),
+                                                                Text(
+                                                                  calcName,
+                                                                  style: TextStyle(
+                                                                    color:
+                                                                        isSelExt
+                                                                        ? Colors
+                                                                              .greenAccent
+                                                                        : Colors
+                                                                              .white70,
+                                                                    fontSize: 13,
+                                                                    fontWeight:
+                                                                        isSelExt
+                                                                        ? FontWeight
+                                                                              .bold
+                                                                        : FontWeight
+                                                                              .normal,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
                                                           ),
                                                         ),
-                                                      ),
-                                                    );
-                                                  }).toList(),
+                                                      );
+                                                    }).toList(),
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
-                                    );
-                                  }),
-                                  if (selectedSrcSheetId != null &&
-                                      selectedSrcCalcIdx != null &&
-                                      exposedSheets.any(
-                                        (c) => c.id == selectedSrcSheetId,
-                                      )) ...[
-                                    Divider(),
-                                    const Padding(
-                                      padding: EdgeInsets.fromLTRB(
-                                        12,
-                                        0,
-                                        12,
-                                        4,
-                                      ),
-                                      child: Text(
-                                        '項目を選択',
-                                        style: TextStyle(
-                                          color: Colors.white54,
-                                          fontSize: 12,
+                                    if (selectedSrcSheetId != null &&
+                                        selectedSrcCalcIdx != null && cfg.id == selectedSrcSheetId &&
+                                        exposedSheets.any(
+                                          (c) => c.id == selectedSrcSheetId,
+                                        )) ...[
+                                      Divider(color: Colors.white12,),
+                                      const Padding(
+                                        padding: EdgeInsets.fromLTRB(
+                                          12,
+                                          0,
+                                          12,
+                                          4,
+                                        ),
+                                        child: Text(
+                                          '項目を選択',
+                                          style: TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 12,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      padding: const EdgeInsets.fromLTRB(
-                                        12,
-                                        0,
-                                        12,
-                                        12,
-                                      ),
-                                      child: Row(
-                                        children:
-                                            fieldsForExternal(
-                                              selectedSrcSheetId!,
-                                              selectedSrcCalcIdx!,
-                                            ).expand((sf) {
-                                              final key = sf['key'] as String;
-                                              final label =
-                                                  sf['label'] as String;
-                                              final op = sf['op'] as String?;
-                                              final isSel =
-                                                  selectedSrcField == key;
-                                              final valStr = fieldValueStr(
+                                      SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        padding: const EdgeInsets.fromLTRB(
+                                          12,
+                                          0,
+                                          12,
+                                          12,
+                                        ),
+                                        child: Row(
+                                          children:
+                                              fieldsForExternal(
+                                                selectedSrcSheetId!,
                                                 selectedSrcCalcIdx!,
-                                                key,
-                                                selectedSrcSheetId,
-                                              );
-                                              final itemWidget = Padding(
-                                                padding: const EdgeInsets.only(
-                                                  right: 8,
-                                                ),
-                                                child: GestureDetector(
-                                                  onTap: () => setDs(() {
-                                                    selectedSrcField = key;
-                                                  }),
-                                                  child: AnimatedContainer(
-                                                    duration: const Duration(
-                                                      milliseconds: 150,
-                                                    ),
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 14,
-                                                          vertical: 8,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: isSel
-                                                          ? Colors.greenAccent
-                                                                .withOpacity(
-                                                                  0.18,
-                                                                )
-                                                          : Colors.white
-                                                                .withOpacity(
-                                                                  0.05,
-                                                                ),
-                                                      border: Border.all(
+                                              ).expand((sf) {
+                                                final key = sf['key'] as String;
+                                                final label =
+                                                    sf['label'] as String;
+                                                final op = sf['op'] as String?;
+                                                final isSel =
+                                                    selectedSrcField == key;
+                                                final valStr = fieldValueStr(
+                                                  selectedSrcCalcIdx!,
+                                                  key,
+                                                  selectedSrcSheetId,
+                                                );
+                                                final itemWidget = Padding(
+                                                  padding: const EdgeInsets.only(
+                                                    right: 8,
+                                                  ),
+                                                  child: GestureDetector(
+                                                    onTap: () => setDs(() {
+                                                      selectedSrcField = key;
+                                                    }),
+                                                    child: AnimatedContainer(
+                                                      duration: const Duration(
+                                                        milliseconds: 150,
+                                                      ),
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 14,
+                                                            vertical: 8,
+                                                          ),
+                                                      decoration: BoxDecoration(
                                                         color: isSel
                                                             ? Colors.greenAccent
-                                                            : Colors.white24,
-                                                        width: isSel
-                                                            ? 1.5
-                                                            : 1.0,
+                                                                  .withOpacity(
+                                                                    0.18,
+                                                                  )
+                                                            : Colors.white
+                                                                  .withOpacity(
+                                                                    0.05,
+                                                                  ),
+                                                        border: Border.all(
+                                                          color: isSel
+                                                              ? Colors.greenAccent
+                                                              : Colors.white24,
+                                                          width: isSel
+                                                              ? 1.5
+                                                              : 1.0,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
                                                       ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            8,
+                                                      child: Column(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Text(
+                                                            label,
+                                                            style: TextStyle(
+                                                              color: isSel
+                                                                  ? Colors
+                                                                        .greenAccent
+                                                                  : Colors
+                                                                        .white70,
+                                                              fontSize: 13,
+                                                              fontWeight: isSel
+                                                                  ? FontWeight
+                                                                        .bold
+                                                                  : FontWeight
+                                                                        .normal,
+                                                            ),
                                                           ),
-                                                    ),
-                                                    child: Column(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Text(
-                                                          label,
-                                                          style: TextStyle(
-                                                            color: isSel
-                                                                ? Colors
-                                                                      .greenAccent
-                                                                : Colors
-                                                                      .white70,
-                                                            fontSize: 13,
-                                                            fontWeight: isSel
-                                                                ? FontWeight
-                                                                      .bold
-                                                                : FontWeight
-                                                                      .normal,
+                                                          const SizedBox(
+                                                            height: 4,
                                                           ),
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 4,
-                                                        ),
-                                                        Text(
-                                                          valStr,
-                                                          style: TextStyle(
-                                                            color: isSel
-                                                                ? Colors.white
-                                                                : Colors
-                                                                      .white38,
-                                                            fontSize: 11,
+                                                          Text(
+                                                            valStr,
+                                                            style: TextStyle(
+                                                              color: isSel
+                                                                  ? Colors.white
+                                                                  : Colors
+                                                                        .white38,
+                                                              fontSize: 11,
+                                                            ),
                                                           ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              );
-                                              if (key == 'result') {
-                                                return [
-                                                  const Padding(
-                                                    padding: EdgeInsets.only(
-                                                      right: 8,
-                                                    ),
-                                                    child: Text(
-                                                      '=',
-                                                      style: TextStyle(
-                                                        color: Colors.white54,
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.bold,
+                                                        ],
                                                       ),
                                                     ),
                                                   ),
-                                                  itemWidget,
-                                                ];
-                                              } else if (op != null) {
-                                                return [
-                                                  itemWidget,
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                          right: 8,
+                                                );
+                                                if (key == 'result') {
+                                                  return [
+                                                    const Padding(
+                                                      padding: EdgeInsets.only(
+                                                        right: 8,
+                                                      ),
+                                                      child: Text(
+                                                        '=',
+                                                        style: TextStyle(
+                                                          color: Colors.white54,
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                         ),
-                                                    child: Text(
-                                                      op,
-                                                      style: const TextStyle(
-                                                        color: Colors.white54,
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.bold,
                                                       ),
                                                     ),
-                                                  ),
-                                                ];
-                                              }
-                                              return [itemWidget];
-                                            }).toList(),
-                                      ),
-                                    ),
-                                  ],
-                                ],
+                                                    itemWidget,
+                                                  ];
+                                                } else if (op != null) {
+                                                  return [
+                                                    itemWidget,
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            right: 8,
+                                                          ),
+                                                      child: Text(
+                                                        op,
+                                                        style: const TextStyle(
+                                                          color: Colors.white54,
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ),
 
-                                // ── 結合シート ──
-                                if (srcTab == 2) ...[
-                                  ...mergedSheets.map((cfg) {
-                                    final sheetTitle =
-                                        cfg.data['title'] as String? ?? cfg.id;
-                                    final sheetItems =
-                                        (cfg.data['items'] as List? ?? [])
-                                            .map(
-                                              (e) => Map<String, dynamic>.from(
-                                                e as Map,
+                                                  ];
+                                                }
+                                                return [itemWidget];
+                                              }).toList(),
+                                        ),
+                                      ),
+                                      Divider(color: Colors.white12,),
+                                                                        ],
+
+                                              ],
+                                      );
+                                                                        }),
+                                    
+                                                                      ],
+                                      
+                                                                      // ── 結合シート ──
+                                                                      if (srcTab == 2) ...[
+                                                                        ...mergedSheets.map((cfg) {
+                                      final sheetTitle =
+                                          cfg.data['title'] as String? ?? cfg.id;
+                                      final sheetItems =
+                                          (cfg.data['items'] as List? ?? [])
+                                              .map(
+                                                (e) => Map<String, dynamic>.from(
+                                                  e as Map,
+                                                ),
+                                              )
+                                              .toList();
+                                      return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                              12,
+                                              4,
+                                              12,
+                                              2,
+                                            ),
+                                            child: Text(
+                                              sheetTitle,
+                                              style: const TextStyle(
+                                                color: Colors.white38,
+                                                fontSize: 11,
                                               ),
-                                            )
-                                            .toList();
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                            12,
-                                            4,
-                                            12,
-                                            2,
-                                          ),
-                                          child: Text(
-                                            sheetTitle,
-                                            style: const TextStyle(
-                                              color: Colors.white38,
-                                              fontSize: 11,
                                             ),
                                           ),
-                                        ),
-                                        SingleChildScrollView(
-                                          scrollDirection: Axis.horizontal,
-                                          padding: const EdgeInsets.fromLTRB(
-                                            12,
-                                            0,
-                                            12,
-                                            8,
-                                          ),
-                                          child: Row(
-                                            children: sheetItems.asMap().entries.map((
-                                              en,
-                                            ) {
-                                              final i = en.key;
-                                              final calcName =
-                                                  en.value['name'] as String? ??
-                                                  '計算 ${i + 1}';
-                                              final isSelExt =
-                                                  selectedSrcSheetId ==
-                                                      cfg.id &&
-                                                  selectedSrcCalcIdx == i;
-                                              const chipColor = Color(
-                                                0xFF26C6DA,
-                                              );
-                                              return Padding(
-                                                padding: const EdgeInsets.only(
-                                                  right: 8,
-                                                ),
-                                                child: GestureDetector(
-                                                  onTap: () => setDs(() {
-                                                    selectedSrcSheetId = cfg.id;
-                                                    selectedSrcCalcIdx = i;
-                                                    selectedSrcField = 'result';
-                                                  }),
-                                                  child: AnimatedContainer(
-                                                    duration: const Duration(
-                                                      milliseconds: 150,
-                                                    ),
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 14,
-                                                          vertical: 8,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: isSelExt
-                                                          ? chipColor
-                                                                .withOpacity(
-                                                                  0.18,
-                                                                )
-                                                          : Colors.white
-                                                                .withOpacity(
-                                                                  0.05,
-                                                                ),
-                                                      border: Border.all(
+                                          SingleChildScrollView(
+                                            scrollDirection: Axis.horizontal,
+                                            padding: const EdgeInsets.fromLTRB(
+                                              12,
+                                              0,
+                                              12,
+                                              8,
+                                            ),
+                                            child: Row(
+                                              children: sheetItems.asMap().entries.map((
+                                                en,
+                                              ) {
+                                                final i = en.key;
+                                                final calcName =
+                                                    en.value['name'] as String? ??
+                                                    '計算 ${i + 1}';
+                                                final isSelExt =
+                                                    selectedSrcSheetId ==
+                                                        cfg.id &&
+                                                    selectedSrcCalcIdx == i;
+                                                const chipColor = Color(
+                                                  0xFF26C6DA,
+                                                );
+                                                return Padding(
+                                                  padding: const EdgeInsets.only(
+                                                    right: 8,
+                                                  ),
+                                                  child: GestureDetector(
+                                                    onTap: () => setDs(() {
+                                                      selectedSrcSheetId = cfg.id;
+                                                      selectedSrcCalcIdx = i;
+                                                      selectedSrcField = 'result';
+                                                    }),
+                                                    child: AnimatedContainer(
+                                                      duration: const Duration(
+                                                        milliseconds: 150,
+                                                      ),
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 14,
+                                                            vertical: 8,
+                                                          ),
+                                                      decoration: BoxDecoration(
                                                         color: isSelExt
                                                             ? chipColor
-                                                            : Colors.white24,
-                                                        width: isSelExt
-                                                            ? 1.5
-                                                            : 1.0,
-                                                      ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            8,
-                                                          ),
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                          Icons.link_rounded,
+                                                                  .withOpacity(
+                                                                    0.18,
+                                                                  )
+                                                            : Colors.white
+                                                                  .withOpacity(
+                                                                    0.05,
+                                                                  ),
+                                                        border: Border.all(
                                                           color: isSelExt
                                                               ? chipColor
-                                                              : Colors.white38,
-                                                          size: 12,
+                                                              : Colors.white24,
+                                                          width: isSelExt
+                                                              ? 1.5
+                                                              : 1.0,
                                                         ),
-                                                        const SizedBox(
-                                                          width: 6,
-                                                        ),
-                                                        Text(
-                                                          calcName,
-                                                          style: TextStyle(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Icon(
+                                                            Icons.link_rounded,
                                                             color: isSelExt
                                                                 ? chipColor
-                                                                : Colors
-                                                                      .white70,
-                                                            fontSize: 13,
-                                                            fontWeight: isSelExt
-                                                                ? FontWeight
-                                                                      .bold
-                                                                : FontWeight
-                                                                      .normal,
+                                                                : Colors.white38,
+                                                            size: 12,
                                                           ),
-                                                        ),
-                                                      ],
+                                                          const SizedBox(
+                                                            width: 6,
+                                                          ),
+                                                          Text(
+                                                            calcName,
+                                                            style: TextStyle(
+                                                              color: isSelExt
+                                                                  ? chipColor
+                                                                  : Colors
+                                                                        .white70,
+                                                              fontSize: 13,
+                                                              fontWeight: isSelExt
+                                                                  ? FontWeight
+                                                                        .bold
+                                                                  : FontWeight
+                                                                        .normal,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                              );
-                                            }).toList(),
+                                                );
+
+                                              }).toList(),
+                                            ),
+                                          ),
+                                   if (selectedSrcSheetId != null &&
+                                        selectedSrcCalcIdx != null && selectedSrcSheetId == cfg.id &&
+                                        mergedSheets.any(
+                                          (c) => c.id == selectedSrcSheetId,
+                                        )) ...[
+                                          Divider(color: Colors.white12,),
+                                      const Padding(
+                                        padding: EdgeInsets.fromLTRB(
+                                          12,
+                                          0,
+                                          12,
+                                          4,
+                                        ),
+                                        child: Text(
+                                          '項目を選択',
+                                          style: TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 12,
                                           ),
                                         ),
-                                      ],
-                                    );
-                                  }),
-                                  if (selectedSrcSheetId != null &&
-                                      selectedSrcCalcIdx != null &&
-                                      mergedSheets.any(
-                                        (c) => c.id == selectedSrcSheetId,
-                                      )) ...[
-                                    const Padding(
-                                      padding: EdgeInsets.fromLTRB(
-                                        12,
-                                        0,
-                                        12,
-                                        4,
                                       ),
-                                      child: Text(
-                                        '項目を選択',
-                                        style: TextStyle(
-                                          color: Colors.white54,
-                                          fontSize: 12,
+                                      SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        padding: const EdgeInsets.fromLTRB(
+                                          12,
+                                          0,
+                                          12,
+                                          12,
                                         ),
-                                      ),
-                                    ),
-                                    SingleChildScrollView(
-                                      scrollDirection: Axis.horizontal,
-                                      padding: const EdgeInsets.fromLTRB(
-                                        12,
-                                        0,
-                                        12,
-                                        12,
-                                      ),
-                                      child: Row(
-                                        children:
-                                            fieldsForExternal(
-                                              selectedSrcSheetId!,
-                                              selectedSrcCalcIdx!,
-                                            ).expand((sf) {
-                                              final key = sf['key'] as String;
-                                              final label =
-                                                  sf['label'] as String;
-                                              final op = sf['op'] as String?;
-                                              final isSel =
-                                                  selectedSrcField == key;
-                                              final valStr = fieldValueStr(
+                                        child: Row(
+                                          children:
+                                              fieldsForExternal(
+                                                selectedSrcSheetId!,
                                                 selectedSrcCalcIdx!,
-                                                key,
-                                                selectedSrcSheetId,
-                                              );
-                                              const chipColor = Color(
-                                                0xFF26C6DA,
-                                              );
-                                              final itemWidget = Padding(
-                                                padding: const EdgeInsets.only(
-                                                  right: 8,
-                                                ),
-                                                child: GestureDetector(
-                                                  onTap: () => setDs(() {
-                                                    selectedSrcField = key;
-                                                  }),
-                                                  child: AnimatedContainer(
-                                                    duration: const Duration(
-                                                      milliseconds: 150,
-                                                    ),
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          horizontal: 14,
-                                                          vertical: 8,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: isSel
-                                                          ? chipColor
-                                                                .withOpacity(
-                                                                  0.18,
-                                                                )
-                                                          : Colors.white
-                                                                .withOpacity(
-                                                                  0.05,
-                                                                ),
-                                                      border: Border.all(
+                                              ).expand((sf) {
+                                                final key = sf['key'] as String;
+                                                final label =
+                                                    sf['label'] as String;
+                                                final op = sf['op'] as String?;
+                                                final isSel =
+                                                    selectedSrcField == key;
+                                                final valStr = fieldValueStr(
+                                                  selectedSrcCalcIdx!,
+                                                  key,
+                                                  selectedSrcSheetId,
+                                                );
+                                                const chipColor = Color(
+                                                  0xFF26C6DA,
+                                                );
+                                                final itemWidget = Padding(
+                                                  padding: const EdgeInsets.only(
+                                                    right: 8,
+                                                  ),
+                                                  child: GestureDetector(
+                                                    onTap: () => setDs(() {
+                                                      selectedSrcField = key;
+                                                    }),
+                                                    child: AnimatedContainer(
+                                                      duration: const Duration(
+                                                        milliseconds: 150,
+                                                      ),
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 14,
+                                                            vertical: 8,
+                                                          ),
+                                                      decoration: BoxDecoration(
                                                         color: isSel
                                                             ? chipColor
-                                                            : Colors.white24,
-                                                        width: isSel
-                                                            ? 1.5
-                                                            : 1.0,
+                                                                  .withOpacity(
+                                                                    0.18,
+                                                                  )
+                                                            : Colors.white
+                                                                  .withOpacity(
+                                                                    0.05,
+                                                                  ),
+                                                        border: Border.all(
+                                                          color: isSel
+                                                              ? chipColor
+                                                              : Colors.white24,
+                                                          width: isSel
+                                                              ? 1.5
+                                                              : 1.0,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
                                                       ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            8,
+                                                      child: Column(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Text(
+                                                            label,
+                                                            style: TextStyle(
+                                                              color: isSel
+                                                                  ? chipColor
+                                                                  : Colors
+                                                                        .white70,
+                                                              fontSize: 13,
+                                                              fontWeight: isSel
+                                                                  ? FontWeight
+                                                                        .bold
+                                                                  : FontWeight
+                                                                        .normal,
+                                                            ),
                                                           ),
-                                                    ),
-                                                    child: Column(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Text(
-                                                          label,
-                                                          style: TextStyle(
-                                                            color: isSel
-                                                                ? chipColor
-                                                                : Colors
-                                                                      .white70,
-                                                            fontSize: 13,
-                                                            fontWeight: isSel
-                                                                ? FontWeight
-                                                                      .bold
-                                                                : FontWeight
-                                                                      .normal,
+                                                          const SizedBox(
+                                                            height: 4,
                                                           ),
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 4,
-                                                        ),
-                                                        Text(
-                                                          valStr,
-                                                          style: TextStyle(
-                                                            color: isSel
-                                                                ? Colors.white
-                                                                : Colors
-                                                                      .white38,
-                                                            fontSize: 11,
+                                                          Text(
+                                                            valStr,
+                                                            style: TextStyle(
+                                                              color: isSel
+                                                                  ? Colors.white
+                                                                  : Colors
+                                                                        .white38,
+                                                              fontSize: 11,
+                                                            ),
                                                           ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              );
-                                              if (key == 'result') {
-                                                return [
-                                                  const Padding(
-                                                    padding: EdgeInsets.only(
-                                                      right: 8,
-                                                    ),
-                                                    child: Text(
-                                                      '=',
-                                                      style: TextStyle(
-                                                        color: Colors.white54,
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.bold,
+                                                        ],
                                                       ),
                                                     ),
                                                   ),
-                                                  itemWidget,
-                                                ];
-                                              } else if (op != null) {
-                                                return [
-                                                  itemWidget,
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                          right: 8,
+                                                );
+                                                if (key == 'result') {
+                                                  return [
+                                                    const Padding(
+                                                      padding: EdgeInsets.only(
+                                                        right: 8,
+                                                      ),
+                                                      child: Text(
+                                                        '=',
+                                                        style: TextStyle(
+                                                          color: Colors.white54,
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                         ),
-                                                    child: Text(
-                                                      op,
-                                                      style: const TextStyle(
-                                                        color: Colors.white54,
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.bold,
                                                       ),
                                                     ),
-                                                  ),
-                                                ];
-                                              }
-                                              return [itemWidget];
-                                            }).toList(),
+                                                    itemWidget,
+                                                  ];
+                                                } else if (op != null) {
+                                                  return [
+                                                    itemWidget,
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            right: 8,
+                                                          ),
+                                                      child: Text(
+                                                        op,
+                                                        style: const TextStyle(
+                                                          color: Colors.white54,
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ];
+                                                }
+                                                return [itemWidget];
+                                              }).toList(),
+                                        ),
                                       ),
+
+                                          Divider(color: Colors.white12,),
+                                                                        ],
+                                        ],
+                                      );
+                                                                        }),
+                                     
+                                                                      ],
+                                      
+                                      
+                                      
+                                      
+                                      
+                                      
+                                      
+                                      
+                                      
+                                      
+                                      
+                                      
+                                      
+                                      
+                                      
+                                      ],),
                                     ),
-                                  ],
-                                ],
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                                    ],),
                                   ),
 
                                
@@ -3289,7 +3262,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                                         )
                                                                       : Colors
                                                                             .white70,
-                                                                  fontSize: 13,
+                                                                  fontSize: 11,
                                                                   fontWeight:
                                                                       isSel
                                                                       ? FontWeight
@@ -3310,7 +3283,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                                   ? Colors.white
                                                                   : Colors
                                                                         .white38,
-                                                              fontSize: 11,
+                                                              fontSize: 15,
                                                             ),
                                                           ),
                                                         ],

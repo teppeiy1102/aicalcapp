@@ -2217,58 +2217,19 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                   padding: const EdgeInsets.all(8),
                   constraints: const BoxConstraints(),
                 ),
-                PopupMenuButton<String>(
+  IconButton(
                   icon: Icon(
-                    Icons.more_horiz_rounded,
-                    color: isDark ? Colors.white38 : Colors.black38,
-                    size: 22,
+                    Icons.more_vert_rounded,
+                    color: isDark ? Colors.blueAccent : Colors.blue,
+                    size: 20,
                   ),
-                  color: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  onSelected: (val) {
-                    if (val == 'settings') {
-                      _calcKey.currentState?._showActionSheet();
-                    } else if (val == 'remove') {
-                      widget.onRemove?.call();
-                    }
-                  },
-                  itemBuilder: (ctx) => [
-                    const PopupMenuItem(
-                      value: 'settings',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.settings_rounded,
-                            size: 18,
-                            color: Colors.white70,
-                          ),
-                          SizedBox(width: 10),
-                          Text('シート設定', style: TextStyle(color: Colors.white)),
-                        ],
-                      ),
-                    ),
-                    if (widget.onRemove != null)
-                      const PopupMenuItem(
-                        value: 'remove',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.link_off_rounded,
-                              size: 18,
-                              color: Colors.redAccent,
-                            ),
-                            SizedBox(width: 10),
-                            Text(
-                              '結合から外す',
-                              style: TextStyle(color: Colors.redAccent),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
+                  onPressed: () =>
+                      _calcKey.currentState?._showActionSheet(),
+                  tooltip: 'オプション',
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
                 ),
+
               ],
             ),
           ),
