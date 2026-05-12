@@ -1290,6 +1290,20 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 _copyAsCsv();
               },
             ),
+            ListTile(
+              leading: const Icon(
+                Icons.qr_code_rounded,
+                color: Colors.white70,
+              ),
+              title: const Text(
+                'QRコードで共有する',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _shareAsCsvQr();
+              },
+            ),
            
             const SizedBox(height: 8),
           ],
@@ -1411,7 +1425,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     widget.onUpdate({...widget.config.data, 'items': newItems});
   }
 
-  /// 別シートの指定行・フィールドの値を返す
+  /// 別シートの指定行・フィールドの値を返す（シート内リンクを多パスで解決）
   double _resolveExternalValue(String sheetId, int rowIdx, String target) {
     final srcConfig = widget.allConfigs.firstWhere(
       (c) => c.id == sheetId,
@@ -1422,45 +1436,292 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
     if (rowIdx < 0 || rowIdx >= srcItems.length) return 0.0;
+
+    // Pass 1: 暫定計算（リンクなし）
+    final extResults = List<double>.filled(srcItems.length, 0.0);
+    for (int pi = 0; pi < srcItems.length; pi++) {
+      final it = srcItems[pi];
+      extResults[pi] = _calculate(
+        _CalculatorRow._applyTermTransform(
+          (it['input'] as num? ?? 0.0).toDouble(),
+          it['inputTransform'] as String?,
+          (it['inputPowExp'] as num? ?? 2.0).toDouble(),
+        ),
+        it['op'] as String? ?? '+',
+        _CalculatorRow._applyTermTransform(
+          (it['operand'] as num? ?? 0.0).toDouble(),
+          it['operandTransform'] as String?,
+          (it['operandPowExp'] as num? ?? 2.0).toDouble(),
+        ),
+        (it['others'] as List? ?? []).map((e) {
+          final m = Map<String, dynamic>.from(e as Map);
+          m['val'] = (m['val'] as num? ?? 0.0).toDouble();
+          return m;
+        }).toList(),
+        it['brackets'] as List? ?? [],
+      );
+    }
+
+    // シート内リンクを解決する補助関数（循環参照ガード付き）
+    double resolveInExt(
+      Map<String, dynamic>? src,
+      bool isLink,
+      double fallback,
+    ) {
+      if (!isLink) return fallback;
+      if (src == null) {
+        return extResults.isNotEmpty ? extResults.last : fallback;
+      }
+      final xSheetId = src['sheetId'] as String?;
+      if (xSheetId != null) {
+        if (xSheetId == sheetId) return fallback; // 循環参照ガード
+        return _resolveExternalValue(
+          xSheetId,
+          src['rowIdx'] as int? ?? 0,
+          src['target'] as String? ?? 'result',
+        );
+      }
+      final sRowIdx = src['rowIdx'] as int? ?? 0;
+      final sTarget = src['target'] as String? ?? 'result';
+      if (sRowIdx < 0 || sRowIdx >= srcItems.length) return fallback;
+      final si = srcItems[sRowIdx];
+      if (sTarget == 'result') return extResults[sRowIdx];
+      if (sTarget == 'input') return (si['input'] as num? ?? 0.0).toDouble();
+      if (sTarget == 'operand') {
+        return (si['operand'] as num? ?? 0.0).toDouble();
+      }
+      if (sTarget.startsWith('other_')) {
+        final idx = int.tryParse(sTarget.split('_')[1]) ?? 0;
+        final sOthers = si['others'] as List? ?? [];
+        if (idx < sOthers.length) {
+          return ((sOthers[idx] as Map)['val'] as num? ?? 0.0).toDouble();
+        }
+      }
+      return fallback;
+    }
+
+    // Pass 2: 反復収束（シート内リンクを解決）
+    for (int pass = 0; pass < srcItems.length; pass++) {
+      bool anyChange = false;
+      for (int i = 0; i < srcItems.length; i++) {
+        final item = srcItems[i];
+        final inp = resolveInExt(
+          item['inputLinkSource'] as Map<String, dynamic>?,
+          item['inputLink'] == true,
+          (item['input'] as num? ?? 0.0).toDouble(),
+        );
+        final ope = resolveInExt(
+          item['operandLinkSource'] as Map<String, dynamic>?,
+          item['operandLink'] == true,
+          (item['operand'] as num? ?? 0.0).toDouble(),
+        );
+        final others = (item['others'] as List? ?? []).map((e) {
+          final m = Map<String, dynamic>.from(e as Map);
+          m['val'] = resolveInExt(
+            m['valLinkSource'] as Map<String, dynamic>?,
+            m['valLink'] == true,
+            (m['val'] as num? ?? 0.0).toDouble(),
+          );
+          return m;
+        }).toList();
+        final res = _calculate(
+          _CalculatorRow._applyTermTransform(
+            inp,
+            item['inputTransform'] as String?,
+            (item['inputPowExp'] as num? ?? 2.0).toDouble(),
+          ),
+          item['op'] as String? ?? '+',
+          _CalculatorRow._applyTermTransform(
+            ope,
+            item['operandTransform'] as String?,
+            (item['operandPowExp'] as num? ?? 2.0).toDouble(),
+          ),
+          others.map((e) {
+            final m = Map<String, dynamic>.from(e);
+            m['val'] = _CalculatorRow._applyTermTransform(
+              m['val'] as double,
+              m['transform'] as String?,
+              (m['powExp'] as num? ?? 2.0).toDouble(),
+            );
+            return m;
+          }).toList(),
+          item['brackets'] as List? ?? [],
+        );
+        if ((res - extResults[i]).abs() > 1e-10) anyChange = true;
+        extResults[i] = res;
+      }
+      if (!anyChange) break;
+    }
+
+    // 対象フィールドの解決済み値を返す
     final sItem = srcItems[rowIdx];
-    if (target == 'input') return (sItem['input'] as num? ?? 0.0).toDouble();
+    if (target == 'result') return extResults[rowIdx];
+    if (target == 'input') {
+      return resolveInExt(
+        sItem['inputLinkSource'] as Map<String, dynamic>?,
+        sItem['inputLink'] == true,
+        (sItem['input'] as num? ?? 0.0).toDouble(),
+      );
+    }
     if (target == 'operand') {
-      return (sItem['operand'] as num? ?? 0.0).toDouble();
+      return resolveInExt(
+        sItem['operandLinkSource'] as Map<String, dynamic>?,
+        sItem['operandLink'] == true,
+        (sItem['operand'] as num? ?? 0.0).toDouble(),
+      );
     }
     if (target.startsWith('other_')) {
       final idx = int.tryParse(target.split('_')[1]) ?? 0;
       final sOthers = sItem['others'] as List? ?? [];
       if (idx < sOthers.length) {
-        return ((sOthers[idx] as Map)['val'] as num? ?? 0.0).toDouble();
+        final o = sOthers[idx] as Map;
+        return resolveInExt(
+          o['valLinkSource'] as Map<String, dynamic>?,
+          o['valLink'] == true,
+          (o['val'] as num? ?? 0.0).toDouble(),
+        );
       }
       return 0.0;
     }
-    if (target == 'result') {
-      final inp = (sItem['input'] as num? ?? 0.0).toDouble();
-      final ope = (sItem['operand'] as num? ?? 0.0).toDouble();
-      final op = sItem['op'] as String? ?? '+';
-      final others = (sItem['others'] as List? ?? []).map((e) {
-        final m = Map<String, dynamic>.from(e as Map);
-        m['val'] = (m['val'] as num? ?? 0.0).toDouble();
-        return m;
-      }).toList();
-      return _calculate(
+    return 0.0;
+  }
+
+  /// 指定したアイテムリストについてリンクを多パスで解決し、
+  /// 各行の {input, operand, others, result} を返す
+  List<Map<String, dynamic>> _computeResolvedRows(
+    List<Map<String, dynamic>> items,
+    List<Map<String, dynamic>> constants,
+  ) {
+    if (items.isEmpty) return [];
+
+    // Pass 1: 暫定計算（リンクなし）
+    final List<double> finalResults = List.filled(items.length, 0.0);
+    for (int pi = 0; pi < items.length; pi++) {
+      final it = items[pi];
+      finalResults[pi] = _calculate(
         _CalculatorRow._applyTermTransform(
-          inp,
-          sItem['inputTransform'] as String?,
-          (sItem['inputPowExp'] as num? ?? 2.0).toDouble(),
+          (it['input'] as num? ?? 0.0).toDouble(),
+          it['inputTransform'] as String?,
+          (it['inputPowExp'] as num? ?? 2.0).toDouble(),
         ),
-        op,
+        it['op'] as String? ?? '+',
         _CalculatorRow._applyTermTransform(
-          ope,
-          sItem['operandTransform'] as String?,
-          (sItem['operandPowExp'] as num? ?? 2.0).toDouble(),
+          (it['operand'] as num? ?? 0.0).toDouble(),
+          it['operandTransform'] as String?,
+          (it['operandPowExp'] as num? ?? 2.0).toDouble(),
         ),
-        others,
-        sItem['brackets'] as List? ?? [],
+        (it['others'] as List? ?? []).map((e) {
+          final m = Map<String, dynamic>.from(e as Map);
+          m['val'] = (m['val'] as num? ?? 0.0).toDouble();
+          return m;
+        }).toList(),
+        it['brackets'] as List? ?? [],
       );
     }
-    return 0.0;
+
+    double resolveLink(
+      Map<String, dynamic>? source,
+      bool isLink,
+      double fallback,
+    ) {
+      if (!isLink) return fallback;
+      if (source == null) {
+        return finalResults.isNotEmpty ? finalResults.last : fallback;
+      }
+      if (source['sheetId'] != null) {
+        return _resolveExternalValue(
+          source['sheetId'] as String,
+          source['rowIdx'] as int? ?? 0,
+          source['target'] as String? ?? 'result',
+        );
+      }
+      if (source['type'] == 'constant') {
+        final ci = source['constIdx'] as int? ?? 0;
+        if (ci >= 0 && ci < constants.length) {
+          return (constants[ci]['value'] as num? ?? 0.0).toDouble();
+        }
+        return fallback;
+      }
+      final int sRowIdx = source['rowIdx'] as int? ?? 0;
+      final String sTarget = source['target'] as String? ?? 'result';
+      if (sRowIdx < 0 || sRowIdx >= items.length) return fallback;
+      final sItem = items[sRowIdx];
+      if (sTarget == 'result') return finalResults[sRowIdx];
+      if (sTarget == 'input') return (sItem['input'] as num? ?? 0.0).toDouble();
+      if (sTarget == 'operand') {
+        return (sItem['operand'] as num? ?? 0.0).toDouble();
+      }
+      if (sTarget.startsWith('other_')) {
+        final idx = int.tryParse(sTarget.split('_')[1]) ?? 0;
+        final sOthers = sItem['others'] as List? ?? [];
+        if (idx < sOthers.length) {
+          return ((sOthers[idx] as Map)['val'] as num? ?? 0.0).toDouble();
+        }
+      }
+      return fallback;
+    }
+
+    // Pass 2: 反復収束
+    var resolvedRows = <Map<String, dynamic>>[];
+    for (int pass = 0; pass < items.length; pass++) {
+      resolvedRows = [];
+      bool anyChange = false;
+      for (int i = 0; i < items.length; i++) {
+        final item = items[i];
+        final inputVal = resolveLink(
+          item['inputLinkSource'] as Map<String, dynamic>?,
+          item['inputLink'] == true,
+          (item['input'] as num? ?? 0.0).toDouble(),
+        );
+        final operandVal = resolveLink(
+          item['operandLinkSource'] as Map<String, dynamic>?,
+          item['operandLink'] == true,
+          (item['operand'] as num? ?? 0.0).toDouble(),
+        );
+        final othersVal = List.from(item['others'] as List? ?? []).map((e) {
+          final m = Map<String, dynamic>.from(e as Map);
+          m['val'] = resolveLink(
+            m['valLinkSource'] as Map<String, dynamic>?,
+            m['valLink'] == true,
+            (m['val'] as num? ?? 0.0).toDouble(),
+          );
+          return m;
+        }).toList();
+        final res = _calculate(
+          _CalculatorRow._applyTermTransform(
+            inputVal,
+            item['inputTransform'] as String?,
+            (item['inputPowExp'] as num? ?? 2.0).toDouble(),
+          ),
+          item['op'] as String? ?? '+',
+          _CalculatorRow._applyTermTransform(
+            operandVal,
+            item['operandTransform'] as String?,
+            (item['operandPowExp'] as num? ?? 2.0).toDouble(),
+          ),
+          othersVal.map((e) {
+            final m = Map<String, dynamic>.from(e);
+            m['val'] = _CalculatorRow._applyTermTransform(
+              m['val'] as double,
+              m['transform'] as String?,
+              (m['powExp'] as num? ?? 2.0).toDouble(),
+            );
+            return m;
+          }).toList(),
+          item['brackets'] as List? ?? [],
+        );
+        if ((res - finalResults[i]).abs() > 1e-10) anyChange = true;
+        finalResults[i] = res;
+        resolvedRows.add({
+          'input': inputVal,
+          'operand': operandVal,
+          'others': othersVal,
+          'result': res,
+        });
+      }
+      if (!anyChange) break;
+    }
+    return resolvedRows;
   }
 
   /// 別シートの行/フィールドが現在シートのどの欄にリンクされているか返す
@@ -1574,12 +1835,15 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final items = _items;
     if (items.isEmpty) return;
 
-    int? selectedSrcCalcIdx;
+    int? selectedSrcCalcIdx = items.isNotEmpty ? 0 : null;
     String selectedSrcField = 'result';
     Set<String> selectedDests = {};
     String? selectedSrcSheetId; // null = 現在シート
     // 0=このシート, 1=開放された式, 2=結合シート
     int srcTab = 0;
+    // タブごとに最後に選択した (calcIdx, sheetId) を記憶
+    final Map<int, int?> _lastCalcIdxPerTab = {};
+    final Map<int, String?> _lastSheetIdPerTab = {};
     // リンク先シート（null=現在シート、結合ビュー内の兄弟シートID）
     String? destSheetId;
     final siblingConfigs = widget.allConfigs
@@ -1658,9 +1922,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       ];
     }
 
+    // 現在シートのリンク解決済み値を事前計算
+    final currentResolvedRows = _computeResolvedRows(items, _constants);
+
     String fieldValueStr(int calcIdx, String fieldKey, [String? sheetId]) {
-      final Map<String, dynamic> item;
+      // 外部シートの場合はリンク解決済みの値を使用
       if (sheetId != null) {
+        final v = _resolveExternalValue(sheetId, calcIdx, fieldKey);
         final srcConfig = widget.allConfigs.firstWhere(
           (c) => c.id == sheetId,
           orElse: () => widget.config,
@@ -1668,46 +1936,30 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         final srcItems = (srcConfig.data['items'] as List<dynamic>? ?? [])
             .map((e) => Map<String, dynamic>.from(e as Map))
             .toList();
-        if (calcIdx < 0 || calcIdx >= srcItems.length) return '0';
-        item = srcItems[calcIdx];
-      } else {
-        item = items[calcIdx];
+        final precision = calcIdx < srcItems.length
+            ? (srcItems[calcIdx]['precision'] as int? ?? 2)
+            : 2;
+        if (v == v.truncateToDouble() && v.abs() < 1e12) {
+          return v.toStringAsFixed(0);
+        }
+        return v.toStringAsFixed(precision);
       }
-      final precision = item['precision'] as int? ?? 2;
+      // 現在シート — 解決済みの値を使用
+      if (calcIdx < 0 || calcIdx >= currentResolvedRows.length) return '0';
+      final resolved = currentResolvedRows[calcIdx];
+      final precision = items[calcIdx]['precision'] as int? ?? 2;
       double v;
       if (fieldKey == 'input') {
-        v = (item['input'] as num? ?? 0.0).toDouble();
+        v = resolved['input'] as double;
       } else if (fieldKey == 'operand') {
-        v = (item['operand'] as num? ?? 0.0).toDouble();
+        v = resolved['operand'] as double;
       } else if (fieldKey == 'result') {
-        final inp = (item['input'] as num? ?? 0.0).toDouble();
-        final ope = (item['operand'] as num? ?? 0.0).toDouble();
-        final op = item['op'] as String? ?? '+';
-        final others = (item['others'] as List? ?? []).map((e) {
-          final m = Map<String, dynamic>.from(e as Map);
-          m['val'] = (m['val'] as num? ?? 0.0).toDouble();
-          return m;
-        }).toList();
-        v = _calculate(
-          _CalculatorRow._applyTermTransform(
-            inp,
-            item['inputTransform'] as String?,
-            (item['inputPowExp'] as num? ?? 2.0).toDouble(),
-          ),
-          op,
-          _CalculatorRow._applyTermTransform(
-            ope,
-            item['operandTransform'] as String?,
-            (item['operandPowExp'] as num? ?? 2.0).toDouble(),
-          ),
-          others,
-          item['brackets'] as List? ?? [],
-        );
+        v = resolved['result'] as double;
       } else if (fieldKey.startsWith('other_')) {
         final idx = int.tryParse(fieldKey.substring(6)) ?? 0;
-        final others = item['others'] as List? ?? [];
+        final others = resolved['others'] as List? ?? [];
         v = idx < others.length
-            ? ((others[idx] as Map)['val'] as num? ?? 0.0).toDouble()
+            ? ((others[idx] as Map)['val'] as double? ?? 0.0)
             : 0.0;
       } else {
         v = 0.0;
@@ -1902,9 +2154,46 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                             ),
                                             child: GestureDetector(
                                               onTap: () => setDs(() {
+                                                // 現在の選択を記憶
+                                                _lastCalcIdxPerTab[srcTab] = selectedSrcCalcIdx;
+                                                _lastSheetIdPerTab[srcTab] = selectedSrcSheetId;
                                                 srcTab = tIdx;
-                                                selectedSrcCalcIdx = null;
-                                                selectedSrcSheetId = null;
+                                                // 新しいタブで以前の選択を復元、なければ最初の式を自動選択
+                                                if (_lastCalcIdxPerTab.containsKey(tIdx)) {
+                                                  selectedSrcCalcIdx = _lastCalcIdxPerTab[tIdx];
+                                                  selectedSrcSheetId = _lastSheetIdPerTab[tIdx];
+                                                } else if (tIdx == 0) {
+                                                  selectedSrcCalcIdx = items.isNotEmpty ? 0 : null;
+                                                  selectedSrcSheetId = null;
+                                                } else if (tIdx == 1) {
+                                                  // 開放された式：最初の exposed item を選択
+                                                  selectedSrcCalcIdx = null;
+                                                  selectedSrcSheetId = null;
+                                                  for (final cfg in exposedSheets) {
+                                                    final si = (cfg.data['items'] as List? ?? [])
+                                                        .asMap()
+                                                        .entries
+                                                        .where((en) => (en.value as Map)['exposed'] == true)
+                                                        .toList();
+                                                    if (si.isNotEmpty) {
+                                                      selectedSrcSheetId = cfg.id;
+                                                      selectedSrcCalcIdx = si.first.key;
+                                                      break;
+                                                    }
+                                                  }
+                                                } else if (tIdx == 2) {
+                                                  // 結合シート：最初の item を選択
+                                                  selectedSrcCalcIdx = null;
+                                                  selectedSrcSheetId = null;
+                                                  if (mergedSheets.isNotEmpty) {
+                                                    final ms = mergedSheets.first;
+                                                    final si = (ms.data['items'] as List? ?? []);
+                                                    if (si.isNotEmpty) {
+                                                      selectedSrcSheetId = ms.id;
+                                                      selectedSrcCalcIdx = 0;
+                                                    }
+                                                  }
+                                                }
                                                 selectedSrcField = 'result';
                                               }),
                                               child: AnimatedContainer(
@@ -2013,6 +2302,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                 selectedSrcSheetId = null;
                                                 selectedSrcCalcIdx = i;
                                                 selectedSrcField = 'result';
+                                                selectedDests = {};
                                               }),
                                               child: AnimatedContainer(
                                                 duration: const Duration(
@@ -2277,6 +2567,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                                 i;
                                                             selectedSrcField =
                                                                 'result';
+                                                            selectedDests = {};
                                                           }),
                                                           child: AnimatedContainer(
                                                             duration:
@@ -2599,6 +2890,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                       selectedSrcSheetId = cfg.id;
                                                       selectedSrcCalcIdx = i;
                                                       selectedSrcField = 'result';
+                                                      selectedDests = {};
                                                     }),
                                                     child: AnimatedContainer(
                                                       duration: const Duration(
@@ -2876,16 +3168,17 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                   const SizedBox(height: 8),
                   // ── リンク先セクション（シアン系） ─────────────────────
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
                     child: Row(
-                      children: const [
-                        Icon(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Icon(
                           Icons.download_rounded,
                           size: 14,
                           color: Color(0xFF26C6DA),
                         ),
-                        SizedBox(width: 6),
-                        Text(
+                        const SizedBox(width: 6),
+                        const Text(
                           'リンク先',
                           style: TextStyle(
                             color: Color(0xFF26C6DA),
@@ -2893,14 +3186,78 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        SizedBox(width: 6),
-                        Text(
+                        const SizedBox(width: 6),
+                        const Text(
                           '（複数選択可）',
                           style: TextStyle(color: Colors.white54, fontSize: 11),
                         ),
                       ],
                     ),
                   ),
+                  // ── リンク元の「どの式のどの値」ラベル ────────────────
+                  if (selectedSrcCalcIdx != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                      child: Builder(builder: (_) {
+                        // リンク元のラベルを組み立て
+                        String srcName = '';
+                        String srcFieldLabel = '';
+                        if (selectedSrcSheetId != null) {
+                          final srcCfg = widget.allConfigs.firstWhere(
+                            (c) => c.id == selectedSrcSheetId,
+                            orElse: () => widget.config,
+                          );
+                          final srcSheetTitle = srcCfg.data['title'] as String? ?? selectedSrcSheetId!;
+                          final srcItms = (srcCfg.data['items'] as List? ?? [])
+                              .map((e) => Map<String, dynamic>.from(e as Map))
+                              .toList();
+                          srcName = selectedSrcCalcIdx! < srcItms.length
+                              ? '${srcSheetTitle} / ${srcItms[selectedSrcCalcIdx!]['name'] as String? ?? '計算 ${selectedSrcCalcIdx! + 1}'}'
+                              : srcSheetTitle;
+                        } else {
+                          srcName = selectedSrcCalcIdx! < items.length
+                              ? items[selectedSrcCalcIdx!]['name'] as String? ?? '計算 ${selectedSrcCalcIdx! + 1}'
+                              : '計算 ${selectedSrcCalcIdx! + 1}';
+                        }
+                        srcFieldLabel = selectedSrcField == 'result' ? '答え'
+                            : selectedSrcField == 'input' ? '項1'
+                            : selectedSrcField == 'operand' ? '項2'
+                            : selectedSrcField.startsWith('other_')
+                                ? '項${(int.tryParse(selectedSrcField.split('_')[1]) ?? 0) + 3}'
+                                : selectedSrcField;
+                        final srcValStr = fieldValueStr(
+                          selectedSrcCalcIdx!,
+                          selectedSrcField,
+                          selectedSrcSheetId,
+                        );
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.blueAccent.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.link_rounded, size: 13, color: Colors.blueAccent),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '$srcName  $srcFieldLabel  =  $srcValStr',
+                                  style: const TextStyle(
+                                    color: Colors.blueAccent,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ),
                   // ── リンク先シート選択（結合ビューの場合） ─────────
                   if (siblingConfigs.isNotEmpty)
                     Padding(
@@ -3045,6 +3402,29 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                 } else {
                                   destItems = items;
                                 }
+                                // リンク先アイテムの解決済み値を計算
+                                final List<Map<String, dynamic>> destResolvedRows;
+                                if (destSheetId != null) {
+                                  final dc = widget.allConfigs.firstWhere(
+                                    (c) => c.id == destSheetId,
+                                    orElse: () => widget.config,
+                                  );
+                                  final dcConstants = (dc.data['constants']
+                                              as List? ??
+                                          [])
+                                      .map(
+                                        (e) => Map<String, dynamic>.from(
+                                          e as Map,
+                                        ),
+                                      )
+                                      .toList();
+                                  destResolvedRows = _computeResolvedRows(
+                                    destItems,
+                                    dcConstants,
+                                  );
+                                } else {
+                                  destResolvedRows = currentResolvedRows;
+                                }
                                 if (destSheetId == null &&
                                     destItems.length <= 1 &&
                                     selectedSrcSheetId == null) {
@@ -3076,15 +3456,20 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                           '計算 ${i + 1}';
                                       final itemOthers =
                                           item['others'] as List? ?? [];
+                                      // 解決済みの値を取得
+                                      final destResolved = i < destResolvedRows.length
+                                          ? destResolvedRows[i]
+                                          : <String, dynamic>{};
                                       final resultVal =
-                                          (item['result'] as num? ?? 0.0)
-                                              .toDouble();
+                                          destResolved['result'] as double? ?? 0.0;
+                                      final resolvedOthers =
+                                          destResolved['others'] as List? ?? itemOthers;
                                       final destFields = <Map<String, dynamic>>[
                                         {
                                           'key': 'input',
                                           'label': '項1',
-                                          'val': (item['input'] as num? ?? 0.0)
-                                              .toDouble(),
+                                          'val': destResolved['input'] as double?
+                                              ?? (item['input'] as num? ?? 0.0).toDouble(),
                                           'op':
                                               item['operator'] as String? ??
                                               '+',
@@ -3092,9 +3477,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                         {
                                           'key': 'operand',
                                           'label': '項2',
-                                          'val':
-                                              (item['operand'] as num? ?? 0.0)
-                                                  .toDouble(),
+                                          'val': destResolved['operand'] as double?
+                                              ?? (item['operand'] as num? ?? 0.0).toDouble(),
                                           'op': itemOthers.isNotEmpty
                                               ? ((itemOthers[0]
                                                             as Map)['operator']
@@ -3107,8 +3491,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                           (j) => {
                                             'key': 'other_$j',
                                             'label': '項${j + 3}',
-                                            'val':
-                                                ((itemOthers[j] as Map)['val']
+                                            'val': j < resolvedOthers.length
+                                                ? ((resolvedOthers[j] as Map)['val']
+                                                            as double? ??
+                                                        0.0)
+                                                : ((itemOthers[j] as Map)['val']
                                                             as num? ??
                                                         0.0)
                                                     .toDouble(),
@@ -3183,6 +3570,99 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                   );
                                                   final op =
                                                       df['op'] as String?;
+
+                                                  // 既存リンク元ラベルを取得
+                                                  String existingLinkLabel = '';
+                                                  String existingLinkLabel2 = '';
+                                                  Map<String, dynamic>? existingSrc;
+                                                  if (fk == 'input' && item['inputLink'] == true) {
+                                                    existingSrc = item['inputLinkSource'] as Map<String, dynamic>?;
+                                                  } else if (fk == 'operand' && item['operandLink'] == true) {
+                                                    existingSrc = item['operandLinkSource'] as Map<String, dynamic>?;
+                                                  } else if (fk.startsWith('other_')) {
+                                                    final oi = int.tryParse(fk.split('_')[1]) ?? 0;
+                                                    final oth = item['others'] as List? ?? [];
+                                                    if (oi < oth.length) {
+                                                      final o = oth[oi] as Map;
+                                                      if (o['valLink'] == true) {
+                                                        existingSrc = o['valLinkSource'] as Map<String, dynamic>?;
+                                                      }
+                                                    }
+                                                  }
+                                                  if (existingSrc != null) {
+                                                    final eSid = existingSrc['sheetId'] as String?;
+                                                    final eRi = existingSrc['rowIdx'] as int? ?? 0;
+                                                    final eTgt = existingSrc['target'] as String? ?? 'result';
+                                                    final eTgtLabel = eTgt == 'result' ? '答え'
+                                                        : eTgt == 'input' ? '項1'
+                                                        : eTgt == 'operand' ? '項2'
+                                                        : eTgt.startsWith('other_')
+                                                            ? '項${(int.tryParse(eTgt.split('_')[1]) ?? 0) + 3}'
+                                                            : eTgt;
+                                                    if (eSid != null) {
+                                                      final eCfg = widget.allConfigs.firstWhere(
+                                                        (c) => c.id == eSid,
+                                                        orElse: () => widget.config,
+                                                      );
+                                                      final eSheetTitle = eCfg.data['title'] as String? ?? eSid;
+                                                      final eItems = (eCfg.data['items'] as List? ?? [])
+                                                          .map((e) => Map<String, dynamic>.from(e as Map))
+                                                          .toList();
+                                                      final eRowName = eRi < eItems.length
+                                                          ? (eItems[eRi]['name'] as String? ?? '計算 ${eRi + 1}')
+                                                          : '?';
+                                                      existingLinkLabel = '$eSheetTitle/$eRowName';
+                                                      existingLinkLabel2 = '$eTgtLabel';
+                                                    } else {
+                                                      // 同一シート内リンク
+                                                      final eBaseItems = destSheetId != null
+                                                          ? (widget.allConfigs.firstWhere(
+                                                              (c) => c.id == destSheetId,
+                                                              orElse: () => widget.config,
+                                                            ).data['items'] as List? ?? [])
+                                                              .map((e) => Map<String, dynamic>.from(e as Map))
+                                                              .toList()
+                                                          : items;
+                                                      final eRowName = eRi < eBaseItems.length
+                                                          ? (eBaseItems[eRi]['name'] as String? ?? '計算 ${eRi + 1}')
+                                                          : '?';
+                                                      existingLinkLabel = '$eRowName';
+                                                      existingLinkLabel2 = '$eTgtLabel';
+                                                    }
+                                                  }
+
+                                                  // 選択時に表示するリンク元情報を組み立て
+                                                  String srcFormulaName = '';
+                                                  String srcFieldLabel = '';
+                                                  String srcValDisplay = '';
+                                                  if (selectedSrcCalcIdx != null) {
+                                                    if (selectedSrcSheetId != null) {
+                                                      final sCfg = widget.allConfigs.firstWhere(
+                                                        (c) => c.id == selectedSrcSheetId,
+                                                        orElse: () => widget.config,
+                                                      );
+                                                      final sTitle = sCfg.data['title'] as String? ?? selectedSrcSheetId!;
+                                                      final sItms = (sCfg.data['items'] as List? ?? [])
+                                                          .map((e) => Map<String, dynamic>.from(e as Map))
+                                                          .toList();
+                                                      final fName = selectedSrcCalcIdx! < sItms.length
+                                                          ? sItms[selectedSrcCalcIdx!]['name'] as String? ?? '計算 ${selectedSrcCalcIdx! + 1}'
+                                                          : '計算 ${selectedSrcCalcIdx! + 1}';
+                                                      srcFormulaName = '$sTitle / $fName';
+                                                    } else {
+                                                      srcFormulaName = selectedSrcCalcIdx! < items.length
+                                                          ? items[selectedSrcCalcIdx!]['name'] as String? ?? '計算 ${selectedSrcCalcIdx! + 1}'
+                                                          : '計算 ${selectedSrcCalcIdx! + 1}';
+                                                    }
+                                                    srcFieldLabel = selectedSrcField == 'result' ? '答え'
+                                                        : selectedSrcField == 'input' ? '項1'
+                                                        : selectedSrcField == 'operand' ? '項2'
+                                                        : selectedSrcField.startsWith('other_')
+                                                            ? '項${(int.tryParse(selectedSrcField.split('_')[1]) ?? 0) + 3}'
+                                                            : selectedSrcField;
+                                                    srcValDisplay = fieldValueStr(selectedSrcCalcIdx!, selectedSrcField, selectedSrcSheetId);
+                                                  }
+
                                                   final itemWidget = GestureDetector(
                                                     onTap: () => setDs(() {
                                                       if (isSel) {
@@ -3286,6 +3766,44 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                               fontSize: 15,
                                                             ),
                                                           ),
+                                                          // 選択中：リンク元の式名・項目・値を表示
+                                                          if (isSel && srcFormulaName.isNotEmpty) ...[
+                                                            const SizedBox(height: 4),
+                                                       
+                                                            const SizedBox(height: 3),
+                                                            Text(
+                                                              srcFormulaName,
+                                                              style: TextStyle(
+                                                                color: const Color(0xFF26C6DA).withOpacity(0.85),
+                                                                fontSize: 9,
+                                                                fontWeight: FontWeight.bold,
+                                                              ),
+                                                            ),
+                                                            Text(
+                                                              '$srcFieldLabel = $srcValDisplay',
+                                                              style: TextStyle(
+                                                                color: const Color(0xFF26C6DA).withOpacity(0.85),
+                                                                fontSize: 9,
+                                                              ),
+                                                            ),
+                                                          // 未選択で既存リンクあり：リンク元を表示
+                                                          ] else if (!isSel && existingLinkLabel.isNotEmpty) ...[
+                                                            const SizedBox(height: 3),
+                                                            Text(
+                                                              existingLinkLabel,
+                                                              style: TextStyle(
+                                                                color: const Color(0xFF26C6DA).withOpacity(0.7),
+                                                                fontSize: 8,
+                                                              ),
+                                                            ),
+                                                            Text(
+                                                              existingLinkLabel2,
+                                                              style: TextStyle(
+                                                                color: const Color(0xFF26C6DA).withOpacity(0.7),
+                                                                fontSize: 8,
+                                                              ),
+                                                            ),
+                                                          ],
                                                         ],
                                                       ),
                                                     ),
@@ -3570,152 +4088,20 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       return;
     }
 
-    // ---- パス1: 暫定計算（リンクなし）----
-    final List<double> provisionalResults = List.filled(items.length, 0.0);
-    for (int pi = 0; pi < items.length; pi++) {
-      final pItem = items[pi];
-      final pInput = (pItem['input'] as num? ?? 0.0).toDouble();
-      final pOperand = (pItem['operand'] as num? ?? 0.0).toDouble();
-      final pOthers = (pItem['others'] as List? ?? []).map((e) {
-        final m = Map<String, dynamic>.from(e as Map);
-        m['val'] = (m['val'] as num? ?? 0.0).toDouble();
-        return m;
-      }).toList();
-      final r = _calculate(
-        _CalculatorRow._applyTermTransform(
-          pInput,
-          pItem['inputTransform'] as String?,
-          (pItem['inputPowExp'] as num? ?? 2.0).toDouble(),
-        ),
-        pItem['op'] as String? ?? '+',
-        _CalculatorRow._applyTermTransform(
-          pOperand,
-          pItem['operandTransform'] as String?,
-          (pItem['operandPowExp'] as num? ?? 2.0).toDouble(),
-        ),
-        pOthers,
-        pItem['brackets'] as List? ?? [],
-      );
-      provisionalResults[pi] = r;
-    }
+    final csvText = _buildCsvString(items);
+    Clipboard.setData(ClipboardData(text: csvText));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('CSVをクリップボードにコピーしました'),
+        backgroundColor: Color(0xFF2A2A3A),
+      ),
+    );
+  }
 
-    // ---- パス2: 反復収束によりチェーンリンクを正しく解決 ----
-    // finalResults をあらかじめ暫定値で初期化しておくことで
-    // 前方参照（移動後に順序逆転したチェーン）でも正しい値が伝播する
-    final List<double> finalResults = List<double>.from(provisionalResults);
-    var resolvedRows = <Map<String, dynamic>>[];
+  /// CSV 文字列を構築する（連動値を正しく解決し、計算式に = 結果 を含める）
+  String _buildCsvString(List<Map<String, dynamic>> items) {
+    final resolvedRows = _computeResolvedRows(items, _constants);
 
-    // ---- リンク解決ヘルパー ----
-    double resolveLink(
-      Map<String, dynamic>? source,
-      bool isLink,
-      double fallback,
-    ) {
-      if (!isLink) return fallback;
-      if (source == null) {
-        return finalResults.isNotEmpty ? finalResults.last : fallback;
-      }
-      // クロスシートリンク
-      if (source['sheetId'] != null) {
-        return _resolveExternalValue(
-          source['sheetId'] as String,
-          source['rowIdx'] as int? ?? 0,
-          source['target'] as String? ?? 'result',
-        );
-      }
-      final int sRowIdx = source['rowIdx'] as int? ?? 0;
-      final String sTarget = source['target'] as String? ?? 'result';
-      if (sRowIdx < 0 || sRowIdx >= items.length) return fallback;
-      final sItem = items[sRowIdx];
-      if (sTarget == 'result') return finalResults[sRowIdx];
-      if (sTarget == 'input') return (sItem['input'] as num? ?? 0.0).toDouble();
-      if (sTarget == 'operand') {
-        return (sItem['operand'] as num? ?? 0.0).toDouble();
-      }
-      if (sTarget.startsWith('other_')) {
-        final idx = int.tryParse(sTarget.split('_')[1]) ?? 0;
-        final sOthers = sItem['others'] as List? ?? [];
-        if (idx < sOthers.length) {
-          return (sOthers[idx]['val'] as num? ?? 0.0).toDouble();
-        }
-      }
-      return fallback;
-    }
-
-    // 最大 items.length 回の反復で任意のチェーン深さを収束させる
-    for (int pass = 0; pass < items.length; pass++) {
-      resolvedRows = [];
-      bool anyChange = false;
-
-      for (int i = 0; i < items.length; i++) {
-        final item = items[i];
-
-        final double inputValue = resolveLink(
-          item['inputLinkSource'] as Map<String, dynamic>?,
-          item['inputLink'] == true,
-          (item['input'] as num? ?? 0.0).toDouble(),
-        );
-        final double operandValue = resolveLink(
-          item['operandLinkSource'] as Map<String, dynamic>?,
-          item['operandLink'] == true,
-          (item['operand'] as num? ?? 0.0).toDouble(),
-        );
-        final othersValue = List.from(item['others'] as List? ?? []).map((e) {
-          final map = Map<String, dynamic>.from(e as Map);
-          map['val'] = resolveLink(
-            map['valLinkSource'] as Map<String, dynamic>?,
-            map['valLink'] == true,
-            (map['val'] as num? ?? 0.0).toDouble(),
-          );
-          return map;
-        }).toList();
-
-        final inputTransform = item['inputTransform'] as String?;
-        final inputPowExp = (item['inputPowExp'] as num? ?? 2.0).toDouble();
-        final operandTransform = item['operandTransform'] as String?;
-        final operandPowExp = (item['operandPowExp'] as num? ?? 2.0).toDouble();
-
-        final inputForCalc = _CalculatorRow._applyTermTransform(
-          inputValue,
-          inputTransform,
-          inputPowExp,
-        );
-        final operandForCalc = _CalculatorRow._applyTermTransform(
-          operandValue,
-          operandTransform,
-          operandPowExp,
-        );
-        final othersForCalc = othersValue.map((e) {
-          final m = Map<String, dynamic>.from(e);
-          final t = m['transform'] as String?;
-          final exp = (m['powExp'] as num? ?? 2.0).toDouble();
-          m['val'] = _CalculatorRow._applyTermTransform(
-            (m['val'] as double),
-            t,
-            exp,
-          );
-          return m;
-        }).toList();
-
-        final res = _calculate(
-          inputForCalc,
-          item['op'] as String? ?? '+',
-          operandForCalc,
-          othersForCalc,
-          item['brackets'] as List? ?? [],
-        );
-        if ((res - finalResults[i]).abs() > 1e-10) anyChange = true;
-        finalResults[i] = res;
-        resolvedRows.add({
-          'input': inputValue,
-          'operand': operandValue,
-          'others': othersValue,
-        });
-      }
-      if (!anyChange) break;
-    }
-
-    // ---- CSV 文字列組み立て ----
     String escapeCsv(String s) {
       if (s.contains(',') || s.contains('"') || s.contains('\n')) {
         return '"${s.replaceAll('"', '""')}"';
@@ -3741,11 +4127,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       final name = item['name'] as String? ?? '';
       final precision = item['precision'] as int? ?? 2;
       final unitResult = item['unitResult'] as String? ?? '';
-      final result = finalResults[i];
+      final result = (resolved['result'] as num? ?? 0.0).toDouble();
       final resultStr = '${fmtNum(result, precision)}$unitResult';
 
-      final double input = resolved['input'] as double;
-      final double operand = resolved['operand'] as double;
+      final double input = (resolved['input'] as num? ?? 0.0).toDouble();
+      final double operand = (resolved['operand'] as num? ?? 0.0).toDouble();
       final op = item['op'] as String? ?? '+';
       final unit1 = item['unit1'] as String? ?? '';
       final unit2 = item['unit2'] as String? ?? '';
@@ -3757,19 +4143,125 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         formula +=
             ' ${m['op'] ?? '+'} ${fmtNum((m['val'] as num? ?? 0.0).toDouble(), precision)}${m['unit'] ?? ''}';
       }
+      formula += ' = $resultStr';
 
       buf.writeln(
         '${escapeCsv(name)},${escapeCsv(formula)},${escapeCsv(resultStr)}',
       );
     }
 
-    Clipboard.setData(ClipboardData(text: buf.toString()));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('CSVをクリップボードにコピーしました'),
-        backgroundColor: Color(0xFF2A2A3A),
+    return buf.toString();
+  }
+
+  /// QR コードを表示して CSV/シートデータを共有する
+  void _shareAsCsvQr() {
+    final items = _items;
+    if (items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('共有するデータがありません'),
+          backgroundColor: Color(0xFF2A2A3A),
+        ),
+      );
+      return;
+    }
+
+    // NaN / Infinity を安全な値に変換するヘルパー
+    double safeDouble(num? v) {
+      final d = (v ?? 0.0).toDouble();
+      if (d.isNaN || d.isInfinite) return 0.0;
+      return d;
+    }
+
+    final resolvedRows = _computeResolvedRows(items, _constants);
+    final title = widget.config.data['title'] as String? ?? '定型計算';
+
+    final qrItems = List.generate(items.length, (i) {
+      final item = items[i];
+      final resolved = resolvedRows[i];
+      final precision = item['precision'] as int? ?? 2;
+      return {
+        'n': (item['name'] as String? ?? ''),
+        'i': safeDouble(resolved['input'] as num?),
+        'op': (item['op'] as String? ?? '+'),
+        'o': safeDouble(resolved['operand'] as num?),
+        'oth': (resolved['others'] as List).map((e) {
+          final m = e as Map;
+          return {
+            'op': (m['op'] as String? ?? '+'),
+            'v': safeDouble(m['val'] as num?),
+            'u': (m['unit'] as String? ?? ''),
+          };
+        }).toList(),
+        'p': precision,
+        'u1': (item['unit1'] as String? ?? ''),
+        'u2': (item['unit2'] as String? ?? ''),
+        'ur': (item['unitResult'] as String? ?? ''),
+      };
+    });
+
+    List<String> qrDataList;
+    try {
+      qrDataList = _buildQrChunks(title: title, qrItems: qrItems);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('データのエンコードに失敗しました'),
+          backgroundColor: Color(0xFF2A2A3A),
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => _QrShareDialog(
+        qrDataList: qrDataList,
+        title: title,
+        itemCount: items.length,
       ),
     );
+  }
+
+  /// QRデータを1000文字以内のチャンクに分割して返す。
+  /// 1枚に収まる場合はそのまま1要素のリストを返す。
+  List<String> _buildQrChunks({
+    required String title,
+    required List<Map<String, dynamic>> qrItems,
+  }) {
+    // まずシングルQRで試す
+    final singleQr = json.encode({'v': 1, 't': title, 'items': qrItems});
+    if (singleQr.length <= 1000) {
+      return [singleQr];
+    }
+
+    // アイテム配列をJSON文字列化してチャンク分割
+    final itemsJson = json.encode(qrItems);
+    // ヘッダーオーバーヘッド({"v":1,"m":1,"tot":99,"idx":0,"t":"...","d":""})を考慮して
+    // 1チャンクあたり最大900文字のデータとする
+    const dataChunkSize = 900;
+
+    final dataChunks = <String>[];
+    var i = 0;
+    while (i < itemsJson.length) {
+      final end = (i + dataChunkSize).clamp(0, itemsJson.length);
+      dataChunks.add(itemsJson.substring(i, end));
+      i = end;
+    }
+
+    final total = dataChunks.length;
+    return List.generate(total, (idx) {
+      final envelope = <String, dynamic>{
+        'v': 1,
+        'm': 1,          // 連結モード
+        'tot': total,    // 総枚数
+        'idx': idx,      // 0始まりのインデックス
+        'd': dataChunks[idx],
+      };
+      // タイトルは最初のチャンクにのみ含める
+      if (idx == 0) envelope['t'] = title;
+      return json.encode(envelope);
+    });
   }
 
   double _evaluateTokens(List<dynamic> tokens) {

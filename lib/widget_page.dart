@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import 'ai_service.dart';
 
@@ -1477,6 +1478,14 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
   // 0 = 編集, 1 = 閲覧, 2 = 表
   int _globalMode = 0;
 
+  // ── スクロール・シートキー ──
+  final ScrollController _scrollController = ScrollController();
+  final Map<String, GlobalKey> _sheetKeys = {};
+
+  // ── 結合ビュー用電卓オーバーレイ ──
+  OverlayEntry? _mergedCalcOverlay;
+  bool _mergedCalcOpen = false;
+
   @override
   void initState() {
     super.initState();
@@ -1485,6 +1494,255 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
         .map((e) => e as String)
         .toList();
     _localSheets = List<WidgetConfig>.from(widget.sheets);
+    for (final id in _sheetIds) {
+      _sheetKeys[id] = GlobalKey();
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _mergedCalcOverlay?.remove();
+    _mergedCalcOverlay = null;
+    super.dispose();
+  }
+
+  GlobalKey _keyForSheet(String id) {
+    return _sheetKeys.putIfAbsent(id, () => GlobalKey());
+  }
+
+  // ── 結合ビュー用電卓 ──────────────────────────────────────────────────────
+  void _openMergedCalcSheet() {
+    if (_mergedCalcOpen) {
+      _closeMergedCalcSheet();
+      return;
+    }
+    setState(() => _mergedCalcOpen = true);
+    _mergedCalcOverlay = OverlayEntry(
+      builder: (ctx) => _CalcDraggableSheetContent(
+        existingItemCount: 0,
+        isDark: true,
+        onAddItem: (item) {
+          _closeMergedCalcSheet();
+          Future.microtask(() => _pickSheetAndAdd(item));
+        },
+        onClose: _closeMergedCalcSheet,
+      ),
+    );
+    Overlay.of(context).insert(_mergedCalcOverlay!);
+  }
+
+  void _closeMergedCalcSheet() {
+    _mergedCalcOverlay?.remove();
+    _mergedCalcOverlay = null;
+    if (mounted) setState(() => _mergedCalcOpen = false);
+  }
+
+  Future<void> _pickSheetAndAdd(Map<String, dynamic> item) async {
+    if (!mounted) return;
+    final selectedId = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      '追加するシートを選択',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.pop(ctx),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(color: Colors.white12, height: 1),
+            for (final id in _sheetIds) ...[
+              Builder(builder: (bCtx) {
+                WidgetConfig? sheet;
+                try {
+                  sheet = _localSheets.firstWhere((s) => s.id == id);
+                } catch (_) {}
+                final title = sheet?.data['title'] as String? ?? '定型計算';
+                final itemCount = (sheet?.data['items'] as List?)?.length ?? 0;
+                return ListTile(
+                  leading: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5E81FF).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.calculate_rounded,
+                      color: Color(0xFF5E81FF),
+                      size: 18,
+                    ),
+                  ),
+                  title: Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '$itemCount 件の計算',
+                    style: const TextStyle(color: Colors.white38, fontSize: 11),
+                  ),
+                  onTap: () => Navigator.pop(ctx, id),
+                );
+              }),
+            ],
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (selectedId == null || !mounted) return;
+    final sheetIdx = _localSheets.indexWhere((s) => s.id == selectedId);
+    if (sheetIdx == -1) return;
+    final sheet = _localSheets[sheetIdx];
+    final rawItems = sheet.data['items'] as List<dynamic>? ?? [];
+    final newItems = List<dynamic>.from(rawItems)..add(item);
+    final rawOrder = sheet.data['displayOrder'] as List<dynamic>?;
+    final newOrder = rawOrder != null
+        ? (List<dynamic>.from(rawOrder)
+          ..add({'type': 'calc', 'calcIdx': newItems.length - 1}))
+        : null;
+    final newData = {
+      ...sheet.data,
+      'items': newItems,
+      if (newOrder != null) 'displayOrder': newOrder,
+    };
+    setState(() {
+      _localSheets = _localSheets
+          .map((s) => s.id == selectedId ? s.copyWith(data: newData) : s)
+          .toList();
+    });
+    widget.onSheetUpdate(selectedId, newData);
+  }
+
+  // ── シートナビゲーション ──────────────────────────────────────────────────
+  void _showSheetNavPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'シートへ移動',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.pop(ctx),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(color: Colors.white12, height: 1),
+            for (int i = 0; i < _sheetIds.length; i++) ...[
+              Builder(builder: (bCtx) {
+                final id = _sheetIds[i];
+                WidgetConfig? sheet;
+                try {
+                  sheet = _localSheets.firstWhere((s) => s.id == id);
+                } catch (_) {}
+                final title = sheet?.data['title'] as String? ?? '定型計算';
+                return ListTile(
+                  leading: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.06),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${i + 1}',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_downward_rounded,
+                    color: Colors.white24,
+                    size: 16,
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _scrollToSheet(id);
+                  },
+                );
+              }),
+            ],
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _scrollToSheet(String sheetId) {
+    final key = _sheetKeys[sheetId];
+    if (key?.currentContext != null) {
+      Scrollable.ensureVisible(
+        key!.currentContext!,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.0,
+      );
+    }
   }
 
   void _removeSheet(String sheetId) {
@@ -1767,7 +2025,8 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
               child: Text('シートがありません', style: TextStyle(color: Colors.white38)),
             )
           : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(0, 8, 0, 80),
+              controller: _scrollController,
+              padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),
               itemCount: _sheetIds.length,
               itemBuilder: (ctx, i) {
                 final id = _sheetIds[i];
@@ -1779,6 +2038,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                 }
                 if (sheetConfig == null) return const SizedBox.shrink();
                 return Padding(
+                  key: _keyForSheet(id),
                   padding: const EdgeInsets.only(bottom: 16),
                   child: _MergedSheetSection(
                     key: ValueKey(id),
@@ -1807,6 +2067,45 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                 );
               },
             ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // シートナビゲーションボタン
+            FloatingActionButton.small(
+              heroTag: 'merged_sheet_nav',
+              backgroundColor: const Color(0xFF1E1E2E),
+              elevation: 4,
+              onPressed: _showSheetNavPicker,
+              tooltip: 'シートへ移動',
+              child: const Icon(
+                Icons.format_list_bulleted_rounded,
+                color: Colors.white70,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // 電卓ボタン
+            FloatingActionButton(
+              heroTag: 'merged_calc_fab',
+              backgroundColor: _mergedCalcOpen
+                  ? const Color(0xFF5E81FF)
+                  : const Color(0xFF1E1E2E),
+              elevation: 4,
+              onPressed: _openMergedCalcSheet,
+              tooltip: '電卓',
+              child: Icon(
+                _mergedCalcOpen ? Icons.close_rounded : Icons.calculate_rounded,
+                color: Colors.white,
+                size: 26,
+              ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
@@ -2205,6 +2504,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                     ),
                   ),
                 ),
+   if (_config.type != 'merged')
                 IconButton(
                   icon: Icon(
                     Icons.link_rounded,
@@ -2217,6 +2517,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                   padding: const EdgeInsets.all(8),
                   constraints: const BoxConstraints(),
                 ),
+   if (_config.type != 'merged')
   IconButton(
                   icon: Icon(
                     Icons.more_vert_rounded,
@@ -2259,6 +2560,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
               onClear: () => widget.clipboardNotifier!.value = null,
             ),
           // ボトムバー
+   if (_config.type != 'merged')
           _buildBottomBar(),
         ],
       ),
@@ -2457,3 +2759,235 @@ class ClipboardBottomBar extends StatelessWidget {
     );
   }
 }
+
+// ── QR 共有ダイアログ ─────────────────────────────────────────────────────────
+class _QrShareDialog extends StatefulWidget {
+  final List<String> qrDataList;
+  final String title;
+  final int itemCount;
+
+  const _QrShareDialog({
+    required this.qrDataList,
+    required this.title,
+    required this.itemCount,
+  });
+
+  @override
+  State<_QrShareDialog> createState() => _QrShareDialogState();
+}
+
+class _QrShareDialogState extends State<_QrShareDialog> {
+  int _currentPage = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = widget.qrDataList.length;
+    final isMulti = total > 1;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      child: Container(
+        width: MediaQuery.of(context).size.width - 10,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A2E),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // タイトルバー
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 8, 12),
+              child: Row(
+                children: [
+                  const Icon(Icons.qr_code_rounded, color: Colors.white70, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isMulti
+                          ? 'QRコードで共有 (${_currentPage + 1}/$total枚目)'
+                          : 'QRコードで共有',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, color: Colors.white38, size: 20),
+                    onPressed: () => Navigator.pop(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+            ),
+            // QRコード
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                color: Colors.white,
+                padding: const EdgeInsets.all(12),
+                child: SizedBox(
+                  width: 220,
+                  height: 220,
+                  child: QrImageView(
+                    data: widget.qrDataList[_currentPage],
+                    version: QrVersions.auto,
+                    size: 220,
+                    errorCorrectionLevel: QrErrorCorrectLevel.L,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // シート名
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                widget.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${widget.itemCount}件の計算データ',
+              style: const TextStyle(color: Colors.white54, fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            if (isMulti) ...[
+              // 連結QR情報
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.tealAccent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.tealAccent.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.link_rounded, color: Colors.tealAccent, size: 14),
+                    const SizedBox(width: 6),
+                    Text(
+                      '連結QR: ${_currentPage + 1}/$total枚目',
+                      style: const TextStyle(
+                        color: Colors.tealAccent,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  '全てのQRコードを順番にスキャンしてください',
+                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 12),
+              // ページナビゲーションボタン
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: _currentPage > 0
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        onPressed: _currentPage > 0
+                            ? () => setState(() => _currentPage--)
+                            : null,
+                        child: Text(
+                          '← 前へ',
+                          style: TextStyle(
+                            color: _currentPage > 0
+                                ? Colors.white70
+                                : Colors.white24,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          backgroundColor: _currentPage < total - 1
+                              ? Colors.tealAccent.withValues(alpha: 0.15)
+                              : Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        onPressed: _currentPage < total - 1
+                            ? () => setState(() => _currentPage++)
+                            : null,
+                        child: Text(
+                          '次へ →',
+                          style: TextStyle(
+                            color: _currentPage < total - 1
+                                ? Colors.tealAccent
+                                : Colors.white24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  '別の端末でスキャンしてシートを取り込めます',
+                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            // 閉じるボタン
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.06),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('閉じる', style: TextStyle(color: Colors.white54)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

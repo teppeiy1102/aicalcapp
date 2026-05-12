@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'widget_page.dart';
@@ -436,6 +437,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
+                    color: Colors.tealAccent.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.tealAccent, size: 22),
+                ),
+                title: const Text('シートを取り込む', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                subtitle: Text('QRコードからシートをインポート', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showQrScanner();
+                },
+              ),
+              const Divider(color: Colors.white10, indent: 16, endIndent: 16),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
                     color: Colors.amberAccent.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -583,6 +602,93 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  /// QR コードスキャナー画面を開く
+  void _showQrScanner() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (ctx) => _QrScannerPage(
+          onScanned: (String qrData) {
+            Navigator.pop(ctx);
+            _importSheetFromQr(qrData);
+          },
+        ),
+      ),
+    );
+  }
+
+  /// スキャンした QR データからシートをインポートする
+  void _importSheetFromQr(String qrData) {
+    try {
+      final decoded = json.decode(qrData);
+      if (decoded is! Map<String, dynamic> ||
+          decoded['v'] != 1 ||
+          decoded['items'] == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('有効なシートQRコードではありません'),
+            backgroundColor: Color(0xFF2A2A3A),
+          ),
+        );
+        return;
+      }
+
+      final title = decoded['t'] as String? ?? '取り込んだシート';
+      final qrItems = decoded['items'] as List<dynamic>;
+
+      final items = qrItems.map<Map<String, dynamic>>((e) {
+        final m = Map<String, dynamic>.from(e as Map);
+        return {
+          'name': m['n'] as String? ?? '',
+          'input': (m['i'] as num? ?? 0.0).toDouble(),
+          'op': m['op'] as String? ?? '+',
+          'operand': (m['o'] as num? ?? 0.0).toDouble(),
+          'others': (m['oth'] as List? ?? []).map<Map<String, dynamic>>((o) {
+            final om = Map<String, dynamic>.from(o as Map);
+            return {
+              'op': om['op'] as String? ?? '+',
+              'val': (om['v'] as num? ?? 0.0).toDouble(),
+              'unit': om['u'] as String? ?? '',
+            };
+          }).toList(),
+          'brackets': <dynamic>[],
+          'precision': (m['p'] as num? ?? 2).toInt(),
+          'unit1': m['u1'] as String? ?? '',
+          'unit2': m['u2'] as String? ?? '',
+          'unitResult': m['ur'] as String? ?? '',
+        };
+      }).toList();
+
+      final newConfig = WidgetConfig(
+        id: '${DateTime.now().millisecondsSinceEpoch}',
+        type: 'calculator',
+        data: {
+          'title': title,
+          'items': items,
+          'isExpanded': true,
+          'bgColor': 0xFF1A1A2E,
+        },
+      );
+
+      setState(() => _configs.insert(0, newConfig));
+      _saveConfigs();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('「$title」を取り込みました（${items.length}件）'),
+          backgroundColor: const Color(0xFF2A2A3A),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('QRコードの読み取りに失敗しました'),
+          backgroundColor: Color(0xFF2A2A3A),
+        ),
+      );
+    }
   }
 
   @override
@@ -1769,6 +1875,324 @@ class _SettingsPageState extends State<_SettingsPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── QR コードスキャナーページ ─────────────────────────────────────────────────
+class _QrScannerPage extends StatefulWidget {
+  final void Function(String) onScanned;
+
+  const _QrScannerPage({required this.onScanned});
+
+  @override
+  State<_QrScannerPage> createState() => _QrScannerPageState();
+}
+
+class _QrScannerPageState extends State<_QrScannerPage> {
+  late final MobileScannerController _controller;
+
+  /// スキャン完了フラグ（全チャンク揃ったら true）
+  bool _done = false;
+
+  // ── 連結QR 収集状態 ──
+  /// 収集済みチャンク: idx → データ文字列
+  final Map<int, String> _chunks = {};
+  int? _totalChunks;
+  String? _multiTitle;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = MobileScannerController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// QRコードを1枚検出したときの処理
+  void _onDetected(String rawValue) {
+    if (_done) return;
+
+    Map<String, dynamic> decoded;
+    try {
+      final d = json.decode(rawValue);
+      if (d is! Map<String, dynamic>) return;
+      decoded = d;
+    } catch (_) {
+      return; // JSON以外は無視
+    }
+
+    final multiFlag = decoded['m'];
+
+    if (multiFlag == null || multiFlag == 0) {
+      // ──── シングルQR ────
+      if (_chunks.isNotEmpty) {
+        // 連結収集中にシングルQRを読んだ場合は無視
+        return;
+      }
+      setState(() => _done = true);
+      widget.onScanned(rawValue);
+      return;
+    }
+
+    // ──── 連結QR ────
+    final int tot = (decoded['tot'] as num? ?? 0).toInt();
+    final int idx = (decoded['idx'] as num? ?? 0).toInt();
+    final String dataChunk = decoded['d'] as String? ?? '';
+    final String? title = decoded['t'] as String?;
+
+    if (tot <= 0 || idx < 0 || idx >= tot) return; // 不正フォーマット
+
+    // 既に収集済みのチャンクは再処理しない
+    if (_chunks.containsKey(idx)) return;
+
+    setState(() {
+      _totalChunks = tot;
+      if (title != null) _multiTitle = title;
+      _chunks[idx] = dataChunk;
+    });
+
+    // 全チャンク揃ったか確認
+    if (_chunks.length == _totalChunks) {
+      // 順番に結合してアイテム配列を復元
+      final assembledItemsJson =
+          List.generate(_totalChunks!, (i) => _chunks[i]!).join('');
+
+      try {
+        final itemsDecoded = json.decode(assembledItemsJson);
+        final assembled = json.encode({
+          'v': 1,
+          't': _multiTitle ?? '取り込んだシート',
+          'items': itemsDecoded,
+        });
+        setState(() => _done = true);
+        widget.onScanned(assembled);
+      } catch (_) {
+        // 結合後にパース失敗 → 収集状態をリセットして再スキャンを促す
+        setState(() {
+          _chunks.clear();
+          _totalChunks = null;
+          _multiTitle = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('QRデータの結合に失敗しました。最初からスキャンし直してください'),
+            backgroundColor: Color(0xFF2A2A3A),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isMulti = _totalChunks != null && _totalChunks! > 1;
+    final collected = _chunks.length;
+    final total = _totalChunks ?? 0;
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0D0D14),
+        title: Text(
+          isMulti
+              ? 'QRスキャン ($collected/$total枚)'
+              : 'QRコードをスキャン',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
+        actions: [
+          // 連結スキャン中はリセットボタンを表示
+          if (isMulti && !_done)
+            TextButton(
+              onPressed: () => setState(() {
+                _chunks.clear();
+                _totalChunks = null;
+                _multiTitle = null;
+              }),
+              child: const Text(
+                'リセット',
+                style: TextStyle(color: Colors.orangeAccent, fontSize: 13),
+              ),
+            ),
+          IconButton(
+            icon: ValueListenableBuilder(
+              valueListenable: _controller,
+              builder: (ctx, state, _) {
+                final torchOn = state.torchState == TorchState.on;
+                return Icon(
+                  torchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                  color: torchOn ? Colors.amberAccent : Colors.white38,
+                );
+              },
+            ),
+            onPressed: () => _controller.toggleTorch(),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Stack(
+        children: [
+          MobileScanner(
+            controller: _controller,
+            onDetect: (capture) {
+              if (_done) return;
+              final barcodes = capture.barcodes;
+              if (barcodes.isEmpty) return;
+              final rawValue = barcodes.first.rawValue;
+              if (rawValue != null && rawValue.isNotEmpty) {
+                _onDetected(rawValue);
+              }
+            },
+          ),
+          // スキャンガイド枠
+          Center(
+            child: Container(
+              width: 240,
+              height: 240,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: isMulti ? Colors.orangeAccent : Colors.tealAccent,
+                  width: 2.5,
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+          // 角のマーカー
+          Center(
+            child: SizedBox(
+              width: 240,
+              height: 240,
+              child: Stack(
+                children: [
+                  _corner(Alignment.topLeft, isMulti),
+                  _corner(Alignment.topRight, isMulti),
+                  _corner(Alignment.bottomLeft, isMulti),
+                  _corner(Alignment.bottomRight, isMulti),
+                ],
+              ),
+            ),
+          ),
+          // 連結QR進捗インジケーター
+          if (isMulti)
+            Positioned(
+              top: 20,
+              left: 32,
+              right: 32,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.75),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.orangeAccent.withOpacity(0.5),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.link_rounded,
+                            color: Colors.orangeAccent, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          '連結QR: $collected/$total枚スキャン済み',
+                          style: const TextStyle(
+                            color: Colors.orangeAccent,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // 枚数のドットインジケーター
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(total, (i) {
+                        final done = _chunks.containsKey(i);
+                        return Container(
+                          width: 10,
+                          height: 10,
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: done
+                                ? Colors.tealAccent
+                                : Colors.white24,
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          // 説明テキスト
+          Positioned(
+            bottom: 60,
+            left: 32,
+            right: 32,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                isMulti
+                    ? '残り ${total - collected}枚のQRをスキャンしてください'
+                    : 'シートのQRコードをフレーム内に合わせてください',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _corner(Alignment alignment, bool isMulti) {
+    final isLeft =
+        alignment == Alignment.topLeft || alignment == Alignment.bottomLeft;
+    final isTop =
+        alignment == Alignment.topLeft || alignment == Alignment.topRight;
+    final color = isMulti ? Colors.orangeAccent : Colors.tealAccent;
+    return Align(
+      alignment: alignment,
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          border: Border(
+            left: isLeft
+                ? BorderSide(color: color, width: 4)
+                : BorderSide.none,
+            right: !isLeft
+                ? BorderSide(color: color, width: 4)
+                : BorderSide.none,
+            top: isTop
+                ? BorderSide(color: color, width: 4)
+                : BorderSide.none,
+            bottom: !isTop
+                ? BorderSide(color: color, width: 4)
+                : BorderSide.none,
+          ),
+        ),
       ),
     );
   }
