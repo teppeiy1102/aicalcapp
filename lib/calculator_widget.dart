@@ -1426,15 +1426,30 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   /// 別シートの指定行・フィールドの値を返す（シート内リンクを多パスで解決）
-  double _resolveExternalValue(String sheetId, int rowIdx, String target) {
-    final srcConfig = widget.allConfigs.firstWhere(
-      (c) => c.id == sheetId,
-      orElse: () => widget.config,
-    );
-    if (srcConfig.id == widget.config.id) return 0.0;
-    final srcItems = (srcConfig.data['items'] as List<dynamic>? ?? [])
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
+  double _resolveExternalValue(String sheetId, int rowIdx, String target, [Set<String>? _visiting]) {
+    final visiting = _visiting ?? {};
+    // 循環参照ガード（visited set で検出）
+    if (visiting.contains(sheetId)) return 0.0;
+    final nextVisiting = <String>{...visiting, sheetId};
+    final List<Map<String, dynamic>> srcItems;
+    final List<Map<String, dynamic>> srcConstants;
+    if (sheetId == widget.config.id) {
+      // 現在シート自体への参照 → 現在シートのアイテムを直接使用
+      srcItems = _items;
+      srcConstants = _constants;
+    } else {
+      final srcConfig = widget.allConfigs.firstWhere(
+        (c) => c.id == sheetId,
+        orElse: () => WidgetConfig(id: '', type: '', data: {}),
+      );
+      if (srcConfig.id.isEmpty) return 0.0;
+      srcItems = (srcConfig.data['items'] as List<dynamic>? ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      srcConstants = (srcConfig.data['constants'] as List<dynamic>? ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+    }
     if (rowIdx < 0 || rowIdx >= srcItems.length) return 0.0;
 
     // Pass 1: 暫定計算（リンクなし）
@@ -1474,12 +1489,24 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       }
       final xSheetId = src['sheetId'] as String?;
       if (xSheetId != null) {
-        if (xSheetId == sheetId) return fallback; // 循環参照ガード
         return _resolveExternalValue(
           xSheetId,
           src['rowIdx'] as int? ?? 0,
           src['target'] as String? ?? 'result',
+          nextVisiting,
         );
+      }
+      if (src['type'] == 'constant') {
+        final ci = src['constIdx'] as int? ?? 0;
+        // まずソースシートの定数、なければグローバル定数を参照
+        final allConsts = [
+          ...srcConstants,
+          ...(widget.globalConstants ?? []),
+        ];
+        if (ci >= 0 && ci < allConsts.length) {
+          return (allConsts[ci]['value'] as num? ?? 0.0).toDouble();
+        }
+        return fallback;
       }
       final sRowIdx = src['rowIdx'] as int? ?? 0;
       final sTarget = src['target'] as String? ?? 'result';
@@ -1725,7 +1752,6 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   /// 別シートの行/フィールドが現在シートのどの欄にリンクされているか返す
-  // ignore: unused_element
   Set<String> _calcSelectedDestsForExternalRow(
     String sheetId,
     int srcRowIdx,
@@ -1837,13 +1863,49 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
     int? selectedSrcCalcIdx = items.isNotEmpty ? 0 : null;
     String selectedSrcField = 'result';
-    Set<String> selectedDests = {};
+    // 初期表示時: tab0 で最初の式に既存リンク先を事前設定
+    Set<String> selectedDests = selectedSrcCalcIdx != null
+        ? _calcSelectedDestsForRow(selectedSrcCalcIdx, 'result')
+        : {};
     String? selectedSrcSheetId; // null = 現在シート
     // 0=このシート, 1=開放された式, 2=結合シート
     int srcTab = 0;
-    // タブごとに最後に選択した (calcIdx, sheetId) を記憶
+    // タブごとに最後に選択した (calcIdx, sheetId, field, dests) を記憶
     final Map<int, int?> _lastCalcIdxPerTab = {};
     final Map<int, String?> _lastSheetIdPerTab = {};
+    final Map<int, String> _lastFieldPerTab = {};
+    final Map<int, Set<String>> _lastDestsPerTab = {};
+    // 複数式のリンク設定を蓄積する（一度のダイアログで複数リンク元を設定可能）
+    final List<Map<String, dynamic>> _pendingLinks = [];
+
+    void savePending() {
+      if (selectedSrcCalcIdx == null) return;
+      _pendingLinks.removeWhere((op) =>
+          op['sid'] == selectedSrcSheetId &&
+          op['calcIdx'] == selectedSrcCalcIdx &&
+          op['field'] == selectedSrcField);
+      _pendingLinks.add({
+        'sid': selectedSrcSheetId,
+        'calcIdx': selectedSrcCalcIdx!,
+        'field': selectedSrcField,
+        'dests': Set<String>.from(selectedDests),
+      });
+    }
+
+    Set<String> loadPendingOrExisting(String? sid, int? calcIdx, String fld) {
+      if (calcIdx == null) return {};
+      try {
+        final pending = _pendingLinks.firstWhere((op) =>
+            op['sid'] == sid &&
+            op['calcIdx'] == calcIdx &&
+            op['field'] == fld);
+        return Set<String>.from(pending['dests'] as Set<String>);
+      } catch (_) {
+        if (sid == null) return _calcSelectedDestsForRow(calcIdx, fld);
+        return _calcSelectedDestsForExternalRow(sid, calcIdx, fld);
+      }
+    }
+
     // リンク先シート（null=現在シート、結合ビュー内の兄弟シートID）
     String? destSheetId;
     final siblingConfigs = widget.allConfigs
@@ -1922,48 +1984,20 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       ];
     }
 
-    // 現在シートのリンク解決済み値を事前計算
-    final currentResolvedRows = _computeResolvedRows(items, _constants);
-
     String fieldValueStr(int calcIdx, String fieldKey, [String? sheetId]) {
-      // 外部シートの場合はリンク解決済みの値を使用
-      if (sheetId != null) {
-        final v = _resolveExternalValue(sheetId, calcIdx, fieldKey);
-        final srcConfig = widget.allConfigs.firstWhere(
-          (c) => c.id == sheetId,
-          orElse: () => widget.config,
-        );
-        final srcItems = (srcConfig.data['items'] as List<dynamic>? ?? [])
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList();
-        final precision = calcIdx < srcItems.length
-            ? (srcItems[calcIdx]['precision'] as int? ?? 2)
-            : 2;
-        if (v == v.truncateToDouble() && v.abs() < 1e12) {
-          return v.toStringAsFixed(0);
-        }
-        return v.toStringAsFixed(precision);
-      }
-      // 現在シート — 解決済みの値を使用
-      if (calcIdx < 0 || calcIdx >= currentResolvedRows.length) return '0';
-      final resolved = currentResolvedRows[calcIdx];
-      final precision = items[calcIdx]['precision'] as int? ?? 2;
-      double v;
-      if (fieldKey == 'input') {
-        v = resolved['input'] as double;
-      } else if (fieldKey == 'operand') {
-        v = resolved['operand'] as double;
-      } else if (fieldKey == 'result') {
-        v = resolved['result'] as double;
-      } else if (fieldKey.startsWith('other_')) {
-        final idx = int.tryParse(fieldKey.substring(6)) ?? 0;
-        final others = resolved['others'] as List? ?? [];
-        v = idx < others.length
-            ? ((others[idx] as Map)['val'] as double? ?? 0.0)
-            : 0.0;
-      } else {
-        v = 0.0;
-      }
+      // 現在シートも外部シートも _resolveExternalValue で統一的に解決
+      final targetSheetId = sheetId ?? widget.config.id;
+      final v = _resolveExternalValue(targetSheetId, calcIdx, fieldKey);
+      final srcConfig = widget.allConfigs.firstWhere(
+        (c) => c.id == targetSheetId,
+        orElse: () => widget.config,
+      );
+      final srcItems = (srcConfig.data['items'] as List<dynamic>? ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      final precision = calcIdx < srcItems.length
+          ? (srcItems[calcIdx]['precision'] as int? ?? 2)
+          : 2;
       if (v == v.truncateToDouble() && v.abs() < 1e12) {
         return v.toStringAsFixed(0);
       }
@@ -2157,18 +2191,30 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                 // 現在の選択を記憶
                                                 _lastCalcIdxPerTab[srcTab] = selectedSrcCalcIdx;
                                                 _lastSheetIdPerTab[srcTab] = selectedSrcSheetId;
+                                                _lastFieldPerTab[srcTab] = selectedSrcField;
+                                                _lastDestsPerTab[srcTab] = Set.from(selectedDests);
+                                                savePending(); // ペンディングに保存
                                                 srcTab = tIdx;
                                                 // 新しいタブで以前の選択を復元、なければ最初の式を自動選択
                                                 if (_lastCalcIdxPerTab.containsKey(tIdx)) {
                                                   selectedSrcCalcIdx = _lastCalcIdxPerTab[tIdx];
                                                   selectedSrcSheetId = _lastSheetIdPerTab[tIdx];
+                                                  selectedSrcField = _lastFieldPerTab[tIdx] ?? 'result';
+                                                  selectedDests = loadPendingOrExisting(
+                                                      _lastSheetIdPerTab[tIdx],
+                                                      _lastCalcIdxPerTab[tIdx],
+                                                      _lastFieldPerTab[tIdx] ?? 'result');
                                                 } else if (tIdx == 0) {
                                                   selectedSrcCalcIdx = items.isNotEmpty ? 0 : null;
                                                   selectedSrcSheetId = null;
+                                                  selectedSrcField = 'result';
+                                                  selectedDests = loadPendingOrExisting(null, selectedSrcCalcIdx, 'result');
                                                 } else if (tIdx == 1) {
                                                   // 開放された式：最初の exposed item を選択
                                                   selectedSrcCalcIdx = null;
                                                   selectedSrcSheetId = null;
+                                                  selectedSrcField = 'result';
+                                                  selectedDests = {};
                                                   for (final cfg in exposedSheets) {
                                                     final si = (cfg.data['items'] as List? ?? [])
                                                         .asMap()
@@ -2178,6 +2224,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                     if (si.isNotEmpty) {
                                                       selectedSrcSheetId = cfg.id;
                                                       selectedSrcCalcIdx = si.first.key;
+                                                      selectedDests = loadPendingOrExisting(
+                                                          cfg.id, si.first.key, 'result');
                                                       break;
                                                     }
                                                   }
@@ -2185,16 +2233,19 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                   // 結合シート：最初の item を選択
                                                   selectedSrcCalcIdx = null;
                                                   selectedSrcSheetId = null;
+                                                  selectedSrcField = 'result';
+                                                  selectedDests = {};
                                                   if (mergedSheets.isNotEmpty) {
                                                     final ms = mergedSheets.first;
                                                     final si = (ms.data['items'] as List? ?? []);
                                                     if (si.isNotEmpty) {
                                                       selectedSrcSheetId = ms.id;
                                                       selectedSrcCalcIdx = 0;
+                                                      selectedDests = loadPendingOrExisting(
+                                                          ms.id, 0, 'result');
                                                     }
                                                   }
                                                 }
-                                                selectedSrcField = 'result';
                                               }),
                                               child: AnimatedContainer(
                                                 duration: const Duration(
@@ -2299,10 +2350,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                             ),
                                             child: GestureDetector(
                                               onTap: () => setDs(() {
+                                                savePending();
                                                 selectedSrcSheetId = null;
                                                 selectedSrcCalcIdx = i;
                                                 selectedSrcField = 'result';
-                                                selectedDests = {};
+                                                selectedDests = loadPendingOrExisting(null, i, 'result');
                                               }),
                                               child: AnimatedContainer(
                                                 duration: const Duration(
@@ -2391,7 +2443,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                               ),
                                               child: GestureDetector(
                                                 onTap: () => setDs(() {
+                                                  savePending();
                                                   selectedSrcField = key;
+                                                  selectedDests = loadPendingOrExisting(selectedSrcSheetId, selectedSrcCalcIdx, key);
                                                 }),
                                                 child: AnimatedContainer(
                                                   duration: const Duration(
@@ -2561,13 +2615,15 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                             ),
                                                         child: GestureDetector(
                                                           onTap: () => setDs(() {
+                                                            savePending();
                                                             selectedSrcSheetId =
                                                                 cfg.id;
                                                             selectedSrcCalcIdx =
                                                                 i;
                                                             selectedSrcField =
                                                                 'result';
-                                                            selectedDests = {};
+                                                            selectedDests = loadPendingOrExisting(
+                                                                cfg.id, i, 'result');
                                                           }),
                                                           child: AnimatedContainer(
                                                             duration:
@@ -2702,7 +2758,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                   ),
                                                   child: GestureDetector(
                                                     onTap: () => setDs(() {
+                                                      savePending();
                                                       selectedSrcField = key;
+                                                      selectedDests = loadPendingOrExisting(selectedSrcSheetId, selectedSrcCalcIdx, key);
                                                     }),
                                                     child: AnimatedContainer(
                                                       duration: const Duration(
@@ -2887,10 +2945,12 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                   ),
                                                   child: GestureDetector(
                                                     onTap: () => setDs(() {
+                                                      savePending();
                                                       selectedSrcSheetId = cfg.id;
                                                       selectedSrcCalcIdx = i;
                                                       selectedSrcField = 'result';
-                                                      selectedDests = {};
+                                                      selectedDests = loadPendingOrExisting(
+                                                          cfg.id, i, 'result');
                                                     }),
                                                     child: AnimatedContainer(
                                                       duration: const Duration(
@@ -3017,7 +3077,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                   ),
                                                   child: GestureDetector(
                                                     onTap: () => setDs(() {
+                                                      savePending();
                                                       selectedSrcField = key;
+                                                      selectedDests = loadPendingOrExisting(selectedSrcSheetId, selectedSrcCalcIdx, key);
                                                     }),
                                                     child: AnimatedContainer(
                                                       duration: const Duration(
@@ -3400,9 +3462,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                       )
                                       .toList();
                                 } else {
-                                  destItems = items;
+                                  destItems = _items;
                                 }
-                                // リンク先アイテムの解決済み値を計算
                                 final List<Map<String, dynamic>> destResolvedRows;
                                 if (destSheetId != null) {
                                   final dc = widget.allConfigs.firstWhere(
@@ -3423,7 +3484,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                     dcConstants,
                                   );
                                 } else {
-                                  destResolvedRows = currentResolvedRows;
+                                  destResolvedRows = _computeResolvedRows(
+                                    items,
+                                    _constants,
+                                  );
                                 }
                                 if (destSheetId == null &&
                                     destItems.length <= 1 &&
@@ -3930,48 +3994,111 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                           onPressed: selectedSrcCalcIdx == null
                               ? null
                               : () {
-                                  final srcIdx = selectedSrcCalcIdx!;
-                                  final srcField = selectedSrcField;
-                                  final srcSheetId = selectedSrcSheetId;
-                                  final dests = Set<String>.from(selectedDests);
+                                  // 現在の式の選択状態をペンディングに保存
+                                  savePending();
                                   Navigator.pop(ctx);
-                                  // 現在シート宛のdests
-                                  final currentDests = dests
-                                      .where((d) => !d.contains('__'))
-                                      .toSet();
-                                  // 兄弟シート宛のdestsをシートIDごとに分類
-                                  final sibDestsMap = <String, Set<String>>{};
-                                  for (final d in dests.where(
-                                    (d) => d.contains('__'),
-                                  )) {
-                                    final sep = d.indexOf('__');
-                                    final sid = d.substring(0, sep);
-                                    final dk = d.substring(sep + 2);
-                                    sibDestsMap.putIfAbsent(sid, () => {}).add(dk);
+                                  if (_pendingLinks.isEmpty) return;
+
+                                  // 現在シートのアイテムを一度だけ読み込み、
+                                  // 全ペンディングを順番に蓄積してから一括適用
+                                  var currentItems = _items
+                                      .map((e) => Map<String, dynamic>.from(e))
+                                      .toList();
+                                  final Map<String, List<Map<String, dynamic>>>
+                                      sibAcc = {};
+
+                                  for (final op in _pendingLinks) {
+                                    final opSid = op['sid'] as String?;
+                                    final opIdx = op['calcIdx'] as int;
+                                    final opField = op['field'] as String;
+                                    final opDests =
+                                        op['dests'] as Set<String>;
+
+                                    final currentDests = opDests
+                                        .where((d) => !d.contains('__'))
+                                        .toSet();
+                                    final sibDestsMap =
+                                        <String, Set<String>>{};
+                                    for (final d in opDests.where(
+                                      (d) => d.contains('__'),
+                                    )) {
+                                      final sep = d.indexOf('__');
+                                      sibDestsMap
+                                          .putIfAbsent(
+                                            d.substring(0, sep),
+                                            () => {},
+                                          )
+                                          .add(d.substring(sep + 2));
+                                    }
+
+                                    // 現在シートへの変更を蓄積
+                                    currentItems =
+                                        _computeNewItemsWithLinkDests(
+                                          currentItems,
+                                          opSid,
+                                          opIdx,
+                                          opField,
+                                          currentDests,
+                                        );
+
+                                    // 兄弟シートへの変更を蓄積
+                                    for (final e in sibDestsMap.entries) {
+                                      final sc = widget.allConfigs.firstWhere(
+                                        (c) => c.id == e.key,
+                                        orElse: () =>
+                                            WidgetConfig(
+                                              id: '',
+                                              type: '',
+                                              data: {},
+                                            ),
+                                      );
+                                      if (sc.id.isEmpty ||
+                                          sc.id == widget.config.id) {
+                                        continue;
+                                      }
+                                      final baseSib = sibAcc[e.key] ??
+                                          (sc.data['items'] as List? ?? [])
+                                              .map(
+                                                (x) =>
+                                                    Map<String, dynamic>.from(
+                                                      x as Map,
+                                                    ),
+                                              )
+                                              .toList();
+                                      sibAcc[e.key] =
+                                          _computeSiblingItemsWithLinkDests(
+                                            baseSib,
+                                            opSid,
+                                            opIdx,
+                                            opField,
+                                            e.value,
+                                          );
+                                    }
                                   }
-                                  // 現在シートへ適用
-                                  if (srcSheetId != null) {
-                                    _applyLinkDestsForExternalRow(
-                                      srcSheetId,
-                                      srcIdx,
-                                      srcField,
-                                      currentDests,
+
+                                  // 現在シートを一括適用
+                                  widget.onUpdate({
+                                    ...widget.config.data,
+                                    'items': currentItems,
+                                  });
+                                  // 兄弟シートを一括適用
+                                  for (final e in sibAcc.entries) {
+                                    final sc = widget.allConfigs.firstWhere(
+                                      (c) => c.id == e.key,
+                                      orElse: () =>
+                                          WidgetConfig(
+                                            id: '',
+                                            type: '',
+                                            data: {},
+                                          ),
                                     );
-                                  } else {
-                                    _applyLinkDestsForRow(
-                                      srcIdx,
-                                      srcField,
-                                      currentDests,
-                                    );
-                                  }
-                                  // 兄弟シートへ適用
-                                  for (final e in sibDestsMap.entries) {
-                                    _applyLinkDestsToSiblingSheet(
+                                    if (sc.id.isEmpty ||
+                                        sc.id == widget.config.id) {
+                                      continue;
+                                    }
+                                    widget.onSheetUpdate?.call(
                                       e.key,
-                                      srcSheetId,
-                                      srcIdx,
-                                      srcField,
-                                      e.value,
+                                      {...sc.data, 'items': e.value},
                                     );
                                   }
                                 },
@@ -4005,6 +4132,132 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         ),
       ),
     );
+  }
+
+  /// 現在シートのアイテムリストにリンク先を適用した新しいリストを返す（副作用なし）
+  List<Map<String, dynamic>> _computeNewItemsWithLinkDests(
+    List<Map<String, dynamic>> baseItems,
+    String? srcSheetId,
+    int srcRowIdx,
+    String srcField,
+    Set<String> selectedDests,
+  ) {
+    final newItems =
+        baseItems.map((e) => Map<String, dynamic>.from(e)).toList();
+    final linkSource = srcSheetId != null
+        ? {'sheetId': srcSheetId, 'rowIdx': srcRowIdx, 'target': srcField}
+        : {'rowIdx': srcRowIdx, 'target': srcField};
+    bool wasLinked(Map? src) {
+      if (src == null) return false;
+      if (srcSheetId != null) {
+        return src['sheetId'] == srcSheetId &&
+            src['rowIdx'] == srcRowIdx &&
+            src['target'] == srcField;
+      }
+      return src['sheetId'] == null &&
+          src['rowIdx'] == srcRowIdx &&
+          src['target'] == srcField;
+    }
+
+    for (int i = 0; i < newItems.length; i++) {
+      if (srcSheetId == null && i == srcRowIdx) continue;
+      final item = newItems[i];
+      final origItem = Map<String, dynamic>.from(item);
+
+      final inputDest = '${i}_input';
+      if (selectedDests.contains(inputDest)) {
+        item['inputLink'] = true;
+        item['inputLinkSource'] = linkSource;
+      } else if (wasLinked(origItem['inputLinkSource'] as Map?)) {
+        item['inputLink'] = false;
+        item['inputLinkSource'] = null;
+      }
+
+      final operandDest = '${i}_operand';
+      if (selectedDests.contains(operandDest)) {
+        item['operandLink'] = true;
+        item['operandLinkSource'] = linkSource;
+      } else if (wasLinked(origItem['operandLinkSource'] as Map?)) {
+        item['operandLink'] = false;
+        item['operandLinkSource'] = null;
+      }
+
+      final othersList = ((item['others'] as List? ?? [])
+              .map((e) => Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final origOthersList = origItem['others'] as List? ?? [];
+      for (int j = 0; j < othersList.length; j++) {
+        final origO =
+            j < origOthersList.length ? origOthersList[j] as Map : {};
+        if (selectedDests.contains('${i}_other_$j')) {
+          othersList[j]['valLink'] = true;
+          othersList[j]['valLinkSource'] = linkSource;
+        } else if (wasLinked(origO['valLinkSource'] as Map?)) {
+          othersList[j]['valLink'] = false;
+          othersList[j]['valLinkSource'] = null;
+        }
+      }
+      item['others'] = othersList;
+    }
+    return newItems;
+  }
+
+  /// 兄弟シートのアイテムリストにリンク先を適用した新しいリストを返す（副作用なし）
+  List<Map<String, dynamic>> _computeSiblingItemsWithLinkDests(
+    List<Map<String, dynamic>> sibItems,
+    String? srcSheetId,
+    int srcRowIdx,
+    String srcField,
+    Set<String> selectedDests,
+  ) {
+    final newItems =
+        sibItems.map((e) => Map<String, dynamic>.from(e)).toList();
+    final srcId = srcSheetId ?? widget.config.id;
+    final linkSource = {'sheetId': srcId, 'rowIdx': srcRowIdx, 'target': srcField};
+    bool wasLinked(Map? src) {
+      if (src == null) return false;
+      return src['sheetId'] == srcId &&
+          src['rowIdx'] == srcRowIdx &&
+          src['target'] == srcField;
+    }
+
+    for (int i = 0; i < newItems.length; i++) {
+      final item = newItems[i];
+      final origItem = Map<String, dynamic>.from(item);
+
+      if (selectedDests.contains('${i}_input')) {
+        item['inputLink'] = true;
+        item['inputLinkSource'] = linkSource;
+      } else if (wasLinked(origItem['inputLinkSource'] as Map?)) {
+        item['inputLink'] = false;
+        item['inputLinkSource'] = null;
+      }
+
+      if (selectedDests.contains('${i}_operand')) {
+        item['operandLink'] = true;
+        item['operandLinkSource'] = linkSource;
+      } else if (wasLinked(origItem['operandLinkSource'] as Map?)) {
+        item['operandLink'] = false;
+        item['operandLinkSource'] = null;
+      }
+
+      final othersList = ((item['others'] as List? ?? [])
+              .map((e) => Map<String, dynamic>.from(e as Map)))
+          .toList();
+      final origOthers = origItem['others'] as List? ?? [];
+      for (int j = 0; j < othersList.length; j++) {
+        final origO = j < origOthers.length ? origOthers[j] as Map : {};
+        if (selectedDests.contains('${i}_other_$j')) {
+          othersList[j]['valLink'] = true;
+          othersList[j]['valLinkSource'] = linkSource;
+        } else if (wasLinked(origO['valLinkSource'] as Map?)) {
+          othersList[j]['valLink'] = false;
+          othersList[j]['valLinkSource'] = null;
+        }
+      }
+      item['others'] = othersList;
+    }
+    return newItems;
   }
 
   /// 兄弟シートのアイテムにリンク先として設定する
@@ -4150,6 +4403,30 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       );
     }
 
+    // ── メモセクション ────────────────────────────────────────────────────
+    final memos = _memos;
+    if (memos.isNotEmpty) {
+      buf.writeln();
+      buf.writeln('--- メモ ---');
+      for (final memo in memos) {
+        final text = memo['text'] as String? ?? '';
+        if (text.isNotEmpty) buf.writeln(escapeCsv(text));
+      }
+    }
+
+    // ── 定数セクション ────────────────────────────────────────────────────
+    final constants = _constants;
+    if (constants.isNotEmpty) {
+      buf.writeln();
+      buf.writeln('--- 定数 ---');
+      buf.writeln('名前,値');
+      for (final c in constants) {
+        final cName = c['name'] as String? ?? '';
+        final cValue = (c['value'] as num? ?? 0.0).toDouble();
+        buf.writeln('${escapeCsv(cName)},${fmtNum(cValue, 6)}');
+      }
+    }
+
     return buf.toString();
   }
 
@@ -4200,9 +4477,36 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       };
     });
 
+    // メモをコンパクト形式で含める
+    final memos = _memos;
+    final qrMemos = memos.isNotEmpty
+        ? memos
+              .map((m) => {
+                    'txt': m['text'] as String? ?? '',
+                    'aci': m['afterCalcIdx'] as int? ?? -1,
+                  })
+              .toList()
+        : null;
+
+    // シート固有定数をコンパクト形式で含める
+    final constants = _constants;
+    final qrConsts = constants.isNotEmpty
+        ? constants
+              .map((c) => {
+                    'n': c['name'] as String? ?? '',
+                    'v': safeDouble(c['value'] as num?),
+                  })
+              .toList()
+        : null;
+
     List<String> qrDataList;
     try {
-      qrDataList = _buildQrChunks(title: title, qrItems: qrItems);
+      qrDataList = _buildQrChunks(
+        title: title,
+        qrItems: qrItems,
+        qrMemos: qrMemos,
+        qrConsts: qrConsts,
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -4228,18 +4532,28 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   List<String> _buildQrChunks({
     required String title,
     required List<Map<String, dynamic>> qrItems,
+    List<Map<String, dynamic>>? qrMemos,
+    List<Map<String, dynamic>>? qrConsts,
   }) {
+    final singlePayload = <String, dynamic>{
+      'v': 1,
+      't': title,
+      'items': qrItems,
+      if (qrMemos != null && qrMemos.isNotEmpty) 'memos': qrMemos,
+      if (qrConsts != null && qrConsts.isNotEmpty) 'consts': qrConsts,
+    };
     // まずシングルQRで試す
-    final singleQr = json.encode({'v': 1, 't': title, 'items': qrItems});
-    if (singleQr.length <= 1000) {
+    final singleQr = json.encode(singlePayload);
+    if (singleQr.length <= 350) {
       return [singleQr];
     }
 
     // アイテム配列をJSON文字列化してチャンク分割
+    // メモ・定数はチャンク外（先頭チャンクのみに付与）
     final itemsJson = json.encode(qrItems);
     // ヘッダーオーバーヘッド({"v":1,"m":1,"tot":99,"idx":0,"t":"...","d":""})を考慮して
     // 1チャンクあたり最大900文字のデータとする
-    const dataChunkSize = 900;
+    const dataChunkSize = 300;
 
     final dataChunks = <String>[];
     var i = 0;
@@ -4258,8 +4572,12 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         'idx': idx,      // 0始まりのインデックス
         'd': dataChunks[idx],
       };
-      // タイトルは最初のチャンクにのみ含める
-      if (idx == 0) envelope['t'] = title;
+      // タイトル・メモ・定数は最初のチャンクにのみ含める
+      if (idx == 0) {
+        envelope['t'] = title;
+        if (qrMemos != null && qrMemos.isNotEmpty) envelope['memos'] = qrMemos;
+        if (qrConsts != null && qrConsts.isNotEmpty) envelope['consts'] = qrConsts;
+      }
       return json.encode(envelope);
     });
   }
@@ -4477,6 +4795,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           _calcDisplay = _fmtCalc(result);
           _calcHasResult = true;
           _calcNewEntry = true;
+          // 履歴に保存
+          CalcHistoryManager.instance.addEntry(
+            exprParts.join(' '),
+            _fmtCalc(result),
+          );
         } else {
           // 演算子なしで = を押した場合、何か意味のある入力があるときのみ結果扱い
           // （追加直後のリセット状態 = '0' / _calcA==null のときは無視）
@@ -4761,6 +5084,32 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                 ),
                             ],
                           ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // 履歴ボタン
+                    GestureDetector(
+                      onTap: _showCalcHistory,
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withOpacity(0.08)
+                              : Colors.black.withOpacity(0.06),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.white.withOpacity(0.2)
+                                : Colors.black.withOpacity(0.15),
+                            width: 0.8,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.history_rounded,
+                          color: isDark ? Colors.white70 : Colors.black54,
+                          size: 20,
                         ),
                       ),
                     ),
@@ -5536,9 +5885,17 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                     }).toList(),
                   ),
                   // ── データ行 ────────────────────────────────────────────
-                  ...items.asMap().entries.map((entry) {
-                    final rowIdx = entry.key;
-                    final isLastRow = rowIdx == items.length - 1;
+                  ...() {
+                    // displayOrder に従った表示順で calc エントリを列挙
+                    final displayedCalcIndices = _effectiveDisplayOrder
+                        .where((e) => e['type'] == 'calc')
+                        .map((e) => e['calcIdx'] as int)
+                        .where((i) => i >= 0 && i < items.length)
+                        .toList();
+                    return displayedCalcIndices.asMap().entries.map((entry) {
+                    final displayPos = entry.key;
+                    final rowIdx = entry.value;
+                    final isLastRow = displayPos == displayedCalcIndices.length - 1;
                     return Row(
                       children: visibleColumns.map((col) {
                         final key = col['key'] as String;
@@ -5549,7 +5906,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                         final editable = !isRes;
                         return GestureDetector(
                           onTap: isRes
-                              ? () => showResultFormula(rowIdx)
+                              ? () => _showTableItemEditSheet(rowIdx, 'result', '答え')
                               : (editable
                                     ? () => _showTableItemEditSheet(
                                         rowIdx,
@@ -5607,10 +5964,15 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                         );
                       }).toList(),
                     );
-                  }),
+                  }).toList();
+                  }(),
                 ],
               ),
             ),
+          if (_constants.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _buildConstantsSection(_constants, isDark),
+          ],
         ],
       ),
     );
@@ -5726,7 +6088,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       termLabels: _effectiveTermLabels.isNotEmpty ? _effectiveTermLabels : null,
     );
 
-    if (columnKey == 'name') {
+    if (columnKey == 'name' || columnKey == 'result') {
       row._editDetails(context);
     } else if (columnKey == 'input') {
       row._editInput(context);
@@ -7202,6 +7564,44 @@ Return ONLY the JSON array. Do not include any explanations.
         _calcExprStr = '';
       });
     }
+  }
+
+  void _showCalcHistory() async {
+    final bgColorVal = widget.config.data['bgColor'] as int?;
+    final isDark = bgColorVal != null
+        ? Color(bgColorVal).computeLuminance() < 0.5
+        : true;
+    final entries = await CalcHistoryManager.instance.loadAll();
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _CalcHistorySheet(
+        entries: entries,
+        isDark: isDark,
+        onSelect: (entry) {
+          Navigator.pop(ctx);
+          setState(() {
+            _calcDisplay = entry.result;
+            _calcA = double.tryParse(entry.result);
+            _calcNewEntry = true;
+            _calcHasResult = true;
+            _isClearState = true;
+            _calcOp = '';
+            _calcTermValues =
+                _calcA != null ? [_calcA!] : [];
+            _calcTermOps = [];
+            _calcExprStr =
+                '${entry.expression} = ${entry.result}';
+          });
+        },
+        onClear: () {
+          CalcHistoryManager.instance.clearAll();
+          Navigator.pop(ctx);
+        },
+      ),
+    );
   }
 
   void _pickBracketsFor(int rowIndex) async {

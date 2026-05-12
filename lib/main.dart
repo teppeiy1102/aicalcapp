@@ -661,6 +661,27 @@ class _HomeScreenState extends State<HomeScreen> {
         };
       }).toList();
 
+      // メモを復元
+      final qrMemos = decoded['memos'] as List<dynamic>?;
+      final memos = qrMemos?.map<Map<String, dynamic>>((e) {
+        final m = Map<String, dynamic>.from(e as Map);
+        return {
+          'text': m['txt'] as String? ?? '',
+          'afterCalcIdx': (m['aci'] as num? ?? -1).toInt(),
+        };
+      }).toList();
+
+      // シート固有定数を復元
+      final qrConsts = decoded['consts'] as List<dynamic>?;
+      final constants = qrConsts?.map<Map<String, dynamic>>((e) {
+        final m = Map<String, dynamic>.from(e as Map);
+        return {
+          'id': '${DateTime.now().millisecondsSinceEpoch}_${m['n']}',
+          'name': m['n'] as String? ?? '',
+          'value': (m['v'] as num? ?? 0.0).toDouble(),
+        };
+      }).toList();
+
       final newConfig = WidgetConfig(
         id: '${DateTime.now().millisecondsSinceEpoch}',
         type: 'calculator',
@@ -669,6 +690,8 @@ class _HomeScreenState extends State<HomeScreen> {
           'items': items,
           'isExpanded': true,
           'bgColor': 0xFF1A1A2E,
+          if (memos != null && memos.isNotEmpty) 'memos': memos,
+          if (constants != null && constants.isNotEmpty) 'constants': constants,
         },
       );
 
@@ -1890,8 +1913,11 @@ class _QrScannerPage extends StatefulWidget {
   State<_QrScannerPage> createState() => _QrScannerPageState();
 }
 
-class _QrScannerPageState extends State<_QrScannerPage> {
+class _QrScannerPageState extends State<_QrScannerPage>
+    with SingleTickerProviderStateMixin {
   late final MobileScannerController _controller;
+  late final AnimationController _flashController;
+  late final Animation<double> _flashOpacity;
 
   /// スキャン完了フラグ（全チャンク揃ったら true）
   bool _done = false;
@@ -1901,17 +1927,32 @@ class _QrScannerPageState extends State<_QrScannerPage> {
   final Map<int, String> _chunks = {};
   int? _totalChunks;
   String? _multiTitle;
+  List<dynamic>? _multiMemos;
+  List<dynamic>? _multiConsts;
 
   @override
   void initState() {
     super.initState();
     _controller = MobileScannerController();
+    _flashController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+      value: 1.0, // 初期状態は透明（アニメーション終了位置）
+    );
+    _flashOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _flashController, curve: Curves.easeOut),
+    );
   }
 
   @override
   void dispose() {
+    _flashController.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _triggerFlash() {
+    _flashController.forward(from: 0.0);
   }
 
   /// QRコードを1枚検出したときの処理
@@ -1935,6 +1976,7 @@ class _QrScannerPageState extends State<_QrScannerPage> {
         // 連結収集中にシングルQRを読んだ場合は無視
         return;
       }
+      _triggerFlash();
       setState(() => _done = true);
       widget.onScanned(rawValue);
       return;
@@ -1951,9 +1993,16 @@ class _QrScannerPageState extends State<_QrScannerPage> {
     // 既に収集済みのチャンクは再処理しない
     if (_chunks.containsKey(idx)) return;
 
+    // 先頭チャンクからメモ・定数を抽出
+    final List<dynamic>? chunkMemos = decoded['memos'] as List<dynamic>?;
+    final List<dynamic>? chunkConsts = decoded['consts'] as List<dynamic>?;
+
+    _triggerFlash();
     setState(() {
       _totalChunks = tot;
       if (title != null) _multiTitle = title;
+      if (chunkMemos != null) _multiMemos = chunkMemos;
+      if (chunkConsts != null) _multiConsts = chunkConsts;
       _chunks[idx] = dataChunk;
     });
 
@@ -1965,11 +2014,18 @@ class _QrScannerPageState extends State<_QrScannerPage> {
 
       try {
         final itemsDecoded = json.decode(assembledItemsJson);
-        final assembled = json.encode({
+        final assembledMap = <String, dynamic>{
           'v': 1,
           't': _multiTitle ?? '取り込んだシート',
           'items': itemsDecoded,
-        });
+        };
+        if (_multiMemos != null && _multiMemos!.isNotEmpty) {
+          assembledMap['memos'] = _multiMemos;
+        }
+        if (_multiConsts != null && _multiConsts!.isNotEmpty) {
+          assembledMap['consts'] = _multiConsts;
+        }
+        final assembled = json.encode(assembledMap);
         setState(() => _done = true);
         widget.onScanned(assembled);
       } catch (_) {
@@ -1978,6 +2034,8 @@ class _QrScannerPageState extends State<_QrScannerPage> {
           _chunks.clear();
           _totalChunks = null;
           _multiTitle = null;
+          _multiMemos = null;
+          _multiConsts = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -2019,6 +2077,8 @@ class _QrScannerPageState extends State<_QrScannerPage> {
                 _chunks.clear();
                 _totalChunks = null;
                 _multiTitle = null;
+                _multiMemos = null;
+                _multiConsts = null;
               }),
               child: const Text(
                 'リセット',
@@ -2160,6 +2220,17 @@ class _QrScannerPageState extends State<_QrScannerPage> {
                 style: const TextStyle(color: Colors.white70, fontSize: 13),
               ),
             ),
+          ),
+          // フラッシュオーバーレイ
+          AnimatedBuilder(
+            animation: _flashOpacity,
+            builder: (context, _) {
+              if (_flashOpacity.value == 0.0) return const SizedBox.shrink();
+              return Opacity(
+                opacity: _flashOpacity.value,
+                child: Container(color: Colors.white),
+              );
+            },
           ),
         ],
       ),

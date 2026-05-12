@@ -1155,14 +1155,27 @@ class _CalculatorRow extends StatelessWidget {
                           fontSize: 20,
                         ),
                         autofocus: true,
-                        enabled: !tempLink,
+                        readOnly: tempLink,
                         decoration: InputDecoration(
                           hintText: '0.0',
                           hintStyle: const TextStyle(color: Colors.white24),
-                          suffixText: tempLink ? 'リンク中' : null,
-                          suffixStyle: const TextStyle(
-                            color: Colors.blueAccent,
-                          ),
+                          suffix: tempLink
+                              ? GestureDetector(
+                                  onTap: () => setSheetState(() => tempLink = false),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueAccent.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+                                    ),
+                                    child: const Text(
+                                      'リンク中',
+                                      style: TextStyle(color: Colors.blueAccent, fontSize: 12, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                )
+                              : null,
                         ),
                       ),
                     ),
@@ -1219,7 +1232,7 @@ class _CalculatorRow extends StatelessWidget {
                   activeColor: Colors.blueAccent,
                   dense: true,
                 ),
-                if (tempLink)
+                if (tempLink || tempLinkSource != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8, bottom: 4),
                     child: Container(
@@ -1228,42 +1241,56 @@ class _CalculatorRow extends StatelessWidget {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.blueAccent.withOpacity(0.1),
+                        color: (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Colors.blueAccent.withOpacity(0.3),
+                          color: (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.3),
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.link,
+                          Icon(
+                            tempLink ? Icons.link : Icons.link_off,
                             size: 14,
-                            color: Colors.blueAccent,
+                            color: tempLink ? Colors.blueAccent : Colors.orangeAccent,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'リンク元: ${_getSourceLabel(tempLinkSource)}',
-                              style: const TextStyle(
-                                color: Colors.blueAccent,
+                              tempLink
+                                  ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
+                                  : '元リンク: ${_getSourceLabel(tempLinkSource)}',
+                              style: TextStyle(
+                                color: tempLink ? Colors.blueAccent : Colors.orangeAccent,
                                 fontSize: 12,
                               ),
                             ),
                           ),
-                          GestureDetector(
-                            onTap: () => setSheetState(() {
-                              tempLink = false;
-                              tempLinkSource = null;
-                            }),
-                            child: const Text(
-                              '解除',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
+                          if (tempLink)
+                            GestureDetector(
+                              onTap: () => setSheetState(() {
+                                tempLink = false;
+                                tempLinkSource = null;
+                              }),
+                              child: const Text(
+                                '解除',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            )
+                          else
+                            GestureDetector(
+                              onTap: () => setSheetState(() => tempLink = true),
+                              child: const Text(
+                                'リンクに戻す',
+                                style: TextStyle(
+                                  color: Colors.blueAccent,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                     ),
@@ -1617,14 +1644,27 @@ class _CalculatorRow extends StatelessWidget {
                           fontSize: 20,
                         ),
                         autofocus: true,
-                        enabled: !tempLink,
+                        readOnly: tempLink,
                         decoration: InputDecoration(
                           hintText: '0.0',
                           hintStyle: const TextStyle(color: Colors.white24),
-                          suffixText: tempLink ? 'リンク中' : null,
-                          suffixStyle: const TextStyle(
-                            color: Colors.blueAccent,
-                          ),
+                          suffix: tempLink
+                              ? GestureDetector(
+                                  onTap: () => setSheetState(() => tempLink = false),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueAccent.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+                                    ),
+                                    child: const Text(
+                                      'リンク中',
+                                      style: TextStyle(color: Colors.blueAccent, fontSize: 12, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                )
+                              : null,
                         ),
                       ),
                     ),
@@ -1680,7 +1720,7 @@ class _CalculatorRow extends StatelessWidget {
                   activeColor: Colors.blueAccent,
                   dense: true,
                 ),
-                if (tempLink)
+                if (tempLink || tempLinkSource != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8, bottom: 4),
                     child: Container(
@@ -1689,42 +1729,56 @@ class _CalculatorRow extends StatelessWidget {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.blueAccent.withOpacity(0.1),
+                        color: (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Colors.blueAccent.withOpacity(0.3),
+                          color: (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.3),
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.link,
+                          Icon(
+                            tempLink ? Icons.link : Icons.link_off,
                             size: 14,
-                            color: Colors.blueAccent,
+                            color: tempLink ? Colors.blueAccent : Colors.orangeAccent,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'リンク元: ${_getSourceLabel(tempLinkSource)}',
-                              style: const TextStyle(
-                                color: Colors.blueAccent,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => setSheetState(() {
-                              tempLink = false;
-                              tempLinkSource = null;
-                            }),
-                            child: const Text(
-                              '解除',
+                              tempLink
+                                  ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
+                                  : '元リンク: ${_getSourceLabel(tempLinkSource)}',
                               style: TextStyle(
-                                color: Colors.white70,
+                                color: tempLink ? Colors.blueAccent : Colors.orangeAccent,
                                 fontSize: 12,
                               ),
                             ),
                           ),
+                          if (tempLink)
+                            GestureDetector(
+                              onTap: () => setSheetState(() {
+                                tempLink = false;
+                                tempLinkSource = null;
+                              }),
+                              child: const Text(
+                                '解除',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            )
+                          else
+                            GestureDetector(
+                              onTap: () => setSheetState(() => tempLink = true),
+                              child: const Text(
+                                'リンクに戻す',
+                                style: TextStyle(
+                                  color: Colors.blueAccent,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -2128,14 +2182,27 @@ class _CalculatorRow extends StatelessWidget {
                           fontSize: 20,
                         ),
                         autofocus: true,
-                        enabled: !tempLink,
+                        readOnly: tempLink,
                         decoration: InputDecoration(
                           hintText: '0.0',
                           hintStyle: const TextStyle(color: Colors.white24),
-                          suffixText: tempLink ? 'リンク中' : null,
-                          suffixStyle: const TextStyle(
-                            color: Colors.blueAccent,
-                          ),
+                          suffix: tempLink
+                              ? GestureDetector(
+                                  onTap: () => setSheetState(() => tempLink = false),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueAccent.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+                                    ),
+                                    child: const Text(
+                                      'リンク中',
+                                      style: TextStyle(color: Colors.blueAccent, fontSize: 12, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                )
+                              : null,
                         ),
                       ),
                     ),
@@ -2191,7 +2258,7 @@ class _CalculatorRow extends StatelessWidget {
                   activeColor: Colors.blueAccent,
                   dense: true,
                 ),
-                if (tempLink)
+                if (tempLink || tempLinkSource != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8, bottom: 4),
                     child: Container(
@@ -2200,42 +2267,56 @@ class _CalculatorRow extends StatelessWidget {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.blueAccent.withOpacity(0.1),
+                        color: (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Colors.blueAccent.withOpacity(0.3),
+                          color: (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.3),
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.link,
+                          Icon(
+                            tempLink ? Icons.link : Icons.link_off,
                             size: 14,
-                            color: Colors.blueAccent,
+                            color: tempLink ? Colors.blueAccent : Colors.orangeAccent,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'リンク元: ${_getSourceLabel(tempLinkSource)}',
-                              style: const TextStyle(
-                                color: Colors.blueAccent,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => setSheetState(() {
-                              tempLink = false;
-                              tempLinkSource = null;
-                            }),
-                            child: const Text(
-                              '解除',
+                              tempLink
+                                  ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
+                                  : '元リンク: ${_getSourceLabel(tempLinkSource)}',
                               style: TextStyle(
-                                color: Colors.white70,
+                                color: tempLink ? Colors.blueAccent : Colors.orangeAccent,
                                 fontSize: 12,
                               ),
                             ),
                           ),
+                          if (tempLink)
+                            GestureDetector(
+                              onTap: () => setSheetState(() {
+                                tempLink = false;
+                                tempLinkSource = null;
+                              }),
+                              child: const Text(
+                                '解除',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            )
+                          else
+                            GestureDetector(
+                              onTap: () => setSheetState(() => tempLink = true),
+                              child: const Text(
+                                'リンクに戻す',
+                                style: TextStyle(
+                                  color: Colors.blueAccent,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
