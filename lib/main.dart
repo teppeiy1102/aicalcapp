@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -9,6 +11,7 @@ import 'widget_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+  await AppSettings.instance.load();
   runApp(const MyApp());
 }
 
@@ -671,6 +674,34 @@ class _HomeScreenState extends State<HomeScreen> {
         };
       }).toList();
 
+      // スタンドアロンメモを復元
+      final qrSItems = decoded['sitems'] as List<dynamic>?;
+      final baseTs = DateTime.now().millisecondsSinceEpoch;
+      final standaloneItems = qrSItems?.asMap().map<int, Map<String, dynamic>>((si, txt) {
+        return MapEntry(si, {
+          'id': '${baseTs}_si$si',
+          'text': txt as String? ?? '',
+        });
+      }).values.toList();
+
+      // 表示順を復元（スタンドアロンメモがある場合のみ）
+      List<Map<String, dynamic>>? displayOrder;
+      final qrDOrder = decoded['dorder'] as List<dynamic>?;
+      if (qrDOrder != null && standaloneItems != null && standaloneItems.isNotEmpty) {
+        displayOrder = qrDOrder.map<Map<String, dynamic>>((e) {
+          final entry = e as Map;
+          if (entry.containsKey('c')) {
+            return {'type': 'calc', 'calcIdx': (entry['c'] as num).toInt()};
+          } else {
+            final si = (entry['s'] as num).toInt();
+            final id = si < standaloneItems.length
+                ? standaloneItems[si]['id'] as String
+                : '';
+            return {'type': 'standalone', 'itemId': id};
+          }
+        }).toList();
+      }
+
       // シート固有定数を復元
       final qrConsts = decoded['consts'] as List<dynamic>?;
       final constants = qrConsts?.map<Map<String, dynamic>>((e) {
@@ -691,6 +722,10 @@ class _HomeScreenState extends State<HomeScreen> {
           'isExpanded': true,
           'bgColor': 0xFF1A1A2E,
           if (memos != null && memos.isNotEmpty) 'memos': memos,
+          if (standaloneItems != null && standaloneItems.isNotEmpty)
+            'standaloneItems': standaloneItems,
+          if (displayOrder != null && displayOrder.isNotEmpty)
+            'displayOrder': displayOrder,
           if (constants != null && constants.isNotEmpty) 'constants': constants,
         },
       );
@@ -914,11 +949,13 @@ class _HomeScreenState extends State<HomeScreen> {
               onCancel: _cancelSelectMode,
               isAppendMode: _appendTargetSheetId != null,
             )
-          : _HomeFab(
-              onOpenCalc: _openHomeCalc,
-              onAddSheet: _addConfig,
-              calcActive: _calcSheetController != null,
-            ),
+          : _calcSheetController != null
+              ? null
+              : _HomeFab(
+                  onOpenCalc: _openHomeCalc,
+                  onAddSheet: _addConfig,
+                  calcActive: false,
+                ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: ValueListenableBuilder<Map<String, dynamic>?>(
         valueListenable: _clipboardNotifier,
@@ -1024,6 +1061,7 @@ class _WidgetCardState extends State<_WidgetCard> {
     final title = widget.config.data['title'] as String? ?? (isMerged ? '結合ビュー' : '定型計算');
     final items = widget.config.data['items'] as List<dynamic>? ?? [];
     final memos = widget.config.data['memos'] as List<dynamic>? ?? [];
+    final exposedCount = items.where((it) => (it as Map)['exposed'] == true).length;
     final resolvedSheets = widget.resolvedSheets ?? [];
     final sheetCount = isMerged
         ? ((widget.config.data['sheetIds'] as List?)?.length ?? resolvedSheets.length)
@@ -1208,6 +1246,24 @@ class _WidgetCardState extends State<_WidgetCard> {
                                       ),
                                     ),
                                   ],
+                                  if (exposedCount > 0) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.tealAccent.withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.link_rounded, size: 12, color: Colors.tealAccent),
+                                          const SizedBox(width: 6),
+                                          Text('$exposedCount件の開放された式', style: const TextStyle(color: Colors.tealAccent, fontSize: 11, fontWeight: FontWeight.w700)),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ],
                             ),
@@ -1365,7 +1421,9 @@ class _HomeFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return 
+   !calcActive? 
+    Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Spacer(),
@@ -1447,9 +1505,9 @@ class _HomeFab extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(width: 12),
+      const SizedBox(width: 10),
       ],
-    );
+    ):const SizedBox.shrink();
   }
 }
 
@@ -1544,6 +1602,7 @@ class _SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<_SettingsPage> {
   late List<Map<String, dynamic>> _constants;
+  late bool _vibrateOnTap;
 
   static const _builtinConstants = [
     {'label': 'π (円周率)', 'symbol': 'π', 'value': 3.14159265358979},
@@ -1557,6 +1616,7 @@ class _SettingsPageState extends State<_SettingsPage> {
   void initState() {
     super.initState();
     _constants = List<Map<String, dynamic>>.from(widget.userConstants);
+    _vibrateOnTap = AppSettings.instance.vibrateOnTap;
   }
 
   String _fmt(double v) {
@@ -1897,6 +1957,60 @@ class _SettingsPageState extends State<_SettingsPage> {
               style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
             ),
           ),
+
+          const SizedBox(height: 32),
+
+          // ── 操作設定 ─────────────────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+            child: Text(
+              '操作設定',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.45),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: SwitchListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20, vertical: 4),
+              title: const Text(
+                'ボタン振動',
+                style: TextStyle(color: Colors.white, fontSize: 14),
+              ),
+              subtitle: Text(
+                '電卓ボタンをタップしたときにバイブレーションでフィードバック',
+                style: TextStyle(
+                    color: Colors.white.withOpacity(0.4), fontSize: 12),
+              ),
+              secondary: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.blueAccent.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.vibration_rounded,
+                  color: Colors.blueAccent,
+                  size: 18,
+                ),
+              ),
+              value: _vibrateOnTap,
+              activeColor: Colors.blueAccent,
+              onChanged: (val) {
+                setState(() => _vibrateOnTap = val);
+                AppSettings.instance.setVibrateOnTap(val);
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -1928,7 +2042,17 @@ class _QrScannerPageState extends State<_QrScannerPage>
   int? _totalChunks;
   String? _multiTitle;
   List<dynamic>? _multiMemos;
+  List<dynamic>? _multiSItems;
+  List<dynamic>? _multiDOrder;
   List<dynamic>? _multiConsts;
+
+  // ── 画像モード ──
+  List<XFile>? _pickedImages;
+  int _pickedImageIndex = 0;
+  bool _isAnalyzing = false;
+  bool _isZoomed = false;
+  late final TransformationController _tc;
+  late PageController _imagePageController;
 
   @override
   void initState() {
@@ -1942,10 +2066,16 @@ class _QrScannerPageState extends State<_QrScannerPage>
     _flashOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(parent: _flashController, curve: Curves.easeOut),
     );
+    _tc = TransformationController();
+    _tc.addListener(_onTransformChanged);
+    _imagePageController = PageController();
   }
 
   @override
   void dispose() {
+    _tc.removeListener(_onTransformChanged);
+    _tc.dispose();
+    _imagePageController.dispose();
     _flashController.dispose();
     _controller.dispose();
     super.dispose();
@@ -1953,6 +2083,64 @@ class _QrScannerPageState extends State<_QrScannerPage>
 
   void _triggerFlash() {
     _flashController.forward(from: 0.0);
+  }
+
+  void _onTransformChanged() {
+    final scale = _tc.value.getMaxScaleOnAxis();
+    final nowZoomed = scale > 1.05;
+    if (nowZoomed != _isZoomed) setState(() => _isZoomed = nowZoomed);
+  }
+
+  Future<void> _pickImages() async {
+    final picker = ImagePicker();
+    final images = await picker.pickMultiImage();
+    if (images.isEmpty) return;
+    _imagePageController.dispose();
+    _imagePageController = PageController();
+    _tc.value = Matrix4.identity();
+    setState(() {
+      _pickedImages = images;
+      _pickedImageIndex = 0;
+      _isZoomed = false;
+    });
+    await _analyzePickedImage(0);
+  }
+
+  Future<void> _analyzePickedImage(int index) async {
+    if (_pickedImages == null || index >= _pickedImages!.length) return;
+    if (_isAnalyzing || _done) return;
+    setState(() => _isAnalyzing = true);
+    try {
+      final result = await _controller.analyzeImage(_pickedImages![index].path);
+      if (!mounted) return;
+      if (result != null && result.barcodes.isNotEmpty) {
+        final rawValue = result.barcodes.first.rawValue;
+        if (rawValue != null && rawValue.isNotEmpty) {
+          _triggerFlash();
+          _onDetected(rawValue);
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('画像の解析に失敗しました'),
+            backgroundColor: Color(0xFF2A2A3A),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isAnalyzing = false);
+    }
+  }
+
+  void _exitImageMode() {
+    setState(() {
+      _pickedImages = null;
+      _pickedImageIndex = 0;
+      _isZoomed = false;
+    });
+    _tc.value = Matrix4.identity();
   }
 
   /// QRコードを1枚検出したときの処理
@@ -1995,6 +2183,8 @@ class _QrScannerPageState extends State<_QrScannerPage>
 
     // 先頭チャンクからメモ・定数を抽出
     final List<dynamic>? chunkMemos = decoded['memos'] as List<dynamic>?;
+    final List<dynamic>? chunkSItems = decoded['sitems'] as List<dynamic>?;
+    final List<dynamic>? chunkDOrder = decoded['dorder'] as List<dynamic>?;
     final List<dynamic>? chunkConsts = decoded['consts'] as List<dynamic>?;
 
     _triggerFlash();
@@ -2002,6 +2192,8 @@ class _QrScannerPageState extends State<_QrScannerPage>
       _totalChunks = tot;
       if (title != null) _multiTitle = title;
       if (chunkMemos != null) _multiMemos = chunkMemos;
+      if (chunkSItems != null) _multiSItems = chunkSItems;
+      if (chunkDOrder != null) _multiDOrder = chunkDOrder;
       if (chunkConsts != null) _multiConsts = chunkConsts;
       _chunks[idx] = dataChunk;
     });
@@ -2022,6 +2214,12 @@ class _QrScannerPageState extends State<_QrScannerPage>
         if (_multiMemos != null && _multiMemos!.isNotEmpty) {
           assembledMap['memos'] = _multiMemos;
         }
+        if (_multiSItems != null && _multiSItems!.isNotEmpty) {
+          assembledMap['sitems'] = _multiSItems;
+        }
+        if (_multiDOrder != null && _multiDOrder!.isNotEmpty) {
+          assembledMap['dorder'] = _multiDOrder;
+        }
         if (_multiConsts != null && _multiConsts!.isNotEmpty) {
           assembledMap['consts'] = _multiConsts;
         }
@@ -2035,6 +2233,8 @@ class _QrScannerPageState extends State<_QrScannerPage>
           _totalChunks = null;
           _multiTitle = null;
           _multiMemos = null;
+          _multiSItems = null;
+          _multiDOrder = null;
           _multiConsts = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
@@ -2107,6 +2307,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
             controller: _controller,
             onDetect: (capture) {
               if (_done) return;
+              if (_pickedImages != null) return; // 画像モード中はカメラスキャンを無視
               final barcodes = capture.barcodes;
               if (barcodes.isEmpty) return;
               final rawValue = barcodes.first.rawValue;
@@ -2221,6 +2422,34 @@ class _QrScannerPageState extends State<_QrScannerPage>
               ),
             ),
           ),
+          // ファイルから読み込みボタン
+          if (!_done)
+            Positioned(
+              bottom: 110,
+              left: 32,
+              right: 32,
+              child: Center(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white70,
+                    side: const BorderSide(color: Colors.white24),
+                    backgroundColor: Colors.black54,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 8),
+                  ),
+                  onPressed: _pickImages,
+                  icon: const Icon(Icons.photo_library_outlined, size: 16),
+                  label: const Text('ファイルから読み込み',
+                      style: TextStyle(fontSize: 12)),
+                ),
+              ),
+            ),
+          // 画像モード オーバーレイ
+          if (_pickedImages != null)
+            Positioned.fill(child: _buildImageViewer()),
           // フラッシュオーバーレイ
           AnimatedBuilder(
             animation: _flashOpacity,
@@ -2231,6 +2460,151 @@ class _QrScannerPageState extends State<_QrScannerPage>
                 child: Container(color: Colors.white),
               );
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageViewer() {
+    final images = _pickedImages!;
+    final total = images.length;
+    return Container(
+      color: Colors.black,
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: _imagePageController,
+            physics: _isZoomed
+                ? const NeverScrollableScrollPhysics()
+                : const BouncingScrollPhysics(),
+            itemCount: total,
+            onPageChanged: (idx) {
+              setState(() {
+                _pickedImageIndex = idx;
+                _isZoomed = false;
+              });
+              _tc.value = Matrix4.identity();
+              _analyzePickedImage(idx);
+            },
+            itemBuilder: (ctx, idx) {
+              return Center(
+                child: InteractiveViewer(
+                  transformationController:
+                      idx == _pickedImageIndex ? _tc : null,
+                  minScale: 0.5,
+                  maxScale: 5.0,
+                  child: Image.file(
+                    File(images[idx].path),
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              );
+            },
+          ),
+          // ページカウンター
+          if (total > 1)
+            Positioned(
+              top: 16,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${_pickedImageIndex + 1} / $total  ← スワイプで切り替え →',
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 13),
+                  ),
+                ),
+              ),
+            ),
+          // フラッシュオーバーレイ（QR検出時）
+          AnimatedBuilder(
+            animation: _flashOpacity,
+            builder: (context, _) {
+              if (_flashOpacity.value == 0.0) return const SizedBox.shrink();
+              return Opacity(
+                opacity: _flashOpacity.value,
+                child: Container(color: Colors.white),
+              );
+            },
+          ),
+          // 下部コントロール
+          Positioned(
+            bottom: 24,
+            left: 16,
+            right: 16,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isAnalyzing)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      'QRコードを解析中...',
+                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white12,
+                          foregroundColor: Colors.white70,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onPressed: _exitImageMode,
+                        icon: const Icon(Icons.camera_alt_rounded, size: 18),
+                        label: const Text('カメラに戻る'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              Colors.tealAccent.withOpacity(0.15),
+                          foregroundColor: Colors.tealAccent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding:
+                              const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onPressed: _isAnalyzing
+                            ? null
+                            : () =>
+                                _analyzePickedImage(_pickedImageIndex),
+                        icon: _isAnalyzing
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  color: Colors.tealAccent,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.qr_code_scanner_rounded, size: 18),
+                        label: Text(
+                            _isAnalyzing ? '解析中...' : 'QRを読み込む'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),

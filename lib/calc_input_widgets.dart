@@ -53,6 +53,9 @@ class _CalcKeyButtonState extends State<_CalcKeyButton>
   void _handleTapDown(TapDownDetails _) => _ctrl.forward();
   void _handleTapUp(TapUpDetails _) {
     _ctrl.reverse();
+    if (AppSettings.instance.vibrateOnTap) {
+      HapticFeedback.mediumImpact();
+    }
     widget.onTap();
   }
 
@@ -285,183 +288,186 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
     final subtitle = _hasResult ? _exprStr : inProg;
 
     return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 20, right: 20, top: 16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-         // crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    '計算機',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white54),
-                  onPressed: () => Navigator.pop(context),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            AnimatedOpacity(
-              opacity: _hasResult ? 1.0 : 0.35,
-              duration: const Duration(milliseconds: 200),
-              child: GestureDetector(
-                onTap: _hasResult
-                    ? () {
-                        widget.onResult(double.tryParse(_display) ?? 0.0);
-                        Navigator.pop(context);
-                      }
-                    : null,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: _hasResult
-                        ? Colors.blueAccent
-                        : Colors.grey.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  alignment: Alignment.center,
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.check, color: Colors.white, size: 16),
-                      SizedBox(width: 6),
-                      Text(
-                        'この値を入力',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Container(
-              height: 90,
-              padding: const EdgeInsets.only(left: 4, right: 14, top: 12, bottom: 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+      child: SingleChildScrollView(
+        child: Container(
+          constraints: BoxConstraints(maxWidth: 400,),
+          padding: EdgeInsets.only(
+            left: 10, right: 10, top: 30,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+           // crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
                 children: [
-                  // AIカウントアイコンボタン（横長）
-                  GestureDetector(
-                    onTap: _isAiCounting ? null : _showAiCountDialog,
-                    child: AnimatedOpacity(
-                      opacity: _isAiCounting ? 0.4 : 1.0,
-                      duration: const Duration(milliseconds: 150),
-                      child: Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.85),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.45),
-                            width: 0.8,
-                          ),
-                          shape: BoxShape.circle
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            const Icon(
-                              Icons.camera_alt_outlined,
-                              color: Colors.black,
-                              size: 22,
-                            ),
-                            if (_isAiCounting)
-                              const SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 1.5,
-                                  color: Colors.tealAccent,
-                                ),
-                              ),
-                          ],
-                        ),
+                  const Expanded(
+                    child: Text(
+                      '計算機',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  // 数値・式表示エリア
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.pop(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              AnimatedOpacity(
+                opacity: _hasResult ? 1.0 : 0.35,
+                duration: const Duration(milliseconds: 200),
+                child: GestureDetector(
+                  onTap: _hasResult
+                      ? () {
+                          widget.onResult(double.tryParse(_display) ?? 0.0);
+                          Navigator.pop(context);
+                        }
+                      : null,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: _hasResult
+                          ? Colors.blueAccent
+                          : Colors.grey.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        if (subtitle.isNotEmpty)
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Text(
-                              subtitle,
-                              style: TextStyle(
-                                height: 1,
-                                color: textColor.withOpacity(0.45),
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 6),
-                        FittedBox(
-                          child: Text(
-                            _display,
-                            maxLines: 1,
-                            style: const TextStyle(
-                              height: 1,
-                              color: textColor,
-                              fontSize: 44,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.right,
+                        Icon(Icons.check, color: Colors.white, size: 16),
+                        SizedBox(width: 6),
+                        Text(
+                          'この値を入力',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
                           ),
                         ),
                       ],
                     ),
                   ),
+                ),
+              ),
+              Container(
+                height: 90,
+                padding: const EdgeInsets.only(left: 4, right: 14, top: 12, bottom: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // AIカウントアイコンボタン（横長）
+                    GestureDetector(
+                      onTap: _isAiCounting ? null : _showAiCountDialog,
+                      child: AnimatedOpacity(
+                        opacity: _isAiCounting ? 0.4 : 1.0,
+                        duration: const Duration(milliseconds: 150),
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.85),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.45),
+                              width: 0.8,
+                            ),
+                            shape: BoxShape.circle
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              const Icon(
+                                Icons.camera_alt_outlined,
+                                color: Colors.black,
+                                size: 22,
+                              ),
+                              if (_isAiCounting)
+                                const SizedBox(
+                                  width: 32,
+                                  height: 32,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 1.5,
+                                    color: Colors.tealAccent,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    // 数値・式表示エリア
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (subtitle.isNotEmpty)
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Text(
+                                subtitle,
+                                style: TextStyle(
+                                  height: 1,
+                                  color: textColor.withOpacity(0.45),
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 6),
+                          FittedBox(
+                            child: Text(
+                              _display,
+                              maxLines: 1,
+                              style: const TextStyle(
+                                height: 1,
+                                color: textColor,
+                                fontSize: 44,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+              GridView.count(
+                padding: EdgeInsets.zero,
+                crossAxisCount: 4,
+                mainAxisSpacing: 6,
+                crossAxisSpacing: 6,
+                childAspectRatio: 1,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  calcKey('C', bg: Colors.redAccent.withOpacity(0.18), fg: Colors.redAccent),
+                  calcKey('+/-', bg: keyBg),
+                  calcKey('%', bg: keyBg),
+                  calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
+                  calcKey('7'), calcKey('8'), calcKey('9'),
+                  calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
+                  calcKey('4'), calcKey('5'), calcKey('6'),
+                  calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
+                  calcKey('1'), calcKey('2'), calcKey('3'),
+                  calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
+                  calcKey('⌫', bg: keyBg),
+                  calcKey('0'), calcKey('.'),
+                  calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
                 ],
               ),
-            ),
-            const SizedBox(height: 6),
-            GridView.count(
-              padding: EdgeInsets.zero,
-              crossAxisCount: 4,
-              mainAxisSpacing: 6,
-              crossAxisSpacing: 6,
-              childAspectRatio: 1,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                calcKey('C', bg: Colors.redAccent.withOpacity(0.18), fg: Colors.redAccent),
-                calcKey('+/-', bg: keyBg),
-                calcKey('%', bg: keyBg),
-                calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
-                calcKey('7'), calcKey('8'), calcKey('9'),
-                calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
-                calcKey('4'), calcKey('5'), calcKey('6'),
-                calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
-                calcKey('1'), calcKey('2'), calcKey('3'),
-                calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
-                calcKey('⌫', bg: keyBg),
-                calcKey('0'), calcKey('.'),
-                calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
-              ],
-            ),
-            const SizedBox(height: 8),
-          ],
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );

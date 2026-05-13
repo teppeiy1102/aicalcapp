@@ -2599,6 +2599,104 @@ class _CalculatorRow extends StatelessWidget {
     final unitResCtrl = TextEditingController(text: unitResult);
     final suggestedUnits = _collectUsedUnits();
 
+    // ── 計算式の詳細を構築 ──────────────────────────────────────────────────
+    String fmtV(double v, int prec) {
+      if (v.isNaN || v.isInfinite) return '0';
+      if (v == v.truncateToDouble() && v.abs() < 1e12) return v.toInt().toString();
+      return v.toStringAsFixed(prec);
+    }
+    String termStr(double rawV, String? transform, double powExp, int prec) {
+      final s = fmtV(rawV, prec);
+      if (transform == null) return s;
+      switch (transform) {
+        case 'sqrt': return '√$s';
+        case 'pow':
+          final e = powExp == powExp.truncateToDouble() ? powExp.toInt().toString() : fmtV(powExp, 1);
+          return '$s^$e';
+        case 'nroot':
+          final e = powExp == powExp.truncateToDouble() ? powExp.toInt().toString() : fmtV(powExp, 1);
+          return '${e}√$s';
+        case 'abs': return '|$s|';
+        case 'floor': return '⌊$s⌋';
+        case 'ceil': return '⌈$s⌉';
+        case 'round': return '≈$s';
+        case 'log10': return 'log($s)';
+        case 'reciprocal': return '1/$s';
+        case 'sin': return 'sin($s)';
+        case 'cos': return 'cos($s)';
+        case 'tan': return 'tan($s)';
+        default: return s;
+      }
+    }
+    // リンク値を解決するヘルパー
+    double resolveLinkedVal(double rawVal, bool isLink, Map<String, dynamic>? source) {
+      if (!isLink) return rawVal;
+      if (source == null) {
+        return allResults.isNotEmpty ? allResults.last : rawVal;
+      }
+      if (source['type'] == 'constant') {
+        final constIdx = source['constIdx'] as int? ?? 0;
+        if (constIdx >= 0 && constIdx < constants.length) {
+          return (constants[constIdx]['value'] as num? ?? 0.0).toDouble();
+        }
+        return rawVal;
+      }
+      final rowIdx = source['rowIdx'] as int? ?? 0;
+      final target = source['target'] as String? ?? 'result';
+      if (rowIdx < 0 || rowIdx >= allItems.length) return rawVal;
+      if (target == 'result' && rowIdx < allResults.length) return allResults[rowIdx];
+      if (target == 'input') return (allItems[rowIdx] as Map)['input'] as double? ?? rawVal;
+      if (target == 'operand') return (allItems[rowIdx] as Map)['operand'] as double? ?? rawVal;
+      if (target.startsWith('other_')) {
+        final idx = int.tryParse(target.split('_')[1]) ?? 0;
+        final oList = (allItems[rowIdx] as Map)['others'] as List? ?? [];
+        if (idx < oList.length) return (oList[idx] as Map)['val'] as double? ?? rawVal;
+      }
+      return rawVal;
+    }
+
+    final resolvedInput = resolveLinkedVal(input, inputLink, inputLinkSource);
+    final resolvedOperand = resolveLinkedVal(operand, operandLink, operandLinkSource);
+
+    final formulaParts = <_FormulaLine>[];
+    formulaParts.add(_FormulaLine(
+      label: _termLabel('input'),
+      value: termStr(resolvedInput, inputTransform, inputPowExp, precision),
+      unit: unit1,
+      op: null,
+      isLink: inputLink,
+      linkLabel: inputLink ? _getSourceRowName(inputLinkSource) : '',
+    ));
+    formulaParts.add(_FormulaLine(
+      label: _termLabel('operand'),
+      value: termStr(resolvedOperand, operandTransform, operandPowExp, precision),
+      unit: unit2,
+      op: op,
+      isLink: operandLink,
+      linkLabel: operandLink ? _getSourceRowName(operandLinkSource) : '',
+    ));
+    for (int i = 0; i < others.length; i++) {
+      final o = others[i] as Map;
+      final oVal = (o['val'] as num? ?? 0.0).toDouble();
+      final oLink = o['valLink'] as bool? ?? false;
+      final oSource = o['valLinkSource'] as Map<String, dynamic>?;
+      final resolvedOVal = resolveLinkedVal(oVal, oLink, oSource);
+      final oOp = o['op'] as String? ?? '+';
+      final oTransform = o['transform'] as String?;
+      final oPowExp = (o['powExp'] as num? ?? 2.0).toDouble();
+      final oUnit = o['unit'] as String? ?? '';
+      formulaParts.add(_FormulaLine(
+        label: _termLabel('other_$i'),
+        value: termStr(resolvedOVal, oTransform, oPowExp, precision),
+        unit: oUnit,
+        op: oOp,
+        isLink: oLink,
+        linkLabel: oLink ? _getSourceRowName(oSource) : '',
+      ));
+    }
+    final resultStr = fmtV(result, precision);
+    // ───────────────────────────────────────────────────────────────────────
+
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -2621,14 +2719,15 @@ class _CalculatorRow extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        '答えの設定',
-                        style: TextStyle(
+                        name.isNotEmpty ? name : '答えの設定',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     IconButton(
@@ -2640,6 +2739,188 @@ class _CalculatorRow extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
+                // ── 計算式の詳細 ──────────────────────────────────────────
+                const Text(
+                  '計算式の詳細',
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.04),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  ),
+                  child: Column(
+                    children: [
+                      ...formulaParts.asMap().entries.map((entry) {
+                        final line = entry.value;
+                        final isLast = entry.key == formulaParts.length - 1;
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: Colors.white.withOpacity(0.06),
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              // 演算子列
+                              SizedBox(
+                                width: 28,
+                                child: line.op != null
+                                    ? Text(
+                                        line.op!,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          color: Colors.orangeAccent,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      )
+                                    : const SizedBox(),
+                              ),
+                              const SizedBox(width: 8),
+                              // ラベル列
+                              Expanded(
+                                flex: 3,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (line.isLink && line.linkLabel.isNotEmpty)
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.link_rounded,
+                                            size: 9,
+                                            color: Colors.blueAccent,
+                                          ),
+                                          const SizedBox(width: 2),
+                                          Flexible(
+                                            child: Text(
+                                              line.linkLabel,
+                                              style: const TextStyle(
+                                                color: Colors.blueAccent,
+                                                fontSize: 9,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    Text(
+                                      line.label,
+                                      style: TextStyle(
+                                        color: line.isLink
+                                            ? Colors.blueAccent.withOpacity(0.7)
+                                            : Colors.white54,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // 値列
+                              Expanded(
+                                flex: 4,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    if (line.isLink)
+                                      const Padding(
+                                        padding: EdgeInsets.only(right: 4),
+                                        child: Icon(
+                                          Icons.link_rounded,
+                                          size: 12,
+                                          color: Colors.blueAccent,
+                                        ),
+                                      ),
+                                    Flexible(
+                                      child: Text(
+                                        line.value +
+                                            (line.unit.isNotEmpty
+                                                ? ' ${line.unit}'
+                                                : ''),
+                                        textAlign: TextAlign.right,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: line.isLink
+                                              ? Colors.blueAccent.withOpacity(0.9)
+                                              : Colors.white70,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                      // 答え行
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.03),
+                          borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(14)),
+                        ),
+                        child: Row(
+                          children: [
+                            const SizedBox(
+                              width: 28,
+                              child: Text(
+                                '=',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              flex: 3,
+                              child: Text(
+                                '答え',
+                                style: const TextStyle(
+                                    color: Colors.white54, fontSize: 12),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 4,
+                              child: Text(
+                                resultStr +
+                                    (unitResult.isNotEmpty
+                                        ? ' $unitResult'
+                                        : ''),
+                                textAlign: TextAlign.right,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // ── 小数点以下の桁数 ──────────────────────────────────────
                 const Text(
                   '小数点以下の桁数',
                   style: TextStyle(color: Colors.white54, fontSize: 12),
@@ -3388,5 +3669,24 @@ if (dragHandle != null && !nameVisible) ...[
       ),
     );
   }
+}
+
+// ── 計算式詳細の行データ ───────────────────────────────────────────────────────
+class _FormulaLine {
+  final String label;
+  final String value;
+  final String unit;
+  final String? op;
+  final bool isLink;
+  final String linkLabel;
+
+  const _FormulaLine({
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.op,
+    this.isLink = false,
+    this.linkLabel = '',
+  });
 }
 

@@ -898,113 +898,116 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
     }
     final String subtitle = _calcHasResult ? _calcExprStr : inProgressExpr;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          const SizedBox(height: 8),
-          // 挿入ボタン
-          AnimatedOpacity(
-            opacity: _calcHasResult ? 1.0 : 0.3,
-            duration: const Duration(milliseconds: 200),
-            child: GestureDetector(
-              onTap: _calcHasResult ? _insertCalcValue : null,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: _calcHasResult
-                      ? Colors.blueAccent
-                      : Colors.grey.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(40),
-                ),
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _calcHasResult && _calcExprStr.isNotEmpty
-                            ? _calcExprStr
-                            : 'メモに挿入',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+    return SingleChildScrollView(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 400),
+        padding: const EdgeInsets.symmetric(horizontal: 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            const SizedBox(height: 8),
+            // 挿入ボタン
+            AnimatedOpacity(
+              opacity: _calcHasResult ? 1.0 : 0.3,
+              duration: const Duration(milliseconds: 200),
+              child: GestureDetector(
+                onTap: _calcHasResult ? _insertCalcValue : null,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _calcHasResult
+                        ? Colors.blueAccent
+                        : Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(40),
+                  ),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _calcHasResult && _calcExprStr.isNotEmpty
+                              ? _calcExprStr
+                              : 'メモに挿入',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          // 表示エリア
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            height: 72,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (subtitle.isNotEmpty)
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: textColor.withOpacity(0.45),
-                        fontSize: subtitleFontSize,
+            // 表示エリア
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              height: 72,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (subtitle.isNotEmpty)
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: textColor.withOpacity(0.45),
+                          fontSize: subtitleFontSize,
+                        ),
                       ),
                     ),
-                  ),
-                FittedBox(
-                  child: Text(
-                    _calcDisplay,
-                    maxLines: 1,
-                    style: const TextStyle(
-                      color: textColor,
-                      fontSize: displayFontSize,
-                      fontWeight: FontWeight.bold,
-                      height: 0.8,
+                  FittedBox(
+                    child: Text(
+                      _calcDisplay,
+                      maxLines: 1,
+                      style: const TextStyle(
+                        color: textColor,
+                        fontSize: displayFontSize,
+                        fontWeight: FontWeight.bold,
+                        height: 0.8,
+                      ),
+                      textAlign: TextAlign.right,
                     ),
-                    textAlign: TextAlign.right,
                   ),
-                ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            GridView.count(
+              padding: EdgeInsets.zero,
+              crossAxisCount: 4,
+              mainAxisSpacing: 5,
+              crossAxisSpacing: 5,
+              childAspectRatio: 1.15,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                calcKey('C', bg: Colors.redAccent.withOpacity(0.18), fg: Colors.redAccent),
+                calcKey('+/-'),
+                calcKey('%'),
+                calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
+                calcKey('7'), calcKey('8'), calcKey('9'),
+                calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
+                calcKey('4'), calcKey('5'), calcKey('6'),
+                calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
+                calcKey('1'), calcKey('2'), calcKey('3'),
+                calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
+                calcKey('⌫'),
+                calcKey('0'),
+                calcKey('.'),
+                calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
               ],
             ),
-          ),
-          const SizedBox(height: 20),
-          GridView.count(
-            padding: EdgeInsets.zero,
-            crossAxisCount: 4,
-            mainAxisSpacing: 5,
-            crossAxisSpacing: 5,
-            childAspectRatio: 1.15,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              calcKey('C', bg: Colors.redAccent.withOpacity(0.18), fg: Colors.redAccent),
-              calcKey('+/-'),
-              calcKey('%'),
-              calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
-              calcKey('7'), calcKey('8'), calcKey('9'),
-              calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
-              calcKey('4'), calcKey('5'), calcKey('6'),
-              calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
-              calcKey('1'), calcKey('2'), calcKey('3'),
-              calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
-              calcKey('⌫'),
-              calcKey('0'),
-              calcKey('.'),
-              calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
-            ],
-          ),
-          const SizedBox(height: 4),
-        ],
+            const SizedBox(height: 4),
+          ],
+        ),
       ),
     );
   }
@@ -1020,8 +1023,9 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
       child: SafeArea(
         child: SingleChildScrollView(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            height: MediaQuery.of(context).size.height * 0.95,
+            constraints: const BoxConstraints(maxWidth: 400),
+            padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+          //  height: MediaQuery.of(context).size.height * 0.95,
             child: Column(
               children: [
                 // タイトル
@@ -1037,38 +1041,29 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                 ),
                 const Divider(color: Colors.white12, height: 1),
                 // スクロール可能なコンテンツ
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _ctrl,
-                          autofocus: true,
-                          maxLines: 5,
-                          minLines: 2,
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
-                          decoration: InputDecoration(
-                            hintText: 'メモを入力...',
-                            hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
-                            filled: true,
-                            fillColor: Colors.white.withOpacity(0.06),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: Colors.amber),
-                            ),
-                          ),
-                        ),
-                      ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _ctrl,
+                  autofocus: true,
+                  maxLines: 5,
+                  minLines: 2,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'メモを入力...',
+                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.06),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.amber),
                     ),
                   ),
                 ),

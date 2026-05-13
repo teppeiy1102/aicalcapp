@@ -70,6 +70,8 @@
 	<string>このアプリでは、計算機で使用する画像を取得するためにカメラを使用します。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>このアプリでは、保存された画像から計算を行うために写真ライブラリにアクセスします。</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>QRコードの画像を写真ライブラリに保存します。</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>このアプリでは、動画撮影時にマイクを使用する場合があります。</string>
 </dict>

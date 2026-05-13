@@ -497,7 +497,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('「${copy['name'] ?? '計算'}」をコピーしました'),
-          backgroundColor: const Color(0xFF1A2A4A),
+          backgroundColor: const Color.fromARGB(255, 70, 196, 255),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -518,7 +518,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('「${copy['name'] ?? '計算'}」を切り取りました'),
-          backgroundColor: const Color(0xFF2A1A0A),
+          backgroundColor: const Color.fromARGB(255, 206, 255, 70),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -4488,6 +4488,39 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               .toList()
         : null;
 
+    // スタンドアロンメモをコンパクト形式で含める
+    final standaloneItems = _standaloneItems;
+    final qrSItems = standaloneItems.isNotEmpty
+        ? standaloneItems
+              .map((s) => s['text'] as String? ?? '')
+              .toList()
+        : null;
+
+    // 表示順をコンパクト形式で含める（スタンドアロンメモがある場合のみ）
+    List<Map<String, dynamic>>? qrDOrder;
+    if (standaloneItems.isNotEmpty) {
+      final displayOrder = _effectiveDisplayOrder;
+      // standaloneItems の itemId → 配列インデックスのマップを作成
+      final sItemIdToIdx = <String, int>{};
+      for (int si = 0; si < standaloneItems.length; si++) {
+        final id = standaloneItems[si]['id'] as String? ?? '';
+        sItemIdToIdx[id] = si;
+      }
+      qrDOrder = displayOrder
+          .map((e) {
+            if (e['type'] == 'calc') {
+              return {'c': e['calcIdx'] as int};
+            } else {
+              final id = e['itemId'] as String? ?? '';
+              final idx = sItemIdToIdx[id];
+              if (idx == null) return null;
+              return {'s': idx};
+            }
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    }
+
     // シート固有定数をコンパクト形式で含める
     final constants = _constants;
     final qrConsts = constants.isNotEmpty
@@ -4505,6 +4538,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         title: title,
         qrItems: qrItems,
         qrMemos: qrMemos,
+        qrSItems: qrSItems,
+        qrDOrder: qrDOrder,
         qrConsts: qrConsts,
       );
     } catch (e) {
@@ -4533,6 +4568,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     required String title,
     required List<Map<String, dynamic>> qrItems,
     List<Map<String, dynamic>>? qrMemos,
+    List<String>? qrSItems,
+    List<Map<String, dynamic>>? qrDOrder,
     List<Map<String, dynamic>>? qrConsts,
   }) {
     final singlePayload = <String, dynamic>{
@@ -4540,6 +4577,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       't': title,
       'items': qrItems,
       if (qrMemos != null && qrMemos.isNotEmpty) 'memos': qrMemos,
+      if (qrSItems != null && qrSItems.isNotEmpty) 'sitems': qrSItems,
+      if (qrDOrder != null && qrDOrder.isNotEmpty) 'dorder': qrDOrder,
       if (qrConsts != null && qrConsts.isNotEmpty) 'consts': qrConsts,
     };
     // まずシングルQRで試す
@@ -4576,6 +4615,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       if (idx == 0) {
         envelope['t'] = title;
         if (qrMemos != null && qrMemos.isNotEmpty) envelope['memos'] = qrMemos;
+        if (qrSItems != null && qrSItems.isNotEmpty) envelope['sitems'] = qrSItems;
+        if (qrDOrder != null && qrDOrder.isNotEmpty) envelope['dorder'] = qrDOrder;
         if (qrConsts != null && qrConsts.isNotEmpty) envelope['consts'] = qrConsts;
       }
       return json.encode(envelope);
@@ -6025,22 +6066,14 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               .isDark
         : true;
 
-    // 簡易結果計算（リンク未解決）
-    final allResults = items
-        .map(
-          (it) => _calculate(
-            (it['input'] as num? ?? 0.0).toDouble(),
-            it['op'] as String? ?? '+',
-            (it['operand'] as num? ?? 0.0).toDouble(),
-            (it['others'] as List? ?? []).map((e) {
-              final m = Map<String, dynamic>.from(e as Map);
-              m['val'] = (m['val'] as num? ?? 0.0).toDouble();
-              return m;
-            }).toList(),
-            it['brackets'] as List? ?? [],
-          ),
-        )
+    // リンク解決済みの結果を計算（編集モードと同様に finalResults を使用）
+    final resolvedRowsForEdit = _computeResolvedRows(items, constants);
+    final finalResultsForEdit = resolvedRowsForEdit
+        .map((r) => (r['result'] as num? ?? 0.0).toDouble())
         .toList();
+    final resolvedForRow = rowIdx < resolvedRowsForEdit.length
+        ? resolvedRowsForEdit[rowIdx]
+        : <String, dynamic>{};
 
     void onItemChanged(Map<String, dynamic> newItem) {
       final latestItems = _items;
@@ -6053,19 +6086,19 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final row = _CalculatorRow(
       name: item['name'] as String? ?? '',
       myIndex: rowIdx,
-      input: (item['input'] as num? ?? 0.0).toDouble(),
+      input: (resolvedForRow['input'] as num? ?? (item['input'] as num? ?? 0.0)).toDouble(),
       inputLink: item['inputLink'] as bool? ?? false,
       inputLinkSource: item['inputLinkSource'] as Map<String, dynamic>?,
       inputTransform: item['inputTransform'] as String?,
       inputPowExp: (item['inputPowExp'] as num? ?? 2.0).toDouble(),
       op: item['op'] as String? ?? '+',
-      operand: (item['operand'] as num? ?? 0.0).toDouble(),
+      operand: (resolvedForRow['operand'] as num? ?? (item['operand'] as num? ?? 0.0)).toDouble(),
       operandLink: item['operandLink'] as bool? ?? false,
       operandLinkSource: item['operandLinkSource'] as Map<String, dynamic>?,
       operandTransform: item['operandTransform'] as String?,
       operandPowExp: (item['operandPowExp'] as num? ?? 2.0).toDouble(),
-      others: List.from(item['others'] as List? ?? []),
-      result: allResults[rowIdx],
+      others: List.from(resolvedForRow['others'] as List? ?? item['others'] as List? ?? []),
+      result: rowIdx < finalResultsForEdit.length ? finalResultsForEdit[rowIdx] : 0.0,
       precision: item['precision'] as int? ?? 2,
       unit1: item['unit1'] as String? ?? '',
       unit2: item['unit2'] as String? ?? '',
@@ -6073,7 +6106,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       isDark: isDark,
       brackets: item['brackets'] as List? ?? [],
       allItems: items,
-      allResults: allResults,
+      allResults: finalResultsForEdit,
       constants: constants,
       onChanged: onItemChanged,
       onDelete: () {},
@@ -6088,7 +6121,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       termLabels: _effectiveTermLabels.isNotEmpty ? _effectiveTermLabels : null,
     );
 
-    if (columnKey == 'name' || columnKey == 'result') {
+    if (columnKey == 'result') {
+      row._editResultProperties(context, Offset.zero);
+    } else if (columnKey == 'name') {
       row._editDetails(context);
     } else if (columnKey == 'input') {
       row._editInput(context);
@@ -7575,6 +7610,7 @@ Return ONLY the JSON array. Do not include any explanations.
     if (!mounted) return;
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) => _CalcHistorySheet(

@@ -5,11 +5,14 @@ import 'dart:typed_data';
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:gal/gal.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai_service.dart';
 import 'calc_history.dart';
@@ -18,6 +21,27 @@ part 'calc_input_widgets.dart';
 part 'calculator_widget.dart';
 part 'calculator_row.dart';
 part 'memo_ai_widgets.dart';
+
+// ── アプリ設定 ────────────────────────────────────────────────────────────────────────────
+class AppSettings {
+  AppSettings._();
+  static final AppSettings instance = AppSettings._();
+
+  static const _kVibrateKey = 'vibrate_on_tap';
+
+  bool vibrateOnTap = true;
+
+  Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    vibrateOnTap = prefs.getBool(_kVibrateKey) ?? true;
+  }
+
+  Future<void> setVibrateOnTap(bool value) async {
+    vibrateOnTap = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kVibrateKey, value);
+  }
+}
 
 // ── WidgetConfig ──────────────────────────────────────────────────────────────
 class WidgetConfig {
@@ -552,21 +576,6 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
           CalcHistoryManager.instance.clearAll();
           Navigator.pop(ctx);
         },
-        onAddItem: (entry) {
-          Navigator.pop(ctx);
-          final result = double.tryParse(entry.result) ?? 0.0;
-          final name = entry.expression.length > 20
-              ? '${entry.expression.substring(0, 20)}…'
-              : entry.expression;
-          widget.onAddItem({
-            'name': name,
-            'input': result,
-            'op': '+',
-            'operand': 0.0,
-            'others': <dynamic>[],
-            'brackets': <dynamic>[],
-          });
-        },
       ),
     );
   }
@@ -867,27 +876,18 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
 }
 
 // ── 計算履歴ボトムシート ──────────────────────────────────────────────────────
-class _CalcHistorySheet extends StatefulWidget {
+class _CalcHistorySheet extends StatelessWidget {
   final List<CalcHistoryEntry> entries;
   final bool isDark;
   final void Function(CalcHistoryEntry) onSelect;
   final VoidCallback onClear;
-  final void Function(CalcHistoryEntry)? onAddItem;
 
   const _CalcHistorySheet({
     required this.entries,
     required this.isDark,
     required this.onSelect,
     required this.onClear,
-    this.onAddItem,
   });
-
-  @override
-  State<_CalcHistorySheet> createState() => _CalcHistorySheetState();
-}
-
-class _CalcHistorySheetState extends State<_CalcHistorySheet> {
-  int? _expandedIndex;
 
   String _formatDate(DateTime dt) {
     final now = DateTime.now();
@@ -903,9 +903,9 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.isDark ? const Color(0xFF111118) : Colors.white;
-    final fgColor = widget.isDark ? Colors.white : Colors.black;
-    final subColor = widget.isDark ? Colors.white54 : Colors.black45;
+    final bgColor = isDark ? const Color(0xFF111118) : Colors.white;
+    final fgColor = isDark ? Colors.white : Colors.black;
+    final subColor = isDark ? Colors.white54 : Colors.black45;
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.75,
@@ -932,9 +932,9 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                   ),
                 ),
                 const Spacer(),
-                if (widget.entries.isNotEmpty)
+                if (entries.isNotEmpty)
                   TextButton(
-                    onPressed: widget.onClear,
+                    onPressed: onClear,
                     child: const Text(
                       '全削除',
                       style: TextStyle(
@@ -947,7 +947,7 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
             ),
           ),
           const Divider(height: 1, color: Colors.white12),
-          if (widget.entries.isEmpty)
+          if (entries.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 48),
               child: Text(
@@ -960,98 +960,51 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
               child: ListView.separated(
                 shrinkWrap: true,
                 padding: const EdgeInsets.symmetric(vertical: 4),
-                itemCount: widget.entries.length,
+                itemCount: entries.length,
                 separatorBuilder: (_, __) =>
                     Divider(height: 1, color: fgColor.withOpacity(0.06)),
                 itemBuilder: (ctx, i) {
-                  final e = widget.entries[i];
-                  final isExpanded = _expandedIndex == i;
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      InkWell(
-                        onTap: () {
-                          if (widget.onAddItem != null) {
-                            setState(() {
-                              _expandedIndex = isExpanded ? null : i;
-                            });
-                          } else {
-                            widget.onSelect(e);
-                          }
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      e.expression,
-                                      style: TextStyle(
-                                        color: subColor,
-                                        fontSize: 20,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '= ${e.result}',
-                                      style: TextStyle(
-                                        color: fgColor,
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
+                  final e = entries[i];
+                  return InkWell(
+                    onTap: () => onSelect(e),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  e.expression,
+                                  style: TextStyle(
+                                    color: subColor,
+                                    fontSize: 20,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                _formatDate(e.dateTime),
-                                style: TextStyle(
-                                  color: subColor,
-                                  fontSize: 16,
+                                const SizedBox(height: 2),
+                                Text(
+                                  '= ${e.result}',
+                                  style: TextStyle(
+                                    color: fgColor,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
+                          Text(
+                            _formatDate(e.dateTime),
+                            style: TextStyle(
+                              color: subColor,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
-                      if (isExpanded)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: () => widget.onSelect(e),
-                                  icon: const Icon(Icons.calculate_rounded, size: 16),
-                                  label: const Text('電卓に入力'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: fgColor,
-                                    side: BorderSide(color: fgColor.withOpacity(0.2)),
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: () => widget.onAddItem!(e),
-                                  icon: const Icon(Icons.add_rounded, size: 16),
-                                  label: const Text('シートに追加'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF5E81FF),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
+                    ),
                   );
                 },
               ),
@@ -1139,8 +1092,8 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
   }
 
   /// OverlayEntry 内の電卓から履歴シートを開く委譲ハンドラ。
-  /// 親ページの context を使って showModalBottomSheet するので、
-  /// 電卓オーバーレイより手前に表示される。
+  /// showModalBottomSheet は OverlayEntry より下に表示されるため、
+  /// 代わりに OverlayEntry を使って電卓オーバーレイの上に表示する。
   void _showHistoryForCalc(
     void Function(CalcHistoryEntry) onSelect,
     VoidCallback onClear,
@@ -1156,39 +1109,52 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
               )
               .isDark
         : true;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) => _CalcHistorySheet(
-        entries: entries,
-        isDark: isDark,
-        onSelect: (entry) {
-          Navigator.pop(ctx);
-          onSelect(entry);
-        },
-        onClear: () {
-          onClear();
-          Navigator.pop(ctx);
-        },
-        onAddItem: (entry) {
-          Navigator.pop(ctx);
-          final state = _calcKey.currentState;
-          final result = double.tryParse(entry.result) ?? 0.0;
-          final name = entry.expression.length > 20
-              ? '${entry.expression.substring(0, 20)}…'
-              : entry.expression;
-          state?._addItemFromMap({
-            'name': name,
-            'input': result,
-            'op': '+',
-            'operand': 0.0,
-            'others': <dynamic>[],
-            'brackets': <dynamic>[],
-          });
-        },
+
+    OverlayEntry? historyEntry;
+    void closeHistory() {
+      historyEntry?.remove();
+      historyEntry = null;
+    }
+
+    historyEntry = OverlayEntry(
+      builder: (ctx) => Material(
+        color: Colors.transparent,
+        child: GestureDetector(
+          onTap: closeHistory,
+          behavior: HitTestBehavior.opaque,
+          child: Stack(
+            children: [
+              Container(color: Colors.black54),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: GestureDetector(
+                  onTap: () {},
+                  child: _CalcHistorySheet(
+                    entries: entries,
+                    isDark: isDark,
+                    onSelect: (entry) {
+                      closeHistory();
+                      onSelect(entry);
+                    },
+                    onClear: () {
+                      onClear();
+                      closeHistory();
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
+
+    final entry = historyEntry!;
+    if (_calcSheetOverlay != null) {
+      Overlay.of(context).insert(entry, above: _calcSheetOverlay!);
+    } else {
+      Overlay.of(context).insert(entry);
+    }
   }
 
   /// カメラボタン押下時: オーバーレイを閉じてから AIカウント画面へ遷移し、
@@ -1874,47 +1840,6 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
   }
 
   // ── 結合ビュー用電卓 ──────────────────────────────────────────────────────
-  void _showHistoryForMergedCalc(
-    void Function(CalcHistoryEntry) onSelect,
-    VoidCallback onClear,
-  ) async {
-    final entries = await CalcHistoryManager.instance.loadAll();
-    if (!mounted) return;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) => _CalcHistorySheet(
-        entries: entries,
-        isDark: true,
-        onSelect: (entry) {
-          Navigator.pop(ctx);
-          onSelect(entry);
-        },
-        onClear: () {
-          onClear();
-          Navigator.pop(ctx);
-        },
-        onAddItem: (entry) {
-          Navigator.pop(ctx);
-          final result = double.tryParse(entry.result) ?? 0.0;
-          final name = entry.expression.length > 20
-              ? '${entry.expression.substring(0, 20)}…'
-              : entry.expression;
-          _closeMergedCalcSheet();
-          Future.microtask(() => _pickSheetAndAdd({
-            'name': name,
-            'input': result,
-            'op': '+',
-            'operand': 0.0,
-            'others': <dynamic>[],
-            'brackets': <dynamic>[],
-          }));
-        },
-      ),
-    );
-  }
-
   void _openMergedCalcSheet() {
     if (_mergedCalcOpen) {
       _closeMergedCalcSheet();
@@ -1929,7 +1854,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
           _closeMergedCalcSheet();
           Future.microtask(() => _pickSheetAndAdd(item));
         },
-        onRequestHistory: _showHistoryForMergedCalc,
+        onRequestHistory: _showMergedHistoryForCalc,
         onClose: _closeMergedCalcSheet,
       ),
     );
@@ -1940,6 +1865,62 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
     _mergedCalcOverlay?.remove();
     _mergedCalcOverlay = null;
     if (mounted) setState(() => _mergedCalcOpen = false);
+  }
+
+  /// 結合ビュー電卓オーバーレイから履歴シートを開く委譲ハンドラ。
+  /// OverlayEntry の上に重ねて表示することで電卓の前面に出す。
+  void _showMergedHistoryForCalc(
+    void Function(CalcHistoryEntry) onSelect,
+    VoidCallback onClear,
+  ) async {
+    final entries = await CalcHistoryManager.instance.loadAll();
+    if (!mounted) return;
+
+    OverlayEntry? historyEntry;
+    void closeHistory() {
+      historyEntry?.remove();
+      historyEntry = null;
+    }
+
+    historyEntry = OverlayEntry(
+      builder: (ctx) => Material(
+        color: Colors.transparent,
+        child: GestureDetector(
+          onTap: closeHistory,
+          behavior: HitTestBehavior.opaque,
+          child: Stack(
+            children: [
+              Container(color: Colors.black54),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: GestureDetector(
+                  onTap: () {},
+                  child: _CalcHistorySheet(
+                    entries: entries,
+                    isDark: true,
+                    onSelect: (entry) {
+                      closeHistory();
+                      onSelect(entry);
+                    },
+                    onClear: () {
+                      onClear();
+                      closeHistory();
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final entry = historyEntry!;
+    if (_mergedCalcOverlay != null) {
+      Overlay.of(context).insert(entry, above: _mergedCalcOverlay!);
+    } else {
+      Overlay.of(context).insert(entry);
+    }
   }
 
   Future<void> _pickSheetAndAdd(Map<String, dynamic> item) async {
@@ -2446,7 +2427,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                 modeColor = const Color(0xFF5E81FF);
               } else {
                 modeIcon = Icons.edit_note_rounded;
-                modeColor = Colors.white38;
+                modeColor = const Color.fromARGB(255, 192, 32, 255);
               }
               return GestureDetector(
                 onTap: () => _applyModeToAll((_globalMode + 1) % 3),
@@ -2467,65 +2448,77 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
           ? const Center(
               child: Text('シートがありません', style: TextStyle(color: Colors.white38)),
             )
-          : ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),
-              itemCount: _sheetIds.length,
-              itemBuilder: (ctx, i) {
-                final id = _sheetIds[i];
-                WidgetConfig? sheetConfig;
-                try {
-                  sheetConfig = _localSheets.firstWhere((s) => s.id == id);
-                } catch (_) {
-                  sheetConfig = null;
-                }
-                if (sheetConfig == null) return const SizedBox.shrink();
-                return Padding(
-                  key: _keyForSheet(id),
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _MergedSheetSection(
-                    key: ValueKey(id),
-                    config: sheetConfig,
-                    onUpdate: (data) {
-                      setState(() {
-                        _localSheets = _localSheets
-                            .map((s) => s.id == id ? s.copyWith(data: data) : s)
-                            .toList();
-                      });
-                      widget.onSheetUpdate(id, data);
-                    },
-                    onRemove: _sheetIds.length > 1
-                        ? () => _removeSheet(id)
-                        : null,
-                    onDuplicate: () => widget.onSheetDuplicate(id),
-                    globalConstants: widget.globalConstants,
-                    clipboardNotifier: widget.clipboardNotifier,
-                    allConfigs: widget.allConfigs.map((c) {
-                      try {
-                        return _localSheets.firstWhere((s) => s.id == c.id);
-                      } catch (_) {
-                        return c;
-                      }
-                    }).toList(),
-                    mergedSiblingIds: _sheetIds
-                        .where((sid) => sid != id)
-                        .toSet(),
-                    onSheetUpdate: (sheetId, data) {
-                      setState(() {
-                        _localSheets = _localSheets
-                            .map((s) => s.id == sheetId ? s.copyWith(data: data) : s)
-                            .toList();
-                      });
-                      widget.onSheetUpdate(sheetId, data);
-                    },
-                    onSheetDuplicate: widget.onSheetDuplicate,
-                    pageContextGetter: () => context,
-                  ),
-                );
-              },
+          : SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),
+                      itemCount: _sheetIds.length,
+                      itemBuilder: (ctx, i) {
+                        final id = _sheetIds[i];
+                        WidgetConfig? sheetConfig;
+                        try {
+                          sheetConfig = _localSheets.firstWhere((s) => s.id == id);
+                        } catch (_) {
+                          sheetConfig = null;
+                        }
+                        if (sheetConfig == null) return const SizedBox.shrink();
+                        return Padding(
+                          key: _keyForSheet(id),
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _MergedSheetSection(
+                            key: ValueKey(id),
+                            config: sheetConfig,
+                            onUpdate: (data) {
+                              setState(() {
+                                _localSheets = _localSheets
+                                    .map((s) => s.id == id ? s.copyWith(data: data) : s)
+                                    .toList();
+                              });
+                              widget.onSheetUpdate(id, data);
+                            },
+                            onRemove: _sheetIds.length > 1
+                                ? () => _removeSheet(id)
+                                : null,
+                            onDuplicate: () => widget.onSheetDuplicate(id),
+                            globalConstants: widget.globalConstants,
+                            clipboardNotifier: widget.clipboardNotifier,
+                            allConfigs: widget.allConfigs.map((c) {
+                              try {
+                                return _localSheets.firstWhere((s) => s.id == c.id);
+                              } catch (_) {
+                                return c;
+                              }
+                            }).toList(),
+                            mergedSiblingIds: _sheetIds
+                                .where((sid) => sid != id)
+                                .toSet(),
+                            onSheetUpdate: (sheetId, data) {
+                              setState(() {
+                                _localSheets = _localSheets
+                                    .map((s) => s.id == sheetId ? s.copyWith(data: data) : s)
+                                    .toList();
+                              });
+                              widget.onSheetUpdate(sheetId, data);
+                            },
+                            onSheetDuplicate: widget.onSheetDuplicate,
+                          ),
+                        );
+                      },
+                    ),
+                ),
+                _mergedCalcOpen
+                    ? SizedBox(
+                      height:MediaQuery.of(context).size.height*0.65,
+                      )
+                    : const SizedBox.shrink(),
+              ],
             ),
+          ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(bottom: 10),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -2578,8 +2571,6 @@ class _MergedSheetSection extends StatefulWidget {
   final Set<String> mergedSiblingIds;
   final void Function(String, Map<String, dynamic>)? onSheetUpdate;
   final void Function(String)? onSheetDuplicate;
-  /// ページルートレベルの context を返すゲッター（履歴シート表示用）
-  final BuildContext Function()? pageContextGetter;
 
   const _MergedSheetSection({
     super.key,
@@ -2593,7 +2584,6 @@ class _MergedSheetSection extends StatefulWidget {
     this.mergedSiblingIds = const {},
     this.onSheetUpdate,
     this.onSheetDuplicate,
-    this.pageContextGetter,
   });
 
   @override
@@ -2644,59 +2634,6 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
     widget.onUpdate(data);
   }
 
-  void _showHistoryForCalc(
-    void Function(CalcHistoryEntry) onSelect,
-    VoidCallback onClear,
-  ) async {
-    final entries = await CalcHistoryManager.instance.loadAll();
-    if (!mounted) return;
-    final bgColorValue = _config.data['bgColor'] as int?;
-    final isDark = bgColorValue != null
-        ? _kNoteColorPresets
-              .firstWhere(
-                (p) => p.value == bgColorValue,
-                orElse: () => _kNoteColorPresets.first,
-              )
-              .isDark
-        : true;
-    // OverlayEntry 内から呼ばれると履歴が電卓の後ろに表示されるため、
-    // ページルートレベルの context を使って showModalBottomSheet を呼ぶ。
-    final modalContext = widget.pageContextGetter?.call() ?? context;
-    showModalBottomSheet(
-      context: modalContext,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) => _CalcHistorySheet(
-        entries: entries,
-        isDark: isDark,
-        onSelect: (entry) {
-          Navigator.pop(ctx);
-          onSelect(entry);
-        },
-        onClear: () {
-          onClear();
-          Navigator.pop(ctx);
-        },
-        onAddItem: (entry) {
-          Navigator.pop(ctx);
-          final state = _calcKey.currentState;
-          final result = double.tryParse(entry.result) ?? 0.0;
-          final name = entry.expression.length > 20
-              ? '${entry.expression.substring(0, 20)}…'
-              : entry.expression;
-          state?._addItemFromMap({
-            'name': name,
-            'input': result,
-            'op': '+',
-            'operand': 0.0,
-            'others': <dynamic>[],
-            'brackets': <dynamic>[],
-          });
-        },
-      ),
-    );
-  }
-
   void _openCalcSheet() {
     if (_calcSheetOpen) {
       _closeCalcSheet();
@@ -2722,7 +2659,6 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
         isDark: isDark,
         bgColor: bgColorValue,
         onAddItem: (item) => state?._addItemFromMap(item),
-        onRequestHistory: _showHistoryForCalc,
         onClose: _closeCalcSheet,
       ),
     );
@@ -3292,6 +3228,75 @@ class _QrShareDialog extends StatefulWidget {
 
 class _QrShareDialogState extends State<_QrShareDialog> {
   int _currentPage = 0;
+  bool _saving = false;
+
+  Future<void> _saveCurrentQrAsImage() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      if (!await Gal.requestAccess()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('写真ライブラリへのアクセスが拒否されました'),
+              backgroundColor: Color(0xFF2A2A3A),
+            ),
+          );
+        }
+        return;
+      }
+      final painter = QrPainter(
+        data: widget.qrDataList[_currentPage],
+        version: QrVersions.auto,
+        errorCorrectionLevel: QrErrorCorrectLevel.L,
+        color: const Color(0xFF000000),
+        emptyColor: const Color(0xFFFFFFFF),
+      );
+      // クワイエットゾーン（白余白）を付けてレンダリング
+      const double qrSize = 460.0;
+      const double quietZone = 30.0; // QR規格推奨: 4モジュール相当
+      const double totalSize = qrSize + quietZone * 2;
+      final recorder = PictureRecorder();
+      final canvas = Canvas(
+        recorder,
+        Rect.fromLTWH(0, 0, totalSize, totalSize),
+      );
+      // 白背景
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, totalSize, totalSize),
+        Paint()..color = const Color(0xFFFFFFFF),
+      );
+      // QRコードをパディング分オフセットして描画
+      canvas.save();
+      canvas.translate(quietZone, quietZone);
+      painter.paint(canvas, const Size(qrSize, qrSize));
+      canvas.restore();
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(totalSize.toInt(), totalSize.toInt());
+      final byteData = await image.toByteData(format: ImageByteFormat.png);
+      if (byteData == null) throw Exception('画像の生成に失敗しました');
+      await Gal.putImageBytes(byteData.buffer.asUint8List());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('QRコードを写真に保存しました'),
+            backgroundColor: Color(0xFF1A3A2A),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('保存に失敗しました: $e'),
+            backgroundColor: const Color(0xFF2A2A3A),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -3484,6 +3489,35 @@ class _QrShareDialogState extends State<_QrShareDialog> {
                 ),
                 const SizedBox(height: 12),
               ],
+              // 画像として保存ボタン
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.tealAccent,
+                      side: BorderSide(color: Colors.tealAccent.withValues(alpha: 0.4)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: _saving ? null : _saveCurrentQrAsImage,
+                    icon: _saving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.tealAccent,
+                            ),
+                          )
+                        : const Icon(Icons.save_alt_rounded, size: 18),
+                    label: Text(_saving ? '保存中...' : '画像として保存'),
+                  ),
+                ),
+              ),
               // 閉じるボタン
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
