@@ -736,7 +736,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('「$title」を取り込みました（${items.length}件）'),
-          backgroundColor: const Color(0xFF2A2A3A),
+          backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         ),
       );
     } catch (e) {
@@ -2326,22 +2326,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
                   color: isMulti ? Colors.orangeAccent : Colors.tealAccent,
                   width: 2.5,
                 ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
-          // 角のマーカー
-          Center(
-            child: SizedBox(
-              width: 240,
-              height: 240,
-              child: Stack(
-                children: [
-                  _corner(Alignment.topLeft, isMulti),
-                  _corner(Alignment.topRight, isMulti),
-                  _corner(Alignment.bottomLeft, isMulti),
-                  _corner(Alignment.bottomRight, isMulti),
-                ],
+                borderRadius: BorderRadius.circular(30),
               ),
             ),
           ),
@@ -2404,7 +2389,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
             ),
           // 説明テキスト
           Positioned(
-            bottom: 60,
+            bottom: 30,
             left: 32,
             right: 32,
             child: Container(
@@ -2425,7 +2410,8 @@ class _QrScannerPageState extends State<_QrScannerPage>
           // ファイルから読み込みボタン
           if (!_done)
             Positioned(
-              bottom: 110,
+              top: 0,
+              bottom:-310,
               left: 32,
               right: 32,
               child: Center(
@@ -2433,7 +2419,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white70,
                     side: const BorderSide(color: Colors.white24),
-                    backgroundColor: Colors.black54,
+                    backgroundColor: Colors.red,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
@@ -2469,6 +2455,8 @@ class _QrScannerPageState extends State<_QrScannerPage>
   Widget _buildImageViewer() {
     final images = _pickedImages!;
     final total = images.length;
+    final isMulti = _totalChunks != null && _totalChunks! > 1;
+    final collected = _chunks.length;
     return Container(
       color: Colors.black,
       child: Stack(
@@ -2502,10 +2490,67 @@ class _QrScannerPageState extends State<_QrScannerPage>
               );
             },
           ),
+             // 連結QR進捗インジケーター
+          if (isMulti)
+            Positioned(
+              top: 20,
+              left: 32,
+              right: 32,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.75),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.orangeAccent.withOpacity(0.5),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.link_rounded,
+                            color: Colors.orangeAccent, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          '連結QR: $collected/$total枚スキャン済み',
+                          style: const TextStyle(
+                            color: Colors.orangeAccent,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // 枚数のドットインジケーター
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(total, (i) {
+                        final done = _chunks.containsKey(i);
+                        return Container(
+                          width: 10,
+                          height: 10,
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: done
+                                ? Colors.tealAccent
+                                : Colors.white24,
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           // ページカウンター
           if (total > 1)
             Positioned(
-              top: 16,
+              top: 80,
               left: 0,
               right: 0,
               child: Center(
@@ -2611,34 +2656,4 @@ class _QrScannerPageState extends State<_QrScannerPage>
     );
   }
 
-  Widget _corner(Alignment alignment, bool isMulti) {
-    final isLeft =
-        alignment == Alignment.topLeft || alignment == Alignment.bottomLeft;
-    final isTop =
-        alignment == Alignment.topLeft || alignment == Alignment.topRight;
-    final color = isMulti ? Colors.orangeAccent : Colors.tealAccent;
-    return Align(
-      alignment: alignment,
-      child: Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          border: Border(
-            left: isLeft
-                ? BorderSide(color: color, width: 4)
-                : BorderSide.none,
-            right: !isLeft
-                ? BorderSide(color: color, width: 4)
-                : BorderSide.none,
-            top: isTop
-                ? BorderSide(color: color, width: 4)
-                : BorderSide.none,
-            bottom: !isTop
-                ? BorderSide(color: color, width: 4)
-                : BorderSide.none,
-          ),
-        ),
-      ),
-    );
-  }
 }
