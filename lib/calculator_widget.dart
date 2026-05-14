@@ -8322,7 +8322,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     }
 
     final result =
-        await showModalBottomSheet<({String instruction, bool isModify})>(
+        await showModalBottomSheet<({String instruction, bool isModify, Uint8List? imageBytes})>(
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
@@ -8333,7 +8333,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           ),
         );
 
-    if (result == null || result.instruction.isEmpty) return;
+    if (result == null || (result.instruction.isEmpty && result.imageBytes == null)) return;
     if (!mounted) return;
 
     final instruction = result.instruction;
@@ -8350,18 +8350,18 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
     final prompt =
         """
-User wants to generate a calculator expression for: "$instruction".
-Return a JSON array containing EXACTLY ONE item. 
+User wants to generate calculator expression(s) for: "$instruction".
+Return a JSON array of objects. Multiple formulas are allowed if the request implies multiple steps or variations.
 
 [CRITICAL INSTRUCTIONS]
-1. Combine all calculation steps into the 'others' list of a single item. If no extra steps are needed, 'others' should be an empty list [].
+1. Combine calculation steps into the 'others' list of an item where appropriate. 
 2. For variables the user needs to input (e.g., "base", "height"), set "input" or "val" to 0.0 and put the label in "unit".
 3. For mathematical constants required by the formula (e.g., "2" in triangle area, "3.14" in circle), set the specific numerical value in "input", "operand", or "val".
-4. [IMPORTANT] Be mathematically precise. Only use division or constants (like /2) if the specific formula requires it (e.g., Triangle has /2, Square DOES NOT have /2).
+4. [IMPORTANT] Be mathematically precise. Only use division or constants (like /2) if the specific formula requires it.
 5. Use "brackets" to specify priority calculations (parentheses). Index 0 is "input", index 1 is "operand", index 2 is "others[0]", index 3 is "others[1]", and so on.
-6. Ensure the formula is mathematically correct.
+6. Ensure every formula is mathematically correct.
 
-Structure:
+Structure per item:
 {
   "name": "Calculation name",
   "input": 0.0,
@@ -8379,62 +8379,40 @@ Structure:
   "precision": 2
 }
 
-Example: "三角形の面積" (base x height / 2)
-[{
-  "name": "三角形の面積",
-  "input": 0.0,
-  "unit1": "底辺",
-  "op": "x",
-  "operand": 0.0,
-  "unit2": "高さ",
-  "others": [{ "op": "/", "val": 2.0, "unit": "定数" }],
-  "brackets": [],
-  "unitResult": "面積",
-  "precision": 2
-}]
-
-Example: "台形の面積" ( (upper + lower) * height / 2 )
-[{
-  "name": "台形の面積",
-  "input": 0.0,
-  "unit1": "上底",
-  "op": "+",
-  "operand": 0.0,
-  "unit2": "下底",
-  "others": [
-    { "op": "x", "val": 0.0, "unit": "高さ" },
-    { "op": "/", "val": 2.0, "unit": "定数" }
-  ],
-  "brackets": [
-    { "start": 0, "end": 1 }
-  ],
-  "unitResult": "面積",
-  "precision": 2
-}]
-
-Example: "正方形の面積" (side x side)
-[{
-  "name": "正方形の面積",
-  "input": 0.0,
-  "unit1": "一辺",
-  "op": "x",
-  "operand": 0.0,
-  "unit2": "一辺",
-  "others": [],
-  "brackets": [],
-  "unitResult": "面積",
-  "precision": 2
-}]
-
-Return ONLY the JSON array. Do not include any explanations.
+Example output:
+[
+  {
+    "name": "三角形の面積",
+    "input": 0.0,
+    "unit1": "底辺",
+    "op": "x",
+    "operand": 0.0,
+    "unit2": "高さ",
+    "others": [{ "op": "/", "val": 2.0, "unit": "定数" }],
+    "brackets": [],
+    "unitResult": "面積",
+    "precision": 2
+  }
+]
 """;
 
     try {
-      final res = await ai.query(
-        prompt,
-        systemPrompt:
-            "You are a calculator generator AI. Return a JSON array with EXACTLY ONE item.",
-      );
+      final String res;
+      final systemPrompt = "You are a calculator generator AI. Return a JSON array of formula objects.";
+      
+      if (result.imageBytes != null) {
+        res = await ai.queryWithImage(
+          prompt,
+          result.imageBytes!,
+          systemPrompt: systemPrompt,
+        );
+      } else {
+        res = await ai.query(
+          prompt,
+          systemPrompt: systemPrompt,
+        );
+      }
+
       final jsonStart = res.indexOf('[');
       final jsonEnd = res.lastIndexOf(']');
       if (jsonStart != -1 && jsonEnd != -1) {
@@ -8448,10 +8426,8 @@ Return ONLY the JSON array. Do not include any explanations.
             ? <Map<String, dynamic>>[]
             : List<Map<String, dynamic>>.from(_items);
 
-        // 強制的に1つだけに絞る（もしAIが複数返してきた場合）
-        if (newItems.isNotEmpty) {
-          currentItems.add(newItems.first);
-        }
+        // 複数生成を許可し、すべて追加する
+        currentItems.addAll(newItems);
 
         widget.onUpdate({...widget.config.data, 'items': currentItems});
       }

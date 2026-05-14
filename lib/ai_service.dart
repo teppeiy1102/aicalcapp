@@ -50,6 +50,108 @@ class GemmaAi {
   Future<String> query(String prompt, {String? systemPrompt}) async =>
       _query(prompt, systemPrompt: systemPrompt);
 
+  Future<String> queryWithImage(
+    String prompt,
+    Uint8List imageBytes, {
+    String? systemPrompt,
+  }) async {
+    if (_currentModel == AiModel.openrouter) {
+      return await _queryWithImageOpenRouter(
+        prompt,
+        imageBytes,
+        systemPrompt: systemPrompt,
+      );
+    }
+    return await _queryWithImageLocal(prompt, imageBytes, systemPrompt: systemPrompt);
+  }
+
+  Future<String> _queryWithImageLocal(
+    String prompt,
+    Uint8List imageBytes, {
+    String? systemPrompt,
+  }) async {
+    if (!_isInit) return "";
+
+    while (_queryLock != null) {
+      await _queryLock!.future;
+    }
+    _queryLock = Completer<void>();
+
+    try {
+      final sp = systemPrompt ?? "You are a helpful assistant. Reply concisely.";
+      final formattedPrompt =
+          "<start_of_turn>user\n$sp\n$prompt<end_of_turn>\n<start_of_turn>model\n";
+
+      final response = await _channel.invokeMethod<String>('queryWithImage', {
+        'prompt': formattedPrompt,
+        'imageBytes': imageBytes,
+      }).timeout(const Duration(seconds: 120));
+
+      return response?.trim() ?? "";
+    } catch (e) {
+      if (kDebugMode) print("Query with image error: $e");
+      return "";
+    } finally {
+      final lock = _queryLock;
+      _queryLock = null;
+      lock?.complete();
+    }
+  }
+
+  Future<String> _queryWithImageOpenRouter(
+    String prompt,
+    Uint8List imageBytes, {
+    String? systemPrompt,
+  }) async {
+    final dio = Dio();
+    try {
+      final base64Image = base64Encode(imageBytes);
+      final sp = systemPrompt ?? "You are a helpful assistant. Reply concisely.";
+
+      final response = await dio.post(
+        'https://openrouter.ai/api/v1/chat/completions',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $_openRouterKey',
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://github.com/newluncher',
+            'X-Title': 'aicalcapp',
+          },
+          responseType: ResponseType.json,
+        ),
+        data: jsonEncode({
+          'model': '~google/gemini-flash-latest',
+          'messages': [
+            {'role': 'system', 'content': sp},
+            {
+              'role': 'user',
+              'content': [
+                {
+                  'type': 'image_url',
+                  'image_url': {
+                    'url': 'data:image/jpeg;base64,$base64Image',
+                  },
+                },
+                {'type': 'text', 'text': prompt},
+              ],
+            },
+          ],
+        }),
+      );
+
+      final body = response.data is String
+          ? jsonDecode(response.data as String) as Map
+          : response.data as Map;
+      final choice = (body['choices'] as List?)?.first as Map?;
+      if (choice == null) return '';
+      final content = (choice['message'] as Map?)?['content'];
+      return content?.toString().trim() ?? '';
+    } catch (e) {
+      if (kDebugMode) print('OpenRouter query with image error: $e');
+      return '';
+    }
+  }
+
   Future<String> _query(String prompt, {String? systemPrompt}) async {
     if (_currentModel == AiModel.openrouter) {
       return await _queryOpenRouter(prompt, systemPrompt: systemPrompt);

@@ -103,6 +103,7 @@ class _AiPromptSheet extends StatefulWidget {
 class _AiPromptSheetState extends State<_AiPromptSheet> {
   late final TextEditingController _ctrl;
   bool _isModify = false;
+  Uint8List? _attachedImage;
 
   @override
   void initState() {
@@ -114,6 +115,37 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
   void dispose() {
     _ctrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Colors.white70),
+              title: const Text('カメラで撮影', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Colors.white70),
+              title: const Text('ギャラリーから選択', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
+    final file = await picker.pickImage(source: source, maxWidth: 1024);
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    setState(() => _attachedImage = bytes);
   }
 
   @override
@@ -182,27 +214,75 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purpleAccent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+          if (_attachedImage != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(
+                      _attachedImage!,
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _attachedImage = null),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close, color: Colors.white, size: 16),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              onPressed: () {
-                final text = _ctrl.text.trim();
-                if (text.isEmpty) return;
-                Navigator.pop(context, (
-                  instruction: text,
-                  isModify: _isModify,
-                ));
-              },
-              child: const Text('生成', style: TextStyle(fontSize: 16)),
             ),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purpleAccent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  onPressed: () {
+                    final text = _ctrl.text.trim();
+                    if (text.isEmpty && _attachedImage == null) return;
+                    Navigator.pop(context, (
+                      instruction: text,
+                      isModify: _isModify,
+                      imageBytes: _attachedImage,
+                    ));
+                  },
+                  child: const Text('生成', style: TextStyle(fontSize: 16)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              IconButton(
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withOpacity(0.06),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.all(14),
+                ),
+                onPressed: _pickImage,
+                icon: const Icon(Icons.add_a_photo_outlined, color: Colors.white70),
+              ),
+            ],
           ),
         ],
       ),
