@@ -25,11 +25,7 @@ class _PaperPainter extends CustomPainter {
           ? Colors.blueAccent.withOpacity(0.12)
           : Colors.redAccent.withOpacity(0.12)
       ..strokeWidth = 1.0;
-    canvas.drawLine(
-      const Offset(28, 0),
-      Offset(28, size.height),
-      marginPaint,
-    );
+    canvas.drawLine(const Offset(28, 0), Offset(28, size.height), marginPaint);
   }
 
   @override
@@ -84,10 +80,7 @@ class _StandaloneMemoRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (dragHandle != null) ...[
-              dragHandle!,
-              const SizedBox(width: 4),
-            ],
+            if (dragHandle != null) ...[dragHandle!, const SizedBox(width: 4)],
             Padding(
               padding: const EdgeInsets.only(top: 1),
               child: Icon(
@@ -103,7 +96,9 @@ class _StandaloneMemoRow extends StatelessWidget {
                 style: TextStyle(
                   color: empty
                       ? (isDark ? Colors.white24 : Colors.black26)
-                      : (isDark ? Colors.white70 : Colors.black.withOpacity(0.7)),
+                      : (isDark
+                            ? Colors.white70
+                            : Colors.black.withOpacity(0.7)),
                   fontSize: 13,
                   fontStyle: empty ? FontStyle.italic : FontStyle.normal,
                   height: 1.5,
@@ -188,7 +183,9 @@ class _MemoRowWidget extends StatelessWidget {
                 style: TextStyle(
                   color: empty
                       ? (isDark ? Colors.white24 : Colors.black26)
-                      : (isDark ? Colors.white70 : Colors.black.withOpacity(0.7)),
+                      : (isDark
+                            ? Colors.white70
+                            : Colors.black.withOpacity(0.7)),
                   fontSize: 13,
                   fontStyle: empty ? FontStyle.italic : FontStyle.normal,
                   height: 1.5,
@@ -213,7 +210,10 @@ class _MemoRowWidget extends StatelessWidget {
 
 // ── AIカウント専用ページ ──
 class _AiCountPage extends StatefulWidget {
-  final Future<AiCountResult?> Function(Uint8List imageBytes, String instruction)
+  final Future<AiCountResult?> Function(
+    Uint8List imageBytes,
+    String instruction,
+  )
   onCount;
 
   const _AiCountPage({required this.onCount});
@@ -239,8 +239,9 @@ class _AiCountPageState extends State<_AiCountPage> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final Permission perm =
-        source == ImageSource.camera ? Permission.camera : Permission.photos;
+    final Permission perm = source == ImageSource.camera
+        ? Permission.camera
+        : Permission.photos;
     final status = await perm.request();
     if (!mounted) return;
     if (!status.isGranted) {
@@ -251,10 +252,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                 ? 'カメラのアクセス許可が必要です。'
                 : '写真へのアクセス許可が必要です。',
           ),
-          action: SnackBarAction(
-            label: '設定を開く',
-            onPressed: openAppSettings,
-          ),
+          action: SnackBarAction(label: '設定を開く', onPressed: openAppSettings),
           duration: const Duration(seconds: 4),
         ),
       );
@@ -279,9 +277,9 @@ class _AiCountPageState extends State<_AiCountPage> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('画像の取得に失敗しました: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('画像の取得に失敗しました: $e')));
       }
     }
   }
@@ -290,9 +288,9 @@ class _AiCountPageState extends State<_AiCountPage> {
   Future<void> _runLlmCount() async {
     final instruction = _labelCtrl.text.trim();
     if (instruction.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('何を数えるか入力してください。')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('何を数えるか入力してください。')));
       return;
     }
     if (_imageBytes == null) return;
@@ -315,9 +313,9 @@ class _AiCountPageState extends State<_AiCountPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('エラー: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('エラー: $e')));
       }
     } finally {
       if (mounted) setState(() => _isCounting = false);
@@ -327,46 +325,42 @@ class _AiCountPageState extends State<_AiCountPage> {
   void _showSourcePicker() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor:Colors.black,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder:
-          (ctx) => SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(
-                    Icons.camera_alt,
-                    color: Colors.tealAccent,
-                  ),
-                  title: const Text(
-                    'カメラで撮影',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _pickImage(ImageSource.camera);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.photo_library,
-                    color: Colors.tealAccent,
-                  ),
-                  title: const Text(
-                    'ギャラリーから選択',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _pickImage(ImageSource.gallery);
-                  },
-                ),
-              ],
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Colors.tealAccent),
+              title: const Text(
+                'カメラで撮影',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.camera);
+              },
             ),
-          ),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library,
+                color: Colors.tealAccent,
+              ),
+              title: const Text(
+                'ギャラリーから選択',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -381,21 +375,17 @@ class _AiCountPageState extends State<_AiCountPage> {
         titleSpacing: 0,
         title: const Row(
           children: [
-            Icon(Icons.auto_awesome_rounded, color: Colors.tealAccent, size: 18),
+            Icon(
+              Icons.auto_awesome_rounded,
+              color: Colors.tealAccent,
+              size: 18,
+            ),
             SizedBox(width: 8),
             Text('AIカウント', style: TextStyle(color: Colors.white, fontSize: 16)),
           ],
         ),
         actions: [
           if (_lastResult != null) ...[
-            IconButton(
-              icon: Icon(
-                _showMarkers ? Icons.visibility : Icons.visibility_off,
-                color: Colors.white70,
-              ),
-              onPressed: () => setState(() => _showMarkers = !_showMarkers),
-              tooltip: 'マーカーの表示/非表示',
-            ),
             TextButton.icon(
               onPressed: () => Navigator.pop(context, _lastResult!.count),
               icon: const Icon(
@@ -417,8 +407,7 @@ class _AiCountPageState extends State<_AiCountPage> {
       body: Column(
         children: [
           Expanded(
-            child:
-                _imageBytes == null ? _buildPickerArea() : _buildImageArea(),
+            child: _imageBytes == null ? _buildPickerArea() : _buildImageArea(),
           ),
           if (_imageBytes != null) _buildInstructionBar(isBusy),
         ],
@@ -428,33 +417,38 @@ class _AiCountPageState extends State<_AiCountPage> {
 
   Widget _buildPickerArea() {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.image_search, color: Colors.white24, size: 72),
-          const SizedBox(height: 20),
-          const Text(
-            '画像を選択してください',
-            style: TextStyle(color: Colors.white54, fontSize: 15),
-          ),
-          const SizedBox(height: 28),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildSourceButton(
-                icon: Icons.camera_alt,
-                label: 'カメラ',
-                onTap: () => _pickImage(ImageSource.camera),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.image_search, color: Colors.white30, size: 150),
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.all(30.0),
+              child: const Text(
+                '画像を選択してください。AIが画像を解析して、指定した対象の数をカウントします。',
+                style: TextStyle(color: Colors.white70, fontSize: 15),
               ),
-              const SizedBox(width: 20),
-              _buildSourceButton(
-                icon: Icons.photo_library,
-                label: 'ギャラリー',
-                onTap: () => _pickImage(ImageSource.gallery),
-              ),
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildSourceButton(
+                  icon: Icons.camera_alt,
+                  label: 'カメラ',
+                  onTap: () => _pickImage(ImageSource.camera),
+                ),
+                const SizedBox(width: 20),
+                _buildSourceButton(
+                  icon: Icons.photo_library,
+                  label: 'ギャラリー',
+                  onTap: () => _pickImage(ImageSource.gallery),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -467,19 +461,25 @@ class _AiCountPageState extends State<_AiCountPage> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        height: 100,
+        width: 100,
         decoration: BoxDecoration(
-          color: Colors.teal.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(16),
+          color: Colors.teal.withOpacity(0.30),
           border: Border.all(color: Colors.tealAccent.withOpacity(0.4)),
+          shape: BoxShape.circle,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.tealAccent, size: 32),
-            const SizedBox(height: 8),
-            Text(label, style: const TextStyle(color: Colors.tealAccent, fontSize: 13)),
-          ],
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.tealAccent, size: 32),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(color: Colors.tealAccent, fontSize: 13),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -489,42 +489,73 @@ class _AiCountPageState extends State<_AiCountPage> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // 画像表示
-        Center(
-          child: InteractiveViewer(
-            maxScale: 5.0,
-            minScale: 0.5,
-            child: AspectRatio(
-              aspectRatio: _imageWidth / _imageHeight,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.memory(
-                    _imageBytes!,
-                    fit: BoxFit.fill,
-                  ),
-                  if (_showMarkers &&
-                      _lastResult != null &&
-                      _lastResult!.points.isNotEmpty)
-                    _MarkerOverlay(
-                      points: _lastResult!.points,
-                      imageBytes: _imageBytes!,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final double viewWidth = constraints.maxWidth;
+            final double viewHeight = constraints.maxHeight;
+
+            return InteractiveViewer(
+              maxScale: 5.0,
+              minScale: 0.5,
+              boundaryMargin: const EdgeInsets.all(40),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: viewHeight),
+                child: Center(
+                  child: SizedBox(
+                    width: viewWidth,
+                    child: AspectRatio(
+                      aspectRatio: _imageWidth / _imageHeight,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.memory(_imageBytes!, fit: BoxFit.fill),
+                          if (_showMarkers &&
+                              _lastResult != null &&
+                              _lastResult!.points.isNotEmpty)
+                            _MarkerOverlay(
+                              points: _lastResult!.points,
+                              imageBytes: _imageBytes!,
+                            ),
+                        ],
+                      ),
                     ),
-                ],
+                  ),
+                ),
               ),
+            );
+          },
+        ),
+        if (_lastResult != null)
+          Positioned(
+            top: 0,
+            right: 0,
+            child: IconButton(
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.teal,
+                shape: const CircleBorder(),
+                padding: const EdgeInsets.all(8),
+              ),
+              icon: Icon(
+                _showMarkers ? Icons.visibility : Icons.visibility_off,
+                color: Colors.white,
+              ),
+              onPressed: () => setState(() => _showMarkers = !_showMarkers),
+              tooltip: 'マーカーの表示/非表示',
             ),
           ),
-        ),
 
         // カウント結果バッジ
         if (_lastResult != null)
           Positioned(
-            top: 16,
+            top: 6,
             left: 0,
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.teal.withOpacity(0.92),
                   borderRadius: BorderRadius.circular(40),
@@ -542,14 +573,10 @@ class _AiCountPageState extends State<_AiCountPage> {
                       '${_lastResult!.count}',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 56,
+                        fontSize: 36,
                         fontWeight: FontWeight.bold,
                         height: 1,
                       ),
-                    ),
-                    const Text(
-                      '個',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
                     ),
                   ],
                 ),
@@ -578,18 +605,20 @@ class _AiCountPageState extends State<_AiCountPage> {
 
         // 写真変更ボタン
         Positioned(
-          top: 8,
-          right: 8,
+          bottom: 18,
+          right: 20,
+          left: 20,
           child: GestureDetector(
             onTap: _isCounting ? null : _showSourcePicker,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.black54,
+                color: Colors.red,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.refresh, color: Colors.white70, size: 14),
                   SizedBox(width: 4),
@@ -620,11 +649,18 @@ class _AiCountPageState extends State<_AiCountPage> {
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 children: [
-                  const Icon(Icons.auto_awesome_rounded, color: Colors.tealAccent, size: 12),
+                  const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: Colors.tealAccent,
+                    size: 12,
+                  ),
                   const SizedBox(width: 4),
                   Text(
-                    'OpenRouter AI（画像解析）でカウント',
-                    style: TextStyle(color: Colors.white.withOpacity(0.35), fontSize: 11),
+                    'カウント対象を入力して、AIに画像を解析させましょう。',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.35),
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
@@ -701,8 +737,6 @@ class _AiCountPageState extends State<_AiCountPage> {
   }
 }
 
-
-
 // ── メモ編集ダイアログ（電卓付き） ──
 class _MemoEditDialog extends StatefulWidget {
   final String initialText;
@@ -730,6 +764,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
   List<double> _calcTermValues = [];
   List<String> _calcTermOps = [];
   bool _isClearState = true;
+  bool _isAiCounting = false;
 
   @override
   void initState() {
@@ -763,11 +798,16 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
 
   double _evalCalcSimple(double a, String op, double b) {
     switch (op) {
-      case '+': return a + b;
-      case '-': return a - b;
-      case '×': return a * b;
-      case '÷': return b != 0 ? a / b : 0;
-      default: return a;
+      case '+':
+        return a + b;
+      case '-':
+        return a - b;
+      case '×':
+        return a * b;
+      case '÷':
+        return b != 0 ? a / b : 0;
+      default:
+        return a;
     }
   }
 
@@ -829,10 +869,15 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
             effectiveOps = List<String>.from(_calcTermOps);
           }
           double result;
-          if (allTerms.length == effectiveOps.length + 1 && allTerms.length >= 2) {
+          if (allTerms.length == effectiveOps.length + 1 &&
+              allTerms.length >= 2) {
             result = allTerms[0];
             for (int i = 0; i < effectiveOps.length; i++) {
-              result = _evalCalcSimple(result, effectiveOps[i], allTerms[i + 1]);
+              result = _evalCalcSimple(
+                result,
+                effectiveOps[i],
+                allTerms[i + 1],
+              );
             }
           } else {
             result = allTerms.isNotEmpty ? allTerms.last : (_calcA ?? 0);
@@ -850,6 +895,11 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
           _calcDisplay = _fmtCalc(result);
           _calcHasResult = true;
           _calcNewEntry = true;
+          // 履歴に保存
+          CalcHistoryManager.instance.addEntry(
+            exprParts.join(' '),
+            _fmtCalc(result),
+          );
         } else {
           if (_calcDisplay != '0' || _calcA != null) {
             _calcHasResult = true;
@@ -906,13 +956,73 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
     });
   }
 
+  void _showAiCountDialog() async {
+    final ai = GemmaAi();
+    setState(() => _isAiCounting = true);
+    final count = await Navigator.push<int>(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (ctx) => _AiCountPage(onCount: ai.countInImage),
+      ),
+    );
+    if (!mounted) return;
+    setState(() {
+      _isAiCounting = false;
+      if (count != null) {
+        _calcDisplay = count.toString();
+        _calcNewEntry = true;
+        _calcHasResult = false;
+        _isClearState = false;
+        _calcA = null;
+        _calcOp = '';
+        _calcTermValues = [];
+        _calcTermOps = [];
+        _calcExprStr = '';
+      }
+    });
+  }
+
+  void _showCalcHistory() async {
+    final entries = await CalcHistoryManager.instance.loadAll();
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _CalcHistorySheet(
+        entries: entries,
+        isDark: true,
+        onSelect: (entry) {
+          Navigator.pop(ctx);
+          setState(() {
+            _calcDisplay = entry.result;
+            _calcA = double.tryParse(entry.result);
+            _calcNewEntry = true;
+            _calcHasResult = true;
+            _isClearState = true;
+            _calcOp = '';
+            _calcTermValues = _calcA != null ? [_calcA!] : [];
+            _calcTermOps = [];
+            _calcExprStr = '${entry.expression} = ${entry.result}';
+          });
+        },
+        onClear: () {
+          CalcHistoryManager.instance.clearAll();
+          Navigator.pop(ctx);
+        },
+      ),
+    );
+  }
+
   Widget _buildCalcPanel() {
     const textColor = Colors.white;
     final keyBg = Colors.white.withOpacity(0.1);
     const opColor = Colors.blueAccent;
     const eqColor = Colors.orangeAccent;
     const keyFontSize = 26.0;
-    const displayFontSize = 44.0;
+    const displayFontSize = 64.0;
     const subtitleFontSize = 16.0;
 
     Widget calcKey(String label, {Color? bg, Color? fg}) {
@@ -985,36 +1095,107 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                 ),
               ),
             ),
+
             // 表示エリア
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 2),
-              height: 72,
-              child: Column(
+              height: 82,
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (subtitle.isNotEmpty)
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Text(
-                        subtitle,
-                        style: TextStyle(
-                          color: textColor.withOpacity(0.45),
-                          fontSize: subtitleFontSize,
+                  // AIカウントアイコン
+                  GestureDetector(
+                    onTap: _isAiCounting ? null : _showAiCountDialog,
+                    child: AnimatedOpacity(
+                      opacity: _isAiCounting ? 0.4 : 1.0,
+                      duration: const Duration(milliseconds: 150),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.85),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.45),
+                            width: 0.8,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            const Icon(
+                              Icons.camera_alt_outlined,
+                              color: Colors.black,
+                              size: 20,
+                            ),
+                            if (_isAiCounting)
+                              const SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color: Colors.tealAccent,
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
-                  FittedBox(
-                    child: Text(
-                      _calcDisplay,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        color: textColor,
-                        fontSize: displayFontSize,
-                        fontWeight: FontWeight.bold,
-                        height: 0.8,
+                  ),
+                  const SizedBox(width: 8),
+                  // 履歴アイコン
+                  GestureDetector(
+                    onTap: _showCalcHistory,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 0.8,
+                        ),
+                        shape: BoxShape.circle,
                       ),
-                      textAlign: TextAlign.right,
+                      child: const Icon(
+                        Icons.history_rounded,
+                        color: Colors.white70,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 数値・式表示エリア
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (subtitle.isNotEmpty)
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Text(
+                              subtitle,
+                              style: TextStyle(
+                                color: textColor.withOpacity(0.45),
+                                fontSize: subtitleFontSize,
+                              ),
+                            ),
+                          ),
+                        FittedBox(
+                          child: Text(
+                            _calcDisplay,
+                            maxLines: 1,
+                            style: const TextStyle(
+                              color: textColor,
+                              fontSize: displayFontSize,
+                              fontWeight: FontWeight.w200,
+                              height: 0.8,
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -1030,15 +1211,25 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                calcKey('C', bg: Colors.redAccent.withOpacity(0.18), fg: Colors.redAccent),
+                calcKey(
+                  'C',
+                  bg: Colors.redAccent.withOpacity(0.18),
+                  fg: Colors.redAccent,
+                ),
                 calcKey('+/-'),
                 calcKey('%'),
                 calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
-                calcKey('7'), calcKey('8'), calcKey('9'),
+                calcKey('7'),
+                calcKey('8'),
+                calcKey('9'),
                 calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
-                calcKey('4'), calcKey('5'), calcKey('6'),
+                calcKey('4'),
+                calcKey('5'),
+                calcKey('6'),
                 calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
-                calcKey('1'), calcKey('2'), calcKey('3'),
+                calcKey('1'),
+                calcKey('2'),
+                calcKey('3'),
                 calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
                 calcKey('⌫'),
                 calcKey('0'),
@@ -1066,7 +1257,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
           child: Container(
             constraints: const BoxConstraints(maxWidth: 400),
             padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
-          //  height: MediaQuery.of(context).size.height * 0.95,
+            //  height: MediaQuery.of(context).size.height * 0.95,
             child: Column(
               children: [
                 // タイトル
@@ -1074,9 +1265,19 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Row(
                     children: [
-                      const Icon(Icons.sticky_note_2_outlined, color: Colors.amber, size: 18),
+                      const Icon(
+                        Icons.sticky_note_2_outlined,
+                        color: Colors.amber,
+                        size: 18,
+                      ),
                       const SizedBox(width: 8),
-                      Text(widget.title, style: const TextStyle(color: Colors.white, fontSize: 16)),
+                      Text(
+                        widget.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1096,11 +1297,15 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                     fillColor: Colors.white.withOpacity(0.06),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+                      borderSide: BorderSide(
+                        color: Colors.white.withOpacity(0.15),
+                      ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+                      borderSide: BorderSide(
+                        color: Colors.white.withOpacity(0.15),
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -1109,14 +1314,20 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                   ),
                 ),
                 // アクションバー
-Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(null),
-                        child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+                        child: const Text(
+                          'キャンセル',
+                          style: TextStyle(color: Colors.white54),
+                        ),
                       ),
                       const SizedBox(width: 8),
                       ElevatedButton(
@@ -1135,9 +1346,8 @@ Padding(
                   ),
                 ),
                 const Divider(color: Colors.white12, height: 1),
-                        _buildCalcPanel(),
-                        SizedBox(height: 10),
-                
+                _buildCalcPanel(),
+                SizedBox(height: 10),
               ],
             ),
           ),

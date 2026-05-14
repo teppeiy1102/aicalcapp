@@ -70,7 +70,7 @@ class _CalcKeyButtonState extends State<_CalcKeyButton>
       child: ScaleTransition(
         scale: _scale,
         child: Container(
-          constraints: BoxConstraints(maxHeight: 50,),
+          constraints: BoxConstraints(maxHeight: 50),
           decoration: BoxDecoration(
             color: widget.bg,
             borderRadius: BorderRadius.circular(1000),
@@ -114,7 +114,8 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
   String _fmt(double v) {
     if (v.isInfinite || v.isNaN) return '0';
     if (v == 0) return '0';
-    if (v == v.truncateToDouble() && v.abs() < 1e15) return v.toInt().toString();
+    if (v == v.truncateToDouble() && v.abs() < 1e15)
+      return v.toInt().toString();
     if (v.abs() < 1e-15 || v.abs() >= 1e15) return v.toString();
     String s = v.toStringAsFixed(15);
     return s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
@@ -122,11 +123,16 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
 
   double _evalSimple(double a, String op, double b) {
     switch (op) {
-      case '+': return a + b;
-      case '-': return a - b;
-      case '×': return a * b;
-      case '÷': return b != 0 ? a / b : 0;
-      default: return a;
+      case '+':
+        return a + b;
+      case '-':
+        return a - b;
+      case '×':
+        return a * b;
+      case '÷':
+        return b != 0 ? a / b : 0;
+      default:
+        return a;
     }
   }
 
@@ -134,17 +140,26 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
     setState(() {
       if (key == 'C' || key == 'AC') {
         if (_display == '0' || key == 'AC') {
-          _display = '0'; _calcA = null; _calcOp = ''; _newEntry = true;
-          _hasResult = false; _exprStr = ''; _termValues = []; _termOps = [];
+          _display = '0';
+          _calcA = null;
+          _calcOp = '';
+          _newEntry = true;
+          _hasResult = false;
+          _exprStr = '';
+          _termValues = [];
+          _termOps = [];
           _isClearState = true;
         } else {
-          _display = '0'; _newEntry = true; _isClearState = true;
+          _display = '0';
+          _newEntry = true;
+          _isClearState = true;
         }
       } else if (key == '⌫') {
         if (!_newEntry && _display.length > 1) {
           _display = _display.substring(0, _display.length - 1);
         } else {
-          _display = '0'; _newEntry = true;
+          _display = '0';
+          _newEntry = true;
         }
       } else if (key == '+/-') {
         _isClearState = false;
@@ -167,7 +182,8 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
             effectiveOps = List<String>.from(_termOps);
           }
           double result;
-          if (allTerms.length == effectiveOps.length + 1 && allTerms.length >= 2) {
+          if (allTerms.length == effectiveOps.length + 1 &&
+              allTerms.length >= 2) {
             result = allTerms[0];
             for (int i = 0; i < effectiveOps.length; i++) {
               result = _evalSimple(result, effectiveOps[i], allTerms[i + 1]);
@@ -183,8 +199,11 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
           _exprStr = '${parts.join(' ')} = ${_fmt(result)}';
           _termValues = allTerms;
           _termOps = effectiveOps;
-          _calcA = result; _calcOp = ''; _display = _fmt(result);
-          _hasResult = true; _newEntry = true;
+          _calcA = result;
+          _calcOp = '';
+          _display = _fmt(result);
+          _hasResult = true;
+          _newEntry = true;
         } else {
           if (_display != '0' || _calcA != null) _hasResult = true;
         }
@@ -207,11 +226,15 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
           _termValues = [_calcA!];
           _termOps = [key];
         }
-        _calcOp = key; _newEntry = true; _hasResult = false;
+        _calcOp = key;
+        _newEntry = true;
+        _hasResult = false;
       } else if (key == '.') {
         _isClearState = false;
         if (_newEntry) {
-          _display = '0.'; _newEntry = false; _hasResult = false;
+          _display = '0.';
+          _newEntry = false;
+          _hasResult = false;
         } else if (!_display.contains('.')) {
           _display += '.';
         }
@@ -219,9 +242,13 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
         _isClearState = false;
         if (_newEntry || _display == '0') {
           if (_hasResult && _calcOp.isEmpty) {
-            _termValues = []; _termOps = []; _calcA = null;
+            _termValues = [];
+            _termOps = [];
+            _calcA = null;
           }
-          _display = key; _newEntry = false; _hasResult = false;
+          _display = key;
+          _newEntry = false;
+          _hasResult = false;
         } else if (_display.length < 12) {
           _display += key;
         }
@@ -290,13 +317,11 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
     return SafeArea(
       child: SingleChildScrollView(
         child: Container(
-          constraints: BoxConstraints(maxWidth: 400,),
-          padding: EdgeInsets.only(
-            left: 10, right: 10, top: 30,
-          ),
+          constraints: BoxConstraints(maxWidth: 400),
+          padding: EdgeInsets.only(left: 10, right: 10, top: 30),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-           // crossAxisAlignment: CrossAxisAlignment.stretch,
+            // crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
                 children: [
@@ -358,7 +383,12 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
               ),
               Container(
                 height: 90,
-                padding: const EdgeInsets.only(left: 4, right: 14, top: 12, bottom: 10),
+                padding: const EdgeInsets.only(
+                  left: 4,
+                  right: 14,
+                  top: 12,
+                  bottom: 10,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -377,7 +407,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                               color: Colors.white.withOpacity(0.45),
                               width: 0.8,
                             ),
-                            shape: BoxShape.circle
+                            shape: BoxShape.circle,
                           ),
                           child: Stack(
                             alignment: Alignment.center,
@@ -428,8 +458,8 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                               style: const TextStyle(
                                 height: 1,
                                 color: textColor,
-                                fontSize: 44,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 64,
+                                fontWeight: FontWeight.w200,
                               ),
                               textAlign: TextAlign.right,
                             ),
@@ -450,18 +480,29 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  calcKey('C', bg: Colors.redAccent.withOpacity(0.18), fg: Colors.redAccent),
+                  calcKey(
+                    'C',
+                    bg: Colors.redAccent.withOpacity(0.18),
+                    fg: Colors.redAccent,
+                  ),
                   calcKey('+/-', bg: keyBg),
                   calcKey('%', bg: keyBg),
                   calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
-                  calcKey('7'), calcKey('8'), calcKey('9'),
+                  calcKey('7'),
+                  calcKey('8'),
+                  calcKey('9'),
                   calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
-                  calcKey('4'), calcKey('5'), calcKey('6'),
+                  calcKey('4'),
+                  calcKey('5'),
+                  calcKey('6'),
                   calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
-                  calcKey('1'), calcKey('2'), calcKey('3'),
+                  calcKey('1'),
+                  calcKey('2'),
+                  calcKey('3'),
                   calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
                   calcKey('⌫', bg: keyBg),
-                  calcKey('0'), calcKey('.'),
+                  calcKey('0'),
+                  calcKey('.'),
                   calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
                 ],
               ),
@@ -473,4 +514,3 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
     );
   }
 }
-

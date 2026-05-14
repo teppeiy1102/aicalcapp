@@ -2267,6 +2267,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                     ),
                   ),
 
+                  const SizedBox(height: 8),
                   // ── リンク元セクション（タブ切り替え） ─────────────────
                   Builder(
                     builder: (_) {
@@ -3607,34 +3608,6 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                     },
                   ),
                   const SizedBox(height: 8),
-                  // ── リンク先セクション（シアン系） ─────────────────────
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.download_rounded,
-                          size: 14,
-                          color: Color(0xFF26C6DA),
-                        ),
-                        const SizedBox(width: 6),
-                        const Text(
-                          'リンク先',
-                          style: TextStyle(
-                            color: Color(0xFF26C6DA),
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        const Text(
-                          '（複数選択可）',
-                          style: TextStyle(color: Colors.white54, fontSize: 11),
-                        ),
-                      ],
-                    ),
-                  ),
                   // ── リンク元の「どの式のどの値」ラベル ────────────────
                   if (selectedSrcCalcIdx != null)
                     Padding(
@@ -3721,6 +3694,37 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                         },
                       ),
                     ),
+
+                  const SizedBox(height: 8),
+                  // ── リンク先セクション（シアン系） ─────────────────────
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.download_rounded,
+                          size: 14,
+                          color: Color(0xFF26C6DA),
+                        ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'リンク先',
+                          style: TextStyle(
+                            color: Color(0xFF26C6DA),
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          '（複数選択可）',
+                          style: TextStyle(color: Colors.white54, fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+
                   // ── リンク先シート選択（結合ビューの場合） ─────────
                   if (siblingConfigs.isNotEmpty)
                     Padding(
@@ -5798,8 +5802,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                 style: TextStyle(
                                   height: 1,
                                   color: textColor,
-                                  fontSize: displayFontSize,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 64,
+                                  fontWeight: FontWeight.w200,
                                 ),
                                 textAlign: TextAlign.right,
                               ),

@@ -1222,7 +1222,7 @@ class _WidgetCardState extends State<_WidgetCard> {
                                         Icon(Icons.data_usage_rounded, size: 12, color: accent),
                                         const SizedBox(width: 6),
                                         Text(
-                                          items.isEmpty ? '計算式未設定' : '${items.length}件の計算項目',
+                                          items.isEmpty ? '計算式未設定' : '${items.length}件',
                                           style: TextStyle(color: accent.withOpacity(0.9), fontSize: 11, fontWeight: FontWeight.w700),
                                         ),
                                       ],
@@ -1241,7 +1241,7 @@ class _WidgetCardState extends State<_WidgetCard> {
                                         children: [
                                           const Icon(Icons.sticky_note_2_outlined, size: 12, color: Colors.amber),
                                           const SizedBox(width: 6),
-                                          Text('${memos.length}件のメモ', style: const TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.w700)),
+                                          Text('${memos.length}件', style: const TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.w700)),
                                         ],
                                       ),
                                     ),
@@ -1257,9 +1257,9 @@ class _WidgetCardState extends State<_WidgetCard> {
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.link_rounded, size: 12, color: Colors.tealAccent),
+                                          const Icon(Icons.link_rounded, size: 12, color: Colors.teal),
                                           const SizedBox(width: 6),
-                                          Text('$exposedCount件の開放された式', style: const TextStyle(color: Colors.tealAccent, fontSize: 11, fontWeight: FontWeight.w700)),
+                                          Text('$exposedCount件', style: const TextStyle(color: Colors.teal, fontSize: 11, fontWeight: FontWeight.w700)),
                                         ],
                                       ),
                                     ),
