@@ -12,7 +12,7 @@ class GemmaAi {
   bool _isInit = false;
   static const _channel = MethodChannel('com.newluncher/litert_lm');
   AiModel _currentModel = AiModel.openrouter;
- String get _openRouterKey => dotenv.env['OPENROUTER_KEY'] ?? '';
+  String get _openRouterKey => dotenv.env['OPENROUTER_KEY'] ?? '';
 
   Completer<void>? _queryLock;
 
@@ -56,7 +56,8 @@ class GemmaAi {
     _queryLock = Completer<void>();
 
     try {
-      final sp = systemPrompt ?? "You are a helpful assistant. Reply concisely.";
+      final sp =
+          systemPrompt ?? "You are a helpful assistant. Reply concisely.";
       final formattedPrompt =
           "<start_of_turn>user\n$sp\n$prompt<end_of_turn>\n<start_of_turn>model\n";
 
@@ -85,7 +86,8 @@ class GemmaAi {
   Future<String> _queryOpenRouter(String prompt, {String? systemPrompt}) async {
     final dio = Dio();
     try {
-      final sp = systemPrompt ?? "You are a helpful assistant. Reply concisely.";
+      final sp =
+          systemPrompt ?? "You are a helpful assistant. Reply concisely.";
       if (kDebugMode) print("AI Prompt (OpenRouter):\n$prompt");
 
       final response = await dio.post(
@@ -100,7 +102,7 @@ class GemmaAi {
           responseType: ResponseType.json,
         ),
         data: jsonEncode({
-          'model': 'tencent/hy3-preview:free',
+          'model': '~google/gemini-flash-latest',
           'messages': [
             {'role': 'system', 'content': sp},
             {'role': 'user', 'content': prompt},
@@ -137,7 +139,10 @@ class GemmaAi {
     return await _countInImageLocal(imageBytes, instruction);
   }
 
-  Future<int?> _countInImageLocal(Uint8List imageBytes, String instruction) async {
+  Future<int?> _countInImageLocal(
+    Uint8List imageBytes,
+    String instruction,
+  ) async {
     if (!_isInit) return null;
 
     while (_queryLock != null) {
@@ -169,49 +174,57 @@ class GemmaAi {
     }
   }
 
-  Future<int?> _countInImageOpenRouter(Uint8List imageBytes, String instruction) async {
+  Future<int?> _countInImageOpenRouter(
+    Uint8List imageBytes,
+    String instruction,
+  ) async {
     final dio = Dio();
     try {
       final base64Image = base64Encode(imageBytes);
       if (kDebugMode) print('countInImage (OpenRouter): 送信中...');
 
-      final response = await dio.post(
-        'https://openrouter.ai/api/v1/chat/completions',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $_openRouterKey',
-            'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://github.com/newluncher',
-            'X-Title': 'aicalcapp',
-          },
-          responseType: ResponseType.json,
-        ),
-        data: jsonEncode({
-          'model': 'tencent/hy3-preview:free',
-          'messages': [
-            {
-              'role': 'user',
-              'content': [
+      final response = await dio
+          .post(
+            'https://openrouter.ai/api/v1/chat/completions',
+            options: Options(
+              headers: {
+                'Authorization': 'Bearer $_openRouterKey',
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://github.com/newluncher',
+                'X-Title': 'aicalcapp',
+              },
+              responseType: ResponseType.json,
+            ),
+            data: jsonEncode({
+              'model': '~google/gemini-flash-latest',
+              'messages': [
                 {
-                  'type': 'image_url',
-                  'image_url': {'url': 'data:image/jpeg;base64,$base64Image'},
-                },
-                {
-                  'type': 'text',
-                  'text':
-                      'この画像の中にある「$instruction」を注意深く数えて、その個数を整数（数字のみ）で答えてください。説明・単位・記号は一切不要です。整数1つだけを返してください。',
+                  'role': 'user',
+                  'content': [
+                    {
+                      'type': 'image_url',
+                      'image_url': {
+                        'url': 'data:image/jpeg;base64,$base64Image',
+                      },
+                    },
+                    {
+                      'type': 'text',
+                      'text':
+                          'この画像の中にある「$instruction」を注意深く数えて、その個数を整数（数字のみ）で答えてください。説明・単位・記号は一切不要です。整数1つだけを返してください。',
+                    },
+                  ],
                 },
               ],
-            },
-          ],
-        }),
-      ).timeout(const Duration(seconds: 60));
+            }),
+          )
+          .timeout(const Duration(seconds: 60));
 
       final body = response.data is String
           ? jsonDecode(response.data as String) as Map
           : response.data as Map;
       final choice = (body['choices'] as List?)?.first as Map?;
-      final content = (choice?['message'] as Map?)?['content']?.toString().trim() ?? '';
+      final content =
+          (choice?['message'] as Map?)?['content']?.toString().trim() ?? '';
       if (kDebugMode) print('countInImage (OpenRouter) response: $content');
       final match = RegExp(r'\d+').firstMatch(content);
       return match != null ? int.tryParse(match.group(0)!) : null;
