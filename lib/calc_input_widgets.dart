@@ -90,7 +90,7 @@ class _CalcKeyButtonState extends State<_CalcKeyButton>
   }
 }
 
-// ---- 数値入力用ミニ計算機シート ----
+// ---- 数値入力用ミニ電卓シート ----
 class _MiniCalcSheet extends StatefulWidget {
   final void Function(double) onResult;
   const _MiniCalcSheet({required this.onResult});
@@ -327,7 +327,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                 children: [
                   const Expanded(
                     child: Text(
-                      '計算機',
+                      '電卓',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -415,7 +415,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                               const Icon(
                                 Icons.camera_alt_outlined,
                                 color: Colors.black,
-                                size: 22,
+                                size: 16,
                               ),
                               if (_isAiCounting)
                                 const SizedBox(

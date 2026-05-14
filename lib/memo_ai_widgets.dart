@@ -386,31 +386,26 @@ class _AiCountPageState extends State<_AiCountPage> {
         ),
         actions: [
           if (_lastResult != null) ...[
-            TextButton.icon(
-              onPressed: () => Navigator.pop(context, _lastResult!.count),
-              icon: const Icon(
-                Icons.check_circle,
-                color: Colors.tealAccent,
-                size: 18,
-              ),
-              label: Text(
-                '${_lastResult!.count} を反映',
-                style: const TextStyle(
-                  color: Colors.tealAccent,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+           
           ],
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: _imageBytes == null ? _buildPickerArea() : _buildImageArea(),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF0D0D1A),Color.fromARGB(255, 38, 38, 38),],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomRight,
           ),
-          if (_imageBytes != null) _buildInstructionBar(isBusy),
-        ],
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: _imageBytes == null ? _buildPickerArea() : _buildImageArea(),
+            ),
+            if (_imageBytes != null) _buildInstructionBar(isBusy),
+          ],
+        ),
       ),
     );
   }
@@ -545,7 +540,7 @@ class _AiCountPageState extends State<_AiCountPage> {
           ),
 
         // カウント結果バッジ
-        if (_lastResult != null)
+        if (_lastResult != null && _showMarkers)
           Positioned(
             top: 6,
             left: 0,
@@ -573,11 +568,34 @@ class _AiCountPageState extends State<_AiCountPage> {
                       '${_lastResult!.count}',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 36,
+                        fontSize: 46,
                         fontWeight: FontWeight.bold,
                         height: 1,
                       ),
                     ),
+                    SizedBox(height: 8),
+ TextButton.icon(
+              onPressed: () => Navigator.pop(context, _lastResult!.count),
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+              icon: const Icon(
+                Icons.check_circle,
+                color: Colors.teal,
+                size: 18,
+              ),
+              label: Text(
+                '${_lastResult!.count} を反映',
+                style: const TextStyle(
+                  color: Colors.teal,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
                   ],
                 ),
               ),
@@ -1126,7 +1144,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                             const Icon(
                               Icons.camera_alt_outlined,
                               color: Colors.black,
-                              size: 20,
+                              size: 16,
                             ),
                             if (_isAiCounting)
                               const SizedBox(
@@ -1160,7 +1178,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                       child: const Icon(
                         Icons.history_rounded,
                         color: Colors.white70,
-                        size: 20,
+                        size: 16,
                       ),
                     ),
                   ),

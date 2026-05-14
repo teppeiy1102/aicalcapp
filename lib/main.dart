@@ -847,12 +847,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 30,
-                            fontWeight: FontWeight.w100,
+                            fontWeight: FontWeight.w900,
                             letterSpacing: 1.2,
                           ),
                         ),
                         Text(
-                          '現場を支える、次世代の計算機',
+                          '現場を支える、次世代の電卓',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.35),
                             fontSize: 10,
@@ -1277,22 +1277,24 @@ class _WidgetCardState extends State<_WidgetCard> {
                           GestureDetector(
                             onTap: widget.onDelete,
                             child: Container(
-                              padding: const EdgeInsets.only(left:10, right: 3, top: 0, bottom: 6),
+                              padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.03),
+                                color: Colors.white.withOpacity(0.2),
                                 shape: BoxShape.circle,
                               ),
-                              child: Icon(Icons.delete_sweep_rounded,
-                                color: isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.25),
-                                size: 22),
+                              child: Center(
+                                child: Icon(Icons.delete_sweep_rounded,
+                                  color: isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.25),
+                                  size: 22),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 20,width: 40,),
                           GestureDetector(
                             onTap: () => setState(() => _isExpanded = !_isExpanded),
                             child: Icon(
                               _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                              color: isDark ? Colors.white38 : Colors.black38, size: 22,
+                              color: isDark ? Colors.white38 : Colors.black54, size: 22,
                             ),
                           ),
                         ],

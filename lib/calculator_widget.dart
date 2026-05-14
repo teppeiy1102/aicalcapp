@@ -1159,7 +1159,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                       Icons.calculate_outlined,
                       color: Colors.blueAccent,
                     ),
-                    tooltip: '計算機',
+                    tooltip: '電卓',
                     onPressed: () {
                       showModalBottomSheet(
                         context: context,
@@ -5731,7 +5731,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                               Icon(
                                 Icons.camera_alt_outlined,
                                 color: Colors.tealAccent,
-                                size: 22,
+                                size: 16,
                               ),
                               if (_isAiCounting)
                                 SizedBox(
@@ -5769,7 +5769,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                         child: Icon(
                           Icons.history_rounded,
                           color: isDark ? Colors.white70 : Colors.black54,
-                          size: 20,
+                          size: 16,
                         ),
                       ),
                     ),
@@ -9351,7 +9351,7 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
             DropdownButtonFormField<String>(
               value: cond['op'] as String? ?? '>',
               isExpanded: true,
-              dropdownColor: const Color(0xFF1A1A2E),
+              dropdownColor: Colors.black,
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
@@ -9441,7 +9441,7 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
     final exprStr = _CalculatorWidgetState._buildLogicExprString(preview);
 
     return AlertDialog(
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: Colors.black,
       insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
       titlePadding: const EdgeInsets.fromLTRB(20, 20, 12, 0),
       contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 0),

@@ -1185,7 +1185,7 @@ class _CalculatorRow extends StatelessWidget {
                           Icons.calculate_outlined,
                           color: Colors.blueAccent,
                         ),
-                        tooltip: '計算機',
+                        tooltip: '電卓',
                         onPressed: () => _showMiniCalcSheet(context, (v) {
                           setSheetState(() {
                             if (v == v.truncateToDouble() && v.abs() < 1e15) {
@@ -1674,7 +1674,7 @@ class _CalculatorRow extends StatelessWidget {
                           Icons.calculate_outlined,
                           color: Colors.blueAccent,
                         ),
-                        tooltip: '計算機',
+                        tooltip: '電卓',
                         onPressed: () => _showMiniCalcSheet(context, (v) {
                           setSheetState(() {
                             if (v == v.truncateToDouble() && v.abs() < 1e15) {
@@ -2212,7 +2212,7 @@ class _CalculatorRow extends StatelessWidget {
                           Icons.calculate_outlined,
                           color: Colors.blueAccent,
                         ),
-                        tooltip: '計算機',
+                        tooltip: '電卓',
                         onPressed: () => _showMiniCalcSheet(context, (v) {
                           setSheetState(() {
                             if (v == v.truncateToDouble() && v.abs() < 1e15) {

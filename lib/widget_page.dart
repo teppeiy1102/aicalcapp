@@ -121,7 +121,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
     final picker = ImagePicker();
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor:Colors.black,
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -152,7 +152,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF1A1A2E),
+        color:Colors.black,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
@@ -207,7 +207,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
               filled: true,
               fillColor: Colors.white.withOpacity(0.06),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(20),
                 borderSide: BorderSide.none,
               ),
               contentPadding: const EdgeInsets.all(16),
@@ -220,7 +220,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(20),
                     child: Image.memory(
                       _attachedImage!,
                       height: 120,
@@ -254,7 +254,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
                     backgroundColor: Colors.purpleAccent,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
@@ -275,7 +275,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
                 style: IconButton.styleFrom(
                   backgroundColor: Colors.white.withOpacity(0.06),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   padding: const EdgeInsets.all(14),
                 ),
@@ -800,6 +800,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                 ),
               ),
             ),
+            SizedBox(height: 8),
             // 表示部
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
