@@ -8,6 +8,12 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 enum AiModel { local, openrouter }
 
+class AiCountResult {
+  final int count;
+  final List<List<double>> points; // Normalized coordinates [x, y] (0.0 to 1.0)
+  AiCountResult({required this.count, required this.points});
+}
+
 class GemmaAi {
   bool _isInit = false;
   static const _channel = MethodChannel('com.newluncher/litert_lm');
@@ -132,14 +138,17 @@ class GemmaAi {
   }
 
   /// 画像内の指定物体をカウントする（OpenRouter ビジョン LLM を使用）
-  Future<int?> countInImage(Uint8List imageBytes, String instruction) async {
+  Future<AiCountResult?> countInImage(
+    Uint8List imageBytes,
+    String instruction,
+  ) async {
     if (_currentModel == AiModel.openrouter) {
       return await _countInImageOpenRouter(imageBytes, instruction);
     }
     return await _countInImageLocal(imageBytes, instruction);
   }
 
-  Future<int?> _countInImageLocal(
+  Future<AiCountResult?> _countInImageLocal(
     Uint8List imageBytes,
     String instruction,
   ) async {
@@ -161,7 +170,9 @@ class GemmaAi {
           .timeout(const Duration(seconds: 120));
       final trimmed = response?.trim() ?? '';
       final match = RegExp(r'\d+').firstMatch(trimmed);
-      return match != null ? int.tryParse(match.group(0)!) : null;
+      final count = match != null ? int.tryParse(match.group(0)!) : null;
+      if (count == null) return null;
+      return AiCountResult(count: count, points: []);
     } on TimeoutException {
       return null;
     } catch (e) {
@@ -174,7 +185,7 @@ class GemmaAi {
     }
   }
 
-  Future<int?> _countInImageOpenRouter(
+  Future<AiCountResult?> _countInImageOpenRouter(
     Uint8List imageBytes,
     String instruction,
   ) async {
@@ -182,6 +193,24 @@ class GemmaAi {
     try {
       final base64Image = base64Encode(imageBytes);
       if (kDebugMode) print('countInImage (OpenRouter): 送信中...');
+
+      final prompt =
+          '''
+あなたは野鳥の会のベテランバードウォッチャーです。
+この画像の中にある「$instruction」を見つけてください。
+精度を高めるために、以下のステップで思考してください：
+1. 画像内のすべての対象物を左上から順に番号を振り、それぞれの中心座標 [x, y] (0から1000の正規化座標) を特定してください。
+2. 重なり合っているものも個別に見つけてください。
+3. 背景の模様や無関係な物体をカウントに含めないよう注意してください。
+4. 20個以上の場合や、あいまいな場合は正確に数えるためにズームインして確認してください。
+5. 3度数えても同じ結果が出ない場合は、3度目の結果を採用してください。
+
+最後に、以下の形式のJSONのみを返してください。他の説明やテキストは一切含めないでください。
+{
+  "count": 総数(整数),
+  "points": [[x1, y1], [x2, y2], ...]
+}
+''';
 
       final response = await dio
           .post(
@@ -207,11 +236,7 @@ class GemmaAi {
                         'url': 'data:image/jpeg;base64,$base64Image',
                       },
                     },
-                    {
-                      'type': 'text',
-                      'text':
-                          'この画像の中にある「$instruction」を注意深く数えて、その個数を整数（数字のみ）で答えてください。説明・単位・記号は一切不要です。整数1つだけを返してください。',
-                    },
+                    {'type': 'text', 'text': prompt},
                   ],
                 },
               ],
@@ -226,8 +251,31 @@ class GemmaAi {
       final content =
           (choice?['message'] as Map?)?['content']?.toString().trim() ?? '';
       if (kDebugMode) print('countInImage (OpenRouter) response: $content');
+
+      // JSONの抽出
+      final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(content);
+      if (jsonMatch != null) {
+        final jsonStr = jsonMatch.group(0)!;
+        final data = jsonDecode(jsonStr);
+        final count = data['count'] as int;
+        final pointsRaw = data['points'] as List;
+        final points = pointsRaw.map((p) {
+          final lp = p as List;
+          return [
+            (lp[0] as num).toDouble() / 1000.0,
+            (lp[1] as num).toDouble() / 1000.0,
+          ];
+        }).toList();
+        return AiCountResult(count: count, points: points);
+      }
+
+      // フォールバック: 以前の単純なパース
       final match = RegExp(r'\d+').firstMatch(content);
-      return match != null ? int.tryParse(match.group(0)!) : null;
+      final count = match != null ? int.tryParse(match.group(0)!) : null;
+      if (count != null) {
+        return AiCountResult(count: count, points: []);
+      }
+      return null;
     } on DioException catch (e) {
       if (kDebugMode) {
         print('countInImage OpenRouter error: ${e.response?.statusCode}');

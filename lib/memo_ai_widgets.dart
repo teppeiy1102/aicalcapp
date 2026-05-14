@@ -213,7 +213,8 @@ class _MemoRowWidget extends StatelessWidget {
 
 // ── AIカウント専用ページ ──
 class _AiCountPage extends StatefulWidget {
-  final Future<int?> Function(Uint8List imageBytes, String instruction) onCount;
+  final Future<AiCountResult?> Function(Uint8List imageBytes, String instruction)
+  onCount;
 
   const _AiCountPage({required this.onCount});
 
@@ -223,8 +224,11 @@ class _AiCountPage extends StatefulWidget {
 
 class _AiCountPageState extends State<_AiCountPage> {
   Uint8List? _imageBytes;
+  double _imageWidth = 1.0;
+  double _imageHeight = 1.0;
   bool _isCounting = false;
-  int? _lastCount;
+  bool _showMarkers = true;
+  AiCountResult? _lastResult;
   final _labelCtrl = TextEditingController();
   final _picker = ImagePicker();
 
@@ -265,9 +269,13 @@ class _AiCountPageState extends State<_AiCountPage> {
       );
       if (file == null || !mounted) return;
       final bytes = await file.readAsBytes();
+      final decodedImage = await decodeImageFromList(bytes);
+      if (!mounted) return;
       setState(() {
         _imageBytes = bytes;
-        _lastCount = null;
+        _imageWidth = decodedImage.width.toDouble();
+        _imageHeight = decodedImage.height.toDouble();
+        _lastResult = null;
       });
     } catch (e) {
       if (mounted) {
@@ -291,13 +299,13 @@ class _AiCountPageState extends State<_AiCountPage> {
 
     setState(() {
       _isCounting = true;
-      _lastCount = null;
+      _lastResult = null;
     });
     try {
-      final count = await widget.onCount(_imageBytes!, instruction);
+      final result = await widget.onCount(_imageBytes!, instruction);
       if (!mounted) return;
-      setState(() => _lastCount = count);
-      if (count == null) {
+      setState(() => _lastResult = result);
+      if (result == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('数字を読み取れませんでした。別の指示を試してください。'),
@@ -379,22 +387,31 @@ class _AiCountPageState extends State<_AiCountPage> {
           ],
         ),
         actions: [
-          if (_lastCount != null)
+          if (_lastResult != null) ...[
+            IconButton(
+              icon: Icon(
+                _showMarkers ? Icons.visibility : Icons.visibility_off,
+                color: Colors.white70,
+              ),
+              onPressed: () => setState(() => _showMarkers = !_showMarkers),
+              tooltip: 'マーカーの表示/非表示',
+            ),
             TextButton.icon(
-              onPressed: () => Navigator.pop(context, _lastCount),
+              onPressed: () => Navigator.pop(context, _lastResult!.count),
               icon: const Icon(
                 Icons.check_circle,
                 color: Colors.tealAccent,
                 size: 18,
               ),
               label: Text(
-                '$_lastCount を反映',
+                '${_lastResult!.count} を反映',
                 style: const TextStyle(
                   color: Colors.tealAccent,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
+          ],
         ],
       ),
       body: Column(
@@ -473,10 +490,34 @@ class _AiCountPageState extends State<_AiCountPage> {
       fit: StackFit.expand,
       children: [
         // 画像表示
-        Image.memory(_imageBytes!, fit: BoxFit.contain),
+        Center(
+          child: InteractiveViewer(
+            maxScale: 5.0,
+            minScale: 0.5,
+            child: AspectRatio(
+              aspectRatio: _imageWidth / _imageHeight,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.memory(
+                    _imageBytes!,
+                    fit: BoxFit.fill,
+                  ),
+                  if (_showMarkers &&
+                      _lastResult != null &&
+                      _lastResult!.points.isNotEmpty)
+                    _MarkerOverlay(
+                      points: _lastResult!.points,
+                      imageBytes: _imageBytes!,
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
 
         // カウント結果バッジ
-        if (_lastCount != null)
+        if (_lastResult != null)
           Positioned(
             top: 16,
             left: 0,
@@ -498,7 +539,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '$_lastCount',
+                      '${_lastResult!.count}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 56,
@@ -1104,4 +1145,78 @@ Padding(
       ),
     );
   }
+}
+
+// ── マーカーオーバーレイ ──
+class _MarkerOverlay extends StatelessWidget {
+  final List<List<double>> points;
+  final Uint8List imageBytes;
+
+  const _MarkerOverlay({required this.points, required this.imageBytes});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return CustomPaint(
+          size: Size(constraints.maxWidth, constraints.maxHeight),
+          painter: _MarkerPainter(points),
+        );
+      },
+    );
+  }
+}
+
+class _MarkerPainter extends CustomPainter {
+  final List<List<double>> points;
+  _MarkerPainter(this.points);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final dotPaint = Paint()
+      ..color = Colors.redAccent
+      ..style = PaintingStyle.fill;
+    final borderPaint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    final shadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.5)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+
+    for (int i = 0; i < points.length; i++) {
+      final p = points[i];
+      final center = Offset(p[0] * size.width, p[1] * size.height);
+
+      // 影
+      canvas.drawCircle(center + const Offset(1, 1), 6, shadowPaint);
+      // 白枠
+      canvas.drawCircle(center, 6, borderPaint);
+      // 赤丸
+      canvas.drawCircle(center, 5, dotPaint);
+
+      // 番号描画 (Chain of Thought に対応)
+      final textSpan = TextSpan(
+        text: '${i + 1}',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+      final textPainter = TextPainter(
+        text: textSpan,
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        center - Offset(textPainter.width / 2, textPainter.height / 2),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _MarkerPainter old) => old.points != points;
 }
