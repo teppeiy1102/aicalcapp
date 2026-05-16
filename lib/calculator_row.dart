@@ -49,6 +49,8 @@ class _CalculatorRow extends StatelessWidget {
   final bool exposed;
   /// 開放状態をトグルするコールバック
   final VoidCallback? onToggleExpose;
+  /// リンク設定ボタン（リンク元/リンク先）が押されたときのコールバック
+  final void Function(String mode, String fieldKey)? onLinkSettingsPressed;
 
   const _CalculatorRow({
     required this.name,
@@ -96,6 +98,7 @@ class _CalculatorRow extends StatelessWidget {
     this.termLabels,
     this.exposed = false,
     this.onToggleExpose,
+    this.onLinkSettingsPressed,
   });
 
   /// termLabels 優先、なければデフォルト
@@ -1294,6 +1297,66 @@ class _CalculatorRow extends StatelessWidget {
                         ],
                       ),
                     ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, bottom: 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('リンクの設定', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.upload_rounded, size: 16),
+                                  label: const Text('リンク元に設定', style: TextStyle(fontSize: 12)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blueAccent.withOpacity(0.2),
+                                    foregroundColor: Colors.blueAccent,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pop(ctx);
+                                    if (onLinkSettingsPressed != null) {
+                                      onLinkSettingsPressed!('source', 'input');
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.download_rounded, size: 16),
+                                  label: const Text('リンク先に設定', style: TextStyle(fontSize: 12)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.cyan.withOpacity(0.2),
+                                    foregroundColor: Colors.cyan,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pop(ctx);
+                                    if (onLinkSettingsPressed != null) {
+                                      onLinkSettingsPressed!('target', 'input');
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 if (constants.isNotEmpty) ...[
                   const SizedBox(height: 8),
@@ -1779,6 +1842,66 @@ class _CalculatorRow extends StatelessWidget {
                                 ),
                               ),
                             ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, bottom: 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('リンクの設定', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.upload_rounded, size: 16),
+                                  label: const Text('リンク元に設定', style: TextStyle(fontSize: 12)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blueAccent.withOpacity(0.2),
+                                    foregroundColor: Colors.blueAccent,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pop(ctx);
+                                    if (onLinkSettingsPressed != null) {
+                                      onLinkSettingsPressed!('source', 'operand');
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.download_rounded, size: 16),
+                                  label: const Text('リンク先に設定', style: TextStyle(fontSize: 12)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.cyan.withOpacity(0.2),
+                                    foregroundColor: Colors.cyan,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pop(ctx);
+                                    if (onLinkSettingsPressed != null) {
+                                      onLinkSettingsPressed!('target', 'operand');
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -2317,6 +2440,66 @@ class _CalculatorRow extends StatelessWidget {
                                 ),
                               ),
                             ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, bottom: 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('リンクの設定', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.upload_rounded, size: 16),
+                                  label: const Text('リンク元に設定', style: TextStyle(fontSize: 12)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blueAccent.withOpacity(0.2),
+                                    foregroundColor: Colors.blueAccent,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pop(ctx);
+                                    if (onLinkSettingsPressed != null) {
+                                      onLinkSettingsPressed!('source', 'other_$idx');
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.download_rounded, size: 16),
+                                  label: const Text('リンク先に設定', style: TextStyle(fontSize: 12)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.cyan.withOpacity(0.2),
+                                    foregroundColor: Colors.cyan,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.pop(ctx);
+                                    if (onLinkSettingsPressed != null) {
+                                      onLinkSettingsPressed!('target', 'other_$idx');
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),

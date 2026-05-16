@@ -2025,16 +2025,32 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     widget.onUpdate({...widget.config.data, 'items': newItems});
   }
 
-  void _showSheetLinkSettingsDialog() {
+  void _showSheetLinkSettingsDialog({
+    int? initialSrcCalcIdx,
+    String? initialSrcField,
+    int? initialDestCalcIdx,
+    String? initialDestField,
+  }) {
     final items = _items;
     if (items.isEmpty) return;
 
-    int? selectedSrcCalcIdx = items.isNotEmpty ? 0 : null;
-    String selectedSrcField = 'result';
+    int? selectedSrcCalcIdx = initialSrcCalcIdx;
+    if (selectedSrcCalcIdx == null && items.isNotEmpty) {
+      selectedSrcCalcIdx = 0;
+      if (initialDestCalcIdx == 0 && items.length > 1) {
+        selectedSrcCalcIdx = 1;
+      } else if (initialDestCalcIdx == 0 && items.length == 1) {
+        selectedSrcCalcIdx = null;
+      }
+    }
+    String selectedSrcField = initialSrcField ?? 'result';
     // 初期表示時: tab0 で最初の式に既存リンク先を事前設定
     Set<String> selectedDests = selectedSrcCalcIdx != null
-        ? _calcSelectedDestsForRow(selectedSrcCalcIdx, 'result')
+        ? _calcSelectedDestsForRow(selectedSrcCalcIdx, selectedSrcField)
         : {};
+    if (initialDestCalcIdx != null && initialDestField != null) {
+      selectedDests.add('${initialDestCalcIdx}_$initialDestField');
+    }
     String? selectedSrcSheetId; // null = 現在シート
     // 0=このシート, 1=開放された式, 2=結合シート
     int srcTab = 0;
@@ -2073,8 +2089,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         );
         return Set<String>.from(pending['dests'] as Set<String>);
       } catch (_) {
-        if (sid == null) return _calcSelectedDestsForRow(calcIdx, fld);
-        return _calcSelectedDestsForExternalRow(sid, calcIdx, fld);
+        final existing = sid == null 
+            ? _calcSelectedDestsForRow(calcIdx, fld)
+            : _calcSelectedDestsForExternalRow(sid, calcIdx, fld);
+        if (initialDestCalcIdx != null && initialDestField != null) {
+          existing.add('${initialDestCalcIdx}_$initialDestField');
+        }
+        return existing;
       }
     }
 
@@ -6868,6 +6889,19 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       onAllItemsUpdate: (newItems) =>
           widget.onUpdate({...widget.config.data, 'items': newItems}),
       termLabels: _effectiveTermLabels.isNotEmpty ? _effectiveTermLabels : null,
+      onLinkSettingsPressed: (mode, fieldKey) {
+        if (mode == 'source') {
+          _showSheetLinkSettingsDialog(
+            initialSrcCalcIdx: rowIdx,
+            initialSrcField: fieldKey,
+          );
+        } else {
+          _showSheetLinkSettingsDialog(
+            initialDestCalcIdx: rowIdx,
+            initialDestField: fieldKey,
+          );
+        }
+      },
     );
 
     if (columnKey == 'result') {
@@ -8044,6 +8078,19 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                 false,
                                             onToggleExpose: () =>
                                                 _toggleExposed(ci),
+                                            onLinkSettingsPressed: (mode, fieldKey) {
+                                              if (mode == 'source') {
+                                                _showSheetLinkSettingsDialog(
+                                                  initialSrcCalcIdx: ci,
+                                                  initialSrcField: fieldKey,
+                                                );
+                                              } else {
+                                                _showSheetLinkSettingsDialog(
+                                                  initialDestCalcIdx: ci,
+                                                  initialDestField: fieldKey,
+                                                );
+                                              }
+                                            },
                                             dragHandle:
                                                 ReorderableDragStartListener(
                                                   index: di,
