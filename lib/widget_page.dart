@@ -19,6 +19,11 @@ import 'calc_history.dart';
 
 part 'calc_input_widgets.dart';
 part 'calculator_widget.dart';
+part 'calculator_widget_links.dart';
+part 'calculator_widget_calc.dart';
+part 'calculator_widget_sheets.dart';
+part 'calculator_widget_table.dart';
+part 'calculator_widget_view.dart';
 part 'calculator_row.dart';
 part 'memo_ai_widgets.dart';
 
