@@ -388,6 +388,18 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     });
   }
 
+  void _onAddLogicItem(Map<String, dynamic> newItem) {
+    final newItems = List<Map<String, dynamic>>.from(_logicItems);
+    newItems.add(newItem);
+    final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
+    order.add({'type': 'logic', 'itemId': newItem['id']});
+    widget.onUpdate({
+      ...widget.config.data,
+      'logicItems': newItems,
+      'displayOrder': order,
+    });
+  }
+
   void _updateLogicItem(String id, Map<String, dynamic> data) {
     final items = List<Map<String, dynamic>>.from(_logicItems);
     final idx = items.indexWhere((e) => e['id'] == id);
@@ -1830,6 +1842,25 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           source['target'] as String? ?? 'result',
         );
       }
+      if (source['type'] == 'logic') {
+        final logicId = source['logicId'] as String?;
+        if (logicId != null) {
+          Map<String, dynamic>? logic;
+          for (final l in _logicItems) {
+            if (l['id'] == logicId) {
+              logic = l;
+              break;
+            }
+          }
+          if (logic != null) {
+            final isTrue = _evalLogicItem(logic);
+            final trueVal = (source['trueVal'] as num? ?? 1.0).toDouble();
+            final falseVal = (source['falseVal'] as num? ?? 0.0).toDouble();
+            return isTrue ? trueVal : falseVal;
+          }
+        }
+        return fallback;
+      }
       if (source['type'] == 'constant') {
         final ci = source['constIdx'] as int? ?? 0;
         if (ci >= 0 && ci < constants.length) {
@@ -3025,6 +3056,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                 );
                                               }
                                             },
+                                            logicItems: _logicItems,
+                                            onAddLogicItem: _onAddLogicItem,
                                             dragHandle:
                                                 ReorderableDragStartListener(
                                                   index: di,

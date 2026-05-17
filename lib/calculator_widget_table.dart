@@ -900,6 +900,8 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
           );
         }
       },
+      logicItems: _logicItems,
+      onAddLogicItem: _onAddLogicItem,
     );
 
     if (columnKey == 'result') {

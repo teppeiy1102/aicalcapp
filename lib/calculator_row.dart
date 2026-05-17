@@ -51,6 +51,8 @@ class _CalculatorRow extends StatelessWidget {
   final VoidCallback? onToggleExpose;
   /// リンク設定ボタン（リンク元/リンク先）が押されたときのコールバック
   final void Function(String mode, String fieldKey)? onLinkSettingsPressed;
+  final List<dynamic> logicItems;
+  final void Function(Map<String, dynamic> newItem)? onAddLogicItem;
 
   const _CalculatorRow({
     required this.name,
@@ -99,6 +101,8 @@ class _CalculatorRow extends StatelessWidget {
     this.exposed = false,
     this.onToggleExpose,
     this.onLinkSettingsPressed,
+    this.logicItems = const [],
+    this.onAddLogicItem,
   });
 
   /// termLabels 優先、なければデフォルト
@@ -683,8 +687,29 @@ class _CalculatorRow extends StatelessWidget {
     );
   }
 
+  Map<String, dynamic>? _findLogicItem(dynamic logicId) {
+    if (logicId == null) return null;
+    for (final l in logicItems) {
+      if (l is Map && l['id'] == logicId) {
+        return Map<String, dynamic>.from(l);
+      }
+    }
+    return null;
+  }
+
   String _getSourceLabel(Map<String, dynamic>? source) {
     if (source == null) return '直前の残高（答え）';
+    if (source['type'] == 'logic') {
+      final logicId = source['logicId'] as String?;
+      if (logicId != null) {
+        final logic = _findLogicItem(logicId);
+        if (logic != null) {
+          final name = logic['name'] as String? ?? '';
+          return name.isNotEmpty ? '$name（論理式）' : '論理式';
+        }
+      }
+      return '論理式';
+    }
     if (source['type'] == 'constant') {
       final ci = source['constIdx'] as int? ?? 0;
       final name = ci < constants.length ? constants[ci]['name'] as String? ?? '定数' : '定数';
@@ -714,6 +739,17 @@ class _CalculatorRow extends StatelessWidget {
 
   /// リンク元の計算行名のみを返す（値ボックス上部ラベル用）
   String _getSourceRowName(Map<String, dynamic>? source) {
+    if (source != null && source['type'] == 'logic') {
+      final logicId = source['logicId'] as String?;
+      if (logicId != null) {
+        final logic = _findLogicItem(logicId);
+        if (logic != null) {
+          final name = logic['name'] as String? ?? '';
+          return name.isNotEmpty ? name : '論理式';
+        }
+      }
+      return '論理式';
+    }
     if (source != null && source['type'] == 'constant') {
       final ci = source['constIdx'] as int? ?? 0;
       return ci < constants.length ? constants[ci]['name'] as String? ?? '定数' : '定数';
@@ -726,6 +762,15 @@ class _CalculatorRow extends StatelessWidget {
     final rowIdx = source['rowIdx'] as int? ?? 0;
     if (rowIdx < 0 || rowIdx >= allItems.length) return '';
     return (allItems[rowIdx] as Map)['name'] as String? ?? '計算 ${rowIdx + 1}';
+  }
+
+  String _getLogicLabel(dynamic logicId) {
+    if (logicId == null) return '';
+    final logic = _findLogicItem(logicId);
+    if (logic == null) return '不明な論理式';
+    final name = logic['name'] as String? ?? '';
+    final expr = _CalculatorWidgetState._buildLogicExprString(logic as Map<String, dynamic>);
+    return name.isNotEmpty ? '$name ($expr)' : expr;
   }
 
   bool _hasLinkedRowsForKey(String key, {int otherIdx = 0}) {
@@ -1099,6 +1144,20 @@ class _CalculatorRow extends StatelessWidget {
           : inputPowExp.toString(),
     );
 
+    final trueValCtrl = TextEditingController(
+      text: (inputLinkSource != null && inputLinkSource!['type'] == 'logic')
+          ? (inputLinkSource!['trueVal'] as num? ?? 1.0).toString()
+          : '1.0',
+    );
+    final falseValCtrl = TextEditingController(
+      text: (inputLinkSource != null && inputLinkSource!['type'] == 'logic')
+          ? (inputLinkSource!['falseVal'] as num? ?? 0.0).toString()
+          : '0.0',
+    );
+    final localLogicItems = List<Map<String, dynamic>>.from(
+      logicItems.map((e) => Map<String, dynamic>.from(e as Map)),
+    );
+
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -1164,17 +1223,36 @@ class _CalculatorRow extends StatelessWidget {
                           hintStyle: const TextStyle(color: Colors.white24),
                           suffix: tempLink
                               ? GestureDetector(
-                                  onTap: () => setSheetState(() => tempLink = false),
+                                  onTap: () => setSheetState(() {
+                                    tempLink = false;
+                                    tempLinkSource = null;
+                                  }),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.blueAccent.withOpacity(0.2),
+                                      color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                              ? Colors.deepPurpleAccent
+                                              : Colors.blueAccent)
+                                          .withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+                                      border: Border.all(
+                                        color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                                ? Colors.deepPurpleAccent
+                                                : Colors.blueAccent)
+                                            .withOpacity(0.5),
+                                      ),
                                     ),
-                                    child: const Text(
-                                      'リンク中',
-                                      style: TextStyle(color: Colors.blueAccent, fontSize: 12, fontWeight: FontWeight.w600),
+                                    child: Text(
+                                      tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                          ? '論理式リンク中'
+                                          : 'リンク中',
+                                      style: TextStyle(
+                                        color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                            ? Colors.purpleAccent
+                                            : Colors.blueAccent,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 )
@@ -1244,56 +1322,135 @@ class _CalculatorRow extends StatelessWidget {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.1),
+                        color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                ? Colors.purple.withOpacity(0.15)
+                                : (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.1)),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.3),
+                          color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                              ? Colors.purpleAccent.withOpacity(0.4)
+                              : (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.3)),
                         ),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            tempLink ? Icons.link : Icons.link_off,
-                            size: 14,
-                            color: tempLink ? Colors.blueAccent : Colors.orangeAccent,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              tempLink
-                                  ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
-                                  : '元リンク: ${_getSourceLabel(tempLinkSource)}',
-                              style: TextStyle(
-                                color: tempLink ? Colors.blueAccent : Colors.orangeAccent,
-                                fontSize: 12,
+                          Row(
+                            children: [
+                              Icon(
+                                tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                    ? Icons.rule_rounded
+                                    : (tempLink ? Icons.link : Icons.link_off),
+                                size: 14,
+                                color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                    ? Colors.purpleAccent
+                                    : (tempLink ? Colors.blueAccent : Colors.orangeAccent),
                               ),
-                            ),
-                          ),
-                          if (tempLink)
-                            GestureDetector(
-                              onTap: () => setSheetState(() {
-                                tempLink = false;
-                                tempLinkSource = null;
-                              }),
-                              child: const Text(
-                                '解除',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                      ? '論理式リンク: ${_getLogicLabel(tempLinkSource!['logicId'])}'
+                                      : (tempLink
+                                          ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
+                                          : '元リンク: ${_getSourceLabel(tempLinkSource)}'),
+                                  style: TextStyle(
+                                    color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                        ? Colors.purpleAccent
+                                        : (tempLink ? Colors.blueAccent : Colors.orangeAccent),
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
-                            )
-                          else
-                            GestureDetector(
-                              onTap: () => setSheetState(() => tempLink = true),
-                              child: const Text(
-                                'リンクに戻す',
-                                style: TextStyle(
-                                  color: Colors.blueAccent,
-                                  fontSize: 14,
+                              if (tempLink)
+                                GestureDetector(
+                                  onTap: () => setSheetState(() {
+                                    tempLink = false;
+                                    tempLinkSource = null;
+                                  }),
+                                  child: const Text(
+                                    '解除',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                )
+                              else
+                                GestureDetector(
+                                  onTap: () => setSheetState(() => tempLink = true),
+                                  child: const Text(
+                                    'リンクに戻す',
+                                    style: TextStyle(
+                                      color: Colors.blueAccent,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                            ],
+                          ),
+                          if (tempLinkSource != null && tempLinkSource!['type'] == 'logic') ...[
+                            const SizedBox(height: 12),
+                            const Divider(color: Colors.white12, height: 1),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        '真の場合の値',
+                                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      TextField(
+                                        controller: trueValCtrl,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                        decoration: const InputDecoration(
+                                          hintText: '1.0',
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        onChanged: (v) {
+                                          tempLinkSource!['trueVal'] = double.tryParse(v) ?? 1.0;
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        '偽の場合の値',
+                                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      TextField(
+                                        controller: falseValCtrl,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                        decoration: const InputDecoration(
+                                          hintText: '0.0',
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        onChanged: (v) {
+                                          tempLinkSource!['falseVal'] = double.tryParse(v) ?? 0.0;
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
+                          ],
                         ],
                       ),
                     ),
@@ -1354,6 +1511,98 @@ class _CalculatorRow extends StatelessWidget {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 12),
+                          const Divider(color: Colors.white12, height: 1),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              const Icon(Icons.rule_rounded, color: Colors.purpleAccent, size: 16),
+                              const SizedBox(width: 6),
+                              const Text('論理式の紐付け', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                              const Spacer(),
+                              TextButton.icon(
+                                icon: const Icon(Icons.add_rounded, size: 14, color: Colors.purpleAccent),
+                                label: const Text('論理式を追加', style: TextStyle(color: Colors.purpleAccent, fontSize: 12)),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: () async {
+                                  final newLogic = await showDialog<Map<String, dynamic>>(
+                                    context: context,
+                                    builder: (ctx) => const _LogicItemEditDialog(initial: null),
+                                  );
+                                  if (newLogic != null) {
+                                    final newId = 'logic_${DateTime.now().millisecondsSinceEpoch}';
+                                    final newLogicItem = {
+                                      ...newLogic,
+                                      'id': newId,
+                                    };
+                                    if (onAddLogicItem != null) {
+                                      onAddLogicItem!(newLogicItem);
+                                    }
+                                    setSheetState(() {
+                                      localLogicItems.add(newLogicItem);
+                                      tempLink = true;
+                                      tempLinkSource = {
+                                        'type': 'logic',
+                                        'logicId': newId,
+                                        'trueVal': 1.0,
+                                        'falseVal': 0.0,
+                                      };
+                                      trueValCtrl.text = '1.0';
+                                      falseValCtrl.text = '0.0';
+                                    });
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          if (localLogicItems.isEmpty)
+                            const Text(
+                              '設定済みの論理式はありません。上のボタンから追加してください。',
+                              style: TextStyle(color: Colors.white38, fontSize: 11),
+                            )
+                          else
+                            DropdownButtonFormField<String>(
+                              dropdownColor: Colors.black,
+                              hint: const Text('論理式を選択', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                border: OutlineInputBorder(),
+                              ),
+                              items: localLogicItems.map((logic) {
+                                final name = logic['name'] as String? ?? '';
+                                final expr = _CalculatorWidgetState._buildLogicExprString(logic);
+                                return DropdownMenuItem<String>(
+                                  value: logic['id'] as String,
+                                  child: Text(
+                                    name.isNotEmpty ? '$name: $expr' : expr,
+                                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (selectedId) {
+                                if (selectedId != null) {
+                                  setSheetState(() {
+                                    tempLink = true;
+                                    tempLinkSource = {
+                                      'type': 'logic',
+                                      'logicId': selectedId,
+                                      'trueVal': double.tryParse(ctrl.text) ?? 1.0,
+                                      'falseVal': 0.0,
+                                    };
+                                    trueValCtrl.text = (double.tryParse(ctrl.text) ?? 1.0).toString();
+                                    falseValCtrl.text = '0.0';
+                                  });
+                                }
+                              },
+                            ),
                         ],
                       ),
                     ),
@@ -1648,6 +1897,20 @@ class _CalculatorRow extends StatelessWidget {
           : operandPowExp.toString(),
     );
 
+    final trueValCtrl = TextEditingController(
+      text: (operandLinkSource != null && operandLinkSource!['type'] == 'logic')
+          ? (operandLinkSource!['trueVal'] as num? ?? 1.0).toString()
+          : '1.0',
+    );
+    final falseValCtrl = TextEditingController(
+      text: (operandLinkSource != null && operandLinkSource!['type'] == 'logic')
+          ? (operandLinkSource!['falseVal'] as num? ?? 0.0).toString()
+          : '0.0',
+    );
+    final localLogicItems = List<Map<String, dynamic>>.from(
+      logicItems.map((e) => Map<String, dynamic>.from(e as Map)),
+    );
+
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -1713,17 +1976,36 @@ class _CalculatorRow extends StatelessWidget {
                           hintStyle: const TextStyle(color: Colors.white24),
                           suffix: tempLink
                               ? GestureDetector(
-                                  onTap: () => setSheetState(() => tempLink = false),
+                                  onTap: () => setSheetState(() {
+                                    tempLink = false;
+                                    tempLinkSource = null;
+                                  }),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.blueAccent.withOpacity(0.2),
+                                      color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                              ? Colors.deepPurpleAccent
+                                              : Colors.blueAccent)
+                                          .withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+                                      border: Border.all(
+                                        color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                                ? Colors.deepPurpleAccent
+                                                : Colors.blueAccent)
+                                            .withOpacity(0.5),
+                                      ),
                                     ),
-                                    child: const Text(
-                                      'リンク中',
-                                      style: TextStyle(color: Colors.blueAccent, fontSize: 12, fontWeight: FontWeight.w600),
+                                    child: Text(
+                                      tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                          ? '論理式リンク中'
+                                          : 'リンク中',
+                                      style: TextStyle(
+                                        color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                            ? Colors.purpleAccent
+                                            : Colors.blueAccent,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 )
@@ -1792,56 +2074,135 @@ class _CalculatorRow extends StatelessWidget {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.1),
+                        color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                ? Colors.purple.withOpacity(0.15)
+                                : (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.1)),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.3),
+                          color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                              ? Colors.purpleAccent.withOpacity(0.4)
+                              : (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.3)),
                         ),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            tempLink ? Icons.link : Icons.link_off,
-                            size: 14,
-                            color: tempLink ? Colors.blueAccent : Colors.orangeAccent,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              tempLink
-                                  ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
-                                  : '元リンク: ${_getSourceLabel(tempLinkSource)}',
-                              style: TextStyle(
-                                color: tempLink ? Colors.blueAccent : Colors.orangeAccent,
-                                fontSize: 12,
+                          Row(
+                            children: [
+                              Icon(
+                                tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                    ? Icons.rule_rounded
+                                    : (tempLink ? Icons.link : Icons.link_off),
+                                size: 14,
+                                color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                    ? Colors.purpleAccent
+                                    : (tempLink ? Colors.blueAccent : Colors.orangeAccent),
                               ),
-                            ),
-                          ),
-                          if (tempLink)
-                            GestureDetector(
-                              onTap: () => setSheetState(() {
-                                tempLink = false;
-                                tempLinkSource = null;
-                              }),
-                              child: const Text(
-                                '解除',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12,
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                      ? '論理式リンク: ${_getLogicLabel(tempLinkSource!['logicId'])}'
+                                      : (tempLink
+                                          ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
+                                          : '元リンク: ${_getSourceLabel(tempLinkSource)}'),
+                                  style: TextStyle(
+                                    color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                        ? Colors.purpleAccent
+                                        : (tempLink ? Colors.blueAccent : Colors.orangeAccent),
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
-                            )
-                          else
-                            GestureDetector(
-                              onTap: () => setSheetState(() => tempLink = true),
-                              child: const Text(
-                                'リンクに戻す',
-                                style: TextStyle(
-                                  color: Colors.blueAccent,
-                                  fontSize: 12,
+                              if (tempLink)
+                                GestureDetector(
+                                  onTap: () => setSheetState(() {
+                                    tempLink = false;
+                                    tempLinkSource = null;
+                                  }),
+                                  child: const Text(
+                                    '解除',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                )
+                              else
+                                GestureDetector(
+                                  onTap: () => setSheetState(() => tempLink = true),
+                                  child: const Text(
+                                    'リンクに戻す',
+                                    style: TextStyle(
+                                      color: Colors.blueAccent,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                            ],
+                          ),
+                          if (tempLinkSource != null && tempLinkSource!['type'] == 'logic') ...[
+                            const SizedBox(height: 12),
+                            const Divider(color: Colors.white12, height: 1),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        '真の場合の値',
+                                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      TextField(
+                                        controller: trueValCtrl,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                        decoration: const InputDecoration(
+                                          hintText: '1.0',
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        onChanged: (v) {
+                                          tempLinkSource!['trueVal'] = double.tryParse(v) ?? 1.0;
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        '偽の場合の値',
+                                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      TextField(
+                                        controller: falseValCtrl,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                        decoration: const InputDecoration(
+                                          hintText: '0.0',
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        onChanged: (v) {
+                                          tempLinkSource!['falseVal'] = double.tryParse(v) ?? 0.0;
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
+                          ],
                         ],
                       ),
                     ),
@@ -1902,6 +2263,98 @@ class _CalculatorRow extends StatelessWidget {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 12),
+                          const Divider(color: Colors.white12, height: 1),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              const Icon(Icons.rule_rounded, color: Colors.purpleAccent, size: 16),
+                              const SizedBox(width: 6),
+                              const Text('論理式の紐付け', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                              const Spacer(),
+                              TextButton.icon(
+                                icon: const Icon(Icons.add_rounded, size: 14, color: Colors.purpleAccent),
+                                label: const Text('論理式を追加', style: TextStyle(color: Colors.purpleAccent, fontSize: 12)),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: () async {
+                                  final newLogic = await showDialog<Map<String, dynamic>>(
+                                    context: context,
+                                    builder: (ctx) => const _LogicItemEditDialog(initial: null),
+                                  );
+                                  if (newLogic != null) {
+                                    final newId = 'logic_${DateTime.now().millisecondsSinceEpoch}';
+                                    final newLogicItem = {
+                                      ...newLogic,
+                                      'id': newId,
+                                    };
+                                    if (onAddLogicItem != null) {
+                                      onAddLogicItem!(newLogicItem);
+                                    }
+                                    setSheetState(() {
+                                      localLogicItems.add(newLogicItem);
+                                      tempLink = true;
+                                      tempLinkSource = {
+                                        'type': 'logic',
+                                        'logicId': newId,
+                                        'trueVal': 1.0,
+                                        'falseVal': 0.0,
+                                      };
+                                      trueValCtrl.text = '1.0';
+                                      falseValCtrl.text = '0.0';
+                                    });
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          if (localLogicItems.isEmpty)
+                            const Text(
+                              '設定済みの論理式はありません。上のボタンから追加してください。',
+                              style: TextStyle(color: Colors.white38, fontSize: 11),
+                            )
+                          else
+                            DropdownButtonFormField<String>(
+                              dropdownColor: Colors.black,
+                              hint: const Text('論理式を選択', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                border: OutlineInputBorder(),
+                              ),
+                              items: localLogicItems.map((logic) {
+                                final name = logic['name'] as String? ?? '';
+                                final expr = _CalculatorWidgetState._buildLogicExprString(logic);
+                                return DropdownMenuItem<String>(
+                                  value: logic['id'] as String,
+                                  child: Text(
+                                    name.isNotEmpty ? '$name: $expr' : expr,
+                                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (selectedId) {
+                                if (selectedId != null) {
+                                  setSheetState(() {
+                                    tempLink = true;
+                                    tempLinkSource = {
+                                      'type': 'logic',
+                                      'logicId': selectedId,
+                                      'trueVal': double.tryParse(ctrl.text) ?? 1.0,
+                                      'falseVal': 0.0,
+                                    };
+                                    trueValCtrl.text = (double.tryParse(ctrl.text) ?? 1.0).toString();
+                                    falseValCtrl.text = '0.0';
+                                  });
+                                }
+                              },
+                            ),
                         ],
                       ),
                     ),
@@ -2246,6 +2699,20 @@ class _CalculatorRow extends StatelessWidget {
           : currentPowExp.toString(),
     );
 
+    final trueValCtrl = TextEditingController(
+      text: (currentSource != null && currentSource!['type'] == 'logic')
+          ? (currentSource!['trueVal'] as num? ?? 1.0).toString()
+          : '1.0',
+    );
+    final falseValCtrl = TextEditingController(
+      text: (currentSource != null && currentSource!['type'] == 'logic')
+          ? (currentSource!['falseVal'] as num? ?? 0.0).toString()
+          : '0.0',
+    );
+    final localLogicItems = List<Map<String, dynamic>>.from(
+      logicItems.map((e) => Map<String, dynamic>.from(e as Map)),
+    );
+
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -2311,17 +2778,36 @@ class _CalculatorRow extends StatelessWidget {
                           hintStyle: const TextStyle(color: Colors.white24),
                           suffix: tempLink
                               ? GestureDetector(
-                                  onTap: () => setSheetState(() => tempLink = false),
+                                  onTap: () => setSheetState(() {
+                                    tempLink = false;
+                                    tempLinkSource = null;
+                                  }),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.blueAccent.withOpacity(0.2),
+                                      color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                              ? Colors.deepPurpleAccent
+                                              : Colors.blueAccent)
+                                          .withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+                                      border: Border.all(
+                                        color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                                ? Colors.deepPurpleAccent
+                                                : Colors.blueAccent)
+                                            .withOpacity(0.5),
+                                      ),
                                     ),
-                                    child: const Text(
-                                      'リンク中',
-                                      style: TextStyle(color: Colors.blueAccent, fontSize: 12, fontWeight: FontWeight.w600),
+                                    child: Text(
+                                      tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                          ? '論理式リンク中'
+                                          : 'リンク中',
+                                      style: TextStyle(
+                                        color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                            ? Colors.purpleAccent
+                                            : Colors.blueAccent,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 )
@@ -2390,56 +2876,135 @@ class _CalculatorRow extends StatelessWidget {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.1),
+                        color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                ? Colors.purple.withOpacity(0.15)
+                                : (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.1)),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.3),
+                          color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                              ? Colors.purpleAccent.withOpacity(0.4)
+                              : (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.3)),
                         ),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            tempLink ? Icons.link : Icons.link_off,
-                            size: 14,
-                            color: tempLink ? Colors.blueAccent : Colors.orangeAccent,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              tempLink
-                                  ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
-                                  : '元リンク: ${_getSourceLabel(tempLinkSource)}',
-                              style: TextStyle(
-                                color: tempLink ? Colors.blueAccent : Colors.orangeAccent,
-                                fontSize: 12,
+                          Row(
+                            children: [
+                              Icon(
+                                tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                    ? Icons.rule_rounded
+                                    : (tempLink ? Icons.link : Icons.link_off),
+                                size: 14,
+                                color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                    ? Colors.purpleAccent
+                                    : (tempLink ? Colors.blueAccent : Colors.orangeAccent),
                               ),
-                            ),
-                          ),
-                          if (tempLink)
-                            GestureDetector(
-                              onTap: () => setSheetState(() {
-                                tempLink = false;
-                                tempLinkSource = null;
-                              }),
-                              child: const Text(
-                                '解除',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12,
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                      ? '論理式リンク: ${_getLogicLabel(tempLinkSource!['logicId'])}'
+                                      : (tempLink
+                                          ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
+                                          : '元リンク: ${_getSourceLabel(tempLinkSource)}'),
+                                  style: TextStyle(
+                                    color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                        ? Colors.purpleAccent
+                                        : (tempLink ? Colors.blueAccent : Colors.orangeAccent),
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
-                            )
-                          else
-                            GestureDetector(
-                              onTap: () => setSheetState(() => tempLink = true),
-                              child: const Text(
-                                'リンクに戻す',
-                                style: TextStyle(
-                                  color: Colors.blueAccent,
-                                  fontSize: 12,
+                              if (tempLink)
+                                GestureDetector(
+                                  onTap: () => setSheetState(() {
+                                    tempLink = false;
+                                    tempLinkSource = null;
+                                  }),
+                                  child: const Text(
+                                    '解除',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                )
+                              else
+                                GestureDetector(
+                                  onTap: () => setSheetState(() => tempLink = true),
+                                  child: const Text(
+                                    'リンクに戻す',
+                                    style: TextStyle(
+                                      color: Colors.blueAccent,
+                                      fontSize: 12,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                            ],
+                          ),
+                          if (tempLinkSource != null && tempLinkSource!['type'] == 'logic') ...[
+                            const SizedBox(height: 12),
+                            const Divider(color: Colors.white12, height: 1),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        '真の場合の値',
+                                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      TextField(
+                                        controller: trueValCtrl,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                        decoration: const InputDecoration(
+                                          hintText: '1.0',
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        onChanged: (v) {
+                                          tempLinkSource!['trueVal'] = double.tryParse(v) ?? 1.0;
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        '偽の場合の値',
+                                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      TextField(
+                                        controller: falseValCtrl,
+                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                        decoration: const InputDecoration(
+                                          hintText: '0.0',
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        onChanged: (v) {
+                                          tempLinkSource!['falseVal'] = double.tryParse(v) ?? 0.0;
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
+                          ],
                         ],
                       ),
                     ),
@@ -2500,6 +3065,98 @@ class _CalculatorRow extends StatelessWidget {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 12),
+                          const Divider(color: Colors.white12, height: 1),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              const Icon(Icons.rule_rounded, color: Colors.purpleAccent, size: 16),
+                              const SizedBox(width: 6),
+                              const Text('論理式の紐付け', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                              const Spacer(),
+                              TextButton.icon(
+                                icon: const Icon(Icons.add_rounded, size: 14, color: Colors.purpleAccent),
+                                label: const Text('論理式を追加', style: TextStyle(color: Colors.purpleAccent, fontSize: 12)),
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: () async {
+                                  final newLogic = await showDialog<Map<String, dynamic>>(
+                                    context: context,
+                                    builder: (ctx) => const _LogicItemEditDialog(initial: null),
+                                  );
+                                  if (newLogic != null) {
+                                    final newId = 'logic_${DateTime.now().millisecondsSinceEpoch}';
+                                    final newLogicItem = {
+                                      ...newLogic,
+                                      'id': newId,
+                                    };
+                                    if (onAddLogicItem != null) {
+                                      onAddLogicItem!(newLogicItem);
+                                    }
+                                    setSheetState(() {
+                                      localLogicItems.add(newLogicItem);
+                                      tempLink = true;
+                                      tempLinkSource = {
+                                        'type': 'logic',
+                                        'logicId': newId,
+                                        'trueVal': 1.0,
+                                        'falseVal': 0.0,
+                                      };
+                                      trueValCtrl.text = '1.0';
+                                      falseValCtrl.text = '0.0';
+                                    });
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          if (localLogicItems.isEmpty)
+                            const Text(
+                              '設定済みの論理式はありません。上のボタンから追加してください。',
+                              style: TextStyle(color: Colors.white38, fontSize: 11),
+                            )
+                          else
+                            DropdownButtonFormField<String>(
+                              dropdownColor: Colors.black,
+                              hint: const Text('論理式を選択', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                              isExpanded: true,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                border: OutlineInputBorder(),
+                              ),
+                              items: localLogicItems.map((logic) {
+                                final name = logic['name'] as String? ?? '';
+                                final expr = _CalculatorWidgetState._buildLogicExprString(logic);
+                                return DropdownMenuItem<String>(
+                                  value: logic['id'] as String,
+                                  child: Text(
+                                    name.isNotEmpty ? '$name: $expr' : expr,
+                                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (selectedId) {
+                                if (selectedId != null) {
+                                  setSheetState(() {
+                                    tempLink = true;
+                                    tempLinkSource = {
+                                      'type': 'logic',
+                                      'logicId': selectedId,
+                                      'trueVal': double.tryParse(ctrl.text) ?? 1.0,
+                                      'falseVal': 0.0,
+                                    };
+                                    trueValCtrl.text = (double.tryParse(ctrl.text) ?? 1.0).toString();
+                                    falseValCtrl.text = '0.0';
+                                  });
+                                }
+                              },
+                            ),
                         ],
                       ),
                     ),
