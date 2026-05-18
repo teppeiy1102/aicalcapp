@@ -371,6 +371,8 @@ class _LogicRow extends StatelessWidget {
   final void Function(Map<String, dynamic>) onUpdate;
   final VoidCallback onDelete;
   final Widget? dragHandle;
+  final Future<Map<String, dynamic>?> Function()? onPickLinkSource;
+  final String Function(Map<String, dynamic>?)? getSourceRowName;
 
   const _LogicRow({
     required this.item,
@@ -378,12 +380,18 @@ class _LogicRow extends StatelessWidget {
     required this.onUpdate,
     required this.onDelete,
     this.dragHandle,
+    this.onPickLinkSource,
+    this.getSourceRowName,
   });
 
   void _showEditDialog(BuildContext context) {
     showDialog<Map<String, dynamic>?>(
       context: context,
-      builder: (ctx) => _LogicItemEditDialog(initial: item),
+      builder: (ctx) => _LogicItemEditDialog(
+        initial: item,
+        onPickLinkSource: onPickLinkSource,
+        getSourceRowName: getSourceRowName,
+      ),
     ).then((result) {
       if (result == null) return;
       onUpdate(result);
@@ -504,8 +512,14 @@ class _LogicRow extends StatelessWidget {
 // ── 論理式編集ダイアログ ──────────────────────────────────────────────────────
 class _LogicItemEditDialog extends StatefulWidget {
   final Map<String, dynamic>? initial;
+  final Future<Map<String, dynamic>?> Function()? onPickLinkSource;
+  final String Function(Map<String, dynamic>?)? getSourceRowName;
 
-  const _LogicItemEditDialog({this.initial});
+  const _LogicItemEditDialog({
+    this.initial,
+    this.onPickLinkSource,
+    this.getSourceRowName,
+  });
 
   @override
   State<_LogicItemEditDialog> createState() => _LogicItemEditDialogState();
@@ -641,6 +655,26 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
             _NumLabelField(
               initVal: (cond['lhsVal'] as num? ?? 0.0).toDouble(),
               initLabel: cond['lhsLabel'] as String? ?? '',
+              isLink: cond['lhsLink'] == true,
+              linkSource: cond['lhsLinkSource'] as Map<String, dynamic>?,
+              linkLabel: widget.getSourceRowName != null
+                  ? widget.getSourceRowName!(cond['lhsLinkSource'] as Map<String, dynamic>?)
+                  : null,
+              onLinkPressed: widget.onPickLinkSource != null
+                  ? () async {
+                      final source = await widget.onPickLinkSource!();
+                      if (source != null) {
+                        setState(() {
+                          _conditions[idx]['lhsLink'] = true;
+                          _conditions[idx]['lhsLinkSource'] = source;
+                        });
+                      }
+                    }
+                  : null,
+              onLinkRemoved: () => setState(() {
+                _conditions[idx]['lhsLink'] = false;
+                _conditions[idx]['lhsLinkSource'] = null;
+              }),
               onChanged: (v, l) => setState(() {
                 _conditions[idx]['lhsVal'] = v;
                 _conditions[idx]['lhsLabel'] = l;
@@ -696,6 +730,26 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
               _NumLabelField(
                 initVal: (cond['rhsVal'] as num? ?? 0.0).toDouble(),
                 initLabel: cond['rhsLabel'] as String? ?? '',
+                isLink: cond['rhsLink'] == true,
+                linkSource: cond['rhsLinkSource'] as Map<String, dynamic>?,
+                linkLabel: widget.getSourceRowName != null
+                    ? widget.getSourceRowName!(cond['rhsLinkSource'] as Map<String, dynamic>?)
+                    : null,
+                onLinkPressed: widget.onPickLinkSource != null
+                    ? () async {
+                        final source = await widget.onPickLinkSource!();
+                        if (source != null) {
+                          setState(() {
+                            _conditions[idx]['rhsLink'] = true;
+                            _conditions[idx]['rhsLinkSource'] = source;
+                          });
+                        }
+                      }
+                    : null,
+                onLinkRemoved: () => setState(() {
+                  _conditions[idx]['rhsLink'] = false;
+                  _conditions[idx]['rhsLinkSource'] = null;
+                }),
                 onChanged: (v, l) => setState(() {
                   _conditions[idx]['rhsVal'] = v;
                   _conditions[idx]['rhsLabel'] = l;
@@ -711,6 +765,26 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
                 _NumLabelField(
                   initVal: (cond['rhsVal2'] as num? ?? 0.0).toDouble(),
                   initLabel: cond['rhsLabel2'] as String? ?? '',
+                  isLink: cond['rhsLink2'] == true,
+                  linkSource: cond['rhsLinkSource2'] as Map<String, dynamic>?,
+                  linkLabel: widget.getSourceRowName != null
+                      ? widget.getSourceRowName!(cond['rhsLinkSource2'] as Map<String, dynamic>?)
+                      : null,
+                  onLinkPressed: widget.onPickLinkSource != null
+                      ? () async {
+                          final source = await widget.onPickLinkSource!();
+                          if (source != null) {
+                            setState(() {
+                              _conditions[idx]['rhsLink2'] = true;
+                              _conditions[idx]['rhsLinkSource2'] = source;
+                            });
+                          }
+                        }
+                      : null,
+                  onLinkRemoved: () => setState(() {
+                    _conditions[idx]['rhsLink2'] = false;
+                    _conditions[idx]['rhsLinkSource2'] = null;
+                  }),
                   onChanged: (v, l) => setState(() {
                     _conditions[idx]['rhsVal2'] = v;
                     _conditions[idx]['rhsLabel2'] = l;
@@ -726,6 +800,26 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
               _NumLabelField(
                 initVal: (cond['rhsVal'] as num? ?? 0.0).toDouble(),
                 initLabel: cond['rhsLabel'] as String? ?? '',
+                isLink: cond['rhsLink'] == true,
+                linkSource: cond['rhsLinkSource'] as Map<String, dynamic>?,
+                linkLabel: widget.getSourceRowName != null
+                    ? widget.getSourceRowName!(cond['rhsLinkSource'] as Map<String, dynamic>?)
+                    : null,
+                onLinkPressed: widget.onPickLinkSource != null
+                    ? () async {
+                        final source = await widget.onPickLinkSource!();
+                        if (source != null) {
+                          setState(() {
+                            _conditions[idx]['rhsLink'] = true;
+                            _conditions[idx]['rhsLinkSource'] = source;
+                          });
+                        }
+                      }
+                    : null,
+                onLinkRemoved: () => setState(() {
+                  _conditions[idx]['rhsLink'] = false;
+                  _conditions[idx]['rhsLinkSource'] = null;
+                }),
                 onChanged: (v, l) => setState(() {
                   _conditions[idx]['rhsVal'] = v;
                   _conditions[idx]['rhsLabel'] = l;
@@ -942,12 +1036,22 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
 class _NumLabelField extends StatefulWidget {
   final double initVal;
   final String initLabel;
+  final bool isLink;
+  final Map<String, dynamic>? linkSource;
   final void Function(double val, String label) onChanged;
+  final VoidCallback? onLinkPressed;
+  final VoidCallback? onLinkRemoved;
+  final String? linkLabel;
 
   const _NumLabelField({
     required this.initVal,
     required this.initLabel,
+    this.isLink = false,
+    this.linkSource,
     required this.onChanged,
+    this.onLinkPressed,
+    this.onLinkRemoved,
+    this.linkLabel,
   });
 
   @override
@@ -987,40 +1091,69 @@ class _NumLabelFieldState extends State<_NumLabelField> {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        SizedBox(
-          width: 80,
-          child: TextField(
-            controller: _valCtrl,
-            keyboardType: const TextInputType.numberWithOptions(
-              signed: true,
-              decimal: true,
-            ),
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            decoration: InputDecoration(
-              hintText: '数値',
-              hintStyle: const TextStyle(color: Colors.white24, fontSize: 12),
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 6,
-              ),
-              border: OutlineInputBorder(
+        if (widget.isLink)
+          Expanded(
+            flex: 2,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.blueAccent.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.blueAccent.withOpacity(0.4)),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-                borderSide: const BorderSide(color: Colors.white24),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-                borderSide: const BorderSide(color: Color(0xFF5E81FF)),
+              child: Row(
+                children: [
+                  const Icon(Icons.link_rounded,
+                      color: Colors.blueAccent, size: 14),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      widget.linkLabel ?? 'リンク元',
+                      style: const TextStyle(
+                          color: Colors.blueAccent, fontSize: 13),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
-            onChanged: (_) => _notify(),
+          )
+        else
+          SizedBox(
+            width: 80,
+            child: TextField(
+              controller: _valCtrl,
+              keyboardType: const TextInputType.numberWithOptions(
+                signed: true,
+                decimal: true,
+              ),
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                hintText: '数値',
+                hintStyle: const TextStyle(color: Colors.white24, fontSize: 12),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  borderSide: const BorderSide(color: Colors.white24),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(4),
+                  borderSide: const BorderSide(color: Color(0xFF5E81FF)),
+                ),
+              ),
+              onChanged: (_) => _notify(),
+            ),
           ),
-        ),
         const SizedBox(width: 6),
         Expanded(
+          flex: 3,
           child: TextField(
             controller: _labelCtrl,
             style: const TextStyle(color: Colors.white70, fontSize: 13),
@@ -1047,6 +1180,23 @@ class _NumLabelFieldState extends State<_NumLabelField> {
             onChanged: (_) => _notify(),
           ),
         ),
+        const SizedBox(width: 6),
+        if (widget.isLink)
+          IconButton(
+            icon: const Icon(Icons.link_off_rounded, color: Colors.white38),
+            iconSize: 20,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: widget.onLinkRemoved,
+          )
+        else
+          IconButton(
+            icon: const Icon(Icons.link_rounded, color: Colors.blueAccent),
+            iconSize: 20,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: widget.onLinkPressed,
+          ),
       ],
     );
   }

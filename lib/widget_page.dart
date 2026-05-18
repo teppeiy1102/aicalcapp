@@ -16,6 +16,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai_service.dart';
 import 'calc_history.dart';
+import 'revenuecat_service.dart';
+import 'store_page.dart';
 
 part 'calc_input_widgets.dart';
 part 'calculator_widget.dart';
@@ -126,19 +128,25 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
     final picker = ImagePicker();
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor:Colors.black,
+      backgroundColor: Colors.black,
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Colors.white70),
-              title: const Text('カメラで撮影', style: TextStyle(color: Colors.white)),
+              title: const Text(
+                'カメラで撮影',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library, color: Colors.white70),
-              title: const Text('ギャラリーから選択', style: TextStyle(color: Colors.white)),
+              title: const Text(
+                'ギャラリーから選択',
+                style: TextStyle(color: Colors.white),
+              ),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
           ],
@@ -157,7 +165,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color:Colors.black,
+        color: Colors.black,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
@@ -244,7 +252,11 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
                           color: Colors.black54,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.close, color: Colors.white, size: 16),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -285,7 +297,10 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
                   padding: const EdgeInsets.all(14),
                 ),
                 onPressed: _pickImage,
-                icon: const Icon(Icons.add_a_photo_outlined, color: Colors.white70),
+                icon: const Icon(
+                  Icons.add_a_photo_outlined,
+                  color: Colors.white70,
+                ),
               ),
             ],
           ),

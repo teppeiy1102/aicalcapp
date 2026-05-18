@@ -62,7 +62,11 @@ class GemmaAi {
         systemPrompt: systemPrompt,
       );
     }
-    return await _queryWithImageLocal(prompt, imageBytes, systemPrompt: systemPrompt);
+    return await _queryWithImageLocal(
+      prompt,
+      imageBytes,
+      systemPrompt: systemPrompt,
+    );
   }
 
   Future<String> _queryWithImageLocal(
@@ -78,14 +82,17 @@ class GemmaAi {
     _queryLock = Completer<void>();
 
     try {
-      final sp = systemPrompt ?? "You are a helpful assistant. Reply concisely.";
+      final sp =
+          systemPrompt ?? "You are a helpful assistant. Reply concisely.";
       final formattedPrompt =
           "<start_of_turn>user\n$sp\n$prompt<end_of_turn>\n<start_of_turn>model\n";
 
-      final response = await _channel.invokeMethod<String>('queryWithImage', {
-        'prompt': formattedPrompt,
-        'imageBytes': imageBytes,
-      }).timeout(const Duration(seconds: 120));
+      final response = await _channel
+          .invokeMethod<String>('queryWithImage', {
+            'prompt': formattedPrompt,
+            'imageBytes': imageBytes,
+          })
+          .timeout(const Duration(seconds: 120));
 
       return response?.trim() ?? "";
     } catch (e) {
@@ -106,7 +113,8 @@ class GemmaAi {
     final dio = Dio();
     try {
       final base64Image = base64Encode(imageBytes);
-      final sp = systemPrompt ?? "You are a helpful assistant. Reply concisely.";
+      final sp =
+          systemPrompt ?? "You are a helpful assistant. Reply concisely.";
 
       final response = await dio.post(
         'https://openrouter.ai/api/v1/chat/completions',
@@ -128,9 +136,7 @@ class GemmaAi {
               'content': [
                 {
                   'type': 'image_url',
-                  'image_url': {
-                    'url': 'data:image/jpeg;base64,$base64Image',
-                  },
+                  'image_url': {'url': 'data:image/jpeg;base64,$base64Image'},
                 },
                 {'type': 'text', 'text': prompt},
               ],

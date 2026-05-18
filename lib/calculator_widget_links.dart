@@ -65,7 +65,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
         );
         return Set<String>.from(pending['dests'] as Set<String>);
       } catch (_) {
-        final existing = sid == null 
+        final existing = sid == null
             ? _calcSelectedDestsForRow(calcIdx, fld)
             : _calcSelectedDestsForExternalRow(sid, calcIdx, fld);
         if (initialDestCalcIdx != null && initialDestField != null) {
@@ -598,7 +598,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                                               ? Colors
                                                                     .blueAccent
                                                               : Colors.white24,
-                           width: isSel
+                                                          width: isSel
                                                               ? 1.5
                                                               : 1.0,
                                                         ),

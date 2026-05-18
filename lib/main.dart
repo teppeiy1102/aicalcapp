@@ -7,11 +7,13 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'widget_page.dart';
+import 'revenuecat_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await AppSettings.instance.load();
+  await RevenueCatService.init();
   runApp(const MyApp());
 }
 
@@ -58,8 +60,11 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isSelectMode = false;
   final Set<int> _selectedForMerge = {};
   String? _appendTargetSheetId;
+
   /// アプリ内クリップボード（シート間共有）
-  final ValueNotifier<Map<String, dynamic>?> _clipboardNotifier = ValueNotifier(null);
+  final ValueNotifier<Map<String, dynamic>?> _clipboardNotifier = ValueNotifier(
+    null,
+  );
 
   @override
   void dispose() {
@@ -326,8 +331,11 @@ class _HomeScreenState extends State<HomeScreen> {
           .toList();
       final sheets = sheetIds
           .map((id) {
-            try { return _configs.firstWhere((c) => c.id == id); }
-            catch (_) { return null; }
+            try {
+              return _configs.firstWhere((c) => c.id == id);
+            } catch (_) {
+              return null;
+            }
           })
           .whereType<WidgetConfig>()
           .toList();
@@ -369,7 +377,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   backgroundColor: Colors.black,
                   behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   duration: const Duration(seconds: 2),
                 ),
               );
@@ -398,7 +408,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showMainMenu() {
     showModalBottomSheet(
       context: context,
-      backgroundColor:Colors.black,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -425,10 +435,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: const Color(0xFF5E81FF).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.merge_rounded, color: Color(0xFF5E81FF), size: 22),
+                  child: const Icon(
+                    Icons.merge_rounded,
+                    color: Color(0xFF5E81FF),
+                    size: 22,
+                  ),
                 ),
-                title: const Text('計算シートを結合する', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                subtitle: Text('複数のシートを1画面に並べて表示', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                title: const Text(
+                  '計算シートを結合する',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  '複数のシートを1画面に並べて表示',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.4),
+                    fontSize: 12,
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
                   _startSelectMode();
@@ -443,10 +469,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.tealAccent.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.tealAccent, size: 22),
+                  child: const Icon(
+                    Icons.qr_code_scanner_rounded,
+                    color: Colors.tealAccent,
+                    size: 22,
+                  ),
                 ),
-                title: const Text('シートを取り込む', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                subtitle: Text('QRコードからシートをインポート', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                title: const Text(
+                  'シートを取り込む',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  'QRコードからシートをインポート',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.4),
+                    fontSize: 12,
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
                   _showQrScanner();
@@ -461,10 +503,26 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.amberAccent.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.tune_rounded, color: Colors.amberAccent, size: 22),
+                  child: const Icon(
+                    Icons.tune_rounded,
+                    color: Colors.amberAccent,
+                    size: 22,
+                  ),
                 ),
-                title: const Text('設定', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                subtitle: Text('ユーザー定義定数の管理', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                title: const Text(
+                  '設定',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  'ユーザー定義定数の管理',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.4),
+                    fontSize: 12,
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
                   _openSettings();
@@ -490,10 +548,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_configs.isEmpty) return;
     final targetIdx = _configs.indexWhere((c) => c.id == targetId);
     if (targetIdx == -1) return;
-    
+
     final targetConfig = _configs[targetIdx];
-    final currentSheetIds = (targetConfig.data['sheetIds'] as List<dynamic>? ?? []).map((e) => e as String).toList();
-    
+    final currentSheetIds =
+        (targetConfig.data['sheetIds'] as List<dynamic>? ?? [])
+            .map((e) => e as String)
+            .toList();
+
     final initialSelected = <int>{};
     for (final id in currentSheetIds) {
       final idx = _configs.indexWhere((c) => c.id == id);
@@ -531,13 +592,18 @@ class _HomeScreenState extends State<HomeScreen> {
   void _executeMergeOrAppend() {
     if (_appendTargetSheetId != null) {
       if (_selectedForMerge.isEmpty) return;
-      final targetIdx = _configs.indexWhere((c) => c.id == _appendTargetSheetId);
+      final targetIdx = _configs.indexWhere(
+        (c) => c.id == _appendTargetSheetId,
+      );
       if (targetIdx != -1) {
         final targetConfig = _configs[targetIdx];
-        final currentSheetIds = (targetConfig.data['sheetIds'] as List<dynamic>? ?? []).map((e) => e as String).toList();
-        
+        final currentSheetIds =
+            (targetConfig.data['sheetIds'] as List<dynamic>? ?? [])
+                .map((e) => e as String)
+                .toList();
+
         final List<String> finalSheetIds = [];
-        
+
         // 既存のシートのうち、引き続き選択されているものを元の順序で追加
         for (final id in currentSheetIds) {
           final idx = _configs.indexWhere((c) => c.id == id);
@@ -545,18 +611,20 @@ class _HomeScreenState extends State<HomeScreen> {
             finalSheetIds.add(id);
           }
         }
-        
+
         // 新しく選択されたシートを追加
         final newlySelectedIdxs = _selectedForMerge.where((idx) {
           final id = _configs[idx].id;
           return !currentSheetIds.contains(id);
         }).toList()..sort();
-        
+
         for (final idx in newlySelectedIdxs) {
           finalSheetIds.add(_configs[idx].id);
         }
-        
-        final newConfig = targetConfig.copyWith(data: {...targetConfig.data, 'sheetIds': finalSheetIds});
+
+        final newConfig = targetConfig.copyWith(
+          data: {...targetConfig.data, 'sheetIds': finalSheetIds},
+        );
         setState(() {
           _configs[targetIdx] = newConfig;
           _isSelectMode = false;
@@ -578,10 +646,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final newConfig = WidgetConfig(
       id: '${DateTime.now().millisecondsSinceEpoch}',
       type: 'merged',
-      data: {
-        'title': titles,
-        'sheetIds': sheetIds,
-      },
+      data: {'title': titles, 'sheetIds': sheetIds},
     );
     setState(() {
       _configs.insert(0, newConfig);
@@ -677,17 +742,23 @@ class _HomeScreenState extends State<HomeScreen> {
       // スタンドアロンメモを復元
       final qrSItems = decoded['sitems'] as List<dynamic>?;
       final baseTs = DateTime.now().millisecondsSinceEpoch;
-      final standaloneItems = qrSItems?.asMap().map<int, Map<String, dynamic>>((si, txt) {
-        return MapEntry(si, {
-          'id': '${baseTs}_si$si',
-          'text': txt as String? ?? '',
-        });
-      }).values.toList();
+      final standaloneItems = qrSItems
+          ?.asMap()
+          .map<int, Map<String, dynamic>>((si, txt) {
+            return MapEntry(si, {
+              'id': '${baseTs}_si$si',
+              'text': txt as String? ?? '',
+            });
+          })
+          .values
+          .toList();
 
       // 表示順を復元（スタンドアロンメモがある場合のみ）
       List<Map<String, dynamic>>? displayOrder;
       final qrDOrder = decoded['dorder'] as List<dynamic>?;
-      if (qrDOrder != null && standaloneItems != null && standaloneItems.isNotEmpty) {
+      if (qrDOrder != null &&
+          standaloneItems != null &&
+          standaloneItems.isNotEmpty) {
         displayOrder = qrDOrder.map<Map<String, dynamic>>((e) {
           final entry = e as Map;
           if (entry.containsKey('c')) {
@@ -812,20 +883,30 @@ class _HomeScreenState extends State<HomeScreen> {
                   actions: _isSelectMode
                       ? [
                           Center(
-                            child: Padding(padding: const EdgeInsets.only(right: 4), child: Text(
-                              _selectedForMerge.length < 2
-                                  ? '2件以上選択してください'
-                                  : '${_selectedForMerge.length}件選択中',
-                              style: TextStyle(
-                                color: _selectedForMerge.length >= 2 ? const Color(0xFF5E81FF) : Colors.white38,
-                                fontSize: 13, fontWeight: FontWeight.w600,
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: Text(
+                                _selectedForMerge.length < 2
+                                    ? '2件以上選択してください'
+                                    : '${_selectedForMerge.length}件選択中',
+                                style: TextStyle(
+                                  color: _selectedForMerge.length >= 2
+                                      ? const Color(0xFF5E81FF)
+                                      : Colors.white38,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            )),
+                            ),
                           ),
                         ]
                       : [
                           IconButton(
-                            icon: const Icon(Icons.menu_rounded, color: Colors.white70, size: 26),
+                            icon: const Icon(
+                              Icons.menu_rounded,
+                              color: Colors.white70,
+                              size: 26,
+                            ),
                             onPressed: _showMainMenu,
                             tooltip: 'メニュー',
                           ),
@@ -834,36 +915,39 @@ class _HomeScreenState extends State<HomeScreen> {
                   flexibleSpace: _isSelectMode
                       ? null
                       : FlexibleSpaceBar(
-                    titlePadding: const EdgeInsets.only(left: 28, bottom: 0),
-                    centerTitle: false,
-                    title: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Spacer(flex: 4),
-                        const Text(
-                          'Genba Calc',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 30,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.2,
+                          titlePadding: const EdgeInsets.only(
+                            left: 28,
+                            bottom: 0,
+                          ),
+                          centerTitle: false,
+                          title: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Spacer(flex: 4),
+                              const Text(
+                                'Genba Calc',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                              Text(
+                                '現場を支える、次世代の電卓',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.35),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                              Spacer(flex: 1),
+                            ],
                           ),
                         ),
-                        Text(
-                          '現場を支える、次世代の電卓',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.35),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                        Spacer(flex: 1),
-                      ],
-                    ),
-                  ),
                 ),
                 if (_configs.isEmpty)
                   const SliverFillRemaining(child: _EmptyState())
@@ -877,12 +961,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         final cfg = _configs[i];
                         List<WidgetConfig>? resolvedSheets;
                         if (cfg.type == 'merged') {
-                          final ids = (cfg.data['sheetIds'] as List<dynamic>? ?? [])
-                              .map((e) => e as String).toList();
+                          final ids =
+                              (cfg.data['sheetIds'] as List<dynamic>? ?? [])
+                                  .map((e) => e as String)
+                                  .toList();
                           resolvedSheets = ids
                               .map((id) {
-                                try { return _configs.firstWhere((c) => c.id == id); }
-                                catch (_) { return null; }
+                                try {
+                                  return _configs.firstWhere((c) => c.id == id);
+                                } catch (_) {
+                                  return null;
+                                }
                               })
                               .whereType<WidgetConfig>()
                               .toList();
@@ -894,23 +983,34 @@ class _HomeScreenState extends State<HomeScreen> {
                             config: cfg,
                             index: i,
                             onTap: _isSelectMode
-                                ? (_appendTargetSheetId == cfg.id ? () {} : () => _toggleSelection(i))
+                                ? (_appendTargetSheetId == cfg.id
+                                      ? () {}
+                                      : () => _toggleSelection(i))
                                 : () => _openDetail(i),
                             onDelete: () => _deleteConfig(i),
                             onUpdate: (data) => _updateConfig(i, data),
                             isSelectMode: _isSelectMode,
                             isSelected: _selectedForMerge.contains(i),
                             resolvedSheets: resolvedSheets,
-                            onReorderSheets: resolvedSheets == null ? null : (oldIdx, newIdx) {
-                              final sheetIds = (cfg.data['sheetIds'] as List<dynamic>)
-                                  .map((e) => e as String).toList();
-                              if (newIdx > oldIdx) newIdx -= 1;
-                              final id = sheetIds.removeAt(oldIdx);
-                              sheetIds.insert(newIdx, id);
-                              _updateConfig(i, {...cfg.data, 'sheetIds': sheetIds});
-                            },
+                            onReorderSheets: resolvedSheets == null
+                                ? null
+                                : (oldIdx, newIdx) {
+                                    final sheetIds =
+                                        (cfg.data['sheetIds'] as List<dynamic>)
+                                            .map((e) => e as String)
+                                            .toList();
+                                    if (newIdx > oldIdx) newIdx -= 1;
+                                    final id = sheetIds.removeAt(oldIdx);
+                                    sheetIds.insert(newIdx, id);
+                                    _updateConfig(i, {
+                                      ...cfg.data,
+                                      'sheetIds': sheetIds,
+                                    });
+                                  },
                             onTapSheet: (sheetId) {
-                              final sheetIdx = _configs.indexWhere((c) => c.id == sheetId);
+                              final sheetIdx = _configs.indexWhere(
+                                (c) => c.id == sheetId,
+                              );
                               if (sheetIdx != -1) {
                                 _openDetail(sheetIdx);
                               }
@@ -950,12 +1050,12 @@ class _HomeScreenState extends State<HomeScreen> {
               isAppendMode: _appendTargetSheetId != null,
             )
           : _calcSheetController != null
-              ? null
-              : _HomeFab(
-                  onOpenCalc: _openHomeCalc,
-                  onAddSheet: _addConfig,
-                  calcActive: false,
-                ),
+          ? null
+          : _HomeFab(
+              onOpenCalc: _openHomeCalc,
+              onAddSheet: _addConfig,
+              calcActive: false,
+            ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: ValueListenableBuilder<Map<String, dynamic>?>(
         valueListenable: _clipboardNotifier,
@@ -1058,29 +1158,36 @@ class _WidgetCardState extends State<_WidgetCard> {
   @override
   Widget build(BuildContext context) {
     final isMerged = widget.config.type == 'merged';
-    final title = widget.config.data['title'] as String? ?? (isMerged ? '結合ビュー' : '定型計算');
+    final title =
+        widget.config.data['title'] as String? ?? (isMerged ? '結合ビュー' : '定型計算');
     final items = widget.config.data['items'] as List<dynamic>? ?? [];
     final memos = widget.config.data['memos'] as List<dynamic>? ?? [];
-    final exposedCount = items.where((it) => (it as Map)['exposed'] == true).length;
+    final exposedCount = items
+        .where((it) => (it as Map)['exposed'] == true)
+        .length;
     final resolvedSheets = widget.resolvedSheets ?? [];
     final sheetCount = isMerged
-        ? ((widget.config.data['sheetIds'] as List?)?.length ?? resolvedSheets.length)
+        ? ((widget.config.data['sheetIds'] as List?)?.length ??
+              resolvedSheets.length)
         : 0;
-    final accent = _WidgetCard._accentColors[widget.index % _WidgetCard._accentColors.length];
+    final accent = _WidgetCard
+        ._accentColors[widget.index % _WidgetCard._accentColors.length];
     final bgColorValue = widget.config.data['bgColor'] as int?;
     // For merged, derive bg from first resolved sheet
     final effectiveBgValue = isMerged && resolvedSheets.isNotEmpty
         ? resolvedSheets.first.data['bgColor'] as int?
         : bgColorValue;
-    final cardBgColor = effectiveBgValue != null ? Color(effectiveBgValue) : const Color(0xFF1A1A26);
+    final cardBgColor = effectiveBgValue != null
+        ? Color(effectiveBgValue)
+        : const Color(0xFF1A1A26);
     final isDark = cardBgColor.computeLuminance() < 0.5;
     final titleColor = isDark ? Colors.white : Colors.black;
     final subIconColor = isDark ? Colors.white24 : Colors.black26;
     final borderColor = widget.isSelected
         ? const Color(0xFF5E81FF)
         : isDark
-            ? Colors.white.withOpacity(0.06)
-            : Colors.black.withOpacity(0.12);
+        ? Colors.white.withOpacity(0.06)
+        : Colors.black.withOpacity(0.12);
 
     // leading: checkbox in select mode, drag handle otherwise
     final leading = widget.isSelectMode
@@ -1091,13 +1198,19 @@ class _WidgetCardState extends State<_WidgetCard> {
             margin: const EdgeInsets.only(right: 12),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: widget.isSelected ? const Color(0xFF5E81FF) : Colors.transparent,
+              color: widget.isSelected
+                  ? const Color(0xFF5E81FF)
+                  : Colors.transparent,
               border: Border.all(
-                color: widget.isSelected ? const Color(0xFF5E81FF) : (isDark ? Colors.white38 : Colors.black38),
+                color: widget.isSelected
+                    ? const Color(0xFF5E81FF)
+                    : (isDark ? Colors.white38 : Colors.black38),
                 width: 2,
               ),
             ),
-            child: widget.isSelected ? const Icon(Icons.check_rounded, size: 14, color: Colors.white) : null,
+            child: widget.isSelected
+                ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                : null,
           )
         : ReorderableDragStartListener(
             index: widget.index,
@@ -1111,8 +1224,10 @@ class _WidgetCardState extends State<_WidgetCard> {
       duration: const Duration(milliseconds: 150),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
-        color:cardBgColor.withAlpha(240),
-        border: widget.isSelected ? Border.all(color: const Color(0xFF5E81FF), width: 2.5) : null,
+        color: cardBgColor.withAlpha(240),
+        border: widget.isSelected
+            ? Border.all(color: const Color(0xFF5E81FF), width: 2.5)
+            : null,
         boxShadow: [
           BoxShadow(
             color: widget.isSelected
@@ -1136,12 +1251,19 @@ class _WidgetCardState extends State<_WidgetCard> {
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 15, 10, 15),
                 decoration: BoxDecoration(
-                  border: Border.all(color: borderColor, width: widget.isSelected ? 0 : 1.5),
+                  border: Border.all(
+                    color: borderColor,
+                    width: widget.isSelected ? 0 : 1.5,
+                  ),
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(32),
                     topRight: const Radius.circular(32),
-                    bottomLeft: _isExpanded ? Radius.zero : const Radius.circular(32),
-                    bottomRight: _isExpanded ? Radius.zero : const Radius.circular(32),
+                    bottomLeft: _isExpanded
+                        ? Radius.zero
+                        : const Radius.circular(32),
+                    bottomRight: _isExpanded
+                        ? Radius.zero
+                        : const Radius.circular(32),
                   ),
                 ),
                 child: Row(
@@ -1154,21 +1276,33 @@ class _WidgetCardState extends State<_WidgetCard> {
                           // merged indicator strip
                           if (isMerged) ...[
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 0,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.transparent,
                                 borderRadius: BorderRadius.circular(2),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
-                                children: resolvedSheets.take(5).map<Widget>((s) {
+                                children: resolvedSheets.take(5).map<Widget>((
+                                  s,
+                                ) {
                                   final sColor = s.data['bgColor'] as int?;
                                   return Container(
-                                    width: 16, height: 16, margin: const EdgeInsets.only(right: 10),
+                                    width: 16,
+                                    height: 16,
+                                    margin: const EdgeInsets.only(right: 10),
                                     decoration: BoxDecoration(
-                                      color: sColor != null ? Color(sColor) : const Color(0xFF5E81FF),
+                                      color: sColor != null
+                                          ? Color(sColor)
+                                          : const Color(0xFF5E81FF),
                                       borderRadius: BorderRadius.circular(50),
-                                      border: Border.all(color: Colors.white.withOpacity(1), width: 2),
+                                      border: Border.all(
+                                        color: Colors.white.withOpacity(1),
+                                        width: 2,
+                                      ),
                                     ),
                                   );
                                 }).toList(),
@@ -1179,10 +1313,13 @@ class _WidgetCardState extends State<_WidgetCard> {
                           Text(
                             title,
                             style: TextStyle(
-                              color: titleColor, fontSize: 18,
-                              fontWeight: FontWeight.w800, letterSpacing: -0.5,
+                              color: titleColor,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.5,
                             ),
-                            maxLines: 2, overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 8),
                           SingleChildScrollView(
@@ -1192,26 +1329,55 @@ class _WidgetCardState extends State<_WidgetCard> {
                               children: [
                                 if (isMerged) ...[
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: const Color.fromARGB(255, 255, 94, 94).withOpacity(0.12),
+                                      color: const Color.fromARGB(
+                                        255,
+                                        255,
+                                        94,
+                                        94,
+                                      ).withOpacity(0.12),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(Icons.merge_rounded, size: 12, color: Color.fromARGB(255, 255, 94, 94)),
+                                        const Icon(
+                                          Icons.merge_rounded,
+                                          size: 12,
+                                          color: Color.fromARGB(
+                                            255,
+                                            255,
+                                            94,
+                                            94,
+                                          ),
+                                        ),
                                         const SizedBox(width: 6),
                                         Text(
                                           '$sheetCountつの結合されたシート',
-                                          style: const TextStyle(color: Color.fromARGB(255, 255, 94, 94), fontSize: 11, fontWeight: FontWeight.w700),
+                                          style: const TextStyle(
+                                            color: Color.fromARGB(
+                                              255,
+                                              255,
+                                              94,
+                                              94,
+                                            ),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
                                 ] else ...[
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: accent.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(10),
@@ -1219,11 +1385,21 @@ class _WidgetCardState extends State<_WidgetCard> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.data_usage_rounded, size: 12, color: accent),
+                                        Icon(
+                                          Icons.data_usage_rounded,
+                                          size: 12,
+                                          color: accent,
+                                        ),
                                         const SizedBox(width: 6),
                                         Text(
-                                          items.isEmpty ? '計算式未設定' : '${items.length}件',
-                                          style: TextStyle(color: accent.withOpacity(0.9), fontSize: 11, fontWeight: FontWeight.w700),
+                                          items.isEmpty
+                                              ? '計算式未設定'
+                                              : '${items.length}件',
+                                          style: TextStyle(
+                                            color: accent.withOpacity(0.9),
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -1231,7 +1407,10 @@ class _WidgetCardState extends State<_WidgetCard> {
                                   if (memos.isNotEmpty) ...[
                                     const SizedBox(width: 6),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: Colors.amber.withOpacity(0.12),
                                         borderRadius: BorderRadius.circular(10),
@@ -1239,9 +1418,20 @@ class _WidgetCardState extends State<_WidgetCard> {
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.sticky_note_2_outlined, size: 12, color: Colors.amber),
+                                          const Icon(
+                                            Icons.sticky_note_2_outlined,
+                                            size: 12,
+                                            color: Colors.amber,
+                                          ),
                                           const SizedBox(width: 6),
-                                          Text('${memos.length}件', style: const TextStyle(color: Colors.amber, fontSize: 11, fontWeight: FontWeight.w700)),
+                                          Text(
+                                            '${memos.length}件',
+                                            style: const TextStyle(
+                                              color: Colors.amber,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -1249,17 +1439,33 @@ class _WidgetCardState extends State<_WidgetCard> {
                                   if (exposedCount > 0) ...[
                                     const SizedBox(width: 6),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: Colors.tealAccent.withOpacity(0.12),
+                                        color: Colors.tealAccent.withOpacity(
+                                          0.12,
+                                        ),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.link_rounded, size: 12, color: Colors.teal),
+                                          const Icon(
+                                            Icons.link_rounded,
+                                            size: 12,
+                                            color: Colors.teal,
+                                          ),
                                           const SizedBox(width: 6),
-                                          Text('$exposedCount件', style: const TextStyle(color: Colors.teal, fontSize: 11, fontWeight: FontWeight.w700)),
+                                          Text(
+                                            '$exposedCount件',
+                                            style: const TextStyle(
+                                              color: Colors.teal,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -1283,18 +1489,26 @@ class _WidgetCardState extends State<_WidgetCard> {
                                 shape: BoxShape.circle,
                               ),
                               child: Center(
-                                child: Icon(Icons.delete_sweep_rounded,
-                                  color: isDark ? Colors.white.withOpacity(0.2) : Colors.black.withOpacity(0.25),
-                                  size: 22),
+                                child: Icon(
+                                  Icons.delete_sweep_rounded,
+                                  color: isDark
+                                      ? Colors.white.withOpacity(0.2)
+                                      : Colors.black.withOpacity(0.25),
+                                  size: 22,
+                                ),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 20,width: 40,),
+                          const SizedBox(height: 20, width: 40),
                           GestureDetector(
-                            onTap: () => setState(() => _isExpanded = !_isExpanded),
+                            onTap: () =>
+                                setState(() => _isExpanded = !_isExpanded),
                             child: Icon(
-                              _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                              color: isDark ? Colors.white38 : Colors.black54, size: 22,
+                              _isExpanded
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              color: isDark ? Colors.white38 : Colors.black54,
+                              size: 22,
                             ),
                           ),
                         ],
@@ -1337,7 +1551,9 @@ class _WidgetCardState extends State<_WidgetCard> {
           final s = sheets[idx];
           final sTitle = s.data['title'] as String? ?? '定型計算';
           final sColorVal = s.data['bgColor'] as int?;
-          final sColor = sColorVal != null ? Color(sColorVal) : const Color(0xFF1A1A26);
+          final sColor = sColorVal != null
+              ? Color(sColorVal)
+              : const Color(0xFF1A1A26);
           final sItemCount = (s.data['items'] as List?)?.length ?? 0;
           return Padding(
             key: ValueKey(s.id),
@@ -1348,8 +1564,11 @@ class _WidgetCardState extends State<_WidgetCard> {
                   index: idx,
                   child: Padding(
                     padding: const EdgeInsets.only(right: 18),
-                    child: Icon(Icons.drag_indicator,
-                        color: isDark ? Colors.white24 : Colors.black26, size: 18),
+                    child: Icon(
+                      Icons.drag_indicator,
+                      color: isDark ? Colors.white24 : Colors.black26,
+                      size: 18,
+                    ),
                   ),
                 ),
                 Expanded(
@@ -1359,21 +1578,36 @@ class _WidgetCardState extends State<_WidgetCard> {
                     child: Row(
                       children: [
                         Container(
-                          width: 12, height: 12, margin: const EdgeInsets.only(right: 10),
+                          width: 12,
+                          height: 12,
+                          margin: const EdgeInsets.only(right: 10),
                           decoration: BoxDecoration(
                             color: sColor,
                             borderRadius: BorderRadius.circular(30),
-                            border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.5),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                              width: 0.5,
+                            ),
                           ),
                         ),
                         Expanded(
-                          child: Text(sTitle,
-                            style: TextStyle(color: isDark ? Colors.white70 : Colors.black54,
-                                fontSize: 16, fontWeight: FontWeight.w600),
-                            overflow: TextOverflow.ellipsis),
+                          child: Text(
+                            sTitle,
+                            style: TextStyle(
+                              color: isDark ? Colors.white70 : Colors.black54,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        Text('$sItemCount件',
-                            style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 11)),
+                        Text(
+                          '$sItemCount件',
+                          style: TextStyle(
+                            color: isDark ? Colors.white38 : Colors.black38,
+                            fontSize: 11,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -1382,30 +1616,47 @@ class _WidgetCardState extends State<_WidgetCard> {
             ),
           );
         },
-        footer: widget.onAppendTap == null ? null : Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 8),
-          child: InkWell(
-            onTap: widget.onAppendTap,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+        footer: widget.onAppendTap == null
+            ? null
+            : Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 8),
+                child: InkWell(
+                  onTap: widget.onAppendTap,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withOpacity(0.05)
+                          : Colors.black.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark ? Colors.white12 : Colors.black12,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.add_rounded,
+                          size: 18,
+                          color: isDark ? Colors.white70 : Colors.black54,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'シートを追加',
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : Colors.black54,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.add_rounded, size: 18, color: isDark ? Colors.white70 : Colors.black54),
-                  const SizedBox(width: 8),
-                  Text('シートを追加', style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 13, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -1423,93 +1674,95 @@ class _HomeFab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return 
-   !calcActive? 
-    Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Spacer(),
+    return !calcActive
+        ? Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Spacer(),
 
-        // 新規シートボタン
-        GestureDetector(
-          onTap: onAddSheet,
-          child: Container(
-            height: 64,
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color.fromARGB(255, 241, 243, 249),
-                  Color.fromARGB(255, 202, 183, 255),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF5E81FF).withOpacity(0.3),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.add_rounded, color: Colors.black, size: 28),
-                SizedBox(width: 10),
-                Text(
-                  '新しいシート',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w400,
-                    letterSpacing: 0.5,
+              // 新規シートボタン
+              GestureDetector(
+                onTap: onAddSheet,
+                child: Container(
+                  height: 64,
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color.fromARGB(255, 241, 243, 249),
+                        Color.fromARGB(255, 202, 183, 255),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF5E81FF).withOpacity(0.3),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_rounded, color: Colors.black, size: 28),
+                      SizedBox(width: 10),
+                      Text(
+                        '新しいシート',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-        Spacer(),
-        // 電卓ボタン
-        GestureDetector(
-          onTap: onOpenCalc,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: 64,
-            width: 64,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color.fromARGB(255, 241, 243, 249),
-                  Color.fromARGB(255, 202, 183, 255),
-                ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(
-                    0xFF5E81FF,
-                  ).withOpacity(calcActive ? 0.35 : 0.15),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+              Spacer(),
+              // 電卓ボタン
+              GestureDetector(
+                onTap: onOpenCalc,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  height: 64,
+                  width: 64,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color.fromARGB(255, 241, 243, 249),
+                        Color.fromARGB(255, 202, 183, 255),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(
+                          0xFF5E81FF,
+                        ).withOpacity(calcActive ? 0.35 : 0.15),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    calcActive
+                        ? Icons.calculate_rounded
+                        : Icons.calculate_outlined,
+                    color: calcActive ? Colors.black : Colors.black,
+                    size: 28,
+                  ),
                 ),
-              ],
-            ),
-            child: Icon(
-              calcActive ? Icons.calculate_rounded : Icons.calculate_outlined,
-              color: calcActive ? Colors.black : Colors.black,
-              size: 28,
-            ),
-          ),
-        ),
-      const SizedBox(width: 10),
-      ],
-    ):const SizedBox.shrink();
+              ),
+              const SizedBox(width: 10),
+            ],
+          )
+        : const SizedBox.shrink();
   }
 }
 
@@ -1540,7 +1793,8 @@ class _MergeActionBar extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF5E81FF).withOpacity(canMerge ? 0.2 : 0.05),
-            blurRadius: 20, offset: const Offset(0, 8),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -1550,9 +1804,14 @@ class _MergeActionBar extends StatelessWidget {
             onPressed: onCancel,
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('キャンセル', style: TextStyle(color: Colors.white54, fontSize: 14)),
+            child: const Text(
+              'キャンセル',
+              style: TextStyle(color: Colors.white54, fontSize: 14),
+            ),
           ),
           const Spacer(),
           GestureDetector(
@@ -1563,20 +1822,28 @@ class _MergeActionBar extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
                 gradient: canMerge
-                    ? const LinearGradient(colors: [Color.fromARGB(255, 255, 94, 172), Color(0xFF9E7AFF)])
+                    ? const LinearGradient(
+                        colors: [
+                          Color.fromARGB(255, 255, 94, 172),
+                          Color(0xFF9E7AFF),
+                        ],
+                      )
                     : null,
                 color: canMerge ? null : Colors.white.withOpacity(0.06),
               ),
               child: Expanded(
                 child: Text(
                   overflow: TextOverflow.ellipsis,
-                  canMerge 
-                      ? (isAppendMode ? '$selectedCount件のシートを追加' : '$selectedCount件のシートを結合') 
+                  canMerge
+                      ? (isAppendMode
+                            ? '$selectedCount件のシートを追加'
+                            : '$selectedCount件のシートを結合')
                       : (isAppendMode ? '1件以上選択' : '2件以上選択'),
                   maxLines: 1,
                   style: TextStyle(
                     color: canMerge ? Colors.white : Colors.white38,
-                    fontSize: 14, fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -1593,10 +1860,7 @@ class _SettingsPage extends StatefulWidget {
   final List<Map<String, dynamic>> userConstants;
   final void Function(List<Map<String, dynamic>>) onSave;
 
-  const _SettingsPage({
-    required this.userConstants,
-    required this.onSave,
-  });
+  const _SettingsPage({required this.userConstants, required this.onSave});
 
   @override
   State<_SettingsPage> createState() => _SettingsPageState();
@@ -1622,7 +1886,8 @@ class _SettingsPageState extends State<_SettingsPage> {
   }
 
   String _fmt(double v) {
-    if (v == v.truncateToDouble() && v.abs() < 1e15) return v.toInt().toString();
+    if (v == v.truncateToDouble() && v.abs() < 1e15)
+      return v.toInt().toString();
     return v.toString();
   }
 
@@ -1686,7 +1951,9 @@ class _SettingsPageState extends State<_SettingsPage> {
       builder: (ctx) => StatefulBuilder(
         builder: (_, setSS) => Padding(
           padding: EdgeInsets.only(
-            left: 24, right: 24, top: 24,
+            left: 24,
+            right: 24,
+            top: 24,
             bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
           ),
           child: Column(
@@ -1698,7 +1965,11 @@ class _SettingsPageState extends State<_SettingsPage> {
                   Expanded(
                     child: Text(
                       isNew ? '定数を追加' : '定数を編集',
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   IconButton(
@@ -1710,7 +1981,10 @@ class _SettingsPageState extends State<_SettingsPage> {
                 ],
               ),
               const SizedBox(height: 16),
-              const Text('名前', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              const Text(
+                '名前',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
               const SizedBox(height: 6),
               TextField(
                 controller: nameCtrl,
@@ -1722,11 +1996,17 @@ class _SettingsPageState extends State<_SettingsPage> {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('値', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              const Text(
+                '値',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
               const SizedBox(height: 6),
               TextField(
                 controller: valCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                  signed: true,
+                ),
                 style: const TextStyle(color: Colors.white, fontSize: 20),
                 decoration: const InputDecoration(
                   hintText: '0.0',
@@ -1739,7 +2019,10 @@ class _SettingsPageState extends State<_SettingsPage> {
                   if (!isNew)
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, {'delete': true}),
-                      child: const Text('削除', style: TextStyle(color: Colors.redAccent)),
+                      child: const Text(
+                        '削除',
+                        style: TextStyle(color: Colors.redAccent),
+                      ),
                     ),
                   const Spacer(),
                   SizedBox(
@@ -1748,7 +2031,9 @@ class _SettingsPageState extends State<_SettingsPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                       onPressed: () => Navigator.pop(ctx, {
@@ -1775,12 +2060,19 @@ class _SettingsPageState extends State<_SettingsPage> {
         backgroundColor: const Color(0xFF0D0D14),
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white70),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white70,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           '設定',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 18),
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
         ),
       ),
       body: ListView(
@@ -1833,15 +2125,26 @@ class _SettingsPageState extends State<_SettingsPage> {
                       ),
                       title: Text(
                         c['label'] as String,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
                       ),
                       trailing: Text(
                         _fmt((c['value'] as num).toDouble()),
-                        style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                     if (!isLast)
-                      const Divider(color: Colors.white10, height: 1, indent: 16, endIndent: 16),
+                      const Divider(
+                        color: Colors.white10,
+                        height: 1,
+                        indent: 16,
+                        endIndent: 16,
+                      ),
                   ],
                 );
               }).toList(),
@@ -1869,7 +2172,11 @@ class _SettingsPageState extends State<_SettingsPage> {
               ),
               TextButton.icon(
                 onPressed: _addConstant,
-                icon: const Icon(Icons.add_rounded, size: 16, color: Color(0xFF5E81FF)),
+                icon: const Icon(
+                  Icons.add_rounded,
+                  size: 16,
+                  color: Color(0xFF5E81FF),
+                ),
                 label: const Text(
                   '追加',
                   style: TextStyle(color: Color(0xFF5E81FF), fontSize: 13),
@@ -1888,7 +2195,10 @@ class _SettingsPageState extends State<_SettingsPage> {
                 child: Text(
                   'まだ定数がありません\n右上の「追加」から追加できます',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 13),
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.3),
+                    fontSize: 13,
+                  ),
                 ),
               ),
             )
@@ -1917,7 +2227,9 @@ class _SettingsPageState extends State<_SettingsPage> {
                             child: Text(
                               () {
                                 final s = c['name'] as String? ?? '';
-                                return s.isNotEmpty ? s.substring(0, 1).toUpperCase() : '?';
+                                return s.isNotEmpty
+                                    ? s.substring(0, 1).toUpperCase()
+                                    : '?';
                               }(),
                               style: const TextStyle(
                                 color: Color(0xFF5E81FF),
@@ -1929,23 +2241,38 @@ class _SettingsPageState extends State<_SettingsPage> {
                         ),
                         title: Text(
                           c['name'] as String? ?? '',
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               _fmt((c['value'] as num? ?? 0.0).toDouble()),
-                              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13),
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.5),
+                                fontSize: 13,
+                              ),
                             ),
                             const SizedBox(width: 8),
-                            Icon(Icons.edit_outlined, size: 16, color: Colors.white.withOpacity(0.3)),
+                            Icon(
+                              Icons.edit_outlined,
+                              size: 16,
+                              color: Colors.white.withOpacity(0.3),
+                            ),
                           ],
                         ),
                         onTap: () => _editConstant(idx),
                       ),
                       if (!isLast)
-                        const Divider(color: Colors.white10, height: 1, indent: 16, endIndent: 16),
+                        const Divider(
+                          color: Colors.white10,
+                          height: 1,
+                          indent: 16,
+                          endIndent: 16,
+                        ),
                     ],
                   );
                 }).toList(),
@@ -1956,7 +2283,10 @@ class _SettingsPageState extends State<_SettingsPage> {
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
               'ユーザー定義定数は全シートの定数追加プリセットに表示されます',
-              style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.3),
+                fontSize: 11,
+              ),
             ),
           ),
 
@@ -1982,7 +2312,9 @@ class _SettingsPageState extends State<_SettingsPage> {
             ),
             child: SwitchListTile(
               contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 4),
+                horizontal: 20,
+                vertical: 4,
+              ),
               title: const Text(
                 'ボタン振動',
                 style: TextStyle(color: Colors.white, fontSize: 14),
@@ -1990,7 +2322,9 @@ class _SettingsPageState extends State<_SettingsPage> {
               subtitle: Text(
                 '電卓ボタンをタップしたときにバイブレーションでフィードバック',
                 style: TextStyle(
-                    color: Colors.white.withOpacity(0.4), fontSize: 12),
+                  color: Colors.white.withOpacity(0.4),
+                  fontSize: 12,
+                ),
               ),
               secondary: Container(
                 width: 36,
@@ -2065,9 +2399,10 @@ class _QrScannerPageState extends State<_QrScannerPage>
       duration: const Duration(milliseconds: 450),
       value: 1.0, // 初期状態は透明（アニメーション終了位置）
     );
-    _flashOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _flashController, curve: Curves.easeOut),
-    );
+    _flashOpacity = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _flashController, curve: Curves.easeOut));
     _tc = TransformationController();
     _tc.addListener(_onTransformChanged);
     _imagePageController = PageController();
@@ -2203,8 +2538,10 @@ class _QrScannerPageState extends State<_QrScannerPage>
     // 全チャンク揃ったか確認
     if (_chunks.length == _totalChunks) {
       // 順番に結合してアイテム配列を復元
-      final assembledItemsJson =
-          List.generate(_totalChunks!, (i) => _chunks[i]!).join('');
+      final assembledItemsJson = List.generate(
+        _totalChunks!,
+        (i) => _chunks[i]!,
+      ).join('');
 
       try {
         final itemsDecoded = json.decode(assembledItemsJson);
@@ -2260,9 +2597,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D0D14),
         title: Text(
-          isMulti
-              ? 'QRスキャン ($collected/$total枚)'
-              : 'QRコードをスキャン',
+          isMulti ? 'QRスキャン ($collected/$total枚)' : 'QRコードをスキャン',
           style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
@@ -2339,7 +2674,10 @@ class _QrScannerPageState extends State<_QrScannerPage>
               left: 32,
               right: 32,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.75),
                   borderRadius: BorderRadius.circular(12),
@@ -2353,8 +2691,11 @@ class _QrScannerPageState extends State<_QrScannerPage>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.link_rounded,
-                            color: Colors.orangeAccent, size: 16),
+                        const Icon(
+                          Icons.link_rounded,
+                          color: Colors.orangeAccent,
+                          size: 16,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           '連結QR: $collected/$total枚スキャン済み',
@@ -2378,9 +2719,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
                           margin: const EdgeInsets.symmetric(horizontal: 3),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: done
-                                ? Colors.tealAccent
-                                : Colors.white24,
+                            color: done ? Colors.tealAccent : Colors.white24,
                           ),
                         );
                       }),
@@ -2413,7 +2752,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
           if (!_done)
             Positioned(
               top: 0,
-              bottom:-310,
+              bottom: -310,
               left: 32,
               right: 32,
               child: Center(
@@ -2426,12 +2765,16 @@ class _QrScannerPageState extends State<_QrScannerPage>
                       borderRadius: BorderRadius.circular(24),
                     ),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 8),
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
                   ),
                   onPressed: _pickImages,
                   icon: const Icon(Icons.photo_library_outlined, size: 16),
-                  label: const Text('ファイルから読み込み',
-                      style: TextStyle(fontSize: 12)),
+                  label: const Text(
+                    'ファイルから読み込み',
+                    style: TextStyle(fontSize: 12),
+                  ),
                 ),
               ),
             ),
@@ -2480,8 +2823,9 @@ class _QrScannerPageState extends State<_QrScannerPage>
             itemBuilder: (ctx, idx) {
               return Center(
                 child: InteractiveViewer(
-                  transformationController:
-                      idx == _pickedImageIndex ? _tc : null,
+                  transformationController: idx == _pickedImageIndex
+                      ? _tc
+                      : null,
                   minScale: 0.5,
                   maxScale: 5.0,
                   child: Image.file(
@@ -2492,14 +2836,17 @@ class _QrScannerPageState extends State<_QrScannerPage>
               );
             },
           ),
-             // 連結QR進捗インジケーター
+          // 連結QR進捗インジケーター
           if (isMulti)
             Positioned(
               top: 20,
               left: 32,
               right: 32,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.75),
                   borderRadius: BorderRadius.circular(12),
@@ -2513,8 +2860,11 @@ class _QrScannerPageState extends State<_QrScannerPage>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.link_rounded,
-                            color: Colors.orangeAccent, size: 16),
+                        const Icon(
+                          Icons.link_rounded,
+                          color: Colors.orangeAccent,
+                          size: 16,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           '連結QR: $collected/$total枚スキャン済み',
@@ -2538,9 +2888,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
                           margin: const EdgeInsets.symmetric(horizontal: 3),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: done
-                                ? Colors.tealAccent
-                                : Colors.white24,
+                            color: done ? Colors.tealAccent : Colors.white24,
                           ),
                         );
                       }),
@@ -2558,15 +2906,16 @@ class _QrScannerPageState extends State<_QrScannerPage>
               child: Center(
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 6),
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.7),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '${_pickedImageIndex + 1} / $total  ← スワイプで切り替え →',
-                    style: const TextStyle(
-                        color: Colors.white70, fontSize: 13),
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ),
               ),
@@ -2608,8 +2957,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         onPressed: _exitImageMode,
                         icon: const Icon(Icons.camera_alt_rounded, size: 18),
@@ -2620,19 +2968,16 @@ class _QrScannerPageState extends State<_QrScannerPage>
                     Expanded(
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              Colors.tealAccent.withOpacity(0.15),
+                          backgroundColor: Colors.tealAccent.withOpacity(0.15),
                           foregroundColor: Colors.tealAccent,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          padding:
-                              const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         onPressed: _isAnalyzing
                             ? null
-                            : () =>
-                                _analyzePickedImage(_pickedImageIndex),
+                            : () => _analyzePickedImage(_pickedImageIndex),
                         icon: _isAnalyzing
                             ? const SizedBox(
                                 width: 16,
@@ -2643,9 +2988,10 @@ class _QrScannerPageState extends State<_QrScannerPage>
                                 ),
                               )
                             : const Icon(
-                                Icons.qr_code_scanner_rounded, size: 18),
-                        label: Text(
-                            _isAnalyzing ? '解析中...' : 'QRを読み込む'),
+                                Icons.qr_code_scanner_rounded,
+                                size: 18,
+                              ),
+                        label: Text(_isAnalyzing ? '解析中...' : 'QRを読み込む'),
                       ),
                     ),
                   ],
@@ -2657,5 +3003,4 @@ class _QrScannerPageState extends State<_QrScannerPage>
       ),
     );
   }
-
 }

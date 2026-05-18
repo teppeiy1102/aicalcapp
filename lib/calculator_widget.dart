@@ -2562,6 +2562,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final headerTextColor = isDark ? Colors.white : Colors.black;
     final headerIconColor = isDark ? Colors.white70 : Colors.black54;
     return Container(
+      margin: EdgeInsets.only(bottom: 46),
       constraints: BoxConstraints(
         // minHeight: MediaQuery.of(context).size.height-230,
       ),
@@ -2756,6 +2757,26 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                 return (constants[constIdx]['value'] as num? ??
                                         0.0)
                                     .toDouble();
+                              }
+                              return fallback;
+                            }
+                            // 論理式リンク
+                            if (source['type'] == 'logic') {
+                              final logicId = source['logicId'] as String?;
+                              if (logicId != null) {
+                                Map<String, dynamic>? logic;
+                                for (final l in _logicItems) {
+                                  if (l['id'] == logicId) {
+                                    logic = l;
+                                    break;
+                                  }
+                                }
+                                if (logic != null) {
+                                  final isTrue = _evalLogicItem(logic);
+                                  final trueVal = (source['trueVal'] as num? ?? 1.0).toDouble();
+                                  final falseVal = (source['falseVal'] as num? ?? 0.0).toDouble();
+                                  return isTrue ? trueVal : falseVal;
+                                }
                               }
                               return fallback;
                             }
@@ -3043,19 +3064,21 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                 false,
                                             onToggleExpose: () =>
                                                 _toggleExposed(ci),
-                                            onLinkSettingsPressed: (mode, fieldKey) {
-                                              if (mode == 'source') {
-                                                _showSheetLinkSettingsDialog(
-                                                  initialSrcCalcIdx: ci,
-                                                  initialSrcField: fieldKey,
-                                                );
-                                              } else {
-                                                _showSheetLinkSettingsDialog(
-                                                  initialDestCalcIdx: ci,
-                                                  initialDestField: fieldKey,
-                                                );
-                                              }
-                                            },
+                                            onLinkSettingsPressed:
+                                                (mode, fieldKey) {
+                                                  if (mode == 'source') {
+                                                    _showSheetLinkSettingsDialog(
+                                                      initialSrcCalcIdx: ci,
+                                                      initialSrcField: fieldKey,
+                                                    );
+                                                  } else {
+                                                    _showSheetLinkSettingsDialog(
+                                                      initialDestCalcIdx: ci,
+                                                      initialDestField:
+                                                          fieldKey,
+                                                    );
+                                                  }
+                                                },
                                             logicItems: _logicItems,
                                             onAddLogicItem: _onAddLogicItem,
                                             dragHandle:
@@ -3175,6 +3198,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                 _updateLogicItem(itemId, data),
                                             onDelete: () =>
                                                 _deleteLogicItem(itemId),
+                                            onPickLinkSource: () async {
+                                              // TODO: Show link picker
+                                              return null;
+                                            },
+                                            getSourceRowName: (_) => 'リンク',
                                             dragHandle:
                                                 ReorderableDragStartListener(
                                                   index: di,
@@ -3336,7 +3364,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     }
 
     final result =
-        await showModalBottomSheet<({String instruction, bool isModify, Uint8List? imageBytes})>(
+        await showModalBottomSheet<
+          ({String instruction, bool isModify, Uint8List? imageBytes})
+        >(
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
@@ -3347,8 +3377,21 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           ),
         );
 
-    if (result == null || (result.instruction.isEmpty && result.imageBytes == null)) return;
+    if (result == null ||
+        (result.instruction.isEmpty && result.imageBytes == null))
+      return;
     if (!mounted) return;
+
+    final canUse = await RevenueCatService.consumeUse();
+    if (!canUse) {
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const StorePage()),
+        );
+      }
+      return;
+    }
 
     final instruction = result.instruction;
 
@@ -3412,8 +3455,9 @@ Example output:
 
     try {
       final String res;
-      final systemPrompt = "You are a calculator generator AI. Return a JSON array of formula objects.";
-      
+      final systemPrompt =
+          "You are a calculator generator AI. Return a JSON array of formula objects.";
+
       if (result.imageBytes != null) {
         res = await ai.queryWithImage(
           prompt,
@@ -3421,10 +3465,7 @@ Example output:
           systemPrompt: systemPrompt,
         );
       } else {
-        res = await ai.query(
-          prompt,
-          systemPrompt: systemPrompt,
-        );
+        res = await ai.query(prompt, systemPrompt: systemPrompt);
       }
 
       final jsonStart = res.indexOf('[');
@@ -3709,4 +3750,3 @@ Example output:
     );
   }
 }
-

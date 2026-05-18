@@ -14,16 +14,17 @@ class CalcHistoryEntry {
   });
 
   Map<String, dynamic> toJson() => {
-        'expression': expression,
-        'result': result,
-        'dateTime': dateTime.toIso8601String(),
-      };
+    'expression': expression,
+    'result': result,
+    'dateTime': dateTime.toIso8601String(),
+  };
 
   factory CalcHistoryEntry.fromJson(Map<String, dynamic> json) =>
       CalcHistoryEntry(
         expression: json['expression'] as String? ?? '',
         result: json['result'] as String? ?? '',
-        dateTime: DateTime.tryParse(json['dateTime'] as String? ?? '') ??
+        dateTime:
+            DateTime.tryParse(json['dateTime'] as String? ?? '') ??
             DateTime.now(),
       );
 }
@@ -52,8 +53,10 @@ class CalcHistoryManager {
         final list = json.decode(jsonStr) as List<dynamic>;
         _entries.clear();
         _entries.addAll(
-          list.map((e) =>
-              CalcHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map))),
+          list.map(
+            (e) =>
+                CalcHistoryEntry.fromJson(Map<String, dynamic>.from(e as Map)),
+          ),
         );
       }
     } catch (_) {
@@ -93,8 +96,7 @@ class CalcHistoryManager {
   void _save() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final jsonStr =
-          json.encode(_entries.map((e) => e.toJson()).toList());
+      final jsonStr = json.encode(_entries.map((e) => e.toJson()).toList());
       await prefs.setString(_kPrefsKey, jsonStr);
     } catch (_) {}
   }

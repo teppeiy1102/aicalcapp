@@ -84,6 +84,25 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
             }
             return fallback;
           }
+          if (source['type'] == 'logic') {
+            final logicId = source['logicId'] as String?;
+            if (logicId != null) {
+              Map<String, dynamic>? logic;
+              for (final l in _logicItems) {
+                if (l['id'] == logicId) {
+                  logic = l;
+                  break;
+                }
+              }
+              if (logic != null) {
+                final isTrue = _CalculatorWidgetState._evalLogicItem(logic);
+                final trueVal = (source['trueVal'] as num? ?? 1.0).toDouble();
+                final falseVal = (source['falseVal'] as num? ?? 0.0).toDouble();
+                return isTrue ? trueVal : falseVal;
+              }
+            }
+            return fallback;
+          }
           final int sRowIdx = source['rowIdx'] as int? ?? 0;
           final String sTarget = source['target'] as String? ?? 'result';
           if (sRowIdx < 0 || sRowIdx >= items.length) return fallback;
@@ -261,7 +280,8 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
         ? Colors.white.withOpacity(0.05)
         : Colors.black.withOpacity(0.04);
 
-    double colWidth(String key) => key == 'name' ? 150.0 : 96.0;
+    double colWidth(String key) => key == 'name' ? 130.0 : 110.0;
+    Color colColor(String key) => key == 'name' ? Colors.black : Colors.black87;
 
     // セルの表示文字列（リンク解決済み値・変換オプション表示対応）
     String cellValue(String key, int rowIdx) {
@@ -314,107 +334,16 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
       return '';
     }
 
-    // 答えセルをタップしたときに計算式をアラートで表示
-    void showResultFormula(int rowIdx) {
-      final item = items[rowIdx];
-      final resolved = resolvedRows[rowIdx];
-      final precision = item['precision'] as int? ?? 2;
-      final unit1 = item['unit1'] as String? ?? '';
-      final unit2 = item['unit2'] as String? ?? '';
-      final unitResult = item['unitResult'] as String? ?? '';
-      final inputTransform = item['inputTransform'] as String?;
-      final inputPowExp = (item['inputPowExp'] as num? ?? 2.0).toDouble();
-      final operandTransform = item['operandTransform'] as String?;
-      final operandPowExp = (item['operandPowExp'] as num? ?? 2.0).toDouble();
-      final op = item['op'] as String? ?? '+';
-      final resolvedOthers = resolved['others'] as List;
-      final rawOthers = item['others'] as List? ?? [];
-
-      // 列ラベルを取得（カスタム設定があればそれを使用）
-      String colLabel(String colKey) {
-        final col = columns.firstWhere(
-          (c) => c['key'] == colKey,
-          orElse: () => <String, dynamic>{'label': colKey},
-        );
-        return col['label'] as String;
-      }
-
-      final inputRaw = resolved['input'] as double;
-      final operandRaw = resolved['operand'] as double;
-
-      // 式の各パーツを構築
-      final parts = <String>[];
-      parts.add(
-        '${colLabel('input')}: ${termWithTransform(inputRaw, inputTransform, inputPowExp, precision)}${unit1.isNotEmpty ? ' $unit1' : ''}',
-      );
-      parts.add(
-        '  $op ${colLabel('operand')}: ${termWithTransform(operandRaw, operandTransform, operandPowExp, precision)}${unit2.isNotEmpty ? ' $unit2' : ''}',
-      );
-      for (int i = 0; i < resolvedOthers.length; i++) {
-        final o = resolvedOthers[i] as Map;
-        final rawO = i < rawOthers.length
-            ? rawOthers[i] as Map
-            : <String, dynamic>{};
-        final oVal = (o['val'] as num? ?? 0.0).toDouble();
-        final oOp = rawO['op'] as String? ?? '+';
-        final oTransform = rawO['transform'] as String?;
-        final oPowExp = (rawO['powExp'] as num? ?? 2.0).toDouble();
-        final oUnit = rawO['unit'] as String? ?? '';
-        parts.add(
-          '  $oOp ${colLabel('other_$i')}: ${termWithTransform(oVal, oTransform, oPowExp, precision)}${oUnit.isNotEmpty ? ' $oUnit' : ''}',
-        );
-      }
-      parts.add(
-        '= ${fmtNum(finalResults[rowIdx], precision)}${unitResult.isNotEmpty ? ' $unitResult' : ''}',
-      );
-
-      showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: Colors.black,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            item['name'] as String? ?? '答えの計算式',
-            style: const TextStyle(
-              color: Colors.white,
-              fontFamily: 'ZenOldMincho',
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Text(
-            parts.join('\n'),
-            style: const TextStyle(
-              color: Colors.white70,
-              fontFamily: 'ZenOldMincho',
-              fontSize: 15,
-              height: 1.9,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text(
-                '閉じる',
-                style: TextStyle(color: Color(0xFF5E81FF)),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
     bool isResultCol(String key) => key == 'result';
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 30),
       padding:
           widget.contentPadding ??
-          const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(0),
         border: Border.all(
           color: isDark
               ? Colors.white.withOpacity(0.03)
@@ -491,6 +420,7 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                       final key = col['key'] as String;
                       final label = col['label'] as String;
                       final w = colWidth(key);
+                      final c = colColor(key);
                       final isLast = col == visibleColumns.last;
                       final isEditable = key != 'result' && key != 'name';
                       final isNameCol = key == 'name';
@@ -580,6 +510,7 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                         children: visibleColumns.map((col) {
                           final key = col['key'] as String;
                           final w = colWidth(key);
+                          final c = colColor(key);
                           final isLastCol = col == visibleColumns.last;
                           final val = cellValue(key, rowIdx);
                           final isRes = isResultCol(key);
@@ -600,9 +531,10 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                                       : null),
                             child: Container(
                               width: w,
+                              height: 46,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 1,
-                                vertical: 14,
+                                vertical: 1,
                               ),
                               decoration: BoxDecoration(
                                 color: isRes
@@ -626,18 +558,16 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                                     child: Text(
                                       val,
                                       textAlign: TextAlign.center,
-                                      maxLines: 1,
+                                      maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: isRes
                                             ? fgColor
-                                            : (isDark
-                                                  ? Colors.white70
-                                                  : Colors.black),
-                                        fontSize: isRes ? 16 : 15,
+                                            : (isDark ? Colors.white : c),
+                                        fontSize: isRes ? 13 : 12,
                                         fontWeight: isRes
                                             ? FontWeight.w700
-                                            : FontWeight.w400,
+                                            : FontWeight.w500,
                                         fontFamily: 'ZenOldMincho',
                                       ),
                                     ),
@@ -676,7 +606,9 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                 ),
               ),
               ...logicItems.map((logicItem) {
-                final exprStr = _CalculatorWidgetState._buildLogicExprString(logicItem);
+                final exprStr = _CalculatorWidgetState._buildLogicExprString(
+                  logicItem,
+                );
                 final isTrue = _CalculatorWidgetState._evalLogicItem(logicItem);
                 final logicName = logicItem['name'] as String? ?? '';
                 final itemId = logicItem['id'] as String? ?? '';

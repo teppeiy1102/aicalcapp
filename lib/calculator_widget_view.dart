@@ -9,11 +9,12 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
     final fgColor = isDark ? Colors.white : Colors.black;
     final subColor = isDark ? Colors.white54 : Colors.black45;
     return Container(
+      margin: const EdgeInsets.only(bottom: 5, top: 10),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.amberAccent.withOpacity(isDark ? 0.07 : 0.12),
+        // color: Colors.amberAccent.withOpacity(isDark ? 0.07 : 0.12),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.amberAccent.withOpacity(0.22)),
+        border: Border.all(color: subColor.withOpacity(0.22)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -23,13 +24,13 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
               const Icon(
                 Icons.push_pin_outlined,
                 size: 12,
-                color: Colors.amberAccent,
+                color: Colors.amber,
               ),
               const SizedBox(width: 5),
               Text(
                 '定数',
                 style: TextStyle(
-                  color: Colors.amberAccent,
+                  color: Colors.amber,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'ZenOldMincho',
@@ -58,9 +59,6 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                       ? Colors.white.withOpacity(0.05)
                       : Colors.black.withOpacity(0.04),
                   borderRadius: BorderRadius.circular(7),
-                  border: Border.all(
-                    color: Colors.amberAccent.withOpacity(0.3),
-                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -88,7 +86,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                       style: TextStyle(
                         color: fgColor,
                         fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                        //fontWeight: FontWeight.bold,
                         fontFamily: 'ZenOldMincho',
                       ),
                     ),
@@ -173,6 +171,26 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
         final constIdx = source['constIdx'] as int? ?? 0;
         if (constIdx >= 0 && constIdx < constants.length) {
           return (constants[constIdx]['value'] as num? ?? 0.0).toDouble();
+        }
+        return fallback;
+      }
+      if (source['type'] == 'logic') {
+        final logicId = source['logicId'] as String?;
+        if (logicId != null) {
+          final logicItems = widget.config.data['logicItems'] as List? ?? [];
+          Map<String, dynamic>? logic;
+          for (final l in logicItems) {
+            if (l is Map && l['id'] == logicId) {
+              logic = Map<String, dynamic>.from(l);
+              break;
+            }
+          }
+          if (logic != null) {
+            final isTrue = _CalculatorWidgetState._evalLogicItem(logic);
+            final trueVal = (source['trueVal'] as num? ?? 1.0).toDouble();
+            final falseVal = (source['falseVal'] as num? ?? 0.0).toDouble();
+            return isTrue ? trueVal : falseVal;
+          }
         }
         return fallback;
       }
@@ -330,6 +348,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
         : (isDark ? const Color(0xFF1A1A22) : const Color(0xFFFAFAFA));
 
     return Container(
+      margin: EdgeInsets.only(bottom: 35),
       padding:
           widget.contentPadding ??
           const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
@@ -450,10 +469,10 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                                 color: isDark
                                     ? Colors.white.withOpacity(0.55)
                                     : Colors.black.withOpacity(0.55),
-                                  fontSize: 13,
-                                  fontFamily: 'ZenOldMincho',
-                                  height: 1.6,
-                                ),
+                                fontSize: 13,
+                                fontFamily: 'ZenOldMincho',
+                                height: 1.6,
+                              ),
                             ),
                           ),
                         ],
@@ -483,12 +502,20 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                       ),
                     );
                   }
-                  final exprStr = _CalculatorWidgetState._buildLogicExprString(logicItem);
-                  final isTrue = _CalculatorWidgetState._evalLogicItem(logicItem);
+                  final exprStr = _CalculatorWidgetState._buildLogicExprString(
+                    logicItem,
+                  );
+                  final isTrue = _CalculatorWidgetState._evalLogicItem(
+                    logicItem,
+                  );
                   final logicName = logicItem['name'] as String? ?? '';
                   widgets.add(
                     Padding(
-                      padding: const EdgeInsets.only(left: 10, bottom: 4),
+                      padding: const EdgeInsets.only(
+                        left: 10,
+                        bottom: 4,
+                        right: 10,
+                      ),
                       child: Row(
                         children: [
                           Icon(
@@ -637,7 +664,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                                 ),
                               ),
                               TextSpan(
-                                text: ' = ',
+                                text: '  =  ',
                                 style: TextStyle(
                                   color: isDark
                                       ? Colors.white24
@@ -649,7 +676,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                                 text: resultStr,
                                 style: TextStyle(
                                   color: isDark ? Colors.white : Colors.black,
-                                  fontSize: 19,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                   fontFamily: 'ZenOldMincho',
                                   letterSpacing: -0.5,

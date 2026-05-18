@@ -21,6 +21,7 @@ dependencies:
   mobile_scanner: ^7.2.0
   gal: ^2.3.0
   flutter_launcher_icons:
+  purchases_flutter: ^10.1.0
 
 dev_dependencies:
   flutter_test:

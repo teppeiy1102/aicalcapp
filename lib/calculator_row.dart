@@ -43,12 +43,16 @@ class _CalculatorRow extends StatelessWidget {
   final bool nameVisible;
   final Widget? dragHandle;
   final bool wrapFormula;
+
   /// 表モードのカスタム列ラベル (key: 'input'/'operand'/'other_N'/'result', value: label)
   final Map<String, String>? termLabels;
+
   /// 他のシートに開放中かどうか
   final bool exposed;
+
   /// 開放状態をトグルするコールバック
   final VoidCallback? onToggleExpose;
+
   /// リンク設定ボタン（リンク元/リンク先）が押されたときのコールバック
   final void Function(String mode, String fieldKey)? onLinkSettingsPressed;
   final List<dynamic> logicItems;
@@ -126,7 +130,7 @@ class _CalculatorRow extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor:Colors.black,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -712,7 +716,9 @@ class _CalculatorRow extends StatelessWidget {
     }
     if (source['type'] == 'constant') {
       final ci = source['constIdx'] as int? ?? 0;
-      final name = ci < constants.length ? constants[ci]['name'] as String? ?? '定数' : '定数';
+      final name = ci < constants.length
+          ? constants[ci]['name'] as String? ?? '定数'
+          : '定数';
       return '$name（定数）';
     }
     final rowIdx = source['rowIdx'] as int? ?? 0;
@@ -752,7 +758,9 @@ class _CalculatorRow extends StatelessWidget {
     }
     if (source != null && source['type'] == 'constant') {
       final ci = source['constIdx'] as int? ?? 0;
-      return ci < constants.length ? constants[ci]['name'] as String? ?? '定数' : '定数';
+      return ci < constants.length
+          ? constants[ci]['name'] as String? ?? '定数'
+          : '定数';
     }
     if (source == null) {
       if (allItems.isEmpty) return '';
@@ -769,7 +777,9 @@ class _CalculatorRow extends StatelessWidget {
     final logic = _findLogicItem(logicId);
     if (logic == null) return '不明な論理式';
     final name = logic['name'] as String? ?? '';
-    final expr = _CalculatorWidgetState._buildLogicExprString(logic as Map<String, dynamic>);
+    final expr = _CalculatorWidgetState._buildLogicExprString(
+      logic as Map<String, dynamic>,
+    );
     return name.isNotEmpty ? '$name ($expr)' : expr;
   }
 
@@ -1130,7 +1140,10 @@ class _CalculatorRow extends StatelessWidget {
   void _editInput(BuildContext context) async {
     final _inputText = input.toString();
     final ctrl = TextEditingController(text: _inputText)
-      ..selection = TextSelection(baseOffset: 0, extentOffset: _inputText.length);
+      ..selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _inputText.length,
+      );
     final unitCtrl = TextEditingController(text: unit1);
     bool tempLink = inputLink;
     Map<String, dynamic>? tempLinkSource = inputLinkSource;
@@ -1228,26 +1241,39 @@ class _CalculatorRow extends StatelessWidget {
                                     tempLinkSource = null;
                                   }),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
-                                              ? Colors.deepPurpleAccent
-                                              : Colors.blueAccent)
-                                          .withOpacity(0.2),
+                                      color:
+                                          (tempLinkSource != null &&
+                                                      tempLinkSource!['type'] ==
+                                                          'logic'
+                                                  ? Colors.deepPurpleAccent
+                                                  : Colors.blueAccent)
+                                              .withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(6),
                                       border: Border.all(
-                                        color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
-                                                ? Colors.deepPurpleAccent
-                                                : Colors.blueAccent)
-                                            .withOpacity(0.5),
+                                        color:
+                                            (tempLinkSource != null &&
+                                                        tempLinkSource!['type'] ==
+                                                            'logic'
+                                                    ? Colors.deepPurpleAccent
+                                                    : Colors.blueAccent)
+                                                .withOpacity(0.5),
                                       ),
                                     ),
                                     child: Text(
-                                      tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                      tempLinkSource != null &&
+                                              tempLinkSource!['type'] == 'logic'
                                           ? '論理式リンク中'
                                           : 'リンク中',
                                       style: TextStyle(
-                                        color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                        color:
+                                            tempLinkSource != null &&
+                                                tempLinkSource!['type'] ==
+                                                    'logic'
                                             ? Colors.purpleAccent
                                             : Colors.blueAccent,
                                         fontSize: 12,
@@ -1272,7 +1298,8 @@ class _CalculatorRow extends StatelessWidget {
                             if (v == v.truncateToDouble() && v.abs() < 1e15) {
                               ctrl.text = v.toInt().toString();
                             } else {
-                              ctrl.text = v.toStringAsFixed(15)
+                              ctrl.text = v
+                                  .toStringAsFixed(15)
                                   .replaceAll(RegExp(r'0+$'), '')
                                   .replaceAll(RegExp(r'\.$'), '');
                             }
@@ -1322,14 +1349,24 @@ class _CalculatorRow extends StatelessWidget {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
-                                ? Colors.purple.withOpacity(0.15)
-                                : (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.1)),
+                        color:
+                            (tempLinkSource != null &&
+                                tempLinkSource!['type'] == 'logic'
+                            ? Colors.purple.withOpacity(0.15)
+                            : (tempLink
+                                      ? Colors.blueAccent
+                                      : Colors.orangeAccent)
+                                  .withOpacity(0.1)),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                          color:
+                              (tempLinkSource != null &&
+                                  tempLinkSource!['type'] == 'logic'
                               ? Colors.purpleAccent.withOpacity(0.4)
-                              : (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.3)),
+                              : (tempLink
+                                        ? Colors.blueAccent
+                                        : Colors.orangeAccent)
+                                    .withOpacity(0.3)),
                         ),
                       ),
                       child: Column(
@@ -1338,26 +1375,36 @@ class _CalculatorRow extends StatelessWidget {
                           Row(
                             children: [
                               Icon(
-                                tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                tempLinkSource != null &&
+                                        tempLinkSource!['type'] == 'logic'
                                     ? Icons.rule_rounded
                                     : (tempLink ? Icons.link : Icons.link_off),
                                 size: 14,
-                                color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                color:
+                                    tempLinkSource != null &&
+                                        tempLinkSource!['type'] == 'logic'
                                     ? Colors.purpleAccent
-                                    : (tempLink ? Colors.blueAccent : Colors.orangeAccent),
+                                    : (tempLink
+                                          ? Colors.blueAccent
+                                          : Colors.orangeAccent),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                  tempLinkSource != null &&
+                                          tempLinkSource!['type'] == 'logic'
                                       ? '論理式リンク: ${_getLogicLabel(tempLinkSource!['logicId'])}'
                                       : (tempLink
-                                          ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
-                                          : '元リンク: ${_getSourceLabel(tempLinkSource)}'),
+                                            ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
+                                            : '元リンク: ${_getSourceLabel(tempLinkSource)}'),
                                   style: TextStyle(
-                                    color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                    color:
+                                        tempLinkSource != null &&
+                                            tempLinkSource!['type'] == 'logic'
                                         ? Colors.purpleAccent
-                                        : (tempLink ? Colors.blueAccent : Colors.orangeAccent),
+                                        : (tempLink
+                                              ? Colors.blueAccent
+                                              : Colors.orangeAccent),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -1378,7 +1425,8 @@ class _CalculatorRow extends StatelessWidget {
                                 )
                               else
                                 GestureDetector(
-                                  onTap: () => setSheetState(() => tempLink = true),
+                                  onTap: () =>
+                                      setSheetState(() => tempLink = true),
                                   child: const Text(
                                     'リンクに戻す',
                                     style: TextStyle(
@@ -1389,7 +1437,8 @@ class _CalculatorRow extends StatelessWidget {
                                 ),
                             ],
                           ),
-                          if (tempLinkSource != null && tempLinkSource!['type'] == 'logic') ...[
+                          if (tempLinkSource != null &&
+                              tempLinkSource!['type'] == 'logic') ...[
                             const SizedBox(height: 12),
                             const Divider(color: Colors.white12, height: 1),
                             const SizedBox(height: 8),
@@ -1397,25 +1446,39 @@ class _CalculatorRow extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         '真の場合の値',
-                                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 11,
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
                                       TextField(
                                         controller: trueValCtrl,
-                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                        ),
                                         decoration: const InputDecoration(
                                           hintText: '1.0',
                                           isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 8,
+                                          ),
                                           border: OutlineInputBorder(),
                                         ),
                                         onChanged: (v) {
-                                          tempLinkSource!['trueVal'] = double.tryParse(v) ?? 1.0;
+                                          tempLinkSource!['trueVal'] =
+                                              double.tryParse(v) ?? 1.0;
                                         },
                                       ),
                                     ],
@@ -1424,25 +1487,39 @@ class _CalculatorRow extends StatelessWidget {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         '偽の場合の値',
-                                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 11,
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
                                       TextField(
                                         controller: falseValCtrl,
-                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                        ),
                                         decoration: const InputDecoration(
                                           hintText: '0.0',
                                           isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 8,
+                                          ),
                                           border: OutlineInputBorder(),
                                         ),
                                         onChanged: (v) {
-                                          tempLinkSource!['falseVal'] = double.tryParse(v) ?? 0.0;
+                                          tempLinkSource!['falseVal'] =
+                                              double.tryParse(v) ?? 0.0;
                                         },
                                       ),
                                     ],
@@ -1459,7 +1536,10 @@ class _CalculatorRow extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 8, bottom: 4),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(8),
@@ -1468,19 +1548,34 @@ class _CalculatorRow extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('リンクの設定', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          const Text(
+                            'リンクの設定',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           Row(
                             children: [
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  icon: const Icon(Icons.upload_rounded, size: 16),
-                                  label: const Text('リンク元に設定', style: TextStyle(fontSize: 12)),
+                                  icon: const Icon(
+                                    Icons.upload_rounded,
+                                    size: 16,
+                                  ),
+                                  label: const Text(
+                                    'リンク元に設定',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blueAccent.withOpacity(0.2),
+                                    backgroundColor: Colors.blueAccent
+                                        .withOpacity(0.2),
                                     foregroundColor: Colors.blueAccent,
                                     elevation: 0,
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
                                   ),
                                   onPressed: () {
                                     Navigator.pop(ctx);
@@ -1493,13 +1588,23 @@ class _CalculatorRow extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  icon: const Icon(Icons.download_rounded, size: 16),
-                                  label: const Text('リンク先に設定', style: TextStyle(fontSize: 12)),
+                                  icon: const Icon(
+                                    Icons.download_rounded,
+                                    size: 16,
+                                  ),
+                                  label: const Text(
+                                    'リンク先に設定',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.cyan.withOpacity(0.2),
+                                    backgroundColor: Colors.cyan.withOpacity(
+                                      0.2,
+                                    ),
                                     foregroundColor: Colors.cyan,
                                     elevation: 0,
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
                                   ),
                                   onPressed: () {
                                     Navigator.pop(ctx);
@@ -1516,25 +1621,51 @@ class _CalculatorRow extends StatelessWidget {
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              const Icon(Icons.rule_rounded, color: Colors.purpleAccent, size: 16),
+                              const Icon(
+                                Icons.rule_rounded,
+                                color: Colors.purpleAccent,
+                                size: 16,
+                              ),
                               const SizedBox(width: 6),
-                              const Text('論理式の紐付け', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                              const Text(
+                                '論理式の紐付け',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
                               const Spacer(),
                               TextButton.icon(
-                                icon: const Icon(Icons.add_rounded, size: 14, color: Colors.purpleAccent),
-                                label: const Text('論理式を追加', style: TextStyle(color: Colors.purpleAccent, fontSize: 12)),
+                                icon: const Icon(
+                                  Icons.add_rounded,
+                                  size: 14,
+                                  color: Colors.purpleAccent,
+                                ),
+                                label: const Text(
+                                  '論理式を追加',
+                                  style: TextStyle(
+                                    color: Colors.purpleAccent,
+                                    fontSize: 12,
+                                  ),
+                                ),
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,
                                   minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 onPressed: () async {
-                                  final newLogic = await showDialog<Map<String, dynamic>>(
-                                    context: context,
-                                    builder: (ctx) => const _LogicItemEditDialog(initial: null),
-                                  );
+                                  final newLogic =
+                                      await showDialog<Map<String, dynamic>>(
+                                        context: context,
+                                        builder: (ctx) =>
+                                            const _LogicItemEditDialog(
+                                              initial: null,
+                                            ),
+                                      );
                                   if (newLogic != null) {
-                                    final newId = 'logic_${DateTime.now().millisecondsSinceEpoch}';
+                                    final newId =
+                                        'logic_${DateTime.now().millisecondsSinceEpoch}';
                                     final newLogicItem = {
                                       ...newLogic,
                                       'id': newId,
@@ -1563,26 +1694,44 @@ class _CalculatorRow extends StatelessWidget {
                           if (localLogicItems.isEmpty)
                             const Text(
                               '設定済みの論理式はありません。上のボタンから追加してください。',
-                              style: TextStyle(color: Colors.white38, fontSize: 11),
+                              style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 11,
+                              ),
                             )
                           else
                             DropdownButtonFormField<String>(
                               dropdownColor: Colors.black,
-                              hint: const Text('論理式を選択', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                              hint: const Text(
+                                '論理式を選択',
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 12,
+                                ),
+                              ),
                               isExpanded: true,
                               decoration: const InputDecoration(
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 8,
+                                ),
                                 border: OutlineInputBorder(),
                               ),
                               items: localLogicItems.map((logic) {
                                 final name = logic['name'] as String? ?? '';
-                                final expr = _CalculatorWidgetState._buildLogicExprString(logic);
+                                final expr =
+                                    _CalculatorWidgetState._buildLogicExprString(
+                                      logic,
+                                    );
                                 return DropdownMenuItem<String>(
                                   value: logic['id'] as String,
                                   child: Text(
                                     name.isNotEmpty ? '$name: $expr' : expr,
-                                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                    ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 );
@@ -1594,10 +1743,13 @@ class _CalculatorRow extends StatelessWidget {
                                     tempLinkSource = {
                                       'type': 'logic',
                                       'logicId': selectedId,
-                                      'trueVal': double.tryParse(ctrl.text) ?? 1.0,
+                                      'trueVal':
+                                          double.tryParse(ctrl.text) ?? 1.0,
                                       'falseVal': 0.0,
                                     };
-                                    trueValCtrl.text = (double.tryParse(ctrl.text) ?? 1.0).toString();
+                                    trueValCtrl.text =
+                                        (double.tryParse(ctrl.text) ?? 1.0)
+                                            .toString();
                                     falseValCtrl.text = '0.0';
                                   });
                                 }
@@ -1622,24 +1774,45 @@ class _CalculatorRow extends StatelessWidget {
                         final c = e.value;
                         final name = c['name'] as String? ?? '';
                         final val = (c['value'] as num? ?? 0.0);
-                        final isSelected = tempLink &&
+                        final isSelected =
+                            tempLink &&
                             tempLinkSource != null &&
                             tempLinkSource!['type'] == 'constant' &&
                             tempLinkSource!['constIdx'] == ci;
                         return GestureDetector(
                           onTap: () => setSheetState(() {
                             tempLink = true;
-                            tempLinkSource = {'type': 'constant', 'constIdx': ci};
+                            tempLinkSource = {
+                              'type': 'constant',
+                              'constIdx': ci,
+                            };
                           }),
                           child: Container(
                             margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isSelected ? Colors.amberAccent.withOpacity(0.2) : Colors.white.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: isSelected ? Colors.amberAccent : Colors.white24),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
                             ),
-                            child: Text('$name = $val', style: TextStyle(color: isSelected ? Colors.amberAccent : Colors.white70, fontSize: 12)),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Colors.amberAccent.withOpacity(0.2)
+                                  : Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.amberAccent
+                                    : Colors.white24,
+                              ),
+                            ),
+                            child: Text(
+                              '$name = $val',
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.amberAccent
+                                    : Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
                           ),
                         );
                       }).toList(),
@@ -1883,7 +2056,10 @@ class _CalculatorRow extends StatelessWidget {
   void _editOperand(BuildContext context) async {
     final _operandText = operand.toString();
     final ctrl = TextEditingController(text: _operandText)
-      ..selection = TextSelection(baseOffset: 0, extentOffset: _operandText.length);
+      ..selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _operandText.length,
+      );
     final unitCtrl = TextEditingController(text: unit2);
     bool tempLink = operandLink;
     Map<String, dynamic>? tempLinkSource = operandLinkSource;
@@ -1981,26 +2157,39 @@ class _CalculatorRow extends StatelessWidget {
                                     tempLinkSource = null;
                                   }),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
-                                              ? Colors.deepPurpleAccent
-                                              : Colors.blueAccent)
-                                          .withOpacity(0.2),
+                                      color:
+                                          (tempLinkSource != null &&
+                                                      tempLinkSource!['type'] ==
+                                                          'logic'
+                                                  ? Colors.deepPurpleAccent
+                                                  : Colors.blueAccent)
+                                              .withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(6),
                                       border: Border.all(
-                                        color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
-                                                ? Colors.deepPurpleAccent
-                                                : Colors.blueAccent)
-                                            .withOpacity(0.5),
+                                        color:
+                                            (tempLinkSource != null &&
+                                                        tempLinkSource!['type'] ==
+                                                            'logic'
+                                                    ? Colors.deepPurpleAccent
+                                                    : Colors.blueAccent)
+                                                .withOpacity(0.5),
                                       ),
                                     ),
                                     child: Text(
-                                      tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                      tempLinkSource != null &&
+                                              tempLinkSource!['type'] == 'logic'
                                           ? '論理式リンク中'
                                           : 'リンク中',
                                       style: TextStyle(
-                                        color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                        color:
+                                            tempLinkSource != null &&
+                                                tempLinkSource!['type'] ==
+                                                    'logic'
                                             ? Colors.purpleAccent
                                             : Colors.blueAccent,
                                         fontSize: 12,
@@ -2025,7 +2214,8 @@ class _CalculatorRow extends StatelessWidget {
                             if (v == v.truncateToDouble() && v.abs() < 1e15) {
                               ctrl.text = v.toInt().toString();
                             } else {
-                              ctrl.text = v.toStringAsFixed(15)
+                              ctrl.text = v
+                                  .toStringAsFixed(15)
                                   .replaceAll(RegExp(r'0+$'), '')
                                   .replaceAll(RegExp(r'\.$'), '');
                             }
@@ -2074,14 +2264,24 @@ class _CalculatorRow extends StatelessWidget {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
-                                ? Colors.purple.withOpacity(0.15)
-                                : (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.1)),
+                        color:
+                            (tempLinkSource != null &&
+                                tempLinkSource!['type'] == 'logic'
+                            ? Colors.purple.withOpacity(0.15)
+                            : (tempLink
+                                      ? Colors.blueAccent
+                                      : Colors.orangeAccent)
+                                  .withOpacity(0.1)),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                          color:
+                              (tempLinkSource != null &&
+                                  tempLinkSource!['type'] == 'logic'
                               ? Colors.purpleAccent.withOpacity(0.4)
-                              : (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.3)),
+                              : (tempLink
+                                        ? Colors.blueAccent
+                                        : Colors.orangeAccent)
+                                    .withOpacity(0.3)),
                         ),
                       ),
                       child: Column(
@@ -2090,26 +2290,36 @@ class _CalculatorRow extends StatelessWidget {
                           Row(
                             children: [
                               Icon(
-                                tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                tempLinkSource != null &&
+                                        tempLinkSource!['type'] == 'logic'
                                     ? Icons.rule_rounded
                                     : (tempLink ? Icons.link : Icons.link_off),
                                 size: 14,
-                                color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                color:
+                                    tempLinkSource != null &&
+                                        tempLinkSource!['type'] == 'logic'
                                     ? Colors.purpleAccent
-                                    : (tempLink ? Colors.blueAccent : Colors.orangeAccent),
+                                    : (tempLink
+                                          ? Colors.blueAccent
+                                          : Colors.orangeAccent),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                  tempLinkSource != null &&
+                                          tempLinkSource!['type'] == 'logic'
                                       ? '論理式リンク: ${_getLogicLabel(tempLinkSource!['logicId'])}'
                                       : (tempLink
-                                          ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
-                                          : '元リンク: ${_getSourceLabel(tempLinkSource)}'),
+                                            ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
+                                            : '元リンク: ${_getSourceLabel(tempLinkSource)}'),
                                   style: TextStyle(
-                                    color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                    color:
+                                        tempLinkSource != null &&
+                                            tempLinkSource!['type'] == 'logic'
                                         ? Colors.purpleAccent
-                                        : (tempLink ? Colors.blueAccent : Colors.orangeAccent),
+                                        : (tempLink
+                                              ? Colors.blueAccent
+                                              : Colors.orangeAccent),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -2130,7 +2340,8 @@ class _CalculatorRow extends StatelessWidget {
                                 )
                               else
                                 GestureDetector(
-                                  onTap: () => setSheetState(() => tempLink = true),
+                                  onTap: () =>
+                                      setSheetState(() => tempLink = true),
                                   child: const Text(
                                     'リンクに戻す',
                                     style: TextStyle(
@@ -2141,7 +2352,8 @@ class _CalculatorRow extends StatelessWidget {
                                 ),
                             ],
                           ),
-                          if (tempLinkSource != null && tempLinkSource!['type'] == 'logic') ...[
+                          if (tempLinkSource != null &&
+                              tempLinkSource!['type'] == 'logic') ...[
                             const SizedBox(height: 12),
                             const Divider(color: Colors.white12, height: 1),
                             const SizedBox(height: 8),
@@ -2149,25 +2361,39 @@ class _CalculatorRow extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         '真の場合の値',
-                                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 11,
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
                                       TextField(
                                         controller: trueValCtrl,
-                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                        ),
                                         decoration: const InputDecoration(
                                           hintText: '1.0',
                                           isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 8,
+                                          ),
                                           border: OutlineInputBorder(),
                                         ),
                                         onChanged: (v) {
-                                          tempLinkSource!['trueVal'] = double.tryParse(v) ?? 1.0;
+                                          tempLinkSource!['trueVal'] =
+                                              double.tryParse(v) ?? 1.0;
                                         },
                                       ),
                                     ],
@@ -2176,25 +2402,39 @@ class _CalculatorRow extends StatelessWidget {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         '偽の場合の値',
-                                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 11,
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
                                       TextField(
                                         controller: falseValCtrl,
-                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                        ),
                                         decoration: const InputDecoration(
                                           hintText: '0.0',
                                           isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 8,
+                                          ),
                                           border: OutlineInputBorder(),
                                         ),
                                         onChanged: (v) {
-                                          tempLinkSource!['falseVal'] = double.tryParse(v) ?? 0.0;
+                                          tempLinkSource!['falseVal'] =
+                                              double.tryParse(v) ?? 0.0;
                                         },
                                       ),
                                     ],
@@ -2211,7 +2451,10 @@ class _CalculatorRow extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 8, bottom: 4),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(8),
@@ -2220,24 +2463,42 @@ class _CalculatorRow extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('リンクの設定', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          const Text(
+                            'リンクの設定',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           Row(
                             children: [
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  icon: const Icon(Icons.upload_rounded, size: 16),
-                                  label: const Text('リンク元に設定', style: TextStyle(fontSize: 12)),
+                                  icon: const Icon(
+                                    Icons.upload_rounded,
+                                    size: 16,
+                                  ),
+                                  label: const Text(
+                                    'リンク元に設定',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blueAccent.withOpacity(0.2),
+                                    backgroundColor: Colors.blueAccent
+                                        .withOpacity(0.2),
                                     foregroundColor: Colors.blueAccent,
                                     elevation: 0,
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
                                   ),
                                   onPressed: () {
                                     Navigator.pop(ctx);
                                     if (onLinkSettingsPressed != null) {
-                                      onLinkSettingsPressed!('source', 'operand');
+                                      onLinkSettingsPressed!(
+                                        'source',
+                                        'operand',
+                                      );
                                     }
                                   },
                                 ),
@@ -2245,18 +2506,31 @@ class _CalculatorRow extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  icon: const Icon(Icons.download_rounded, size: 16),
-                                  label: const Text('リンク先に設定', style: TextStyle(fontSize: 12)),
+                                  icon: const Icon(
+                                    Icons.download_rounded,
+                                    size: 16,
+                                  ),
+                                  label: const Text(
+                                    'リンク先に設定',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.cyan.withOpacity(0.2),
+                                    backgroundColor: Colors.cyan.withOpacity(
+                                      0.2,
+                                    ),
                                     foregroundColor: Colors.cyan,
                                     elevation: 0,
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
                                   ),
                                   onPressed: () {
                                     Navigator.pop(ctx);
                                     if (onLinkSettingsPressed != null) {
-                                      onLinkSettingsPressed!('target', 'operand');
+                                      onLinkSettingsPressed!(
+                                        'target',
+                                        'operand',
+                                      );
                                     }
                                   },
                                 ),
@@ -2268,25 +2542,51 @@ class _CalculatorRow extends StatelessWidget {
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              const Icon(Icons.rule_rounded, color: Colors.purpleAccent, size: 16),
+                              const Icon(
+                                Icons.rule_rounded,
+                                color: Colors.purpleAccent,
+                                size: 16,
+                              ),
                               const SizedBox(width: 6),
-                              const Text('論理式の紐付け', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                              const Text(
+                                '論理式の紐付け',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
                               const Spacer(),
                               TextButton.icon(
-                                icon: const Icon(Icons.add_rounded, size: 14, color: Colors.purpleAccent),
-                                label: const Text('論理式を追加', style: TextStyle(color: Colors.purpleAccent, fontSize: 12)),
+                                icon: const Icon(
+                                  Icons.add_rounded,
+                                  size: 14,
+                                  color: Colors.purpleAccent,
+                                ),
+                                label: const Text(
+                                  '論理式を追加',
+                                  style: TextStyle(
+                                    color: Colors.purpleAccent,
+                                    fontSize: 12,
+                                  ),
+                                ),
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,
                                   minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 onPressed: () async {
-                                  final newLogic = await showDialog<Map<String, dynamic>>(
-                                    context: context,
-                                    builder: (ctx) => const _LogicItemEditDialog(initial: null),
-                                  );
+                                  final newLogic =
+                                      await showDialog<Map<String, dynamic>>(
+                                        context: context,
+                                        builder: (ctx) =>
+                                            const _LogicItemEditDialog(
+                                              initial: null,
+                                            ),
+                                      );
                                   if (newLogic != null) {
-                                    final newId = 'logic_${DateTime.now().millisecondsSinceEpoch}';
+                                    final newId =
+                                        'logic_${DateTime.now().millisecondsSinceEpoch}';
                                     final newLogicItem = {
                                       ...newLogic,
                                       'id': newId,
@@ -2315,26 +2615,44 @@ class _CalculatorRow extends StatelessWidget {
                           if (localLogicItems.isEmpty)
                             const Text(
                               '設定済みの論理式はありません。上のボタンから追加してください。',
-                              style: TextStyle(color: Colors.white38, fontSize: 11),
+                              style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 11,
+                              ),
                             )
                           else
                             DropdownButtonFormField<String>(
                               dropdownColor: Colors.black,
-                              hint: const Text('論理式を選択', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                              hint: const Text(
+                                '論理式を選択',
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 12,
+                                ),
+                              ),
                               isExpanded: true,
                               decoration: const InputDecoration(
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 8,
+                                ),
                                 border: OutlineInputBorder(),
                               ),
                               items: localLogicItems.map((logic) {
                                 final name = logic['name'] as String? ?? '';
-                                final expr = _CalculatorWidgetState._buildLogicExprString(logic);
+                                final expr =
+                                    _CalculatorWidgetState._buildLogicExprString(
+                                      logic,
+                                    );
                                 return DropdownMenuItem<String>(
                                   value: logic['id'] as String,
                                   child: Text(
                                     name.isNotEmpty ? '$name: $expr' : expr,
-                                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                    ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 );
@@ -2346,10 +2664,13 @@ class _CalculatorRow extends StatelessWidget {
                                     tempLinkSource = {
                                       'type': 'logic',
                                       'logicId': selectedId,
-                                      'trueVal': double.tryParse(ctrl.text) ?? 1.0,
+                                      'trueVal':
+                                          double.tryParse(ctrl.text) ?? 1.0,
                                       'falseVal': 0.0,
                                     };
-                                    trueValCtrl.text = (double.tryParse(ctrl.text) ?? 1.0).toString();
+                                    trueValCtrl.text =
+                                        (double.tryParse(ctrl.text) ?? 1.0)
+                                            .toString();
                                     falseValCtrl.text = '0.0';
                                   });
                                 }
@@ -2374,24 +2695,45 @@ class _CalculatorRow extends StatelessWidget {
                         final c = e.value;
                         final name = c['name'] as String? ?? '';
                         final val = (c['value'] as num? ?? 0.0);
-                        final isSelected = tempLink &&
+                        final isSelected =
+                            tempLink &&
                             tempLinkSource != null &&
                             tempLinkSource!['type'] == 'constant' &&
                             tempLinkSource!['constIdx'] == ci;
                         return GestureDetector(
                           onTap: () => setSheetState(() {
                             tempLink = true;
-                            tempLinkSource = {'type': 'constant', 'constIdx': ci};
+                            tempLinkSource = {
+                              'type': 'constant',
+                              'constIdx': ci,
+                            };
                           }),
                           child: Container(
                             margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isSelected ? Colors.amberAccent.withOpacity(0.2) : Colors.white.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: isSelected ? Colors.amberAccent : Colors.white24),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
                             ),
-                            child: Text('$name = $val', style: TextStyle(color: isSelected ? Colors.amberAccent : Colors.white70, fontSize: 12)),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Colors.amberAccent.withOpacity(0.2)
+                                  : Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.amberAccent
+                                    : Colors.white24,
+                              ),
+                            ),
+                            child: Text(
+                              '$name = $val',
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.amberAccent
+                                    : Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
                           ),
                         );
                       }).toList(),
@@ -2644,7 +2986,7 @@ class _CalculatorRow extends StatelessWidget {
     final String? selectedOp = await showMenu<String>(
       context: context,
       position: position,
-      color:Colors.black,
+      color: Colors.black,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       items: ops
           .map(
@@ -2685,7 +3027,10 @@ class _CalculatorRow extends StatelessWidget {
     final currentPowExp = ((currentOther['powExp'] as num? ?? 2.0).toDouble());
     final _otherValText = currentVal.toString();
     final ctrl = TextEditingController(text: _otherValText)
-      ..selection = TextSelection(baseOffset: 0, extentOffset: _otherValText.length);
+      ..selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: _otherValText.length,
+      );
     final unitCtrl = TextEditingController(text: currentUnit);
     bool tempLink = currentLink;
     Map<String, dynamic>? tempLinkSource = currentSource;
@@ -2716,7 +3061,7 @@ class _CalculatorRow extends StatelessWidget {
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
-      backgroundColor:Colors.black,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -2783,26 +3128,39 @@ class _CalculatorRow extends StatelessWidget {
                                     tempLinkSource = null;
                                   }),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
-                                              ? Colors.deepPurpleAccent
-                                              : Colors.blueAccent)
-                                          .withOpacity(0.2),
+                                      color:
+                                          (tempLinkSource != null &&
+                                                      tempLinkSource!['type'] ==
+                                                          'logic'
+                                                  ? Colors.deepPurpleAccent
+                                                  : Colors.blueAccent)
+                                              .withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(6),
                                       border: Border.all(
-                                        color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
-                                                ? Colors.deepPurpleAccent
-                                                : Colors.blueAccent)
-                                            .withOpacity(0.5),
+                                        color:
+                                            (tempLinkSource != null &&
+                                                        tempLinkSource!['type'] ==
+                                                            'logic'
+                                                    ? Colors.deepPurpleAccent
+                                                    : Colors.blueAccent)
+                                                .withOpacity(0.5),
                                       ),
                                     ),
                                     child: Text(
-                                      tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                      tempLinkSource != null &&
+                                              tempLinkSource!['type'] == 'logic'
                                           ? '論理式リンク中'
                                           : 'リンク中',
                                       style: TextStyle(
-                                        color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                        color:
+                                            tempLinkSource != null &&
+                                                tempLinkSource!['type'] ==
+                                                    'logic'
                                             ? Colors.purpleAccent
                                             : Colors.blueAccent,
                                         fontSize: 12,
@@ -2827,7 +3185,8 @@ class _CalculatorRow extends StatelessWidget {
                             if (v == v.truncateToDouble() && v.abs() < 1e15) {
                               ctrl.text = v.toInt().toString();
                             } else {
-                              ctrl.text = v.toStringAsFixed(15)
+                              ctrl.text = v
+                                  .toStringAsFixed(15)
                                   .replaceAll(RegExp(r'0+$'), '')
                                   .replaceAll(RegExp(r'\.$'), '');
                             }
@@ -2876,14 +3235,24 @@ class _CalculatorRow extends StatelessWidget {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
-                                ? Colors.purple.withOpacity(0.15)
-                                : (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.1)),
+                        color:
+                            (tempLinkSource != null &&
+                                tempLinkSource!['type'] == 'logic'
+                            ? Colors.purple.withOpacity(0.15)
+                            : (tempLink
+                                      ? Colors.blueAccent
+                                      : Colors.orangeAccent)
+                                  .withOpacity(0.1)),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: (tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                          color:
+                              (tempLinkSource != null &&
+                                  tempLinkSource!['type'] == 'logic'
                               ? Colors.purpleAccent.withOpacity(0.4)
-                              : (tempLink ? Colors.blueAccent : Colors.orangeAccent).withOpacity(0.3)),
+                              : (tempLink
+                                        ? Colors.blueAccent
+                                        : Colors.orangeAccent)
+                                    .withOpacity(0.3)),
                         ),
                       ),
                       child: Column(
@@ -2892,26 +3261,36 @@ class _CalculatorRow extends StatelessWidget {
                           Row(
                             children: [
                               Icon(
-                                tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                tempLinkSource != null &&
+                                        tempLinkSource!['type'] == 'logic'
                                     ? Icons.rule_rounded
                                     : (tempLink ? Icons.link : Icons.link_off),
                                 size: 14,
-                                color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                color:
+                                    tempLinkSource != null &&
+                                        tempLinkSource!['type'] == 'logic'
                                     ? Colors.purpleAccent
-                                    : (tempLink ? Colors.blueAccent : Colors.orangeAccent),
+                                    : (tempLink
+                                          ? Colors.blueAccent
+                                          : Colors.orangeAccent),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                  tempLinkSource != null &&
+                                          tempLinkSource!['type'] == 'logic'
                                       ? '論理式リンク: ${_getLogicLabel(tempLinkSource!['logicId'])}'
                                       : (tempLink
-                                          ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
-                                          : '元リンク: ${_getSourceLabel(tempLinkSource)}'),
+                                            ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
+                                            : '元リンク: ${_getSourceLabel(tempLinkSource)}'),
                                   style: TextStyle(
-                                    color: tempLinkSource != null && tempLinkSource!['type'] == 'logic'
+                                    color:
+                                        tempLinkSource != null &&
+                                            tempLinkSource!['type'] == 'logic'
                                         ? Colors.purpleAccent
-                                        : (tempLink ? Colors.blueAccent : Colors.orangeAccent),
+                                        : (tempLink
+                                              ? Colors.blueAccent
+                                              : Colors.orangeAccent),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -2932,7 +3311,8 @@ class _CalculatorRow extends StatelessWidget {
                                 )
                               else
                                 GestureDetector(
-                                  onTap: () => setSheetState(() => tempLink = true),
+                                  onTap: () =>
+                                      setSheetState(() => tempLink = true),
                                   child: const Text(
                                     'リンクに戻す',
                                     style: TextStyle(
@@ -2943,7 +3323,8 @@ class _CalculatorRow extends StatelessWidget {
                                 ),
                             ],
                           ),
-                          if (tempLinkSource != null && tempLinkSource!['type'] == 'logic') ...[
+                          if (tempLinkSource != null &&
+                              tempLinkSource!['type'] == 'logic') ...[
                             const SizedBox(height: 12),
                             const Divider(color: Colors.white12, height: 1),
                             const SizedBox(height: 8),
@@ -2951,25 +3332,39 @@ class _CalculatorRow extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         '真の場合の値',
-                                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 11,
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
                                       TextField(
                                         controller: trueValCtrl,
-                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                        ),
                                         decoration: const InputDecoration(
                                           hintText: '1.0',
                                           isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 8,
+                                          ),
                                           border: OutlineInputBorder(),
                                         ),
                                         onChanged: (v) {
-                                          tempLinkSource!['trueVal'] = double.tryParse(v) ?? 1.0;
+                                          tempLinkSource!['trueVal'] =
+                                              double.tryParse(v) ?? 1.0;
                                         },
                                       ),
                                     ],
@@ -2978,25 +3373,39 @@ class _CalculatorRow extends StatelessWidget {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const Text(
                                         '偽の場合の値',
-                                        style: TextStyle(color: Colors.white54, fontSize: 11),
+                                        style: TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 11,
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
                                       TextField(
                                         controller: falseValCtrl,
-                                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                                        keyboardType:
+                                            const TextInputType.numberWithOptions(
+                                              decimal: true,
+                                            ),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                        ),
                                         decoration: const InputDecoration(
                                           hintText: '0.0',
                                           isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 8,
+                                          ),
                                           border: OutlineInputBorder(),
                                         ),
                                         onChanged: (v) {
-                                          tempLinkSource!['falseVal'] = double.tryParse(v) ?? 0.0;
+                                          tempLinkSource!['falseVal'] =
+                                              double.tryParse(v) ?? 0.0;
                                         },
                                       ),
                                     ],
@@ -3013,7 +3422,10 @@ class _CalculatorRow extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(top: 8, bottom: 4),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.05),
                         borderRadius: BorderRadius.circular(8),
@@ -3022,24 +3434,42 @@ class _CalculatorRow extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('リンクの設定', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          const Text(
+                            'リンクの設定',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                          ),
                           const SizedBox(height: 8),
                           Row(
                             children: [
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  icon: const Icon(Icons.upload_rounded, size: 16),
-                                  label: const Text('リンク元に設定', style: TextStyle(fontSize: 12)),
+                                  icon: const Icon(
+                                    Icons.upload_rounded,
+                                    size: 16,
+                                  ),
+                                  label: const Text(
+                                    'リンク元に設定',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blueAccent.withOpacity(0.2),
+                                    backgroundColor: Colors.blueAccent
+                                        .withOpacity(0.2),
                                     foregroundColor: Colors.blueAccent,
                                     elevation: 0,
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
                                   ),
                                   onPressed: () {
                                     Navigator.pop(ctx);
                                     if (onLinkSettingsPressed != null) {
-                                      onLinkSettingsPressed!('source', 'other_$idx');
+                                      onLinkSettingsPressed!(
+                                        'source',
+                                        'other_$idx',
+                                      );
                                     }
                                   },
                                 ),
@@ -3047,18 +3477,31 @@ class _CalculatorRow extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  icon: const Icon(Icons.download_rounded, size: 16),
-                                  label: const Text('リンク先に設定', style: TextStyle(fontSize: 12)),
+                                  icon: const Icon(
+                                    Icons.download_rounded,
+                                    size: 16,
+                                  ),
+                                  label: const Text(
+                                    'リンク先に設定',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.cyan.withOpacity(0.2),
+                                    backgroundColor: Colors.cyan.withOpacity(
+                                      0.2,
+                                    ),
                                     foregroundColor: Colors.cyan,
                                     elevation: 0,
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
                                   ),
                                   onPressed: () {
                                     Navigator.pop(ctx);
                                     if (onLinkSettingsPressed != null) {
-                                      onLinkSettingsPressed!('target', 'other_$idx');
+                                      onLinkSettingsPressed!(
+                                        'target',
+                                        'other_$idx',
+                                      );
                                     }
                                   },
                                 ),
@@ -3070,25 +3513,51 @@ class _CalculatorRow extends StatelessWidget {
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              const Icon(Icons.rule_rounded, color: Colors.purpleAccent, size: 16),
+                              const Icon(
+                                Icons.rule_rounded,
+                                color: Colors.purpleAccent,
+                                size: 16,
+                              ),
                               const SizedBox(width: 6),
-                              const Text('論理式の紐付け', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                              const Text(
+                                '論理式の紐付け',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
                               const Spacer(),
                               TextButton.icon(
-                                icon: const Icon(Icons.add_rounded, size: 14, color: Colors.purpleAccent),
-                                label: const Text('論理式を追加', style: TextStyle(color: Colors.purpleAccent, fontSize: 12)),
+                                icon: const Icon(
+                                  Icons.add_rounded,
+                                  size: 14,
+                                  color: Colors.purpleAccent,
+                                ),
+                                label: const Text(
+                                  '論理式を追加',
+                                  style: TextStyle(
+                                    color: Colors.purpleAccent,
+                                    fontSize: 12,
+                                  ),
+                                ),
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,
                                   minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 onPressed: () async {
-                                  final newLogic = await showDialog<Map<String, dynamic>>(
-                                    context: context,
-                                    builder: (ctx) => const _LogicItemEditDialog(initial: null),
-                                  );
+                                  final newLogic =
+                                      await showDialog<Map<String, dynamic>>(
+                                        context: context,
+                                        builder: (ctx) =>
+                                            const _LogicItemEditDialog(
+                                              initial: null,
+                                            ),
+                                      );
                                   if (newLogic != null) {
-                                    final newId = 'logic_${DateTime.now().millisecondsSinceEpoch}';
+                                    final newId =
+                                        'logic_${DateTime.now().millisecondsSinceEpoch}';
                                     final newLogicItem = {
                                       ...newLogic,
                                       'id': newId,
@@ -3117,26 +3586,44 @@ class _CalculatorRow extends StatelessWidget {
                           if (localLogicItems.isEmpty)
                             const Text(
                               '設定済みの論理式はありません。上のボタンから追加してください。',
-                              style: TextStyle(color: Colors.white38, fontSize: 11),
+                              style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 11,
+                              ),
                             )
                           else
                             DropdownButtonFormField<String>(
                               dropdownColor: Colors.black,
-                              hint: const Text('論理式を選択', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                              hint: const Text(
+                                '論理式を選択',
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 12,
+                                ),
+                              ),
                               isExpanded: true,
                               decoration: const InputDecoration(
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 8,
+                                ),
                                 border: OutlineInputBorder(),
                               ),
                               items: localLogicItems.map((logic) {
                                 final name = logic['name'] as String? ?? '';
-                                final expr = _CalculatorWidgetState._buildLogicExprString(logic);
+                                final expr =
+                                    _CalculatorWidgetState._buildLogicExprString(
+                                      logic,
+                                    );
                                 return DropdownMenuItem<String>(
                                   value: logic['id'] as String,
                                   child: Text(
                                     name.isNotEmpty ? '$name: $expr' : expr,
-                                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                    ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 );
@@ -3148,10 +3635,13 @@ class _CalculatorRow extends StatelessWidget {
                                     tempLinkSource = {
                                       'type': 'logic',
                                       'logicId': selectedId,
-                                      'trueVal': double.tryParse(ctrl.text) ?? 1.0,
+                                      'trueVal':
+                                          double.tryParse(ctrl.text) ?? 1.0,
                                       'falseVal': 0.0,
                                     };
-                                    trueValCtrl.text = (double.tryParse(ctrl.text) ?? 1.0).toString();
+                                    trueValCtrl.text =
+                                        (double.tryParse(ctrl.text) ?? 1.0)
+                                            .toString();
                                     falseValCtrl.text = '0.0';
                                   });
                                 }
@@ -3176,24 +3666,45 @@ class _CalculatorRow extends StatelessWidget {
                         final c = e.value;
                         final name = c['name'] as String? ?? '';
                         final val = (c['value'] as num? ?? 0.0);
-                        final isSelected = tempLink &&
+                        final isSelected =
+                            tempLink &&
                             tempLinkSource != null &&
                             tempLinkSource!['type'] == 'constant' &&
                             tempLinkSource!['constIdx'] == ci;
                         return GestureDetector(
                           onTap: () => setSheetState(() {
                             tempLink = true;
-                            tempLinkSource = {'type': 'constant', 'constIdx': ci};
+                            tempLinkSource = {
+                              'type': 'constant',
+                              'constIdx': ci,
+                            };
                           }),
                           child: Container(
                             margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isSelected ? Colors.amberAccent.withOpacity(0.2) : Colors.white.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: isSelected ? Colors.amberAccent : Colors.white24),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
                             ),
-                            child: Text('$name = $val', style: TextStyle(color: isSelected ? Colors.amberAccent : Colors.white70, fontSize: 12)),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Colors.amberAccent.withOpacity(0.2)
+                                  : Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.amberAccent
+                                    : Colors.white24,
+                              ),
+                            ),
+                            child: Text(
+                              '$name = $val',
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.amberAccent
+                                    : Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
                           ),
                         );
                       }).toList(),
@@ -3442,34 +3953,56 @@ class _CalculatorRow extends StatelessWidget {
     // ── 計算式の詳細を構築 ──────────────────────────────────────────────────
     String fmtV(double v, int prec) {
       if (v.isNaN || v.isInfinite) return '0';
-      if (v == v.truncateToDouble() && v.abs() < 1e12) return v.toInt().toString();
+      if (v == v.truncateToDouble() && v.abs() < 1e12)
+        return v.toInt().toString();
       return v.toStringAsFixed(prec);
     }
+
     String termStr(double rawV, String? transform, double powExp, int prec) {
       final s = fmtV(rawV, prec);
       if (transform == null) return s;
       switch (transform) {
-        case 'sqrt': return '√$s';
+        case 'sqrt':
+          return '√$s';
         case 'pow':
-          final e = powExp == powExp.truncateToDouble() ? powExp.toInt().toString() : fmtV(powExp, 1);
+          final e = powExp == powExp.truncateToDouble()
+              ? powExp.toInt().toString()
+              : fmtV(powExp, 1);
           return '$s^$e';
         case 'nroot':
-          final e = powExp == powExp.truncateToDouble() ? powExp.toInt().toString() : fmtV(powExp, 1);
+          final e = powExp == powExp.truncateToDouble()
+              ? powExp.toInt().toString()
+              : fmtV(powExp, 1);
           return '${e}√$s';
-        case 'abs': return '|$s|';
-        case 'floor': return '⌊$s⌋';
-        case 'ceil': return '⌈$s⌉';
-        case 'round': return '≈$s';
-        case 'log10': return 'log($s)';
-        case 'reciprocal': return '1/$s';
-        case 'sin': return 'sin($s)';
-        case 'cos': return 'cos($s)';
-        case 'tan': return 'tan($s)';
-        default: return s;
+        case 'abs':
+          return '|$s|';
+        case 'floor':
+          return '⌊$s⌋';
+        case 'ceil':
+          return '⌈$s⌉';
+        case 'round':
+          return '≈$s';
+        case 'log10':
+          return 'log($s)';
+        case 'reciprocal':
+          return '1/$s';
+        case 'sin':
+          return 'sin($s)';
+        case 'cos':
+          return 'cos($s)';
+        case 'tan':
+          return 'tan($s)';
+        default:
+          return s;
       }
     }
+
     // リンク値を解決するヘルパー
-    double resolveLinkedVal(double rawVal, bool isLink, Map<String, dynamic>? source) {
+    double resolveLinkedVal(
+      double rawVal,
+      bool isLink,
+      Map<String, dynamic>? source,
+    ) {
       if (!isLink) return rawVal;
       if (source == null) {
         return allResults.isNotEmpty ? allResults.last : rawVal;
@@ -3484,37 +4017,54 @@ class _CalculatorRow extends StatelessWidget {
       final rowIdx = source['rowIdx'] as int? ?? 0;
       final target = source['target'] as String? ?? 'result';
       if (rowIdx < 0 || rowIdx >= allItems.length) return rawVal;
-      if (target == 'result' && rowIdx < allResults.length) return allResults[rowIdx];
-      if (target == 'input') return (allItems[rowIdx] as Map)['input'] as double? ?? rawVal;
-      if (target == 'operand') return (allItems[rowIdx] as Map)['operand'] as double? ?? rawVal;
+      if (target == 'result' && rowIdx < allResults.length)
+        return allResults[rowIdx];
+      if (target == 'input')
+        return (allItems[rowIdx] as Map)['input'] as double? ?? rawVal;
+      if (target == 'operand')
+        return (allItems[rowIdx] as Map)['operand'] as double? ?? rawVal;
       if (target.startsWith('other_')) {
         final idx = int.tryParse(target.split('_')[1]) ?? 0;
         final oList = (allItems[rowIdx] as Map)['others'] as List? ?? [];
-        if (idx < oList.length) return (oList[idx] as Map)['val'] as double? ?? rawVal;
+        if (idx < oList.length)
+          return (oList[idx] as Map)['val'] as double? ?? rawVal;
       }
       return rawVal;
     }
 
     final resolvedInput = resolveLinkedVal(input, inputLink, inputLinkSource);
-    final resolvedOperand = resolveLinkedVal(operand, operandLink, operandLinkSource);
+    final resolvedOperand = resolveLinkedVal(
+      operand,
+      operandLink,
+      operandLinkSource,
+    );
 
     final formulaParts = <_FormulaLine>[];
-    formulaParts.add(_FormulaLine(
-      label: _termLabel('input'),
-      value: termStr(resolvedInput, inputTransform, inputPowExp, precision),
-      unit: unit1,
-      op: null,
-      isLink: inputLink,
-      linkLabel: inputLink ? _getSourceRowName(inputLinkSource) : '',
-    ));
-    formulaParts.add(_FormulaLine(
-      label: _termLabel('operand'),
-      value: termStr(resolvedOperand, operandTransform, operandPowExp, precision),
-      unit: unit2,
-      op: op,
-      isLink: operandLink,
-      linkLabel: operandLink ? _getSourceRowName(operandLinkSource) : '',
-    ));
+    formulaParts.add(
+      _FormulaLine(
+        label: _termLabel('input'),
+        value: termStr(resolvedInput, inputTransform, inputPowExp, precision),
+        unit: unit1,
+        op: null,
+        isLink: inputLink,
+        linkLabel: inputLink ? _getSourceRowName(inputLinkSource) : '',
+      ),
+    );
+    formulaParts.add(
+      _FormulaLine(
+        label: _termLabel('operand'),
+        value: termStr(
+          resolvedOperand,
+          operandTransform,
+          operandPowExp,
+          precision,
+        ),
+        unit: unit2,
+        op: op,
+        isLink: operandLink,
+        linkLabel: operandLink ? _getSourceRowName(operandLinkSource) : '',
+      ),
+    );
     for (int i = 0; i < others.length; i++) {
       final o = others[i] as Map;
       final oVal = (o['val'] as num? ?? 0.0).toDouble();
@@ -3525,14 +4075,16 @@ class _CalculatorRow extends StatelessWidget {
       final oTransform = o['transform'] as String?;
       final oPowExp = (o['powExp'] as num? ?? 2.0).toDouble();
       final oUnit = o['unit'] as String? ?? '';
-      formulaParts.add(_FormulaLine(
-        label: _termLabel('other_$i'),
-        value: termStr(resolvedOVal, oTransform, oPowExp, precision),
-        unit: oUnit,
-        op: oOp,
-        isLink: oLink,
-        linkLabel: oLink ? _getSourceRowName(oSource) : '',
-      ));
+      formulaParts.add(
+        _FormulaLine(
+          label: _termLabel('other_$i'),
+          value: termStr(resolvedOVal, oTransform, oPowExp, precision),
+          unit: oUnit,
+          op: oOp,
+          isLink: oLink,
+          linkLabel: oLink ? _getSourceRowName(oSource) : '',
+        ),
+      );
     }
     final resultStr = fmtV(result, precision);
     // ───────────────────────────────────────────────────────────────────────
@@ -3540,7 +4092,7 @@ class _CalculatorRow extends StatelessWidget {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor:Colors.black,
+      backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -3598,7 +4150,10 @@ class _CalculatorRow extends StatelessWidget {
                         final line = entry.value;
                         final isLast = entry.key == formulaParts.length - 1;
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 11,
+                          ),
                           decoration: BoxDecoration(
                             border: Border(
                               bottom: BorderSide(
@@ -3632,7 +4187,8 @@ class _CalculatorRow extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    if (line.isLink && line.linkLabel.isNotEmpty)
+                                    if (line.isLink &&
+                                        line.linkLabel.isNotEmpty)
                                       Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
@@ -3691,7 +4247,9 @@ class _CalculatorRow extends StatelessWidget {
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                           color: line.isLink
-                                              ? Colors.blueAccent.withOpacity(0.9)
+                                              ? Colors.blueAccent.withOpacity(
+                                                  0.9,
+                                                )
                                               : Colors.white70,
                                           fontSize: 15,
                                           fontWeight: FontWeight.w600,
@@ -3708,11 +4266,14 @@ class _CalculatorRow extends StatelessWidget {
                       // 答え行
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.03),
                           borderRadius: const BorderRadius.vertical(
-                              bottom: Radius.circular(14)),
+                            bottom: Radius.circular(14),
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -3734,7 +4295,9 @@ class _CalculatorRow extends StatelessWidget {
                               child: Text(
                                 '答え',
                                 style: const TextStyle(
-                                    color: Colors.white54, fontSize: 12),
+                                  color: Colors.white54,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                             Expanded(
@@ -3771,37 +4334,37 @@ class _CalculatorRow extends StatelessWidget {
                   child: Row(
                     children: List.generate(9, (i) {
                       final selected = tempPrecision == i;
-                        return GestureDetector(
-                          onTap: () => setSheetState(() => tempPrecision = i),
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 8),
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
+                      return GestureDetector(
+                        onTap: () => setSheetState(() => tempPrecision = i),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? Colors.blueAccent
+                                : Colors.white.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
                               color: selected
                                   ? Colors.blueAccent
-                                  : Colors.white.withOpacity(0.08),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: selected
-                                    ? Colors.blueAccent
-                                    : Colors.white24,
-                              ),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              '$i',
-                              style: TextStyle(
-                                color: selected ? Colors.white : Colors.white70,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                                  : Colors.white24,
                             ),
                           ),
-                        );
-                      }),
-                    ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '$i',
+                            style: TextStyle(
+                              color: selected ? Colors.white : Colors.white70,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
                   ),
+                ),
                 const SizedBox(height: 20),
                 _buildUnitSection(
                   context,
@@ -3859,18 +4422,29 @@ class _CalculatorRow extends StatelessWidget {
     required String value,
     required String unit,
     bool isLink = false,
+    Map<String, dynamic>? linkSource,
     String? linkLabel,
     VoidCallback? onTap,
     Function(TapDownDetails)? onTapDown,
     double fontSize = 15,
   }) {
+    Color getBorderColor() {
+      if (!isLink) return Colors.white.withOpacity(0.08); // unlinked defaults to white edge
+      if (linkSource == null) return Colors.blueAccent.withOpacity(0.4);
+      if (linkSource['type'] == 'logic') return Colors.purpleAccent.withOpacity(0.4);
+      if (linkSource['type'] == 'constant') return Colors.greenAccent.withOpacity(0.4); // constant
+      return Colors.orangeAccent.withOpacity(0.4); // 計算式での値（リンク元が他の行やクロスシート）
+    }
+
     final box = Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03),
+        color: isDark
+            ? Colors.white.withOpacity(0.04)
+            : Colors.black.withOpacity(0.03),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isLink ? Colors.blueAccent.withOpacity(0.4) : Colors.white.withOpacity(0.08),
+          color: getBorderColor(),
           width: 1.2,
         ),
       ),
@@ -3882,7 +4456,11 @@ class _CalculatorRow extends StatelessWidget {
           if (isLink)
             const Padding(
               padding: EdgeInsets.only(right: 6),
-              child: Icon(Icons.link_rounded, size: 14, color: Colors.blueAccent),
+              child: Icon(
+                Icons.link_rounded,
+                size: 14,
+                color: Colors.blueAccent,
+              ),
             ),
           Text(
             value,
@@ -3990,8 +4568,10 @@ class _CalculatorRow extends StatelessWidget {
             color: isDark ? Colors.white24 : Colors.black26,
             size: 20,
           ),
-          color:Colors.black,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          color: Colors.black,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
           itemBuilder: (ctx) => [
@@ -3999,9 +4579,18 @@ class _CalculatorRow extends StatelessWidget {
               value: 'toggle_name',
               child: Row(
                 children: [
-                  Icon(nameVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.white70, size: 18),
+                  Icon(
+                    nameVisible
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: Colors.white70,
+                    size: 18,
+                  ),
                   const SizedBox(width: 12),
-                  Text(nameVisible ? '名称を隠す' : '名称を出す', style: const TextStyle(color: Colors.white, fontSize: 13)),
+                  Text(
+                    nameVisible ? '名称を隠す' : '名称を出す',
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                  ),
                 ],
               ),
             ),
@@ -4010,9 +4599,16 @@ class _CalculatorRow extends StatelessWidget {
                 value: 'move_up',
                 child: Row(
                   children: [
-                    Icon(Icons.arrow_upward_rounded, color: Colors.white70, size: 18),
+                    Icon(
+                      Icons.arrow_upward_rounded,
+                      color: Colors.white70,
+                      size: 18,
+                    ),
                     SizedBox(width: 12),
-                    Text('上に移動', style: TextStyle(color: Colors.white, fontSize: 13)),
+                    Text(
+                      '上に移動',
+                      style: TextStyle(color: Colors.white, fontSize: 13),
+                    ),
                   ],
                 ),
               ),
@@ -4021,9 +4617,16 @@ class _CalculatorRow extends StatelessWidget {
                 value: 'move_down',
                 child: Row(
                   children: [
-                    Icon(Icons.arrow_downward_rounded, color: Colors.white70, size: 18),
+                    Icon(
+                      Icons.arrow_downward_rounded,
+                      color: Colors.white70,
+                      size: 18,
+                    ),
                     SizedBox(width: 12),
-                    Text('下に移動', style: TextStyle(color: Colors.white, fontSize: 13)),
+                    Text(
+                      '下に移動',
+                      style: TextStyle(color: Colors.white, fontSize: 13),
+                    ),
                   ],
                 ),
               ),
@@ -4032,9 +4635,16 @@ class _CalculatorRow extends StatelessWidget {
               value: 'insert_below',
               child: Row(
                 children: [
-                  Icon(Icons.playlist_add_rounded, color: Colors.white70, size: 18),
+                  Icon(
+                    Icons.playlist_add_rounded,
+                    color: Colors.white70,
+                    size: 18,
+                  ),
                   SizedBox(width: 12),
-                  Text('下に計算を追加', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  Text(
+                    '下に計算を追加',
+                    style: TextStyle(color: Colors.white, fontSize: 13),
+                  ),
                 ],
               ),
             ),
@@ -4042,9 +4652,16 @@ class _CalculatorRow extends StatelessWidget {
               value: 'insert_memo_below',
               child: Row(
                 children: [
-                  Icon(Icons.sticky_note_2_outlined, color: Colors.amber, size: 18),
+                  Icon(
+                    Icons.sticky_note_2_outlined,
+                    color: Colors.amber,
+                    size: 18,
+                  ),
                   SizedBox(width: 12),
-                  Text('メモを追加', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  Text(
+                    'メモを追加',
+                    style: TextStyle(color: Colors.white, fontSize: 13),
+                  ),
                 ],
               ),
             ),
@@ -4055,7 +4672,10 @@ class _CalculatorRow extends StatelessWidget {
                 children: [
                   Icon(Icons.copy_rounded, color: Colors.blueAccent, size: 18),
                   SizedBox(width: 12),
-                  Text('コピー', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  Text(
+                    'コピー',
+                    style: TextStyle(color: Colors.white, fontSize: 13),
+                  ),
                 ],
               ),
             ),
@@ -4063,9 +4683,16 @@ class _CalculatorRow extends StatelessWidget {
               value: 'cut',
               child: Row(
                 children: [
-                  Icon(Icons.content_cut_rounded, color: Colors.orangeAccent, size: 18),
+                  Icon(
+                    Icons.content_cut_rounded,
+                    color: Colors.orangeAccent,
+                    size: 18,
+                  ),
                   SizedBox(width: 12),
-                  Text('移動（切り取り）', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  Text(
+                    '移動（切り取り）',
+                    style: TextStyle(color: Colors.white, fontSize: 13),
+                  ),
                 ],
               ),
             ),
@@ -4074,9 +4701,16 @@ class _CalculatorRow extends StatelessWidget {
                 value: 'paste',
                 child: Row(
                   children: [
-                    Icon(Icons.content_paste_rounded, color: Colors.greenAccent, size: 18),
+                    Icon(
+                      Icons.content_paste_rounded,
+                      color: Colors.greenAccent,
+                      size: 18,
+                    ),
                     SizedBox(width: 12),
-                    Text('コピーした計算を追加', style: TextStyle(color: Colors.white, fontSize: 13)),
+                    Text(
+                      'コピーした計算を追加',
+                      style: TextStyle(color: Colors.white, fontSize: 13),
+                    ),
                   ],
                 ),
               ),
@@ -4086,7 +4720,10 @@ class _CalculatorRow extends StatelessWidget {
                 children: [
                   Icon(Icons.code_rounded, color: Colors.blueAccent, size: 18),
                   SizedBox(width: 12),
-                  Text('優先順位 ( )', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  Text(
+                    '優先順位 ( )',
+                    style: TextStyle(color: Colors.white, fontSize: 13),
+                  ),
                 ],
               ),
             ),
@@ -4116,9 +4753,16 @@ class _CalculatorRow extends StatelessWidget {
               value: 'delete',
               child: Row(
                 children: [
-                  Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
+                  Icon(
+                    Icons.delete_outline_rounded,
+                    color: Colors.redAccent,
+                    size: 18,
+                  ),
                   SizedBox(width: 12),
-                  Text('削除', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
+                  Text(
+                    '削除',
+                    style: TextStyle(color: Colors.redAccent, fontSize: 13),
+                  ),
                 ],
               ),
             ),
@@ -4185,7 +4829,9 @@ class _CalculatorRow extends StatelessWidget {
                               child: Text(
                                 name.isEmpty ? '名称未設定' : name,
                                 style: TextStyle(
-                                  color: isDark ? Colors.white.withOpacity(0.9) : Colors.black,
+                                  color: isDark
+                                      ? Colors.white.withOpacity(0.9)
+                                      : Colors.black,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 0.2,
@@ -4208,42 +4854,54 @@ class _CalculatorRow extends StatelessWidget {
               runSpacing: 10,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-  if (dragHandle != null && !nameVisible) ...[
-                    dragHandle!,
-                    const SizedBox(width: 4),
-                  ],
+                if (dragHandle != null && !nameVisible) ...[
+                  dragHandle!,
+                  const SizedBox(width: 4),
+                ],
                 // 項1 グループ
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     if (_hasStart(0)) _buildBracket('('),
-                    if (_buildTransformPrefix(inputTransform, inputPowExp) != null)
+                    if (_buildTransformPrefix(inputTransform, inputPowExp) !=
+                        null)
                       _buildTransformPrefix(inputTransform, inputPowExp)!,
                     _buildValueBox(
                       value: inputLink
-                          ? input.toStringAsFixed(_getLinkedPrecision(inputLinkSource))
+                          ? input.toStringAsFixed(
+                              _getLinkedPrecision(inputLinkSource),
+                            )
                           : input.toString(),
                       unit: unit1,
                       isLink: inputLink,
-                      linkLabel: inputLink ? _getSourceRowName(inputLinkSource) : null,
+                      linkSource: inputLinkSource,
+                      linkLabel: inputLink
+                          ? _getSourceRowName(inputLinkSource)
+                          : null,
                       onTap: () => _editInput(context),
                     ),
-                    if (_buildTransformSuffix(inputTransform, inputPowExp) != null)
+                    if (_buildTransformSuffix(inputTransform, inputPowExp) !=
+                        null)
                       _buildTransformSuffix(inputTransform, inputPowExp)!,
                     if (_hasEnd(0)) _buildBracket(')'),
                   ],
                 ),
                 // 演算子
                 GestureDetector(
-                  onTapDown: (details) => _pickOp(context, details.globalPosition),
-                  onLongPress: others.isNotEmpty ? () => _removeOperand() : null,
+                  onTapDown: (details) =>
+                      _pickOp(context, details.globalPosition),
+                  onLongPress: others.isNotEmpty
+                      ? () => _removeOperand()
+                      : null,
                   child: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: Colors.orangeAccent.withOpacity(0.08),
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.orangeAccent.withOpacity(0.2)),
+                      border: Border.all(
+                        color: Colors.orangeAccent.withOpacity(0.2),
+                      ),
                     ),
                     child: Text(
                       op,
@@ -4261,18 +4919,31 @@ class _CalculatorRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     if (_hasStart(1)) _buildBracket('('),
-                    if (_buildTransformPrefix(operandTransform, operandPowExp) != null)
+                    if (_buildTransformPrefix(
+                          operandTransform,
+                          operandPowExp,
+                        ) !=
+                        null)
                       _buildTransformPrefix(operandTransform, operandPowExp)!,
                     _buildValueBox(
                       value: operandLink
-                          ? operand.toStringAsFixed(_getLinkedPrecision(operandLinkSource))
+                          ? operand.toStringAsFixed(
+                              _getLinkedPrecision(operandLinkSource),
+                            )
                           : operand.toString(),
                       unit: unit2,
                       isLink: operandLink,
-                      linkLabel: operandLink ? _getSourceRowName(operandLinkSource) : null,
+                      linkSource: operandLinkSource,
+                      linkLabel: operandLink
+                          ? _getSourceRowName(operandLinkSource)
+                          : null,
                       onTap: () => _editOperand(context),
                     ),
-                    if (_buildTransformSuffix(operandTransform, operandPowExp) != null)
+                    if (_buildTransformSuffix(
+                          operandTransform,
+                          operandPowExp,
+                        ) !=
+                        null)
                       _buildTransformSuffix(operandTransform, operandPowExp)!,
                     if (_hasEnd(1)) _buildBracket(')'),
                   ],
@@ -4289,14 +4960,20 @@ class _CalculatorRow extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       GestureDetector(
-                        onTapDown: (details) => _pickOp(context, details.globalPosition, otherIdx: idx),
+                        onTapDown: (details) => _pickOp(
+                          context,
+                          details.globalPosition,
+                          otherIdx: idx,
+                        ),
                         onLongPress: () => _removeOther(idx),
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: Colors.orangeAccent.withOpacity(0.08),
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.orangeAccent.withOpacity(0.2)),
+                            border: Border.all(
+                              color: Colors.orangeAccent.withOpacity(0.2),
+                            ),
                           ),
                           child: Text(
                             otherOp,
@@ -4310,21 +4987,43 @@ class _CalculatorRow extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       if (_hasStart(idx + 2)) _buildBracket('('),
-                      if (_buildTransformPrefix(other['transform'] as String?, (other['powExp'] as num? ?? 2.0).toDouble()) != null)
-                        _buildTransformPrefix(other['transform'] as String?, (other['powExp'] as num? ?? 2.0).toDouble())!,
+                      if (_buildTransformPrefix(
+                            other['transform'] as String?,
+                            (other['powExp'] as num? ?? 2.0).toDouble(),
+                          ) !=
+                          null)
+                        _buildTransformPrefix(
+                          other['transform'] as String?,
+                          (other['powExp'] as num? ?? 2.0).toDouble(),
+                        )!,
                       _buildValueBox(
                         value: (other['valLink'] as bool? ?? false)
-                            ? otherVal.toStringAsFixed(_getLinkedPrecision(other['valLinkSource'] as Map<String, dynamic>?))
+                            ? otherVal.toStringAsFixed(
+                                _getLinkedPrecision(
+                                  other['valLinkSource']
+                                      as Map<String, dynamic>?,
+                                ),
+                              )
                             : otherVal.toString(),
                         unit: otherUnit,
                         isLink: other['valLink'] as bool? ?? false,
+                        linkSource: other['valLinkSource'] as Map<String, dynamic>?,
                         linkLabel: (other['valLink'] as bool? ?? false)
-                            ? _getSourceRowName(other['valLinkSource'] as Map<String, dynamic>?)
+                            ? _getSourceRowName(
+                                other['valLinkSource'] as Map<String, dynamic>?,
+                              )
                             : null,
                         onTap: () => _editOtherVal(context, idx),
                       ),
-                      if (_buildTransformSuffix(other['transform'] as String?, (other['powExp'] as num? ?? 2.0).toDouble()) != null)
-                        _buildTransformSuffix(other['transform'] as String?, (other['powExp'] as num? ?? 2.0).toDouble())!,
+                      if (_buildTransformSuffix(
+                            other['transform'] as String?,
+                            (other['powExp'] as num? ?? 2.0).toDouble(),
+                          ) !=
+                          null)
+                        _buildTransformSuffix(
+                          other['transform'] as String?,
+                          (other['powExp'] as num? ?? 2.0).toDouble(),
+                        )!,
                       if (_hasEnd(idx + 2)) _buildBracket(')'),
                     ],
                   );
@@ -4347,7 +5046,10 @@ class _CalculatorRow extends StatelessWidget {
                       value: result.toStringAsFixed(precision),
                       unit: unitResult,
                       fontSize: 18,
-                      onTapDown: (details) => _editResultProperties(context, details.globalPosition),
+                      onTapDown: (details) => _editResultProperties(
+                        context,
+                        details.globalPosition,
+                      ),
                     ),
                   ],
                 ),
@@ -4361,39 +5063,51 @@ class _CalculatorRow extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-if (dragHandle != null && !nameVisible) ...[
+                  if (dragHandle != null && !nameVisible) ...[
                     dragHandle!,
                     const SizedBox(width: 4),
                   ],
                   // 項1
                   if (_hasStart(0)) _buildBracket('('),
-                  if (_buildTransformPrefix(inputTransform, inputPowExp) != null)
+                  if (_buildTransformPrefix(inputTransform, inputPowExp) !=
+                      null)
                     _buildTransformPrefix(inputTransform, inputPowExp)!,
                   _buildValueBox(
                     value: inputLink
-                        ? input.toStringAsFixed(_getLinkedPrecision(inputLinkSource))
+                        ? input.toStringAsFixed(
+                            _getLinkedPrecision(inputLinkSource),
+                          )
                         : input.toString(),
                     unit: unit1,
                     isLink: inputLink,
-                    linkLabel: inputLink ? _getSourceRowName(inputLinkSource) : null,
+                    linkSource: inputLinkSource,
+                    linkLabel: inputLink
+                        ? _getSourceRowName(inputLinkSource)
+                        : null,
                     onTap: () => _editInput(context),
                   ),
-                  if (_buildTransformSuffix(inputTransform, inputPowExp) != null)
+                  if (_buildTransformSuffix(inputTransform, inputPowExp) !=
+                      null)
                     _buildTransformSuffix(inputTransform, inputPowExp)!,
                   if (_hasEnd(0)) _buildBracket(')'),
-                  
+
                   const SizedBox(width: 12),
-                  
+
                   // 演算子
                   GestureDetector(
-                    onTapDown: (details) => _pickOp(context, details.globalPosition),
-                    onLongPress: others.isNotEmpty ? () => _removeOperand() : null,
+                    onTapDown: (details) =>
+                        _pickOp(context, details.globalPosition),
+                    onLongPress: others.isNotEmpty
+                        ? () => _removeOperand()
+                        : null,
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: Colors.orangeAccent.withOpacity(0.08),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.orangeAccent.withOpacity(0.2)),
+                        border: Border.all(
+                          color: Colors.orangeAccent.withOpacity(0.2),
+                        ),
                       ),
                       child: Text(
                         op,
@@ -4405,23 +5119,30 @@ if (dragHandle != null && !nameVisible) ...[
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(width: 12),
-                  
+
                   // 項2
                   if (_hasStart(1)) _buildBracket('('),
-                  if (_buildTransformPrefix(operandTransform, operandPowExp) != null)
+                  if (_buildTransformPrefix(operandTransform, operandPowExp) !=
+                      null)
                     _buildTransformPrefix(operandTransform, operandPowExp)!,
                   _buildValueBox(
                     value: operandLink
-                        ? operand.toStringAsFixed(_getLinkedPrecision(operandLinkSource))
+                        ? operand.toStringAsFixed(
+                            _getLinkedPrecision(operandLinkSource),
+                          )
                         : operand.toString(),
                     unit: unit2,
                     isLink: operandLink,
-                    linkLabel: operandLink ? _getSourceRowName(operandLinkSource) : null,
+                    linkSource: operandLinkSource,
+                    linkLabel: operandLink
+                        ? _getSourceRowName(operandLinkSource)
+                        : null,
                     onTap: () => _editOperand(context),
                   ),
-                  if (_buildTransformSuffix(operandTransform, operandPowExp) != null)
+                  if (_buildTransformSuffix(operandTransform, operandPowExp) !=
+                      null)
                     _buildTransformSuffix(operandTransform, operandPowExp)!,
                   if (_hasEnd(1)) _buildBracket(')'),
 
@@ -4438,14 +5159,20 @@ if (dragHandle != null && !nameVisible) ...[
                       children: [
                         const SizedBox(width: 12),
                         GestureDetector(
-                          onTapDown: (details) => _pickOp(context, details.globalPosition, otherIdx: idx),
+                          onTapDown: (details) => _pickOp(
+                            context,
+                            details.globalPosition,
+                            otherIdx: idx,
+                          ),
                           onLongPress: () => _removeOther(idx),
                           child: Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: Colors.orangeAccent.withOpacity(0.08),
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.orangeAccent.withOpacity(0.2)),
+                              border: Border.all(
+                                color: Colors.orangeAccent.withOpacity(0.2),
+                              ),
                             ),
                             child: Text(
                               otherOp,
@@ -4459,21 +5186,44 @@ if (dragHandle != null && !nameVisible) ...[
                         ),
                         const SizedBox(width: 12),
                         if (_hasStart(idx + 2)) _buildBracket('('),
-                        if (_buildTransformPrefix(other['transform'] as String?, (other['powExp'] as num? ?? 2.0).toDouble()) != null)
-                          _buildTransformPrefix(other['transform'] as String?, (other['powExp'] as num? ?? 2.0).toDouble())!,
+                        if (_buildTransformPrefix(
+                              other['transform'] as String?,
+                              (other['powExp'] as num? ?? 2.0).toDouble(),
+                            ) !=
+                            null)
+                          _buildTransformPrefix(
+                            other['transform'] as String?,
+                            (other['powExp'] as num? ?? 2.0).toDouble(),
+                          )!,
                         _buildValueBox(
                           value: (other['valLink'] as bool? ?? false)
-                              ? otherVal.toStringAsFixed(_getLinkedPrecision(other['valLinkSource'] as Map<String, dynamic>?))
+                              ? otherVal.toStringAsFixed(
+                                  _getLinkedPrecision(
+                                    other['valLinkSource']
+                                        as Map<String, dynamic>?,
+                                  ),
+                                )
                               : otherVal.toString(),
                           unit: otherUnit,
                           isLink: other['valLink'] as bool? ?? false,
+                          linkSource: other['valLinkSource'] as Map<String, dynamic>?,
                           linkLabel: (other['valLink'] as bool? ?? false)
-                              ? _getSourceRowName(other['valLinkSource'] as Map<String, dynamic>?)
+                              ? _getSourceRowName(
+                                  other['valLinkSource']
+                                      as Map<String, dynamic>?,
+                                )
                               : null,
                           onTap: () => _editOtherVal(context, idx),
                         ),
-                        if (_buildTransformSuffix(other['transform'] as String?, (other['powExp'] as num? ?? 2.0).toDouble()) != null)
-                          _buildTransformSuffix(other['transform'] as String?, (other['powExp'] as num? ?? 2.0).toDouble())!,
+                        if (_buildTransformSuffix(
+                              other['transform'] as String?,
+                              (other['powExp'] as num? ?? 2.0).toDouble(),
+                            ) !=
+                            null)
+                          _buildTransformSuffix(
+                            other['transform'] as String?,
+                            (other['powExp'] as num? ?? 2.0).toDouble(),
+                          )!,
                         if (_hasEnd(idx + 2)) _buildBracket(')'),
                       ],
                     );
@@ -4495,7 +5245,8 @@ if (dragHandle != null && !nameVisible) ...[
                     value: result.toStringAsFixed(precision),
                     unit: unitResult,
                     fontSize: 18,
-                    onTapDown: (details) => _editResultProperties(context, details.globalPosition),
+                    onTapDown: (details) =>
+                        _editResultProperties(context, details.globalPosition),
                   ),
 
                   if (!nameVisible) ...[
@@ -4529,4 +5280,3 @@ class _FormulaLine {
     this.linkLabel = '',
   });
 }
-

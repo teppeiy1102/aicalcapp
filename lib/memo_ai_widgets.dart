@@ -295,6 +295,17 @@ class _AiCountPageState extends State<_AiCountPage> {
     }
     if (_imageBytes == null) return;
 
+    final canUse = await RevenueCatService.consumeUse();
+    if (!canUse) {
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const StorePage()),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _isCounting = true;
       _lastResult = null;
@@ -384,16 +395,12 @@ class _AiCountPageState extends State<_AiCountPage> {
             Text('AIカウント', style: TextStyle(color: Colors.white, fontSize: 16)),
           ],
         ),
-        actions: [
-          if (_lastResult != null) ...[
-           
-          ],
-        ],
+        actions: [if (_lastResult != null) ...[]],
       ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0D0D1A),Color.fromARGB(255, 38, 38, 38),],
+            colors: [Color(0xFF0D0D1A), Color.fromARGB(255, 38, 38, 38)],
             begin: Alignment.topCenter,
             end: Alignment.bottomRight,
           ),
@@ -401,7 +408,9 @@ class _AiCountPageState extends State<_AiCountPage> {
         child: Column(
           children: [
             Expanded(
-              child: _imageBytes == null ? _buildPickerArea() : _buildImageArea(),
+              child: _imageBytes == null
+                  ? _buildPickerArea()
+                  : _buildImageArea(),
             ),
             if (_imageBytes != null) _buildInstructionBar(isBusy),
           ],
@@ -574,28 +583,32 @@ class _AiCountPageState extends State<_AiCountPage> {
                       ),
                     ),
                     SizedBox(height: 8),
- TextButton.icon(
-              onPressed: () => Navigator.pop(context, _lastResult!.count),
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-              ),
-              icon: const Icon(
-                Icons.check_circle,
-                color: Colors.teal,
-                size: 18,
-              ),
-              label: Text(
-                '${_lastResult!.count} を反映',
-                style: const TextStyle(
-                  color: Colors.teal,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+                    TextButton.icon(
+                      onPressed: () =>
+                          Navigator.pop(context, _lastResult!.count),
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                      icon: const Icon(
+                        Icons.check_circle,
+                        color: Colors.teal,
+                        size: 18,
+                      ),
+                      label: Text(
+                        '${_lastResult!.count} を反映',
+                        style: const TextStyle(
+                          color: Colors.teal,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
