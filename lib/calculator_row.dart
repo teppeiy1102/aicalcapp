@@ -57,6 +57,7 @@ class _CalculatorRow extends StatelessWidget {
   final void Function(String mode, String fieldKey)? onLinkSettingsPressed;
   final List<dynamic> logicItems;
   final void Function(Map<String, dynamic> newItem)? onAddLogicItem;
+  final Future<Map<String, dynamic>?> Function()? onPickLinkSource;
 
   const _CalculatorRow({
     required this.name,
@@ -107,6 +108,7 @@ class _CalculatorRow extends StatelessWidget {
     this.onLinkSettingsPressed,
     this.logicItems = const [],
     this.onAddLogicItem,
+    this.onPickLinkSource,
   });
 
   /// termLabels 優先、なければデフォルト
@@ -701,6 +703,47 @@ class _CalculatorRow extends StatelessWidget {
     return null;
   }
 
+  /// リンク元の現在値を取得（同一シートのみ）
+  double? _resolveLinkVal(Map<String, dynamic>? source) {
+    if (source == null) return allResults.isNotEmpty ? allResults.last : null;
+    if (source['sheetId'] != null) return null; // クロスシートは解決不可
+    if (source['type'] == 'constant') {
+      final ci = source['constIdx'] as int? ?? 0;
+      if (ci >= 0 && ci < constants.length) {
+        return (constants[ci]['value'] as num? ?? 0.0).toDouble();
+      }
+      return null;
+    }
+    if (source['type'] == 'logic') return null;
+    final rowIdx = source['rowIdx'] as int? ?? 0;
+    final target = source['target'] as String? ?? 'result';
+    if (rowIdx < 0 || rowIdx >= allItems.length) return null;
+    if (target == 'result' && rowIdx < allResults.length) return allResults[rowIdx];
+    if (target == 'input') return (allItems[rowIdx] as Map)['input'] as double?;
+    if (target == 'operand') return (allItems[rowIdx] as Map)['operand'] as double?;
+    if (target.startsWith('other_')) {
+      final idx = int.tryParse(target.split('_')[1]) ?? 0;
+      final oList = (allItems[rowIdx] as Map)['others'] as List? ?? [];
+      if (idx < oList.length) return (oList[idx] as Map)['val'] as double?;
+    }
+    return null;
+  }
+
+  /// リンク元の値を文字列フォーマット
+  String _fmtLinkVal(double? v, int precision) {
+    if (v == null) return '';
+    if (v == v.truncateToDouble() && v.abs() < 1e12) return v.toInt().toString();
+    return v.toStringAsFixed(precision).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+  }
+
+  /// リンク元チップのラベル（式名 / 項目: 値）
+  String _getLinkChipLabel(Map<String, dynamic>? source, int precision) {
+    final label = _getSourceLabel(source);
+    final v = _resolveLinkVal(source);
+    if (v == null) return label;
+    return '$label: ${_fmtLinkVal(v, precision)}';
+  }
+
   String _getSourceLabel(Map<String, dynamic>? source) {
     if (source == null) return '直前の残高（答え）';
     if (source['type'] == 'logic') {
@@ -1167,6 +1210,22 @@ class _CalculatorRow extends StatelessWidget {
           ? (inputLinkSource!['falseVal'] as num? ?? 0.0).toString()
           : '0.0',
     );
+    bool tempTrueLink = (inputLinkSource != null &&
+            inputLinkSource!['type'] == 'logic')
+        ? (inputLinkSource!['trueLink'] as bool? ?? false)
+        : false;
+    Map<String, dynamic>? tempTrueLinkSource = (inputLinkSource != null &&
+            inputLinkSource!['type'] == 'logic')
+        ? (inputLinkSource!['trueLinkSource'] as Map<String, dynamic>?)
+        : null;
+    bool tempFalseLink = (inputLinkSource != null &&
+            inputLinkSource!['type'] == 'logic')
+        ? (inputLinkSource!['falseLink'] as bool? ?? false)
+        : false;
+    Map<String, dynamic>? tempFalseLinkSource = (inputLinkSource != null &&
+            inputLinkSource!['type'] == 'logic')
+        ? (inputLinkSource!['falseLinkSource'] as Map<String, dynamic>?)
+        : null;
     final localLogicItems = List<Map<String, dynamic>>.from(
       logicItems.map((e) => Map<String, dynamic>.from(e as Map)),
     );
@@ -1457,29 +1516,74 @@ class _CalculatorRow extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      TextField(
-                                        controller: trueValCtrl,
-                                        keyboardType:
-                                            const TextInputType.numberWithOptions(
-                                              decimal: true,
-                                            ),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 13,
-                                        ),
-                                        decoration: const InputDecoration(
-                                          hintText: '1.0',
-                                          isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            vertical: 8,
-                                            horizontal: 8,
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: tempTrueLink
+                                                ? Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.blueAccent.withOpacity(0.15),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                      border: Border.all(color: Colors.blueAccent.withOpacity(0.4)),
+                                                    ),
+                                                    child: Row(children: [
+                                                      const Icon(Icons.link_rounded, color: Colors.blueAccent, size: 14),
+                                                      const SizedBox(width: 4),
+                                                      Expanded(child: Text(_getLinkChipLabel(tempTrueLinkSource, 2), 
+                                                     maxLines: 2, 
+                                                      style: const TextStyle(color: Colors.blueAccent, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                                                    ]),
+                                                  )
+                                                : TextField(
+                                                    controller: trueValCtrl,
+                                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                                                    decoration: const InputDecoration(
+                                                      hintText: '1.0',
+                                                      isDense: true,
+                                                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                                      border: OutlineInputBorder(),
+                                                    ),
+                                                    onChanged: (v) {
+                                                      tempLinkSource!['trueVal'] = double.tryParse(v) ?? 1.0;
+                                                    },
+                                                  ),
                                           ),
-                                          border: OutlineInputBorder(),
-                                        ),
-                                        onChanged: (v) {
-                                          tempLinkSource!['trueVal'] =
-                                              double.tryParse(v) ?? 1.0;
-                                        },
+                                          if (onPickLinkSource != null)
+                                            tempTrueLink
+                                                ? IconButton(
+                                                    icon: const Icon(Icons.link_off_rounded, color: Colors.white38),
+                                                    iconSize: 18,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    onPressed: () {
+                                                      setSheetState(() {
+                                                        tempTrueLink = false;
+                                                        tempTrueLinkSource = null;
+                                                        tempLinkSource!['trueLink'] = false;
+                                                        tempLinkSource!['trueLinkSource'] = null;
+                                                      });
+                                                    },
+                                                  )
+                                                : IconButton(
+                                                    icon: const Icon(Icons.link_rounded, color: Colors.blueAccent),
+                                                    iconSize: 18,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    onPressed: () async {
+                                                      final src = await onPickLinkSource!();
+                                                      if (src != null) {
+                                                        setSheetState(() {
+                                                          tempTrueLink = true;
+                                                          tempTrueLinkSource = src;
+                                                          tempLinkSource!['trueLink'] = true;
+                                                          tempLinkSource!['trueLinkSource'] = src;
+                                                        });
+                                                      }
+                                                    },
+                                                  ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -1498,29 +1602,74 @@ class _CalculatorRow extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      TextField(
-                                        controller: falseValCtrl,
-                                        keyboardType:
-                                            const TextInputType.numberWithOptions(
-                                              decimal: true,
-                                            ),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 13,
-                                        ),
-                                        decoration: const InputDecoration(
-                                          hintText: '0.0',
-                                          isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            vertical: 8,
-                                            horizontal: 8,
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: tempFalseLink
+                                                ? Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.blueAccent.withOpacity(0.15),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                      border: Border.all(color: Colors.blueAccent.withOpacity(0.4)),
+                                                    ),
+                                                    child: Row(children: [
+                                                      const Icon(Icons.link_rounded, color: Colors.blueAccent, size: 14),
+                                                      const SizedBox(width: 4),
+                                                      Expanded(child: Text(_getLinkChipLabel(tempFalseLinkSource, 2), 
+                                                      maxLines: 2,
+                                                      style: const TextStyle(color: Colors.blueAccent, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                                                    ]),
+                                                  )
+                                                : TextField(
+                                                    controller: falseValCtrl,
+                                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                                                    decoration: const InputDecoration(
+                                                      hintText: '0.0',
+                                                      isDense: true,
+                                                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                                      border: OutlineInputBorder(),
+                                                    ),
+                                                    onChanged: (v) {
+                                                      tempLinkSource!['falseVal'] = double.tryParse(v) ?? 0.0;
+                                                    },
+                                                  ),
                                           ),
-                                          border: OutlineInputBorder(),
-                                        ),
-                                        onChanged: (v) {
-                                          tempLinkSource!['falseVal'] =
-                                              double.tryParse(v) ?? 0.0;
-                                        },
+                                          if (onPickLinkSource != null)
+                                            tempFalseLink
+                                                ? IconButton(
+                                                    icon: const Icon(Icons.link_off_rounded, color: Colors.white38),
+                                                    iconSize: 18,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    onPressed: () {
+                                                      setSheetState(() {
+                                                        tempFalseLink = false;
+                                                        tempFalseLinkSource = null;
+                                                        tempLinkSource!['falseLink'] = false;
+                                                        tempLinkSource!['falseLinkSource'] = null;
+                                                      });
+                                                    },
+                                                  )
+                                                : IconButton(
+                                                    icon: const Icon(Icons.link_rounded, color: Colors.blueAccent),
+                                                    iconSize: 18,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    onPressed: () async {
+                                                      final src = await onPickLinkSource!();
+                                                      if (src != null) {
+                                                        setSheetState(() {
+                                                          tempFalseLink = true;
+                                                          tempFalseLinkSource = src;
+                                                          tempLinkSource!['falseLink'] = true;
+                                                          tempLinkSource!['falseLinkSource'] = src;
+                                                        });
+                                                      }
+                                                    },
+                                                  ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -1681,7 +1830,15 @@ class _CalculatorRow extends StatelessWidget {
                                         'logicId': newId,
                                         'trueVal': 1.0,
                                         'falseVal': 0.0,
+                                        'trueLink': false,
+                                        'trueLinkSource': null,
+                                        'falseLink': false,
+                                        'falseLinkSource': null,
                                       };
+                                      tempTrueLink = false;
+                                      tempTrueLinkSource = null;
+                                      tempFalseLink = false;
+                                      tempFalseLinkSource = null;
                                       trueValCtrl.text = '1.0';
                                       falseValCtrl.text = '0.0';
                                     });
@@ -1746,7 +1903,15 @@ class _CalculatorRow extends StatelessWidget {
                                       'trueVal':
                                           double.tryParse(ctrl.text) ?? 1.0,
                                       'falseVal': 0.0,
+                                      'trueLink': false,
+                                      'trueLinkSource': null,
+                                      'falseLink': false,
+                                      'falseLinkSource': null,
                                     };
+                                    tempTrueLink = false;
+                                    tempTrueLinkSource = null;
+                                    tempFalseLink = false;
+                                    tempFalseLinkSource = null;
                                     trueValCtrl.text =
                                         (double.tryParse(ctrl.text) ?? 1.0)
                                             .toString();
@@ -2083,6 +2248,22 @@ class _CalculatorRow extends StatelessWidget {
           ? (operandLinkSource!['falseVal'] as num? ?? 0.0).toString()
           : '0.0',
     );
+    bool tempTrueLink = (operandLinkSource != null &&
+            operandLinkSource!['type'] == 'logic')
+        ? (operandLinkSource!['trueLink'] as bool? ?? false)
+        : false;
+    Map<String, dynamic>? tempTrueLinkSource = (operandLinkSource != null &&
+            operandLinkSource!['type'] == 'logic')
+        ? (operandLinkSource!['trueLinkSource'] as Map<String, dynamic>?)
+        : null;
+    bool tempFalseLink = (operandLinkSource != null &&
+            operandLinkSource!['type'] == 'logic')
+        ? (operandLinkSource!['falseLink'] as bool? ?? false)
+        : false;
+    Map<String, dynamic>? tempFalseLinkSource = (operandLinkSource != null &&
+            operandLinkSource!['type'] == 'logic')
+        ? (operandLinkSource!['falseLinkSource'] as Map<String, dynamic>?)
+        : null;
     final localLogicItems = List<Map<String, dynamic>>.from(
       logicItems.map((e) => Map<String, dynamic>.from(e as Map)),
     );
@@ -2372,29 +2553,72 @@ class _CalculatorRow extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      TextField(
-                                        controller: trueValCtrl,
-                                        keyboardType:
-                                            const TextInputType.numberWithOptions(
-                                              decimal: true,
-                                            ),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 13,
-                                        ),
-                                        decoration: const InputDecoration(
-                                          hintText: '1.0',
-                                          isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            vertical: 8,
-                                            horizontal: 8,
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: tempTrueLink
+                                                ? Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.blueAccent.withOpacity(0.15),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                      border: Border.all(color: Colors.blueAccent.withOpacity(0.4)),
+                                                    ),
+                                                    child: Row(children: [
+                                                      const Icon(Icons.link_rounded, color: Colors.blueAccent, size: 14),
+                                                      const SizedBox(width: 4),
+                                                      Expanded(child: Text(_getLinkChipLabel(tempTrueLinkSource, 2), style: const TextStyle(color: Colors.blueAccent, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                                                    ]),
+                                                  )
+                                                : TextField(
+                                                    controller: trueValCtrl,
+                                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                                                    decoration: const InputDecoration(
+                                                      hintText: '1.0',
+                                                      isDense: true,
+                                                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                                      border: OutlineInputBorder(),
+                                                    ),
+                                                    onChanged: (v) {
+                                                      tempLinkSource!['trueVal'] = double.tryParse(v) ?? 1.0;
+                                                    },
+                                                  ),
                                           ),
-                                          border: OutlineInputBorder(),
-                                        ),
-                                        onChanged: (v) {
-                                          tempLinkSource!['trueVal'] =
-                                              double.tryParse(v) ?? 1.0;
-                                        },
+                                          if (onPickLinkSource != null)
+                                            tempTrueLink
+                                                ? IconButton(
+                                                    icon: const Icon(Icons.link_off_rounded, color: Colors.white38),
+                                                    iconSize: 18,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    onPressed: () {
+                                                      setSheetState(() {
+                                                        tempTrueLink = false;
+                                                        tempTrueLinkSource = null;
+                                                        tempLinkSource!['trueLink'] = false;
+                                                        tempLinkSource!['trueLinkSource'] = null;
+                                                      });
+                                                    },
+                                                  )
+                                                : IconButton(
+                                                    icon: const Icon(Icons.link_rounded, color: Colors.blueAccent),
+                                                    iconSize: 18,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    onPressed: () async {
+                                                      final src = await onPickLinkSource!();
+                                                      if (src != null) {
+                                                        setSheetState(() {
+                                                          tempTrueLink = true;
+                                                          tempTrueLinkSource = src;
+                                                          tempLinkSource!['trueLink'] = true;
+                                                          tempLinkSource!['trueLinkSource'] = src;
+                                                        });
+                                                      }
+                                                    },
+                                                  ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -2413,29 +2637,72 @@ class _CalculatorRow extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      TextField(
-                                        controller: falseValCtrl,
-                                        keyboardType:
-                                            const TextInputType.numberWithOptions(
-                                              decimal: true,
-                                            ),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 13,
-                                        ),
-                                        decoration: const InputDecoration(
-                                          hintText: '0.0',
-                                          isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            vertical: 8,
-                                            horizontal: 8,
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: tempFalseLink
+                                                ? Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.blueAccent.withOpacity(0.15),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                      border: Border.all(color: Colors.blueAccent.withOpacity(0.4)),
+                                                    ),
+                                                    child: Row(children: [
+                                                      const Icon(Icons.link_rounded, color: Colors.blueAccent, size: 14),
+                                                      const SizedBox(width: 4),
+                                                      Expanded(child: Text(_getLinkChipLabel(tempFalseLinkSource, 2), style: const TextStyle(color: Colors.blueAccent, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                                                    ]),
+                                                  )
+                                                : TextField(
+                                                    controller: falseValCtrl,
+                                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                                                    decoration: const InputDecoration(
+                                                      hintText: '0.0',
+                                                      isDense: true,
+                                                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                                      border: OutlineInputBorder(),
+                                                    ),
+                                                    onChanged: (v) {
+                                                      tempLinkSource!['falseVal'] = double.tryParse(v) ?? 0.0;
+                                                    },
+                                                  ),
                                           ),
-                                          border: OutlineInputBorder(),
-                                        ),
-                                        onChanged: (v) {
-                                          tempLinkSource!['falseVal'] =
-                                              double.tryParse(v) ?? 0.0;
-                                        },
+                                          if (onPickLinkSource != null)
+                                            tempFalseLink
+                                                ? IconButton(
+                                                    icon: const Icon(Icons.link_off_rounded, color: Colors.white38),
+                                                    iconSize: 18,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    onPressed: () {
+                                                      setSheetState(() {
+                                                        tempFalseLink = false;
+                                                        tempFalseLinkSource = null;
+                                                        tempLinkSource!['falseLink'] = false;
+                                                        tempLinkSource!['falseLinkSource'] = null;
+                                                      });
+                                                    },
+                                                  )
+                                                : IconButton(
+                                                    icon: const Icon(Icons.link_rounded, color: Colors.blueAccent),
+                                                    iconSize: 18,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    onPressed: () async {
+                                                      final src = await onPickLinkSource!();
+                                                      if (src != null) {
+                                                        setSheetState(() {
+                                                          tempFalseLink = true;
+                                                          tempFalseLinkSource = src;
+                                                          tempLinkSource!['falseLink'] = true;
+                                                          tempLinkSource!['falseLinkSource'] = src;
+                                                        });
+                                                      }
+                                                    },
+                                                  ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -2602,7 +2869,15 @@ class _CalculatorRow extends StatelessWidget {
                                         'logicId': newId,
                                         'trueVal': 1.0,
                                         'falseVal': 0.0,
+                                        'trueLink': false,
+                                        'trueLinkSource': null,
+                                        'falseLink': false,
+                                        'falseLinkSource': null,
                                       };
+                                      tempTrueLink = false;
+                                      tempTrueLinkSource = null;
+                                      tempFalseLink = false;
+                                      tempFalseLinkSource = null;
                                       trueValCtrl.text = '1.0';
                                       falseValCtrl.text = '0.0';
                                     });
@@ -2667,7 +2942,15 @@ class _CalculatorRow extends StatelessWidget {
                                       'trueVal':
                                           double.tryParse(ctrl.text) ?? 1.0,
                                       'falseVal': 0.0,
+                                      'trueLink': false,
+                                      'trueLinkSource': null,
+                                      'falseLink': false,
+                                      'falseLinkSource': null,
                                     };
+                                    tempTrueLink = false;
+                                    tempTrueLinkSource = null;
+                                    tempFalseLink = false;
+                                    tempFalseLinkSource = null;
                                     trueValCtrl.text =
                                         (double.tryParse(ctrl.text) ?? 1.0)
                                             .toString();
@@ -3054,6 +3337,22 @@ class _CalculatorRow extends StatelessWidget {
           ? (currentSource!['falseVal'] as num? ?? 0.0).toString()
           : '0.0',
     );
+    bool tempTrueLink = (currentSource != null &&
+            currentSource!['type'] == 'logic')
+        ? (currentSource!['trueLink'] as bool? ?? false)
+        : false;
+    Map<String, dynamic>? tempTrueLinkSource = (currentSource != null &&
+            currentSource!['type'] == 'logic')
+        ? (currentSource!['trueLinkSource'] as Map<String, dynamic>?)
+        : null;
+    bool tempFalseLink = (currentSource != null &&
+            currentSource!['type'] == 'logic')
+        ? (currentSource!['falseLink'] as bool? ?? false)
+        : false;
+    Map<String, dynamic>? tempFalseLinkSource = (currentSource != null &&
+            currentSource!['type'] == 'logic')
+        ? (currentSource!['falseLinkSource'] as Map<String, dynamic>?)
+        : null;
     final localLogicItems = List<Map<String, dynamic>>.from(
       logicItems.map((e) => Map<String, dynamic>.from(e as Map)),
     );
@@ -3343,29 +3642,72 @@ class _CalculatorRow extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      TextField(
-                                        controller: trueValCtrl,
-                                        keyboardType:
-                                            const TextInputType.numberWithOptions(
-                                              decimal: true,
-                                            ),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 13,
-                                        ),
-                                        decoration: const InputDecoration(
-                                          hintText: '1.0',
-                                          isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            vertical: 8,
-                                            horizontal: 8,
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: tempTrueLink
+                                                ? Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.blueAccent.withOpacity(0.15),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                      border: Border.all(color: Colors.blueAccent.withOpacity(0.4)),
+                                                    ),
+                                                    child: Row(children: [
+                                                      const Icon(Icons.link_rounded, color: Colors.blueAccent, size: 14),
+                                                      const SizedBox(width: 4),
+                                                      Expanded(child: Text(_getLinkChipLabel(tempTrueLinkSource, 2), style: const TextStyle(color: Colors.blueAccent, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                                                    ]),
+                                                  )
+                                                : TextField(
+                                                    controller: trueValCtrl,
+                                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                                                    decoration: const InputDecoration(
+                                                      hintText: '1.0',
+                                                      isDense: true,
+                                                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                                      border: OutlineInputBorder(),
+                                                    ),
+                                                    onChanged: (v) {
+                                                      tempLinkSource!['trueVal'] = double.tryParse(v) ?? 1.0;
+                                                    },
+                                                  ),
                                           ),
-                                          border: OutlineInputBorder(),
-                                        ),
-                                        onChanged: (v) {
-                                          tempLinkSource!['trueVal'] =
-                                              double.tryParse(v) ?? 1.0;
-                                        },
+                                          if (onPickLinkSource != null)
+                                            tempTrueLink
+                                                ? IconButton(
+                                                    icon: const Icon(Icons.link_off_rounded, color: Colors.white38),
+                                                    iconSize: 18,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    onPressed: () {
+                                                      setSheetState(() {
+                                                        tempTrueLink = false;
+                                                        tempTrueLinkSource = null;
+                                                        tempLinkSource!['trueLink'] = false;
+                                                        tempLinkSource!['trueLinkSource'] = null;
+                                                      });
+                                                    },
+                                                  )
+                                                : IconButton(
+                                                    icon: const Icon(Icons.link_rounded, color: Colors.blueAccent),
+                                                    iconSize: 18,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    onPressed: () async {
+                                                      final src = await onPickLinkSource!();
+                                                      if (src != null) {
+                                                        setSheetState(() {
+                                                          tempTrueLink = true;
+                                                          tempTrueLinkSource = src;
+                                                          tempLinkSource!['trueLink'] = true;
+                                                          tempLinkSource!['trueLinkSource'] = src;
+                                                        });
+                                                      }
+                                                    },
+                                                  ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -3384,29 +3726,72 @@ class _CalculatorRow extends StatelessWidget {
                                         ),
                                       ),
                                       const SizedBox(height: 4),
-                                      TextField(
-                                        controller: falseValCtrl,
-                                        keyboardType:
-                                            const TextInputType.numberWithOptions(
-                                              decimal: true,
-                                            ),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 13,
-                                        ),
-                                        decoration: const InputDecoration(
-                                          hintText: '0.0',
-                                          isDense: true,
-                                          contentPadding: EdgeInsets.symmetric(
-                                            vertical: 8,
-                                            horizontal: 8,
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: tempFalseLink
+                                                ? Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.blueAccent.withOpacity(0.15),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                      border: Border.all(color: Colors.blueAccent.withOpacity(0.4)),
+                                                    ),
+                                                    child: Row(children: [
+                                                      const Icon(Icons.link_rounded, color: Colors.blueAccent, size: 14),
+                                                      const SizedBox(width: 4),
+                                                      Expanded(child: Text(_getLinkChipLabel(tempFalseLinkSource, 2), style: const TextStyle(color: Colors.blueAccent, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                                                    ]),
+                                                  )
+                                                : TextField(
+                                                    controller: falseValCtrl,
+                                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                                                    decoration: const InputDecoration(
+                                                      hintText: '0.0',
+                                                      isDense: true,
+                                                      contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                                      border: OutlineInputBorder(),
+                                                    ),
+                                                    onChanged: (v) {
+                                                      tempLinkSource!['falseVal'] = double.tryParse(v) ?? 0.0;
+                                                    },
+                                                  ),
                                           ),
-                                          border: OutlineInputBorder(),
-                                        ),
-                                        onChanged: (v) {
-                                          tempLinkSource!['falseVal'] =
-                                              double.tryParse(v) ?? 0.0;
-                                        },
+                                          if (onPickLinkSource != null)
+                                            tempFalseLink
+                                                ? IconButton(
+                                                    icon: const Icon(Icons.link_off_rounded, color: Colors.white38),
+                                                    iconSize: 18,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    onPressed: () {
+                                                      setSheetState(() {
+                                                        tempFalseLink = false;
+                                                        tempFalseLinkSource = null;
+                                                        tempLinkSource!['falseLink'] = false;
+                                                        tempLinkSource!['falseLinkSource'] = null;
+                                                      });
+                                                    },
+                                                  )
+                                                : IconButton(
+                                                    icon: const Icon(Icons.link_rounded, color: Colors.blueAccent),
+                                                    iconSize: 18,
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    onPressed: () async {
+                                                      final src = await onPickLinkSource!();
+                                                      if (src != null) {
+                                                        setSheetState(() {
+                                                          tempFalseLink = true;
+                                                          tempFalseLinkSource = src;
+                                                          tempLinkSource!['falseLink'] = true;
+                                                          tempLinkSource!['falseLinkSource'] = src;
+                                                        });
+                                                      }
+                                                    },
+                                                  ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -3573,7 +3958,15 @@ class _CalculatorRow extends StatelessWidget {
                                         'logicId': newId,
                                         'trueVal': 1.0,
                                         'falseVal': 0.0,
+                                        'trueLink': false,
+                                        'trueLinkSource': null,
+                                        'falseLink': false,
+                                        'falseLinkSource': null,
                                       };
+                                      tempTrueLink = false;
+                                      tempTrueLinkSource = null;
+                                      tempFalseLink = false;
+                                      tempFalseLinkSource = null;
                                       trueValCtrl.text = '1.0';
                                       falseValCtrl.text = '0.0';
                                     });
@@ -3638,7 +4031,15 @@ class _CalculatorRow extends StatelessWidget {
                                       'trueVal':
                                           double.tryParse(ctrl.text) ?? 1.0,
                                       'falseVal': 0.0,
+                                      'trueLink': false,
+                                      'trueLinkSource': null,
+                                      'falseLink': false,
+                                      'falseLinkSource': null,
                                     };
+                                    tempTrueLink = false;
+                                    tempTrueLinkSource = null;
+                                    tempFalseLink = false;
+                                    tempFalseLinkSource = null;
                                     trueValCtrl.text =
                                         (double.tryParse(ctrl.text) ?? 1.0)
                                             .toString();

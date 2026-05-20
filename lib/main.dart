@@ -61,6 +61,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final Set<int> _selectedForMerge = {};
   String? _appendTargetSheetId;
 
+  // ── QR共有選択モード ──────────────────────────────────────────────────────
+  bool _isQrSelectMode = false;
+  final Set<int> _selectedForQrShare = {};
+
   /// アプリ内クリップボード（シート間共有）
   final ValueNotifier<Map<String, dynamic>?> _clipboardNotifier = ValueNotifier(
     null,
@@ -466,6 +470,40 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
+                    color: Colors.purpleAccent.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.qr_code_2_rounded,
+                    color: Colors.purpleAccent,
+                    size: 22,
+                  ),
+                ),
+                title: const Text(
+                  'QRコードで共有',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  'シートを選択してQRコードで書き出す',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.4),
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _startQrSelectMode();
+                },
+              ),
+              const Divider(color: Colors.white10, indent: 16, endIndent: 16),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
                     color: Colors.tealAccent.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -576,6 +614,447 @@ class _HomeScreenState extends State<HomeScreen> {
       _isSelectMode = false;
       _appendTargetSheetId = null;
       _selectedForMerge.clear();
+    });
+  }
+
+  // ── QR共有選択モード ──────────────────────────────────────────────────────
+  void _startQrSelectMode() {
+    if (_configs.isEmpty) return;
+    setState(() {
+      _isQrSelectMode = true;
+      _selectedForQrShare.clear();
+    });
+  }
+
+  void _cancelQrSelectMode() {
+    setState(() {
+      _isQrSelectMode = false;
+      _selectedForQrShare.clear();
+    });
+  }
+
+  void _toggleQrSelection(int index) {
+    setState(() {
+      if (_selectedForQrShare.contains(index)) {
+        _selectedForQrShare.remove(index);
+      } else {
+        _selectedForQrShare.add(index);
+      }
+    });
+  }
+
+  /// 選択シートの QR データを生成してダイアログを表示する
+  void _executeQrShare() {
+    if (_selectedForQrShare.isEmpty) return;
+    final sorted = _selectedForQrShare.toList()..sort();
+    // 結合シートはその構成シートに展開し、重複を除外する
+    final seenIds = <String>{};
+    final targetConfigs = <WidgetConfig>[];
+    for (final i in sorted) {
+      final cfg = _configs[i];
+      if (cfg.type == 'merged') {
+        final sheetIds = (cfg.data['sheetIds'] as List<dynamic>? ?? [])
+            .map((e) => e as String)
+            .toList();
+        for (final id in sheetIds) {
+          if (seenIds.contains(id)) continue;
+          try {
+            final sheet = _configs.firstWhere((c) => c.id == id);
+            if (sheet.type != 'merged') {
+              seenIds.add(id);
+              targetConfigs.add(sheet);
+            }
+          } catch (_) {}
+        }
+      } else {
+        if (seenIds.contains(cfg.id)) continue;
+        seenIds.add(cfg.id);
+        targetConfigs.add(cfg);
+      }
+    }
+    if (targetConfigs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('共有できるシートがありません'),
+          backgroundColor: Color(0xFF2A2A3A),
+        ),
+      );
+      return;
+    }
+
+    final sheets = targetConfigs.map((config) {
+      final title = config.data['title'] as String? ?? '定型計算';
+      final items = config.data['items'] as List<dynamic>? ?? [];
+      final qrDataList = _buildQrDataForConfig(config);
+      return (title: title, itemCount: items.length, qrDataList: qrDataList);
+    }).toList();
+
+    setState(() {
+      _isQrSelectMode = false;
+      _selectedForQrShare.clear();
+    });
+
+    showDialog(
+      context: context,
+      builder: (ctx) => MultiSheetQrDialog(sheets: sheets),
+    );
+  }
+
+  /// WidgetConfig から QR データチャンクを生成する（リンク/変換/論理式含む）
+  List<String> _buildQrDataForConfig(WidgetConfig config) {
+    double safeDouble(num? v) {
+      final d = (v ?? 0.0).toDouble();
+      if (d.isNaN || d.isInfinite) return 0.0;
+      return d;
+    }
+
+    // Simple single-operation arithmetic (same operators as _calculateSingle)
+    double calcSingle(double a, String op, double b) {
+      switch (op) {
+        case '+': return a + b;
+        case '-': return a - b;
+        case 'x': return a * b;
+        case '/': return b != 0 ? a / b : 0.0;
+        case '%': return b != 0 ? a % b : 0.0;
+        default: return a;
+      }
+    }
+
+    // Two-pass arithmetic evaluator with operator precedence (mirrors _evaluateTokens)
+    double simpleEval(double inp, String op, double ope, List<dynamic> others) {
+      final work = <dynamic>[inp, op, ope];
+      for (final o in others) {
+        final om = o as Map;
+        work.add(om['op'] as String? ?? '+');
+        work.add((om['val'] as num? ?? 0.0).toDouble());
+      }
+      // Pass 1: high-priority ops (x / %)
+      int i = 1;
+      while (i < work.length) {
+        final op2 = work[i] as String;
+        if (op2 == 'x' || op2 == '/' || op2 == '%') {
+          final res = calcSingle(
+            (work[i - 1] as num).toDouble(), op2, (work[i + 1] as num).toDouble());
+          work.replaceRange(i - 1, i + 2, [res]);
+        } else {
+          i += 2;
+        }
+      }
+      // Pass 2: low-priority ops (+ -)
+      double result = (work[0] as num).toDouble();
+      for (int j = 1; j < work.length; j += 2) {
+        result = calcSingle(result, work[j] as String, (work[j + 1] as num).toDouble());
+      }
+      return result;
+    }
+
+    // Compute item results for a WidgetConfig using stored values + same-sheet link resolution
+    List<double> computeSheetResults(WidgetConfig cfg) {
+      final items = (cfg.data['items'] as List<dynamic>? ?? [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      if (items.isEmpty) return [];
+      final results = List<double>.filled(items.length, 0.0);
+
+      // Pass 1: raw stored values
+      for (int i = 0; i < items.length; i++) {
+        final it = items[i];
+        results[i] = simpleEval(
+          safeDouble(it['input'] as num?),
+          it['op'] as String? ?? '+',
+          safeDouble(it['operand'] as num?),
+          it['others'] as List? ?? [],
+        );
+      }
+
+      // Resolve a same-sheet link (skip cross-sheet / constant / logic links)
+      double resolveInSheet(bool isLink, Map? src, double stored) {
+        if (!isLink || src == null) return stored;
+        if (src['sheetId'] != null || src['type'] != null) return stored;
+        final si = src['rowIdx'] as int? ?? 0;
+        final st = src['target'] as String? ?? 'result';
+        if (si < 0 || si >= items.length) return stored;
+        if (st == 'result') return results[si];
+        if (st == 'input') return safeDouble(items[si]['input'] as num?);
+        if (st == 'operand') return safeDouble(items[si]['operand'] as num?);
+        return stored;
+      }
+
+      // Passes 2+: iterative convergence for same-sheet links
+      for (int pass = 0; pass < items.length; pass++) {
+        bool anyChange = false;
+        final next = List<double>.filled(items.length, 0.0);
+        for (int i = 0; i < items.length; i++) {
+          final it = items[i];
+          final inp = resolveInSheet(
+              it['inputLink'] == true, it['inputLinkSource'] as Map?,
+              safeDouble(it['input'] as num?));
+          final ope = resolveInSheet(
+              it['operandLink'] == true, it['operandLinkSource'] as Map?,
+              safeDouble(it['operand'] as num?));
+          final oth = (it['others'] as List? ?? []).map((o) {
+            final om = Map<String, dynamic>.from(o as Map);
+            om['val'] = resolveInSheet(
+                om['valLink'] == true, om['valLinkSource'] as Map?,
+                safeDouble(om['val'] as num?));
+            return om;
+          }).toList();
+          next[i] = simpleEval(inp, it['op'] as String? ?? '+', ope, oth);
+          if ((next[i] - results[i]).abs() > 1e-10) anyChange = true;
+        }
+        for (int i = 0; i < items.length; i++) results[i] = next[i];
+        if (!anyChange) break;
+      }
+      return results;
+    }
+
+    // For cross-sheet / constant / logic links: resolve to a concrete value.
+    // Returns null for same-sheet links → caller preserves link metadata.
+    double? resolveComplexLink(
+        bool isLinked, Map<String, dynamic>? src, double stored) {
+      if (!isLinked || src == null) return null;
+      final sheetId = src['sheetId'] as String?;
+      final type = src['type'] as String?;
+
+      if (sheetId != null) {
+        // Cross-sheet link: look up source sheet in _configs and compute
+        try {
+          final srcCfg = _configs.firstWhere(
+            (c) => c.id == sheetId,
+            orElse: () => WidgetConfig(id: '', type: '', data: {}),
+          );
+          if (srcCfg.id.isEmpty) return 0.0;
+          final srcItems = (srcCfg.data['items'] as List<dynamic>? ?? [])
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList();
+          final rowIdx = src['rowIdx'] as int? ?? 0;
+          final target = src['target'] as String? ?? 'result';
+          if (rowIdx < 0 || rowIdx >= srcItems.length) return 0.0;
+          if (target == 'input') {
+            return safeDouble(srcItems[rowIdx]['input'] as num?);
+          }
+          if (target == 'operand') {
+            return safeDouble(srcItems[rowIdx]['operand'] as num?);
+          }
+          if (target.startsWith('other_')) {
+            final idx = int.tryParse(target.split('_')[1]) ?? 0;
+            final oth = srcItems[rowIdx]['others'] as List? ?? [];
+            if (idx < oth.length) {
+              return safeDouble((oth[idx] as Map)['val'] as num?);
+            }
+            return 0.0;
+          }
+          // target == 'result': compute via sheet results
+          final results = computeSheetResults(srcCfg);
+          return rowIdx < results.length ? results[rowIdx] : 0.0;
+        } catch (_) {
+          return 0.0;
+        }
+      }
+
+      if (type == 'constant') {
+        // Constant link: look up constant value from this sheet's constants
+        final ci = src['constIdx'] as int? ?? 0;
+        final consts = config.data['constants'] as List<dynamic>? ?? [];
+        if (ci >= 0 && ci < consts.length) {
+          return safeDouble((consts[ci] as Map)['value'] as num?);
+        }
+        return stored;
+      }
+
+      if (type == 'logic') {
+        // Logic links: preserve link metadata (logic items are exported with their IDs)
+        return null;
+      }
+
+      // Same-sheet link (no sheetId, no special type) → preserve metadata
+      return null;
+    }
+
+    // Compact a link source by removing null/false values to minimize QR size.
+    // Safe: receivers check e.g. source['trueLink'] == true (missing key → false)
+    // and source['trueLinkSource'] as Map? (missing key → null).
+    Map<String, dynamic> compactSrc(Map<String, dynamic> src) =>
+        Map.fromEntries(
+            src.entries.where((e) => e.value != null && e.value != false));
+
+    final title = config.data['title'] as String? ?? '定型計算';
+    final rawItems = config.data['items'] as List<dynamic>? ?? [];
+
+    final qrItems = rawItems.map<Map<String, dynamic>>((e) {
+      final item = Map<String, dynamic>.from(e as Map);
+
+      final inputLinkSrc = item['inputLinkSource'] as Map<String, dynamic>?;
+      final inputLinked = item['inputLink'] == true;
+      final resolvedInput = resolveComplexLink(
+          inputLinked, inputLinkSrc, safeDouble(item['input'] as num?));
+      final inputVal = resolvedInput ?? safeDouble(item['input'] as num?);
+      final keepInputLink = inputLinked && resolvedInput == null;
+
+      final operandLinkSrc = item['operandLinkSource'] as Map<String, dynamic>?;
+      final operandLinked = item['operandLink'] == true;
+      final resolvedOperand = resolveComplexLink(
+          operandLinked, operandLinkSrc, safeDouble(item['operand'] as num?));
+      final operandVal = resolvedOperand ?? safeDouble(item['operand'] as num?);
+      final keepOperandLink = operandLinked && resolvedOperand == null;
+
+      return {
+        'n': item['name'] as String? ?? '',
+        'i': inputVal,
+        'op': item['op'] as String? ?? '+',
+        'o': operandVal,
+        'oth': (item['others'] as List? ?? []).map<Map<String, dynamic>>((o) {
+          final om = Map<String, dynamic>.from(o as Map);
+          final valLinkSrc = om['valLinkSource'] as Map<String, dynamic>?;
+          final valLinked = om['valLink'] == true;
+          final resolvedVal = resolveComplexLink(
+              valLinked, valLinkSrc, safeDouble(om['val'] as num?));
+          final valVal = resolvedVal ?? safeDouble(om['val'] as num?);
+          final keepValLink = valLinked && resolvedVal == null;
+          return {
+            'op': om['op'] as String? ?? '+',
+            'v': valVal,
+            'u': om['unit'] as String? ?? '',
+            if (keepValLink) 'l': true,
+            if (keepValLink && valLinkSrc != null) 'ls': compactSrc(valLinkSrc),
+            if (om['transform'] != null) 't': om['transform'],
+            if (om['powExp'] != null) 'pe': safeDouble(om['powExp'] as num?),
+          };
+        }).toList(),
+        'p': (item['precision'] as num? ?? 2).toInt(),
+        'u1': item['unit1'] as String? ?? '',
+        'u2': item['unit2'] as String? ?? '',
+        'ur': item['unitResult'] as String? ?? '',
+        if (keepInputLink) 'il': true,
+        if (keepInputLink && inputLinkSrc != null) 'ils': compactSrc(inputLinkSrc),
+        if (item['inputTransform'] != null) 'it': item['inputTransform'],
+        if (item['inputPowExp'] != null) 'ipe': safeDouble(item['inputPowExp'] as num?),
+        if (keepOperandLink) 'ol': true,
+        if (keepOperandLink && operandLinkSrc != null) 'ols': compactSrc(operandLinkSrc),
+        if (item['operandTransform'] != null) 'ot': item['operandTransform'],
+        if (item['operandPowExp'] != null) 'ope': safeDouble(item['operandPowExp'] as num?),
+      };
+    }).toList();
+
+    // メモ
+    final memos = config.data['memos'] as List<dynamic>?;
+    final qrMemos = memos?.map<Map<String, dynamic>>((e) {
+      final m = Map<String, dynamic>.from(e as Map);
+      return {'txt': m['text'] as String? ?? '', 'aci': m['afterCalcIdx'] as int? ?? -1};
+    }).toList();
+
+    // スタンドアロンメモ
+    final standaloneItems = config.data['standaloneItems'] as List<dynamic>?;
+    final qrSItems = standaloneItems
+        ?.map((s) => (s as Map)['text'] as String? ?? '')
+        .toList();
+
+    // 表示順
+    List<Map<String, dynamic>>? qrDOrder;
+    if (standaloneItems != null && standaloneItems.isNotEmpty) {
+      final displayOrder = config.data['displayOrder'] as List<dynamic>?;
+      final sItemIdToIdx = <String, int>{};
+      for (int si = 0; si < standaloneItems.length; si++) {
+        final id = (standaloneItems[si] as Map)['id'] as String? ?? '';
+        sItemIdToIdx[id] = si;
+      }
+      if (displayOrder != null) {
+        qrDOrder = displayOrder
+            .map<Map<String, dynamic>?>((e) {
+              final entry = e as Map;
+              if (entry['type'] == 'calc') {
+                return {'c': entry['calcIdx'] as int};
+              } else {
+                final id = entry['itemId'] as String? ?? '';
+                final idx = sItemIdToIdx[id];
+                if (idx == null) return null;
+                return {'s': idx};
+              }
+            })
+            .whereType<Map<String, dynamic>>()
+            .toList();
+      }
+    }
+
+    // 論理式（conditions に id フィールドを含めない — _buildQrChunks と同形式）
+    final logicItems = config.data['logicItems'] as List<dynamic>?;
+    final qrLogicItems = logicItems?.map<Map<String, dynamic>>((l) {
+      final lm = Map<String, dynamic>.from(l as Map);
+      final conditions = (lm['conditions'] as List? ?? [])
+          .map<Map<String, dynamic>>((c) {
+            final cm = Map<String, dynamic>.from(c as Map);
+            return {
+              'lv': safeDouble(cm['lhsVal'] as num?),
+              'll': cm['lhsLabel'] as String? ?? '',
+              'op': cm['op'] as String? ?? '==',
+              'rv': safeDouble(cm['rhsVal'] as num?),
+              'rl': cm['rhsLabel'] as String? ?? '',
+              'rv2': safeDouble(cm['rhsVal2'] as num?),
+              'rl2': cm['rhsLabel2'] as String? ?? '',
+              if (cm['lhsLink'] == true) 'lhl': true,
+              if (cm['lhsLinkSource'] != null) 'lhls': compactSrc(Map<String, dynamic>.from(cm['lhsLinkSource'] as Map)),
+              if (cm['rhsLink'] == true) 'rhl': true,
+              if (cm['rhsLinkSource'] != null) 'rhls': compactSrc(Map<String, dynamic>.from(cm['rhsLinkSource'] as Map)),
+              if (cm['rhsLink2'] == true) 'rhl2': true,
+              if (cm['rhsLinkSource2'] != null) 'rhls2': compactSrc(Map<String, dynamic>.from(cm['rhsLinkSource2'] as Map)),
+            };
+          })
+          .toList();
+      final chainOps = (lm['chainOps'] as List? ?? [])
+          .map((e) => e as String)
+          .toList();
+      return {
+        'id': lm['id'] as String? ?? '',
+        'n': lm['name'] as String? ?? '',
+        'conds': conditions,
+        'cops': chainOps,
+      };
+    }).toList();
+
+    // 定数
+    final constants = config.data['constants'] as List<dynamic>?;
+    final qrConsts = constants?.map<Map<String, dynamic>>((c) {
+      final cm = Map<String, dynamic>.from(c as Map);
+      return {'n': cm['name'] as String? ?? '', 'v': safeDouble(cm['value'] as num?)};
+    }).toList();
+
+    // チャンク生成（calculator_widget の _buildQrChunks と同じロジック）
+    final singlePayload = <String, dynamic>{
+      'v': 1,
+      't': title,
+      'items': qrItems,
+      if (qrMemos != null && qrMemos.isNotEmpty) 'memos': qrMemos,
+      if (qrSItems != null && qrSItems.isNotEmpty) 'sitems': qrSItems,
+      if (qrDOrder != null && qrDOrder.isNotEmpty) 'dorder': qrDOrder,
+      if (qrConsts != null && qrConsts.isNotEmpty) 'consts': qrConsts,
+      if (qrLogicItems != null && qrLogicItems.isNotEmpty) 'logics': qrLogicItems,
+    };
+    final singleQr = json.encode(singlePayload);
+    if (singleQr.length <= 350) return [singleQr];
+
+    const dataChunkSize = 300;
+    final itemsJson = json.encode(qrItems);
+    final dataChunks = <String>[];
+    var i = 0;
+    while (i < itemsJson.length) {
+      final end = (i + dataChunkSize).clamp(0, itemsJson.length);
+      dataChunks.add(itemsJson.substring(i, end));
+      i = end;
+    }
+    final total = dataChunks.length;
+    return List.generate(total, (idx) {
+      final envelope = <String, dynamic>{
+        'v': 1, 'm': 1, 'tot': total, 'idx': idx, 'd': dataChunks[idx],
+      };
+      if (idx == 0) {
+        envelope['t'] = title;
+        if (qrMemos != null && qrMemos.isNotEmpty) envelope['memos'] = qrMemos;
+        if (qrSItems != null && qrSItems.isNotEmpty) envelope['sitems'] = qrSItems;
+        if (qrDOrder != null && qrDOrder.isNotEmpty) envelope['dorder'] = qrDOrder;
+        if (qrConsts != null && qrConsts.isNotEmpty) envelope['consts'] = qrConsts;
+        if (qrLogicItems != null && qrLogicItems.isNotEmpty) envelope['logics'] = qrLogicItems;
+      }
+      return json.encode(envelope);
     });
   }
 
@@ -719,6 +1198,10 @@ class _HomeScreenState extends State<HomeScreen> {
               'op': om['op'] as String? ?? '+',
               'val': (om['v'] as num? ?? 0.0).toDouble(),
               'unit': om['u'] as String? ?? '',
+              if (om['l'] == true) 'valLink': true,
+              if (om['ls'] != null) 'valLinkSource': om['ls'],
+              if (om['t'] != null) 'transform': om['t'],
+              if (om['pe'] != null) 'powExp': (om['pe'] as num).toDouble(),
             };
           }).toList(),
           'brackets': <dynamic>[],
@@ -726,6 +1209,14 @@ class _HomeScreenState extends State<HomeScreen> {
           'unit1': m['u1'] as String? ?? '',
           'unit2': m['u2'] as String? ?? '',
           'unitResult': m['ur'] as String? ?? '',
+          if (m['il'] == true) 'inputLink': true,
+          if (m['ils'] != null) 'inputLinkSource': m['ils'],
+          if (m['it'] != null) 'inputTransform': m['it'],
+          if (m['ipe'] != null) 'inputPowExp': (m['ipe'] as num).toDouble(),
+          if (m['ol'] == true) 'operandLink': true,
+          if (m['ols'] != null) 'operandLinkSource': m['ols'],
+          if (m['ot'] != null) 'operandTransform': m['ot'],
+          if (m['ope'] != null) 'operandPowExp': (m['ope'] as num).toDouble(),
         };
       }).toList();
 
@@ -784,6 +1275,43 @@ class _HomeScreenState extends State<HomeScreen> {
         };
       }).toList();
 
+      // 論理式を復元
+      final qrLogics = decoded['logics'] as List<dynamic>?;
+      final logicItems = qrLogics?.map<Map<String, dynamic>>((l) {
+        final lm = Map<String, dynamic>.from(l as Map);
+        final baseId = lm['id'] as String? ??
+            '${DateTime.now().millisecondsSinceEpoch}_logic';
+        final conditions = (lm['conds'] as List? ?? [])
+            .map<Map<String, dynamic>>((c) {
+              final cm = Map<String, dynamic>.from(c as Map);
+              return {
+                'lhsVal': (cm['lv'] as num? ?? 0.0).toDouble(),
+                'lhsLabel': cm['ll'] as String? ?? '',
+                'op': cm['op'] as String? ?? '==',
+                'rhsVal': (cm['rv'] as num? ?? 0.0).toDouble(),
+                'rhsLabel': cm['rl'] as String? ?? '',
+                'rhsVal2': (cm['rv2'] as num? ?? 0.0).toDouble(),
+                'rhsLabel2': cm['rl2'] as String? ?? '',
+                if (cm['lhl'] == true) 'lhsLink': true,
+                if (cm['lhls'] != null) 'lhsLinkSource': cm['lhls'],
+                if (cm['rhl'] == true) 'rhsLink': true,
+                if (cm['rhls'] != null) 'rhsLinkSource': cm['rhls'],
+                if (cm['rhl2'] == true) 'rhsLink2': true,
+                if (cm['rhls2'] != null) 'rhsLinkSource2': cm['rhls2'],
+              };
+            })
+            .toList();
+        final chainOps = (lm['cops'] as List? ?? [])
+            .map((e) => e as String)
+            .toList();
+        return {
+          'id': baseId,
+          'name': lm['n'] as String? ?? '',
+          'conditions': conditions,
+          'chainOps': chainOps,
+        };
+      }).toList();
+
       final newConfig = WidgetConfig(
         id: '${DateTime.now().millisecondsSinceEpoch}',
         type: 'calculator',
@@ -798,6 +1326,8 @@ class _HomeScreenState extends State<HomeScreen> {
           if (displayOrder != null && displayOrder.isNotEmpty)
             'displayOrder': displayOrder,
           if (constants != null && constants.isNotEmpty) 'constants': constants,
+          if (logicItems != null && logicItems.isNotEmpty)
+            'logicItems': logicItems,
         },
       );
 
@@ -876,7 +1406,7 @@ class _HomeScreenState extends State<HomeScreen> {
               slivers: [
                 SliverAppBar(
                   pinned: true,
-                  expandedHeight: _isSelectMode ? 0 : 200,
+                  expandedHeight: (_isSelectMode || _isQrSelectMode) ? 0 : 200,
                   backgroundColor: const Color(0xFF0D0D14).withOpacity(0.9),
                   surfaceTintColor: Colors.transparent,
                   elevation: 0,
@@ -900,6 +1430,26 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ]
+                      : _isQrSelectMode
+                      ? [
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: Text(
+                                _selectedForQrShare.isEmpty
+                                    ? '共有するシートを選択'
+                                    : '${_selectedForQrShare.length}件選択中',
+                                style: TextStyle(
+                                  color: _selectedForQrShare.isNotEmpty
+                                      ? Colors.purpleAccent
+                                      : Colors.white38,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ]
                       : [
                           IconButton(
                             icon: const Icon(
@@ -912,7 +1462,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(width: 8),
                         ],
-                  flexibleSpace: _isSelectMode
+                  flexibleSpace: (_isSelectMode || _isQrSelectMode)
                       ? null
                       : FlexibleSpaceBar(
                           titlePadding: const EdgeInsets.only(
@@ -986,11 +1536,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ? (_appendTargetSheetId == cfg.id
                                       ? () {}
                                       : () => _toggleSelection(i))
+                                : _isQrSelectMode
+                                ? () => _toggleQrSelection(i)
                                 : () => _openDetail(i),
                             onDelete: () => _deleteConfig(i),
                             onUpdate: (data) => _updateConfig(i, data),
-                            isSelectMode: _isSelectMode,
-                            isSelected: _selectedForMerge.contains(i),
+                            isSelectMode: _isSelectMode || _isQrSelectMode,
+                            isSelected: _isSelectMode
+                                ? _selectedForMerge.contains(i)
+                                : _selectedForQrShare.contains(i),
                             resolvedSheets: resolvedSheets,
                             onReorderSheets: resolvedSheets == null
                                 ? null
@@ -1042,7 +1596,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      floatingActionButton: _isSelectMode
+      floatingActionButton: _isQrSelectMode
+          ? _QrShareActionBar(
+              selectedCount: _selectedForQrShare.length,
+              onShare: _executeQrShare,
+              onCancel: _cancelQrSelectMode,
+            )
+          : _isSelectMode
           ? _MergeActionBar(
               selectedCount: _selectedForMerge.length,
               onMerge: _executeMergeOrAppend,
@@ -1855,6 +2415,84 @@ class _MergeActionBar extends StatelessWidget {
   }
 }
 
+// ── QR共有アクションバー ──────────────────────────────────────────────────────
+class _QrShareActionBar extends StatelessWidget {
+  final int selectedCount;
+  final VoidCallback onShare;
+  final VoidCallback onCancel;
+
+  const _QrShareActionBar({
+    required this.selectedCount,
+    required this.onShare,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final canShare = selectedCount >= 1;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.purpleAccent.withOpacity(canShare ? 0.2 : 0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          TextButton(
+            onPressed: onCancel,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'キャンセル',
+              style: TextStyle(color: Colors.white54, fontSize: 14),
+            ),
+          ),
+          const Spacer(),
+          GestureDetector(
+            onTap: canShare ? onShare : null,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                gradient: canShare
+                    ? const LinearGradient(
+                        colors: [Color(0xFF9E7AFF), Colors.purpleAccent],
+                      )
+                    : null,
+                color: canShare ? null : Colors.white.withOpacity(0.06),
+              ),
+              child: Text(
+                canShare
+                    ? '$selectedCount件のシートを共有'
+                    : '1件以上選択してください',
+                style: TextStyle(
+                  color: canShare ? Colors.white : Colors.white38,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── 設定ページ (ユーザー定義定数管理) ────────────────────────────────────────
 class _SettingsPage extends StatefulWidget {
   final List<Map<String, dynamic>> userConstants;
@@ -2381,6 +3019,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
   List<dynamic>? _multiSItems;
   List<dynamic>? _multiDOrder;
   List<dynamic>? _multiConsts;
+  List<dynamic>? _multiLogics;
 
   // ── 画像モード ──
   List<XFile>? _pickedImages;
@@ -2518,11 +3157,12 @@ class _QrScannerPageState extends State<_QrScannerPage>
     // 既に収集済みのチャンクは再処理しない
     if (_chunks.containsKey(idx)) return;
 
-    // 先頭チャンクからメモ・定数を抽出
+    // 先頭チャンクからメモ・定数・論理式を抽出
     final List<dynamic>? chunkMemos = decoded['memos'] as List<dynamic>?;
     final List<dynamic>? chunkSItems = decoded['sitems'] as List<dynamic>?;
     final List<dynamic>? chunkDOrder = decoded['dorder'] as List<dynamic>?;
     final List<dynamic>? chunkConsts = decoded['consts'] as List<dynamic>?;
+    final List<dynamic>? chunkLogics = decoded['logics'] as List<dynamic>?;
 
     _triggerFlash();
     setState(() {
@@ -2532,6 +3172,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
       if (chunkSItems != null) _multiSItems = chunkSItems;
       if (chunkDOrder != null) _multiDOrder = chunkDOrder;
       if (chunkConsts != null) _multiConsts = chunkConsts;
+      if (chunkLogics != null) _multiLogics = chunkLogics;
       _chunks[idx] = dataChunk;
     });
 
@@ -2562,6 +3203,9 @@ class _QrScannerPageState extends State<_QrScannerPage>
         if (_multiConsts != null && _multiConsts!.isNotEmpty) {
           assembledMap['consts'] = _multiConsts;
         }
+        if (_multiLogics != null && _multiLogics!.isNotEmpty) {
+          assembledMap['logics'] = _multiLogics;
+        }
         final assembled = json.encode(assembledMap);
         setState(() => _done = true);
         widget.onScanned(assembled);
@@ -2575,6 +3219,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
           _multiSItems = null;
           _multiDOrder = null;
           _multiConsts = null;
+          _multiLogics = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -2615,7 +3260,10 @@ class _QrScannerPageState extends State<_QrScannerPage>
                 _totalChunks = null;
                 _multiTitle = null;
                 _multiMemos = null;
+                _multiSItems = null;
+                _multiDOrder = null;
                 _multiConsts = null;
+                _multiLogics = null;
               }),
               child: const Text(
                 'リセット',

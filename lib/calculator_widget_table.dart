@@ -95,9 +95,13 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                 }
               }
               if (logic != null) {
-                final isTrue = _CalculatorWidgetState._evalLogicItem(logic);
-                final trueVal = (source['trueVal'] as num? ?? 1.0).toDouble();
-                final falseVal = (source['falseVal'] as num? ?? 0.0).toDouble();
+                final isTrue = _CalculatorWidgetState._evalLogicItem(logic, resolveLink);
+                final trueVal = (source['trueLink'] as bool? ?? false)
+                    ? resolveLink(source['trueLinkSource'] as Map<String, dynamic>?, true, 1.0)
+                    : (source['trueVal'] as num? ?? 1.0).toDouble();
+                final falseVal = (source['falseLink'] as bool? ?? false)
+                    ? resolveLink(source['falseLinkSource'] as Map<String, dynamic>?, true, 0.0)
+                    : (source['falseVal'] as num? ?? 0.0).toDouble();
                 return isTrue ? trueVal : falseVal;
               }
             }
@@ -174,6 +178,38 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
         };
       }
       if (!anyChange) break;
+    }
+
+    // 論理式表示用リゾルバ（ループ後に finalResults が確定した状態で使用）
+    double resolveForLogicDisplay(
+      Map<String, dynamic>? source,
+      bool isLink,
+      double fallback,
+    ) {
+      if (!isLink || source == null) return fallback;
+      final sheetId = source['sheetId'] as String?;
+      if (sheetId != null) {
+        return _resolveExternalValue(
+          sheetId,
+          source['rowIdx'] as int? ?? 0,
+          source['target'] as String? ?? 'result',
+        );
+      }
+      if (source['type'] == 'constant') {
+        final ci = source['constIdx'] as int? ?? 0;
+        final consts = _constants;
+        if (ci >= 0 && ci < consts.length) {
+          return (consts[ci]['value'] as num? ?? 0.0).toDouble();
+        }
+        return fallback;
+      }
+      final sRowIdx = source['rowIdx'] as int? ?? 0;
+      final sTarget = source['target'] as String? ?? 'result';
+      if (sRowIdx < 0 || sRowIdx >= items.length) return fallback;
+      if (sTarget == 'result') return finalResults[sRowIdx];
+      if (sTarget == 'input') return (items[sRowIdx]['input'] as num? ?? 0.0).toDouble();
+      if (sTarget == 'operand') return (items[sRowIdx]['operand'] as num? ?? 0.0).toDouble();
+      return fallback;
     }
 
     String fmtNum(double v, int precision) {
@@ -608,8 +644,9 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
               ...logicItems.map((logicItem) {
                 final exprStr = _CalculatorWidgetState._buildLogicExprString(
                   logicItem,
+                  resolveForLogicDisplay,
                 );
-                final isTrue = _CalculatorWidgetState._evalLogicItem(logicItem);
+                final isTrue = _CalculatorWidgetState._evalLogicItem(logicItem, resolveForLogicDisplay);
                 final logicName = logicItem['name'] as String? ?? '';
                 final itemId = logicItem['id'] as String? ?? '';
                 return GestureDetector(
@@ -617,7 +654,7 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                     showDialog<Map<String, dynamic>?>(
                       context: context,
                       builder: (ctx) =>
-                          _LogicItemEditDialog(initial: logicItem),
+                          _LogicItemEditDialog(initial: logicItem, resolver: resolveForLogicDisplay),
                     ).then((result) {
                       if (result == null || !mounted) return;
                       _updateLogicItem(itemId, result);

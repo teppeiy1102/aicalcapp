@@ -1,0 +1,283 @@
+part of 'widget_page.dart';
+
+extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
+  Future<Map<String, dynamic>?> _showLinkSourcePicker({
+    int? excludeRowIdx,
+  }) async {
+    final exposedSheets =
+        widget.allConfigs.where((c) => c.id != widget.config.id && c.type == 'calculator').toList();
+
+    final mergedSheets = widget.allConfigs.where((c) {
+      if (c.id == widget.config.id) return false;
+      if (c.type != 'calculator') return false;
+      return widget.mergedSiblingIds.contains(c.id);
+    }).toList();
+
+    int currentTab = 0; // 0=このシート, 1=開放された式, 2=結合シート
+    String? selectedSheetId;
+    int? selectedRowIdx;
+    String? selectedField;
+
+    return showDialog<Map<String, dynamic>?>(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.6),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            Widget buildFieldChip(String fieldKey, String label, String? sheetId, int calcIdx) {
+              bool isSel = selectedSheetId == sheetId && selectedRowIdx == calcIdx && selectedField == fieldKey;
+              
+              final targetSheetId = sheetId ?? widget.config.id;
+              final v = _resolveExternalValue(targetSheetId, calcIdx, fieldKey);
+              final srcConfig = widget.allConfigs.firstWhere(
+                (c) => c.id == targetSheetId,
+                orElse: () => widget.config,
+              );
+              final srcItems = (srcConfig.data['items'] as List<dynamic>? ?? [])
+                  .map((e) => Map<String, dynamic>.from(e as Map))
+                  .toList();
+              final precision = calcIdx < srcItems.length
+                  ? (srcItems[calcIdx]['precision'] as int? ?? 2)
+                  : 2;
+              String valStr = '';
+              if (v == v.truncateToDouble() && v.abs() < 1e12) {
+                valStr = v.toStringAsFixed(0);
+              } else {
+                valStr = v.toStringAsFixed(precision);
+              }
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    selectedSheetId = sheetId;
+                    selectedRowIdx = calcIdx;
+                    selectedField = fieldKey;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isSel ? Colors.blueAccent : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: isSel ? Colors.blueAccent : Colors.white24),
+                  ),
+                  child: Text(
+                    '$label: $valStr',
+                    style: TextStyle(color: isSel ? Colors.white : Colors.white70, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              );
+            }
+
+            Widget buildFormulaRow(String? sheetId, int idx, String op, List<Map<String, dynamic>> others) {
+              final opStyle = const TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.bold);
+              return Padding(
+                padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    buildFieldChip('input', '項1', sheetId, idx),
+                    Text(op, style: opStyle),
+                    buildFieldChip('operand', '項2', sheetId, idx),
+                    for (int oi = 0; oi < others.length; oi++) ...[  
+                      Text(others[oi]['op'] as String? ?? '+', style: opStyle),
+                      buildFieldChip('other_$oi', '項${oi + 3}', sheetId, idx),
+                    ],
+                    const Text('=', style: TextStyle(color: Colors.white54, fontSize: 13, fontWeight: FontWeight.bold)),
+                    buildFieldChip('result', '答え', sheetId, idx),
+                  ],
+                ),
+              );
+            }
+
+            Widget buildSheetList(List<dynamic> sheets, bool isMerged) {
+              // 開放された式が1件以上あるシートのみ対象にする
+              final visibleSheets = sheets.where((sheet) {
+                final allItems = (sheet.data['items'] as List<dynamic>? ?? [])
+                    .map((e) => Map<String, dynamic>.from(e as Map))
+                    .toList();
+                final exposedEntries = allItems.asMap().entries
+                    .where((e) => isMerged || e.value['exposed'] == true)
+                    .toList();
+                return exposedEntries.isNotEmpty;
+              }).toList();
+
+              if (visibleSheets.isEmpty) {
+                return const Center(
+                  child: Text('リンク可能なシートがありません', style: TextStyle(color: Colors.white54)),
+                );
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: visibleSheets.length,
+                itemBuilder: (context, i) {
+                  final sheet = visibleSheets[i];
+                  final allItems = (sheet.data['items'] as List<dynamic>? ?? [])
+                      .map((e) => Map<String, dynamic>.from(e as Map))
+                      .toList();
+                  final exposedEntries = allItems.asMap().entries
+                      .where((e) => isMerged || e.value['exposed'] == true)
+                      .toList();
+                  final title = sheet.data['title'] as String? ?? '名称未設定シート';
+
+                  return ExpansionTile(
+                    title: Text(title, style: const TextStyle(color: Colors.white)),
+                    iconColor: Colors.white54,
+                    collapsedIconColor: Colors.white54,
+                    children: exposedEntries.map((e) {
+                            final idx = e.key;
+                            final item = e.value;
+                            final rowName = item['name'] as String? ?? '計算 ${idx + 1}';
+                            final op = item['op'] as String? ?? '+';
+                            final others = (item['others'] as List? ?? [])
+                                .map((o) => Map<String, dynamic>.from(o as Map))
+                                .toList();
+                            final isSelRow = selectedSheetId == sheet.id && selectedRowIdx == idx;
+                            return SizedBox(
+                              width: double.infinity,
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 8, left: 8, right: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(isSelRow ? 0.1 : 0.05),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isSelRow ? Colors.blueAccent : Colors.transparent,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(rowName, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                                    ),
+                                    buildFormulaRow(sheet.id, idx, op, others),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                  );
+                },
+              );
+            }
+
+            Widget buildCurrentSheet() {
+              final items = _items;
+              if (items.isEmpty) {
+                return const Center(child: Text('計算式がありません', style: TextStyle(color: Colors.white54)));
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: items.length,
+                itemBuilder: (context, idx) {
+                  if (idx == excludeRowIdx) return const SizedBox.shrink();
+                  final item = items[idx];
+                  final rowName = item['name'] as String? ?? '計算 ${idx + 1}';
+                  final op = item['op'] as String? ?? '+';
+                  final others = (item['others'] as List? ?? [])
+                      .map((o) => Map<String, dynamic>.from(o as Map))
+                      .toList();
+                  final isSelRow = selectedSheetId == null && selectedRowIdx == idx;
+                  return Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(isSelRow ? 0.1 : 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: isSelRow ? Colors.blueAccent : Colors.transparent),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(rowName, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                        ),
+                        buildFormulaRow(null, idx, op, others),
+                      ],
+                    ),
+                  );
+                },
+              );
+            }
+
+            return Dialog(
+              insetPadding: const EdgeInsets.all(20),
+              backgroundColor: const Color(0xFF161622),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.7,
+                child: Column(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('リンク元を選択', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        GestureDetector(
+                          onTap: () => setState(() => currentTab = 0),
+                          child: Text('このシート', style: TextStyle(color: currentTab == 0 ? Colors.blueAccent : Colors.white54)),
+                        ),
+                        if (exposedSheets.isNotEmpty)
+                          GestureDetector(
+                            onTap: () => setState(() => currentTab = 1),
+                            child: Text('開放された式', style: TextStyle(color: currentTab == 1 ? Colors.blueAccent : Colors.white54)),
+                          ),
+                        if (mergedSheets.isNotEmpty)
+                          GestureDetector(
+                            onTap: () => setState(() => currentTab = 2),
+                            child: Text('結合シート', style: TextStyle(color: currentTab == 2 ? Colors.blueAccent : Colors.white54)),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: currentTab == 0
+                          ? buildCurrentSheet()
+                          : currentTab == 1
+                              ? buildSheetList(exposedSheets, false)
+                              : buildSheetList(mergedSheets, true),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: selectedRowIdx == null
+                                ? null
+                                : () {
+                                    Navigator.of(context).pop({
+                                      'type': 'calc',
+                                      'sheetId': selectedSheetId ?? widget.config.id,
+                                      'rowIdx': selectedRowIdx,
+                                      'target': selectedField,
+                                    });
+                                  },
+                            child: const Text('決定'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}

@@ -373,6 +373,7 @@ class _LogicRow extends StatelessWidget {
   final Widget? dragHandle;
   final Future<Map<String, dynamic>?> Function()? onPickLinkSource;
   final String Function(Map<String, dynamic>?)? getSourceRowName;
+  final double Function(Map<String, dynamic>?, bool, double)? resolver;
 
   const _LogicRow({
     required this.item,
@@ -382,6 +383,7 @@ class _LogicRow extends StatelessWidget {
     this.dragHandle,
     this.onPickLinkSource,
     this.getSourceRowName,
+    this.resolver,
   });
 
   void _showEditDialog(BuildContext context) {
@@ -391,6 +393,7 @@ class _LogicRow extends StatelessWidget {
         initial: item,
         onPickLinkSource: onPickLinkSource,
         getSourceRowName: getSourceRowName,
+        resolver: resolver,
       ),
     ).then((result) {
       if (result == null) return;
@@ -401,8 +404,8 @@ class _LogicRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = item['name'] as String? ?? '';
-    final exprStr = _CalculatorWidgetState._buildLogicExprString(item);
-    final isTrue = _CalculatorWidgetState._evalLogicItem(item);
+    final exprStr = _CalculatorWidgetState._buildLogicExprString(item, resolver);
+    final isTrue = _CalculatorWidgetState._evalLogicItem(item, resolver);
     return GestureDetector(
       onTap: () => _showEditDialog(context),
       child: Container(
@@ -514,11 +517,13 @@ class _LogicItemEditDialog extends StatefulWidget {
   final Map<String, dynamic>? initial;
   final Future<Map<String, dynamic>?> Function()? onPickLinkSource;
   final String Function(Map<String, dynamic>?)? getSourceRowName;
+  final double Function(Map<String, dynamic>?, bool, double)? resolver;
 
   const _LogicItemEditDialog({
     this.initial,
     this.onPickLinkSource,
     this.getSourceRowName,
+    this.resolver,
   });
 
   @override
@@ -835,8 +840,8 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
   @override
   Widget build(BuildContext context) {
     final preview = _buildResult();
-    final isTrue = _CalculatorWidgetState._evalLogicItem(preview);
-    final exprStr = _CalculatorWidgetState._buildLogicExprString(preview);
+    final isTrue = _CalculatorWidgetState._evalLogicItem(preview, widget.resolver);
+    final exprStr = _CalculatorWidgetState._buildLogicExprString(preview, widget.resolver);
 
     return AlertDialog(
       backgroundColor: Colors.black,
@@ -900,36 +905,44 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
                   children: [
                     if (idx > 0) ...[
                       const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          for (final op in ['AND', 'OR'])
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              child: ChoiceChip(
-                                label: Text(
-                                  op == 'AND' ? 'かつ (AND)' : 'または (OR)',
-                                  style: TextStyle(
-                                    color: _chainOps[idx - 1] == op
-                                        ? Colors.white
-                                        : Colors.white54,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                selected: _chainOps[idx - 1] == op,
-                                selectedColor: const Color(0xFF5E81FF),
-                                backgroundColor: Colors.white10,
-                                onSelected: (_) =>
-                                    setState(() => _chainOps[idx - 1] = op),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            for (final op in ['AND', 'OR', 'XOR'])
+                              Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 4,
                                 ),
-                                visualDensity: VisualDensity.compact,
+                                child: ChoiceChip(
+                                  label: Text(
+                                    op == 'AND'
+                                        ? 'かつ (AND)'
+                                        : op == 'OR'
+                                            ? 'または (OR)'
+                                            : 'どちらか一方 (XOR)',
+                                    style: TextStyle(
+                                      color: _chainOps[idx - 1] == op
+                                          ? Colors.white
+                                          : Colors.white54,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  selected: _chainOps[idx - 1] == op,
+                                  selectedColor: const Color(0xFF5E81FF),
+                                  backgroundColor: Colors.white10,
+                                  onSelected: (_) =>
+                                      setState(() => _chainOps[idx - 1] = op),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
+                                  visualDensity: VisualDensity.compact,
+                                ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 4),
                     ],

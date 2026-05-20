@@ -421,20 +421,27 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   /// 論理式アイテム全体を評価して真/偽を返す
-  static bool _evalLogicItem(Map<String, dynamic> item) {
+  static bool _evalLogicItem(
+    Map<String, dynamic> item, [
+    double Function(Map<String, dynamic>?, bool, double)? resolver,
+  ]) {
     final conditions = item['conditions'] as List? ?? [];
     final chainOps = item['chainOps'] as List? ?? [];
     if (conditions.isEmpty) return false;
     bool result = _evalCondition(
       Map<String, dynamic>.from(conditions[0] as Map),
+      resolver,
     );
     for (int i = 1; i < conditions.length; i++) {
       final condResult = _evalCondition(
         Map<String, dynamic>.from(conditions[i] as Map),
+        resolver,
       );
       final op = (i - 1 < chainOps.length ? chainOps[i - 1] : 'AND') as String;
       if (op == 'OR') {
         result = result || condResult;
+      } else if (op == 'XOR') {
+        result = result ^ condResult;
       } else {
         result = result && condResult;
       }
@@ -442,9 +449,24 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     return result;
   }
 
-  static bool _evalCondition(Map<String, dynamic> cond) {
-    final lhsVal = (cond['lhsVal'] as num? ?? 0.0).toDouble();
-    final rhsVal = (cond['rhsVal'] as num? ?? 0.0).toDouble();
+  static bool _evalCondition(
+    Map<String, dynamic> cond, [
+    double Function(Map<String, dynamic>?, bool, double)? resolver,
+  ]) {
+    final lhsVal = resolver != null
+        ? resolver(
+            cond['lhsLinkSource'] as Map<String, dynamic>?,
+            cond['lhsLink'] == true,
+            (cond['lhsVal'] as num? ?? 0.0).toDouble(),
+          )
+        : (cond['lhsVal'] as num? ?? 0.0).toDouble();
+    final rhsVal = resolver != null
+        ? resolver(
+            cond['rhsLinkSource'] as Map<String, dynamic>?,
+            cond['rhsLink'] == true,
+            (cond['rhsVal'] as num? ?? 0.0).toDouble(),
+          )
+        : (cond['rhsVal'] as num? ?? 0.0).toDouble();
     final op = cond['op'] as String? ?? '==';
     if (op == '==') return (lhsVal - rhsVal).abs() < 1e-10;
     if (op == '!=') return (lhsVal - rhsVal).abs() >= 1e-10;
@@ -453,11 +475,23 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     if (op == '<') return lhsVal < rhsVal;
     if (op == '<=') return lhsVal <= rhsVal;
     if (op == 'between') {
-      final rhs2 = (cond['rhsVal2'] as num? ?? 0.0).toDouble();
+      final rhs2 = resolver != null
+          ? resolver(
+              cond['rhsLinkSource2'] as Map<String, dynamic>?,
+              cond['rhsLink2'] == true,
+              (cond['rhsVal2'] as num? ?? 0.0).toDouble(),
+            )
+          : (cond['rhsVal2'] as num? ?? 0.0).toDouble();
       return lhsVal >= rhsVal && lhsVal <= rhs2;
     }
     if (op == 'not_between') {
-      final rhs2 = (cond['rhsVal2'] as num? ?? 0.0).toDouble();
+      final rhs2 = resolver != null
+          ? resolver(
+              cond['rhsLinkSource2'] as Map<String, dynamic>?,
+              cond['rhsLink2'] == true,
+              (cond['rhsVal2'] as num? ?? 0.0).toDouble(),
+            )
+          : (cond['rhsVal2'] as num? ?? 0.0).toDouble();
       return lhsVal < rhsVal || lhsVal > rhs2;
     }
     if (op == 'divisible') {
@@ -468,27 +502,47 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   /// 論理式全体の式文字列を生成する
-  static String _buildLogicExprString(Map<String, dynamic> item) {
+  static String _buildLogicExprString(
+    Map<String, dynamic> item, [
+    double Function(Map<String, dynamic>?, bool, double)? resolver,
+  ]) {
     final conditions = item['conditions'] as List? ?? [];
     final chainOps = item['chainOps'] as List? ?? [];
     if (conditions.isEmpty) return '(条件なし)';
     final parts = <String>[];
     for (int i = 0; i < conditions.length; i++) {
       parts.add(
-        _buildConditionString(Map<String, dynamic>.from(conditions[i] as Map)),
+        _buildConditionString(
+          Map<String, dynamic>.from(conditions[i] as Map),
+          resolver,
+        ),
       );
       if (i < chainOps.length) {
-        parts.add((chainOps[i] as String?) == 'OR' ? 'または' : 'かつ');
+        final cop = chainOps[i] as String? ?? 'AND';
+        parts.add(cop == 'OR' ? 'または' : cop == 'XOR' ? 'どちらか一方' : 'かつ');
       }
     }
     return parts.join(' ');
   }
 
-  static String _buildConditionString(Map<String, dynamic> cond) {
+  static String _buildConditionString(
+    Map<String, dynamic> cond, [
+    double Function(Map<String, dynamic>?, bool, double)? resolver,
+  ]) {
+    final lhsLink = cond['lhsLink'] == true;
+    final lhsLinkSource = cond['lhsLinkSource'] as Map<String, dynamic>?;
+    final lhsValStored = (cond['lhsVal'] as num? ?? 0.0).toDouble();
     final lhsLabel = cond['lhsLabel'] as String? ?? '';
-    final lhsVal = (cond['lhsVal'] as num? ?? 0.0).toDouble();
+    final rhsLink = cond['rhsLink'] == true;
+    final rhsLinkSource = cond['rhsLinkSource'] as Map<String, dynamic>?;
+    final lhsVal = (lhsLink && resolver != null)
+        ? resolver(lhsLinkSource, true, lhsValStored)
+        : lhsValStored;
+    final rhsValStored = (cond['rhsVal'] as num? ?? 0.0).toDouble();
     final rhsLabel = cond['rhsLabel'] as String? ?? '';
-    final rhsVal = (cond['rhsVal'] as num? ?? 0.0).toDouble();
+    final rhsVal = (rhsLink && resolver != null)
+        ? resolver(rhsLinkSource, true, rhsValStored)
+        : rhsValStored;
     final op = cond['op'] as String? ?? '==';
 
     String fmtN(double v) {
@@ -501,12 +555,29 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           .replaceAll(RegExp(r'\.$'), '');
     }
 
-    final lhs = lhsLabel.isNotEmpty ? lhsLabel : fmtN(lhsVal);
-    final rhs = rhsLabel.isNotEmpty ? rhsLabel : fmtN(rhsVal);
+    final lhs = (lhsLink && resolver != null)
+        ? fmtN(lhsVal)
+        : lhsLabel.isNotEmpty
+        ? lhsLabel
+        : fmtN(lhsVal);
+    final rhs = (rhsLink && resolver != null)
+        ? fmtN(rhsVal)
+        : rhsLabel.isNotEmpty
+        ? rhsLabel
+        : fmtN(rhsVal);
     if (op == 'between' || op == 'not_between') {
+      final rhsLink2 = cond['rhsLink2'] == true;
+      final rhsLinkSource2 = cond['rhsLinkSource2'] as Map<String, dynamic>?;
       final rhs2Label = cond['rhsLabel2'] as String? ?? '';
-      final rhs2Val = (cond['rhsVal2'] as num? ?? 0.0).toDouble();
-      final rhs2 = rhs2Label.isNotEmpty ? rhs2Label : fmtN(rhs2Val);
+      final rhs2ValStored = (cond['rhsVal2'] as num? ?? 0.0).toDouble();
+      final rhs2Val = (rhsLink2 && resolver != null)
+          ? resolver(rhsLinkSource2, true, rhs2ValStored)
+          : rhs2ValStored;
+      final rhs2 = (rhsLink2 && resolver != null)
+          ? fmtN(rhs2Val)
+          : rhs2Label.isNotEmpty
+          ? rhs2Label
+          : fmtN(rhs2Val);
       if (op == 'between') return '$rhs ≤ $lhs ≤ $rhs2';
       return '$lhs < $rhs または $lhs > $rhs2';
     }
@@ -1853,9 +1924,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             }
           }
           if (logic != null) {
-            final isTrue = _evalLogicItem(logic);
-            final trueVal = (source['trueVal'] as num? ?? 1.0).toDouble();
-            final falseVal = (source['falseVal'] as num? ?? 0.0).toDouble();
+            final isTrue = _evalLogicItem(logic, resolveLink);
+            final trueVal = (source['trueLink'] as bool? ?? false)
+                ? resolveLink(source['trueLinkSource'] as Map<String, dynamic>?, true, 1.0)
+                : (source['trueVal'] as num? ?? 1.0).toDouble();
+            final falseVal = (source['falseLink'] as bool? ?? false)
+                ? resolveLink(source['falseLinkSource'] as Map<String, dynamic>?, true, 0.0)
+                : (source['falseVal'] as num? ?? 0.0).toDouble();
             return isTrue ? trueVal : falseVal;
           }
         }
@@ -2562,7 +2637,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final headerTextColor = isDark ? Colors.white : Colors.black;
     final headerIconColor = isDark ? Colors.white70 : Colors.black54;
     return Container(
-      margin: EdgeInsets.only(bottom: 46),
+      margin: EdgeInsets.only(bottom: 0),
       constraints: BoxConstraints(
         // minHeight: MediaQuery.of(context).size.height-230,
       ),
@@ -2591,7 +2666,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           child: Padding(
             padding:
                 widget.contentPadding ??
-                const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                const EdgeInsets.only(top: 16, bottom: 50, left: 1, right: 16),
             child: Stack(
               children: [
                 Column(
@@ -2772,9 +2847,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                   }
                                 }
                                 if (logic != null) {
-                                  final isTrue = _evalLogicItem(logic);
-                                  final trueVal = (source['trueVal'] as num? ?? 1.0).toDouble();
-                                  final falseVal = (source['falseVal'] as num? ?? 0.0).toDouble();
+                                  final isTrue = _evalLogicItem(logic, resolveLink);
+                                  final trueVal = (source['trueLink'] as bool? ?? false)
+                                      ? resolveLink(source['trueLinkSource'] as Map<String, dynamic>?, true, 1.0)
+                                      : (source['trueVal'] as num? ?? 1.0).toDouble();
+                                  final falseVal = (source['falseLink'] as bool? ?? false)
+                                      ? resolveLink(source['falseLinkSource'] as Map<String, dynamic>?, true, 0.0)
+                                      : (source['falseVal'] as num? ?? 0.0).toDouble();
                                   return isTrue ? trueVal : falseVal;
                                 }
                               }
@@ -2904,7 +2983,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
                               buildDefaultDragHandles: false,
-                              padding: EdgeInsets.zero,
+                              padding: EdgeInsets.only(bottom: 50),
                               onReorder: (int oldIndex, int newIndex) {
                                 if (newIndex > oldIndex) newIndex -= 1;
                                 _moveItem(oldIndex, newIndex);
@@ -3081,6 +3160,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                 },
                                             logicItems: _logicItems,
                                             onAddLogicItem: _onAddLogicItem,
+                                            onPickLinkSource: () =>
+                                                _showLinkSourcePicker(
+                                              excludeRowIdx: ci,
+                                            ),
                                             dragHandle:
                                                 ReorderableDragStartListener(
                                                   index: di,
@@ -3194,15 +3277,49 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                           _LogicRow(
                                             item: logicItem,
                                             isDark: isDark,
+                                            resolver: resolveLink,
                                             onUpdate: (data) =>
                                                 _updateLogicItem(itemId, data),
                                             onDelete: () =>
                                                 _deleteLogicItem(itemId),
-                                            onPickLinkSource: () async {
-                                              // TODO: Show link picker
-                                              return null;
+                                            onPickLinkSource: () =>
+                                                _showLinkSourcePicker(
+                                              excludeRowIdx: null,
+                                            ),
+                                            getSourceRowName: (source) {
+                                              if (source == null) return 'リンク';
+                                              final sheetId = source['sheetId'] as String?;
+                                              final rowIdx = source['rowIdx'] as int? ?? 0;
+                                              final target = source['target'] as String? ?? 'result';
+                                              final effectiveId = sheetId ?? widget.config.id;
+                                              final srcConfig = widget.allConfigs.firstWhere(
+                                                (c) => c.id == effectiveId,
+                                                orElse: () => widget.config,
+                                              );
+                                              final srcItems = (srcConfig.data['items'] as List? ?? [])
+                                                  .map((e) => Map<String, dynamic>.from(e as Map))
+                                                  .toList();
+                                              if (rowIdx < 0 || rowIdx >= srcItems.length) return 'リンク';
+                                              final item = srcItems[rowIdx];
+                                              final rowName = item['name'] as String? ?? '計算 ${rowIdx + 1}';
+                                              String targetLabel;
+                                              if (target == 'input') {
+                                                targetLabel = '項1';
+                                              } else if (target == 'operand') {
+                                                targetLabel = '項2';
+                                              } else if (target.startsWith('other_')) {
+                                                final oi = int.tryParse(target.split('_')[1]) ?? 0;
+                                                targetLabel = '項${oi + 3}';
+                                              } else {
+                                                targetLabel = '答え';
+                                              }
+                                              final v = _resolveExternalValue(effectiveId, rowIdx, target);
+                                              final precision = item['precision'] as int? ?? 2;
+                                              final valStr = (v == v.truncateToDouble() && v.abs() < 1e12)
+                                                  ? v.toStringAsFixed(0)
+                                                  : v.toStringAsFixed(precision);
+                                              return '$rowName / $targetLabel: $valStr';
                                             },
-                                            getSourceRowName: (_) => 'リンク',
                                             dragHandle:
                                                 ReorderableDragStartListener(
                                                   index: di,
