@@ -427,10 +427,17 @@ class _LinkGraphPageState extends State<LinkGraphPage>
     void addEdge(bool linked, Map? src, String destId, String lbl, String sid) {
       if (!linked || src == null) return;
       final type = src['type'] as String?;
-      if (type == 'constant' || type == 'logic') return;
+      if (type == 'constant') return;
       final fromSid = src['sheetId'] as String? ?? sid;
-      final row = src['rowIdx'] as int? ?? 0;
-      final fromId = '${fromSid}_c$row';
+      final String fromId;
+      if (type == 'logic') {
+        final logicId = src['logicId'] as String?;
+        if (logicId == null) return;
+        fromId = '${fromSid}_l$logicId';
+      } else {
+        final row = src['rowIdx'] as int? ?? 0;
+        fromId = '${fromSid}_c$row';
+      }
       if (fromId == destId || !nids.contains(fromId) || !nids.contains(destId)) return;
       final key = '$fromId→$destId';
       if (edgeMap.containsKey(key)) {
@@ -552,7 +559,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
     final cy = (minY + maxY) / 2;
 
     _view.update(
-      offset: Offset(aW / 2 - cx * scale, topPad + aH / 2 - cy * scale),
+      offset: Offset(aW / 2 - cx * scale, aH / 2 - cy * scale),
       scale: scale,
     );
   }
@@ -583,7 +590,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
     final cy = (minY + maxY) / 2;
 
     _view.update(
-      offset: Offset(aW / 2 - cx * scale, topPad + aH / 2 - cy * scale),
+      offset: Offset(aW / 2 - cx * scale, aH / 2 - cy * scale),
       scale: scale,
     );
   }
@@ -833,13 +840,19 @@ class _LinkGraphPageState extends State<LinkGraphPage>
   Widget build(BuildContext context) {
     final visible = _visibleNodes;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
       backgroundColor: const Color(0xFF0D0D14),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D0D14),
         surfaceTintColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -857,28 +870,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
               ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _showAll ? Icons.hub : Icons.hub_outlined,
-              color: _showAll ? const Color(0xFF7B7FFF) : Colors.white38,
-              size: 21,
-            ),
-            tooltip: _showAll ? '全ノード表示中（タップで切替）' : 'リンク済みのみ表示中（タップで切替）',
-            onPressed: () {
-              setState(() => _showAll = !_showAll);
-              WidgetsBinding.instance
-                  .addPostFrameCallback((_) => _fitToView());
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.fit_screen,
-                color: Colors.white38, size: 21),
-            tooltip: '画面にフィット',
-            onPressed: _fitToView,
-          ),
-          const SizedBox(width: 4),
-        ],
+        actions: const [],
       ),
       body: _loading
           ? const Center(
@@ -914,6 +906,45 @@ class _LinkGraphPageState extends State<LinkGraphPage>
                           ),
                           size: Size.infinite,
                         ),
+                      ),
+                    ),
+
+                    // ── ツールボタン ────────────────────────────────
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FloatingActionButton.small(
+                            heroTag: 'graph_toggle',
+                            backgroundColor: const Color(0xFF1A1A2A),
+                            foregroundColor: _showAll
+                                ? const Color(0xFF7B7FFF)
+                                : Colors.white54,
+                            elevation: 2,
+                            tooltip: _showAll ? '全ノード表示中' : 'リンク済みのみ表示中',
+                            onPressed: () {
+                              setState(() => _showAll = !_showAll);
+                              WidgetsBinding.instance
+                                  .addPostFrameCallback((_) => _fitToView());
+                            },
+                            child: Icon(
+                              _showAll ? Icons.hub : Icons.hub_outlined,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          FloatingActionButton.small(
+                            heroTag: 'graph_fit',
+                            backgroundColor: const Color(0xFF1A1A2A),
+                            foregroundColor: Colors.white54,
+                            elevation: 2,
+                            tooltip: '画面にフィット',
+                            onPressed: _fitToView,
+                            child: const Icon(Icons.fit_screen, size: 18),
+                          ),
+                        ],
                       ),
                     ),
 
@@ -981,6 +1012,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
                       ),
                   ],
                 ),
+      ),
     );
   }
 }
@@ -1527,9 +1559,16 @@ class _DetailCard extends StatelessWidget {
     this.onOpenSheet,
   });
 
-  // リンク元のラベルを解決
-  String _resolveLabel(Map src, String ownSid, Map<String, _Node> nm) {
+  String _resolveLabel(Map src, String ownSid, Map<String, _Node> nm, {bool resolveRemoteLink = true}) {
+    if (!resolveRemoteLink) {
+        return '? (リンクされていません)';
+    }
     final sid = src['sheetId'] as String? ?? ownSid;
+    final type = src['type'] as String?;
+    if (type == 'logic') {
+      final logicId = src['logicId'] as String?;
+      return nm['${sid}_l$logicId']?.label ?? '?';
+    }
     final row = src['rowIdx'] as int? ?? 0;
     return nm['${sid}_c$row']?.label ?? '?';
   }
@@ -1601,22 +1640,14 @@ class _DetailCard extends StatelessWidget {
                       margin: const EdgeInsets.only(right: 4),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF7B7FFF).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                            color: const Color(0xFF7B7FFF).withOpacity(0.40)),
-                      ),
+                     
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.link_rounded,
-                              size: 12, color: Color(0xFF7B7FFF)),
-                          SizedBox(width: 4),
-                          Text('リンクを設定',
+                          Text('編集',
                               style: TextStyle(
                                   color: Color(0xFF7B7FFF),
-                                  fontSize: 10,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w600)),
                         ],
                       ),
@@ -1901,7 +1932,7 @@ class _CalcFormulaView extends StatelessWidget {
   final Map<String, dynamic> item;
   final String sheetId;
   final Map<String, _Node> nodeMap;
-  final String Function(Map, String, Map<String, _Node>) resolveLabel;
+  final String Function(Map, String, Map<String, _Node>, {bool resolveRemoteLink}) resolveLabel;
   final String Function(dynamic) fmtNum;
   /// 参照元エッジ（現在ノードへの入力リンク）
   final List<_Edge>? incomingEdges;
@@ -1940,7 +1971,7 @@ class _CalcFormulaView extends StatelessWidget {
 
   Widget _term(String text, {bool linked = false, Map? src}) {
     // linked == true の場合は常にマーキング（エッジ有無を問わない）
-    if (!linked) {
+    if (!linked || (text == '? (リンクされていません)')) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
         decoration: BoxDecoration(
@@ -1992,10 +2023,23 @@ class _CalcFormulaView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    bool isLinked(Map src) {
+      final sid = src['sheetId'] as String? ?? sheetId;
+      final type = src['type'] as String?;
+      final String srcId;
+      if (type == 'logic') {
+        srcId = '${sid}_l${src['logicId']}';
+      } else {
+        final row = (src['rowIdx'] as num?)?.toInt() ?? 0;
+        srcId = '${sid}_c$row';
+      }
+      return incomingEdges?.any((e) => e.fromId == srcId) ?? false;
+    }
+
     final inputLinked = item['inputLink'] == true;
     final inputSrc = item['inputLinkSource'] as Map?;
     final inputLabel = inputLinked && inputSrc != null
-        ? resolveLabel(inputSrc, sheetId, nodeMap)
+        ? resolveLabel(inputSrc, sheetId, nodeMap, resolveRemoteLink: isLinked(inputSrc))
         : fmtNum(item['input']);
 
     final opSym = item['op'] as String? ?? '+';
@@ -2003,7 +2047,7 @@ class _CalcFormulaView extends StatelessWidget {
     final operandLinked = item['operandLink'] == true;
     final operandSrc = item['operandLinkSource'] as Map?;
     final operandLabel = operandLinked && operandSrc != null
-        ? resolveLabel(operandSrc, sheetId, nodeMap)
+        ? resolveLabel(operandSrc, sheetId, nodeMap, resolveRemoteLink: isLinked(operandSrc))
         : fmtNum(item['operand']);
 
     final others = (item['others'] as List? ?? [])
@@ -2020,7 +2064,7 @@ class _CalcFormulaView extends StatelessWidget {
       final vLinked = o['valLink'] == true;
       final vSrc = o['valLinkSource'] as Map?;
       final vLabel = vLinked && vSrc != null
-          ? resolveLabel(vSrc, sheetId, nodeMap)
+          ? resolveLabel(vSrc, sheetId, nodeMap, resolveRemoteLink: isLinked(vSrc))
           : fmtNum(o['val']);
       children.add(_op(o['op'] as String? ?? '+'));
       children.add(_term(vLabel, linked: vLinked, src: vSrc));
@@ -2049,37 +2093,20 @@ class _CalcFormulaView extends StatelessWidget {
           Wrap(spacing: 0, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: children),
             _op('='),
             Builder(builder: (context) {
-              // 答え自体に参照先がある場合のみマーキング（自身の式は考慮しない）
-              final hasOutgoing = outgoingEdges?.isNotEmpty == true;
-              final Color? chipColor = hasOutgoing ? _dstColor : null;
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: chipColor != null
-                      ? chipColor.withOpacity(0.15)
-                      : const Color(0xFF1A1A2A),
+                  color: const Color(0xFF1A1A2A),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: chipColor != null
-                        ? chipColor.withOpacity(0.50)
-                        : Colors.white12,
+                    color: Colors.white12,
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (chipColor != null) ...[
-                      Icon(Icons.call_made,
-                          size: 10, color: chipColor.withOpacity(0.9)),
-                      const SizedBox(width: 3),
-                    ],
-                    Text(resultStr,
-                        style: TextStyle(
-                            color: chipColor != null ? chipColor : Colors.white60,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600)),
-                  ],
-                ),
+                child: Text(resultStr,
+                    style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
               );
             }),
             if (hasLinks)
@@ -2121,7 +2148,7 @@ class _LogicFormulaView extends StatelessWidget {
   final Map<String, dynamic> item;
   final String sheetId;
   final Map<String, _Node> nodeMap;
-  final String Function(Map, String, Map<String, _Node>) resolveLabel;
+  final String Function(Map, String, Map<String, _Node>, {bool resolveRemoteLink}) resolveLabel;
   final String Function(dynamic) fmtNum;
 
   const _LogicFormulaView({
@@ -2138,6 +2165,9 @@ class _LogicFormulaView extends StatelessWidget {
   static const _opColor = Color(0xFF5050A0);
 
   Widget _term(String text, {required bool linked, required Color linkColor}) {
+    if (text == '? (リンクされていません)') {
+      linked = false;
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
@@ -2173,6 +2203,19 @@ class _LogicFormulaView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    bool isLinked(Map src) {
+      final sid = src['sheetId'] as String? ?? sheetId;
+      final type = src['type'] as String?;
+      final String srcId;
+      if (type == 'logic') {
+        srcId = '${sid}_l${src['logicId']}';
+      } else {
+        final row = (src['rowIdx'] as num?)?.toInt() ?? 0;
+        srcId = '${sid}_c$row';
+      }
+      return nodeMap.containsKey(srcId);
+    }
+  
     final conds = (item['conditions'] as List? ?? [])
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
@@ -2184,13 +2227,13 @@ class _LogicFormulaView extends StatelessWidget {
       final lLinked = c['lhsLink'] == true;
       final lSrc = c['lhsLinkSource'] as Map?;
       final lLabel = lLinked && lSrc != null
-          ? resolveLabel(lSrc, sheetId, nodeMap)
+          ? resolveLabel(lSrc, sheetId, nodeMap, resolveRemoteLink: isLinked(lSrc))
           : fmtNum(c['lhsVal']);
 
       final rLinked = c['rhsLink'] == true;
       final rSrc = c['rhsLinkSource'] as Map?;
       final rLabel = rLinked && rSrc != null
-          ? resolveLabel(rSrc, sheetId, nodeMap)
+          ? resolveLabel(rSrc, sheetId, nodeMap, resolveRemoteLink: isLinked(rSrc))
           : fmtNum(c['rhsVal']);
 
       final condOp = c['op'] as String? ?? '==';
@@ -2347,7 +2390,7 @@ class _ConSection extends StatelessWidget {
   final List<_Edge> allEdges;
   final Map<String, _Node> nodeMap;
   final bool isIncoming;
-  final String Function(Map, String, Map<String, _Node>) resolveLabel;
+  final String Function(Map, String, Map<String, _Node>, {bool resolveRemoteLink}) resolveLabel;
   final String Function(dynamic) fmtNum;
 
   const _ConSection({
@@ -2363,8 +2406,20 @@ class _ConSection extends StatelessWidget {
 
   // 計算式のコンパクトな文字列表現（項 op 項 op … = 結果）
   List<String> _formulaTerms(Map<String, dynamic> item, String sid) {
+    bool isLinked(Map src) {
+      final tid = src['sheetId'] as String? ?? sid;
+      final type = src['type'] as String?;
+      final String srcId;
+      if (type == 'logic') {
+        srcId = '${tid}_l${src['logicId']}';
+      } else {
+        final row = (src['rowIdx'] as num?)?.toInt() ?? 0;
+        srcId = '${tid}_c$row';
+      }
+      return nodeMap.containsKey(srcId);
+    }
     String termLabel(bool linked, Map? src, dynamic val) {
-      if (linked && src != null) return resolveLabel(src, sid, nodeMap);
+      if (linked && src != null) return resolveLabel(src, sid, nodeMap, resolveRemoteLink: isLinked(src));
       final d = (val as num?)?.toDouble() ?? 0.0;
       return d == d.truncateToDouble()
           ? d.truncate().toString()
@@ -2597,8 +2652,9 @@ class _ConSection extends StatelessWidget {
                           final r = _calcLinkedResult(
                               oth.rawData, oth.sheetId, nodeMap);
                           final resultStr = r.isNaN ? '÷0' : r.isInfinite ? '∞' : fmtNum(r);
-                          // 答え自身が他ノードから参照されているかのみ判定（式のリンク設定は無関係）
-                          final isHighlighted = allEdges.any((e) => e.fromId == oth.id);
+                          // 答え自身がこのノード（あるいは他ノード）に参照されているか
+                          // 参照元リスト（isIncoming == true）の場合、othの答えが自ノードに供給されているのでハイライトする
+                          final isHighlighted = isIncoming;
                           return Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),

@@ -1183,6 +1183,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       {'label': 'c', 'value': 299792458.0},
     ];
 
+    var _valSelected = false;
     final result = await showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
       isScrollControlled: true,
@@ -1191,7 +1192,17 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setSheetState) => Padding(
+        builder: (context, setSheetState) {
+          if (!_valSelected) {
+            _valSelected = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              valCtrl.selection = TextSelection(
+                baseOffset: 0,
+                extentOffset: valCtrl.text.length,
+              );
+            });
+          }
+          return Padding(
           padding: EdgeInsets.only(
             left: 24,
             right: 24,
@@ -1410,7 +1421,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               ),
             ],
           ),
-        ),
+        );
+        },
       ),
     );
     if (result == null) return;

@@ -1980,7 +1980,7 @@ class _WidgetCardState extends State<_WidgetCard> {
                                         ),
                                         const SizedBox(width: 6),
                                         Text(
-                                          '$sheetCountつの結合されたシート',
+                                          '($sheetCount) 結合シート',
                                           style: const TextStyle(
                                             color: Color.fromARGB(
                                               255,
@@ -2645,6 +2645,7 @@ class _SettingsPageState extends State<_SettingsPage> {
   }) {
     final nameCtrl = TextEditingController(text: name);
     final valCtrl = TextEditingController(text: value);
+    var _valSelected = false;
     return showModalBottomSheet<Map<String, dynamic>?>(
       context: context,
       isScrollControlled: true,
@@ -2653,7 +2654,17 @@ class _SettingsPageState extends State<_SettingsPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (_, setSS) => Padding(
+        builder: (_, setSS) {
+          if (!_valSelected) {
+            _valSelected = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              valCtrl.selection = TextSelection(
+                baseOffset: 0,
+                extentOffset: valCtrl.text.length,
+              );
+            });
+          }
+          return Padding(
           padding: EdgeInsets.only(
             left: 24,
             right: 24,
@@ -2692,7 +2703,6 @@ class _SettingsPageState extends State<_SettingsPage> {
               const SizedBox(height: 6),
               TextField(
                 controller: nameCtrl,
-                autofocus: true,
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(
                   hintText: '例: 消費税率',
@@ -2707,6 +2717,7 @@ class _SettingsPageState extends State<_SettingsPage> {
               const SizedBox(height: 6),
               TextField(
                 controller: valCtrl,
+                autofocus: true,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                   signed: true,
@@ -2751,7 +2762,8 @@ class _SettingsPageState extends State<_SettingsPage> {
               ),
             ],
           ),
-        ),
+        );
+        },
       ),
     );
   }

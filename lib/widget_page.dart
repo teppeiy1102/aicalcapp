@@ -2591,7 +2591,14 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                   Expanded(
                     child: ListView.builder(
                       controller: _scrollController,
-                      padding: const EdgeInsets.fromLTRB(0, 8, 0, 16),
+                      padding: _mergedCalcOpen
+                          ? EdgeInsets.fromLTRB(
+                              0,
+                              8,
+                              0,
+                              MediaQuery.of(context).size.height * 0.65,
+                            )
+                          : const EdgeInsets.fromLTRB(0, 8, 0, 16),
                       itemCount: _sheetIds.length,
                       itemBuilder: (ctx, i) {
                         final id = _sheetIds[i];
@@ -2658,11 +2665,6 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                       },
                     ),
                   ),
-                  _mergedCalcOpen
-                      ? SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.65,
-                        )
-                      : const SizedBox.shrink(),
                 ],
               ),
             ),

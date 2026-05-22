@@ -4532,6 +4532,64 @@ class _CalculatorRow extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.white12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'リンクの設定',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                icon: const Icon(
+                                  Icons.upload_rounded,
+                                  size: 16,
+                                ),
+                                label: const Text(
+                                  'リンク元に設定',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.blueAccent
+                                      .withOpacity(0.2),
+                                  foregroundColor: Colors.blueAccent,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  if (onLinkSettingsPressed != null) {
+                                    onLinkSettingsPressed!('source', 'result');
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 // ── 計算式の詳細 ──────────────────────────────────────────
                 const Text(
                   '計算式の詳細',
