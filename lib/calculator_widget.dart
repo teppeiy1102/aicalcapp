@@ -144,12 +144,22 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   /// 実効表示順を返す。
   /// data['displayOrder'] が未設定のときは items 順のデフォルトを返す。
-  /// 形式: [{'type':'calc','calcIdx':int} | {'type':'standalone','itemId':String}]
+  /// 形式: [{'type':'calc','calcIdx':int} | {'type':'standalone','itemId':String} | {'type':'logic','itemId':String}]
   List<Map<String, dynamic>> get _effectiveDisplayOrder {
     final items = _items;
     final raw = widget.config.data['displayOrder'] as List<dynamic>?;
+    final logicItemsList =
+        widget.config.data['logicItems'] as List<dynamic>? ?? [];
+
     if (raw == null) {
-      return List.generate(items.length, (i) => {'type': 'calc', 'calcIdx': i});
+      final order = List.generate(
+          items.length, (i) => {'type': 'calc', 'calcIdx': i});
+      // displayOrder未設定の場合も論理式を末尾に追加
+      for (final l in logicItemsList) {
+        final id = (l as Map)['id'] as String? ?? '';
+        if (id.isNotEmpty) order.add({'type': 'logic', 'itemId': id});
+      }
+      return order;
     }
     final order = raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     // 未登録のcalc があれば末尾に追加（整合性保持）
@@ -160,6 +170,17 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     for (int i = 0; i < items.length; i++) {
       if (!presentIdxs.contains(i)) {
         order.add({'type': 'calc', 'calcIdx': i});
+      }
+    }
+    // 未登録の論理式があれば末尾に追加（整合性保持）
+    final presentLogicIds = order
+        .where((e) => e['type'] == 'logic')
+        .map((e) => e['itemId'] as String? ?? '')
+        .toSet();
+    for (final l in logicItemsList) {
+      final id = (l as Map)['id'] as String? ?? '';
+      if (id.isNotEmpty && !presentLogicIds.contains(id)) {
+        order.add({'type': 'logic', 'itemId': id});
       }
     }
     return order;
@@ -2314,9 +2335,12 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         ? standaloneItems.map((s) => s['text'] as String? ?? '').toList()
         : null;
 
-    // 表示順をコンパクト形式で含める（スタンドアロンメモがある場合のみ）
+    // 論理式リストを先に取得（表示順の構築に必要）
+    final logicItems = _logicItems;
+
+    // 表示順をコンパクト形式で含める（スタンドアロンメモまたは論理式がある場合）
     List<Map<String, dynamic>>? qrDOrder;
-    if (standaloneItems.isNotEmpty) {
+    if (standaloneItems.isNotEmpty || logicItems.isNotEmpty) {
       final displayOrder = _effectiveDisplayOrder;
       // standaloneItems の itemId → 配列インデックスのマップを作成
       final sItemIdToIdx = <String, int>{};
@@ -2324,10 +2348,21 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         final id = standaloneItems[si]['id'] as String? ?? '';
         sItemIdToIdx[id] = si;
       }
+      // logicItems の itemId → 配列インデックスのマップを作成
+      final lItemIdToIdx = <String, int>{};
+      for (int li = 0; li < logicItems.length; li++) {
+        final id = logicItems[li]['id'] as String? ?? '';
+        lItemIdToIdx[id] = li;
+      }
       qrDOrder = displayOrder
           .map((e) {
             if (e['type'] == 'calc') {
               return {'c': e['calcIdx'] as int};
+            } else if (e['type'] == 'logic') {
+              final id = e['itemId'] as String? ?? '';
+              final idx = lItemIdToIdx[id];
+              if (idx == null) return null;
+              return {'li': idx};
             } else {
               final id = e['itemId'] as String? ?? '';
               final idx = sItemIdToIdx[id];
@@ -2340,7 +2375,6 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     }
 
     // 論理式をコンパクト形式で含める
-    final logicItems = _logicItems;
     final qrLogicItems = logicItems.isNotEmpty
         ? logicItems.map((l) {
             final conditions = (l['conditions'] as List? ?? [])
@@ -2350,6 +2384,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 .map((e) => e as String)
                 .toList();
             return {
+              'id': l['id'] as String? ?? '',
               'n': l['name'] as String? ?? '',
               'conds': conditions
                   .map(
@@ -2361,6 +2396,12 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                       'rl': c['rhsLabel'] as String? ?? '',
                       'rv2': safeDouble(c['rhsVal2'] as num?),
                       'rl2': c['rhsLabel2'] as String? ?? '',
+                      if (c['lhsLink'] == true) 'lhl': true,
+                      if (c['lhsLinkSource'] != null) 'lhls': c['lhsLinkSource'],
+                      if (c['rhsLink'] == true) 'rhl': true,
+                      if (c['rhsLinkSource'] != null) 'rhls': c['rhsLinkSource'],
+                      if (c['rhsLink2'] == true) 'rhl2': true,
+                      if (c['rhsLinkSource2'] != null) 'rhls2': c['rhsLinkSource2'],
                     },
                   )
                   .toList(),

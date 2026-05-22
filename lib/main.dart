@@ -7,6 +7,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'widget_page.dart';
+import 'link_graph_page.dart';
 import 'revenuecat_service.dart';
 
 void main() async {
@@ -417,11 +418,12 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               Container(
                 width: 36,
                 height: 4,
@@ -566,8 +568,62 @@ class _HomeScreenState extends State<HomeScreen> {
                   _openSettings();
                 },
               ),
+              const Divider(color: Colors.white10, indent: 16, endIndent: 16),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF7B7FFF).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.hub_rounded,
+                    color: Color(0xFF7B7FFF),
+                    size: 22,
+                  ),
+                ),
+                title: const Text(
+                  'リンクグラフ',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  'シート間のリンク関係をグラフで可視化',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.4),
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => LinkGraphPage(
+                        configs: _configs
+                            .map((c) => {
+                                  'id': c.id,
+                                  'type': c.type,
+                                  'data': c.data,
+                                })
+                            .toList(),
+                        onOpenSheet: (sheetId) {
+                          Navigator.pop(context);
+                          final idx =
+                              _configs.indexWhere((c) => c.id == sheetId);
+                          if (idx != -1) _openDetail(idx);
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
+        ),
         ),
       ),
     );
@@ -949,34 +1005,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ?.map((s) => (s as Map)['text'] as String? ?? '')
         .toList();
 
-    // 表示順
-    List<Map<String, dynamic>>? qrDOrder;
-    if (standaloneItems != null && standaloneItems.isNotEmpty) {
-      final displayOrder = config.data['displayOrder'] as List<dynamic>?;
-      final sItemIdToIdx = <String, int>{};
-      for (int si = 0; si < standaloneItems.length; si++) {
-        final id = (standaloneItems[si] as Map)['id'] as String? ?? '';
-        sItemIdToIdx[id] = si;
-      }
-      if (displayOrder != null) {
-        qrDOrder = displayOrder
-            .map<Map<String, dynamic>?>((e) {
-              final entry = e as Map;
-              if (entry['type'] == 'calc') {
-                return {'c': entry['calcIdx'] as int};
-              } else {
-                final id = entry['itemId'] as String? ?? '';
-                final idx = sItemIdToIdx[id];
-                if (idx == null) return null;
-                return {'s': idx};
-              }
-            })
-            .whereType<Map<String, dynamic>>()
-            .toList();
-      }
-    }
-
-    // 論理式（conditions に id フィールドを含めない — _buildQrChunks と同形式）
+    // 論理式
     final logicItems = config.data['logicItems'] as List<dynamic>?;
     final qrLogicItems = logicItems?.map<Map<String, dynamic>>((l) {
       final lm = Map<String, dynamic>.from(l as Map);
@@ -1010,6 +1039,48 @@ class _HomeScreenState extends State<HomeScreen> {
         'cops': chainOps,
       };
     }).toList();
+
+    // 表示順（スタンドアロンメモまたは論理式がある場合に含める）
+    List<Map<String, dynamic>>? qrDOrder;
+    if ((standaloneItems != null && standaloneItems.isNotEmpty) ||
+        (logicItems != null && logicItems.isNotEmpty)) {
+      final displayOrder = config.data['displayOrder'] as List<dynamic>?;
+      final sItemIdToIdx = <String, int>{};
+      if (standaloneItems != null) {
+        for (int si = 0; si < standaloneItems.length; si++) {
+          final id = (standaloneItems[si] as Map)['id'] as String? ?? '';
+          sItemIdToIdx[id] = si;
+        }
+      }
+      final lItemIdToIdx = <String, int>{};
+      if (logicItems != null) {
+        for (int li = 0; li < logicItems.length; li++) {
+          final id = (logicItems[li] as Map)['id'] as String? ?? '';
+          lItemIdToIdx[id] = li;
+        }
+      }
+      if (displayOrder != null) {
+        qrDOrder = displayOrder
+            .map<Map<String, dynamic>?>((e) {
+              final entry = e as Map;
+              if (entry['type'] == 'calc') {
+                return {'c': entry['calcIdx'] as int};
+              } else if (entry['type'] == 'logic') {
+                final id = entry['itemId'] as String? ?? '';
+                final idx = lItemIdToIdx[id];
+                if (idx == null) return null;
+                return {'li': idx};
+              } else {
+                final id = entry['itemId'] as String? ?? '';
+                final idx = sItemIdToIdx[id];
+                if (idx == null) return null;
+                return {'s': idx};
+              }
+            })
+            .whereType<Map<String, dynamic>>()
+            .toList();
+      }
+    }
 
     // 定数
     final constants = config.data['constants'] as List<dynamic>?;
@@ -1158,28 +1229,25 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(
         builder: (ctx) => _QrScannerPage(
           onScanned: (String qrData) {
+            // スキャナーは開いたまま（複数シートの連続スキャンに対応）
+            return _importSheetFromQr(qrData);
+          },
+          onDone: () {
             Navigator.pop(ctx);
-            _importSheetFromQr(qrData);
           },
         ),
       ),
     );
   }
 
-  /// スキャンした QR データからシートをインポートする
-  void _importSheetFromQr(String qrData) {
+  /// スキャンした QR データからシートをインポートする。成功時はシートタイトルを、失敗時は null を返す。
+  String? _importSheetFromQr(String qrData) {
     try {
       final decoded = json.decode(qrData);
       if (decoded is! Map<String, dynamic> ||
           decoded['v'] != 1 ||
           decoded['items'] == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('有効なシートQRコードではありません'),
-            backgroundColor: Color(0xFF2A2A3A),
-          ),
-        );
-        return;
+        return null;
       }
 
       final title = decoded['t'] as String? ?? '取り込んだシート';
@@ -1244,26 +1312,6 @@ class _HomeScreenState extends State<HomeScreen> {
           .values
           .toList();
 
-      // 表示順を復元（スタンドアロンメモがある場合のみ）
-      List<Map<String, dynamic>>? displayOrder;
-      final qrDOrder = decoded['dorder'] as List<dynamic>?;
-      if (qrDOrder != null &&
-          standaloneItems != null &&
-          standaloneItems.isNotEmpty) {
-        displayOrder = qrDOrder.map<Map<String, dynamic>>((e) {
-          final entry = e as Map;
-          if (entry.containsKey('c')) {
-            return {'type': 'calc', 'calcIdx': (entry['c'] as num).toInt()};
-          } else {
-            final si = (entry['s'] as num).toInt();
-            final id = si < standaloneItems.length
-                ? standaloneItems[si]['id'] as String
-                : '';
-            return {'type': 'standalone', 'itemId': id};
-          }
-        }).toList();
-      }
-
       // シート固有定数を復元
       final qrConsts = decoded['consts'] as List<dynamic>?;
       final constants = qrConsts?.map<Map<String, dynamic>>((e) {
@@ -1275,7 +1323,7 @@ class _HomeScreenState extends State<HomeScreen> {
         };
       }).toList();
 
-      // 論理式を復元
+      // 論理式を復元（表示順の復元より先に行う）
       final qrLogics = decoded['logics'] as List<dynamic>?;
       final logicItems = qrLogics?.map<Map<String, dynamic>>((l) {
         final lm = Map<String, dynamic>.from(l as Map);
@@ -1312,6 +1360,32 @@ class _HomeScreenState extends State<HomeScreen> {
         };
       }).toList();
 
+      // 表示順を復元（スタンドアロンメモまたは論理式がある場合）
+      List<Map<String, dynamic>>? displayOrder;
+      final qrDOrder = decoded['dorder'] as List<dynamic>?;
+      if (qrDOrder != null &&
+          ((standaloneItems != null && standaloneItems.isNotEmpty) ||
+              (logicItems != null && logicItems.isNotEmpty))) {
+        displayOrder = qrDOrder.map<Map<String, dynamic>>((e) {
+          final entry = e as Map;
+          if (entry.containsKey('c')) {
+            return {'type': 'calc', 'calcIdx': (entry['c'] as num).toInt()};
+          } else if (entry.containsKey('li')) {
+            final li = (entry['li'] as num).toInt();
+            final id = logicItems != null && li < logicItems.length
+                ? logicItems[li]['id'] as String
+                : '';
+            return {'type': 'logic', 'itemId': id};
+          } else {
+            final si = (entry['s'] as num).toInt();
+            final id = standaloneItems != null && si < standaloneItems.length
+                ? standaloneItems[si]['id'] as String
+                : '';
+            return {'type': 'standalone', 'itemId': id};
+          }
+        }).toList();
+      }
+
       final newConfig = WidgetConfig(
         id: '${DateTime.now().millisecondsSinceEpoch}',
         type: 'calculator',
@@ -1333,20 +1407,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
       setState(() => _configs.insert(0, newConfig));
       _saveConfigs();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('「$title」を取り込みました（${items.length}件）'),
-          backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-        ),
-      );
+      return '$title（${items.length}件）';
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('QRコードの読み取りに失敗しました'),
-          backgroundColor: Color(0xFF2A2A3A),
-        ),
-      );
+      return null;
     }
   }
 
@@ -2460,29 +2523,32 @@ class _QrShareActionBar extends StatelessWidget {
               style: TextStyle(color: Colors.white54, fontSize: 14),
             ),
           ),
-          const Spacer(),
-          GestureDetector(
-            onTap: canShare ? onShare : null,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                gradient: canShare
-                    ? const LinearGradient(
-                        colors: [Color(0xFF9E7AFF), Colors.purpleAccent],
-                      )
-                    : null,
-                color: canShare ? null : Colors.white.withOpacity(0.06),
-              ),
-              child: Text(
-                canShare
-                    ? '$selectedCount件のシートを共有'
-                    : '1件以上選択してください',
-                style: TextStyle(
-                  color: canShare ? Colors.white : Colors.white38,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+          Expanded(
+            child: GestureDetector(
+              onTap: canShare ? onShare : null,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: canShare
+                      ? const LinearGradient(
+                          colors: [Color(0xFF9E7AFF), Colors.purpleAccent],
+                        )
+                      : null,
+                  color: canShare ? null : Colors.white.withOpacity(0.06),
+                ),
+                child: Text(
+                  canShare
+                      ? '$selectedCount件のシートを共有'
+                      : '1件以上選択してください',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: canShare ? Colors.white : Colors.white38,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),
@@ -2993,9 +3059,12 @@ class _SettingsPageState extends State<_SettingsPage> {
 
 // ── QR コードスキャナーページ ─────────────────────────────────────────────────
 class _QrScannerPage extends StatefulWidget {
-  final void Function(String) onScanned;
+  /// QR データが揃ったときに呼ばれる。成功時はシートタイトル、失敗時は null を返す。
+  final String? Function(String) onScanned;
+  /// スキャナーを閉じるときに呼ばれる（「完了」ボタン）
+  final VoidCallback? onDone;
 
-  const _QrScannerPage({required this.onScanned});
+  const _QrScannerPage({required this.onScanned, this.onDone});
 
   @override
   State<_QrScannerPage> createState() => _QrScannerPageState();
@@ -3009,6 +3078,12 @@ class _QrScannerPageState extends State<_QrScannerPage>
 
   /// スキャン完了フラグ（全チャンク揃ったら true）
   bool _done = false;
+
+  /// このセッションで取り込んだシート数
+  int _scannedCount = 0;
+
+  /// 直前にスキャン完了したQR値（同一QRの連続取り込みを防ぐ）
+  String? _lastScannedValue;
 
   // ── 連結QR 収集状態 ──
   /// 収集済みチャンク: idx → データ文字列
@@ -3140,9 +3215,27 @@ class _QrScannerPageState extends State<_QrScannerPage>
         // 連結収集中にシングルQRを読んだ場合は無視
         return;
       }
+      // 直前と同じQRは再処理しない（カメラが同じQRを捉え続けることへの対策）
+      if (rawValue == _lastScannedValue) return;
       _triggerFlash();
-      setState(() => _done = true);
-      widget.onScanned(rawValue);
+      _lastScannedValue = rawValue;
+      final result = widget.onScanned(rawValue);
+      if (mounted) {
+        if (result != null) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('「$result」を取り込みました'),
+            backgroundColor: const Color(0xFF1A3A2A),
+            duration: const Duration(seconds: 2),
+          ));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('有効なシートQRコードではありません'),
+            backgroundColor: Color(0xFF2A2A3A),
+            duration: Duration(seconds: 2),
+          ));
+        }
+      }
+      setState(() => _scannedCount++);
       return;
     }
 
@@ -3207,8 +3300,51 @@ class _QrScannerPageState extends State<_QrScannerPage>
           assembledMap['logics'] = _multiLogics;
         }
         final assembled = json.encode(assembledMap);
+        // 直前と同じアセンブル結果は再処理しない
+        if (assembled == _lastScannedValue) {
+          setState(() {
+            _chunks.clear();
+            _totalChunks = null;
+            _multiTitle = null;
+            _multiMemos = null;
+            _multiSItems = null;
+            _multiDOrder = null;
+            _multiConsts = null;
+            _multiLogics = null;
+          });
+          return;
+        }
+        _lastScannedValue = assembled;
         setState(() => _done = true);
-        widget.onScanned(assembled);
+        final result = widget.onScanned(assembled);
+        if (mounted) {
+          if (result != null) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('「$result」を取り込みました'),
+              backgroundColor: const Color(0xFF1A3A2A),
+              duration: const Duration(seconds: 2),
+            ));
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('有効なシートQRコードではありません'),
+              backgroundColor: Color(0xFF2A2A3A),
+              duration: Duration(seconds: 2),
+            ));
+          }
+        }
+        // スキャン成功：状態をリセットして次のシートに備える
+        setState(() {
+          _done = false;
+          _scannedCount++;
+          _chunks.clear();
+          _totalChunks = null;
+          _multiTitle = null;
+          _multiMemos = null;
+          _multiSItems = null;
+          _multiDOrder = null;
+          _multiConsts = null;
+          _multiLogics = null;
+        });
       } catch (_) {
         // 結合後にパース失敗 → 収集状態をリセットして再スキャンを促す
         setState(() {
@@ -3242,7 +3378,11 @@ class _QrScannerPageState extends State<_QrScannerPage>
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D0D14),
         title: Text(
-          isMulti ? 'QRスキャン ($collected/$total枚)' : 'QRコードをスキャン',
+          isMulti
+              ? 'QRスキャン ($collected/$total枚)'
+              : _scannedCount > 0
+                  ? '$_scannedCount件取り込み済み'
+                  : 'QRコードをスキャン',
           style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
@@ -3252,6 +3392,16 @@ class _QrScannerPageState extends State<_QrScannerPage>
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         actions: [
+          // 完了ボタン（onDoneが設定されている場合のみ）
+          if (widget.onDone != null && !isMulti)
+            TextButton(
+              onPressed: widget.onDone,
+              child: Text(
+                _scannedCount > 0 ? '完了 ($_scannedCount件)' : '完了',
+                style: const TextStyle(
+                    color: Colors.tealAccent, fontSize: 13),
+              ),
+            ),
           // 連結スキャン中はリセットボタンを表示
           if (isMulti && !_done)
             TextButton(
@@ -3264,6 +3414,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
                 _multiDOrder = null;
                 _multiConsts = null;
                 _multiLogics = null;
+                _lastScannedValue = null;
               }),
               child: const Text(
                 'リセット',
@@ -3390,7 +3541,9 @@ class _QrScannerPageState extends State<_QrScannerPage>
               child: Text(
                 isMulti
                     ? '残り ${total - collected}枚のQRをスキャンしてください'
-                    : 'シートのQRコードをフレーム内に合わせてください',
+                    : _scannedCount > 0
+                        ? '続けて次のシートのQRをスキャンできます'
+                        : 'シートのQRコードをフレーム内に合わせてください',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white70, fontSize: 13),
               ),

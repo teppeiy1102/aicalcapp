@@ -16,6 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai_service.dart';
 import 'calc_history.dart';
+import 'link_graph_page.dart';
 import 'revenuecat_service.dart';
 import 'store_page.dart';
 
@@ -1713,6 +1714,50 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                 });
               },
             ),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.07),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.hub_rounded,
+                  color: Color(0xFF7B7FFF),
+                  size: 22,
+                ),
+              ),
+              title: const Text(
+                'リンクグラフ',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: const Text(
+                'シート間のリンク関係をグラフで可視化します',
+                style: TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LinkGraphPage(
+                      configs: widget.allConfigs
+                          .map((c) => {
+                                'id': c.id,
+                                'type': c.type,
+                                'data': c.data,
+                              })
+                          .toList(),
+                      initialSheetId: _config.id,
+                      onOpenSheet: (_) => Navigator.pop(context),
+                    ),
+                  ),
+                );
+              },
+            ),
             const SizedBox(height: 8),
           ],
         ),
@@ -1720,8 +1765,6 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
     );
   }
 }
-
-// ── 電卓ドラッガブルシート（DraggableScrollableController ライフサイクル管理） ──
 class _CalcDraggableSheetContent extends StatefulWidget {
   final int existingItemCount;
   final void Function(Map<String, dynamic> item) onAddItem;
@@ -3066,6 +3109,51 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                 });
               },
             ),
+            const Divider(color: Colors.white12, height: 1),
+            ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.07),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.hub_rounded,
+                  color: Color(0xFF7B7FFF),
+                  size: 22,
+                ),
+              ),
+              title: const Text(
+                'リンクグラフ',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: const Text(
+                'シート間のリンク関係をグラフで可視化します',
+                style: TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LinkGraphPage(
+                      configs: widget.allConfigs
+                          .map((c) => {
+                                'id': c.id,
+                                'type': c.type,
+                                'data': c.data,
+                              })
+                          .toList(),
+                      initialSheetId: _config.id,
+                      onOpenSheet: (_) => Navigator.pop(context),
+                    ),
+                  ),
+                );
+              },
+            ),
             const SizedBox(height: 8),
           ],
         ),
@@ -3845,39 +3933,35 @@ class MultiSheetQrDialog extends StatefulWidget {
 }
 
 class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
-  int _sheetIndex = 0;
-  int _chunkIndex = 0;
+  /// 全シート・全チャンクを一本のフラットリストに展開
+  late final List<({int sheetIdx, int chunkIdx})> _allQrs;
+  int _currentIndex = 0;
   bool _saving = false;
 
-  ({String title, int itemCount, List<String> qrDataList}) get _currentSheet =>
-      widget.sheets[_sheetIndex];
-
-  void _prevSheet() {
-    if (_sheetIndex > 0) {
-      setState(() {
-        _sheetIndex--;
-        _chunkIndex = 0;
-      });
+  @override
+  void initState() {
+    super.initState();
+    final list = <({int sheetIdx, int chunkIdx})>[];
+    for (int si = 0; si < widget.sheets.length; si++) {
+      for (int ci = 0; ci < widget.sheets[si].qrDataList.length; ci++) {
+        list.add((sheetIdx: si, chunkIdx: ci));
+      }
     }
+    _allQrs = list;
   }
 
-  void _nextSheet() {
-    if (_sheetIndex < widget.sheets.length - 1) {
-      setState(() {
-        _sheetIndex++;
-        _chunkIndex = 0;
-      });
-    }
+  ({String title, int itemCount, List<String> qrDataList}) get _sheet =>
+      widget.sheets[_allQrs[_currentIndex].sheetIdx];
+
+  String get _currentQrData =>
+      _sheet.qrDataList[_allQrs[_currentIndex].chunkIdx];
+
+  void _prev() {
+    if (_currentIndex > 0) setState(() => _currentIndex--);
   }
 
-  void _prevChunk() {
-    if (_chunkIndex > 0) setState(() => _chunkIndex--);
-  }
-
-  void _nextChunk() {
-    if (_chunkIndex < _currentSheet.qrDataList.length - 1) {
-      setState(() => _chunkIndex++);
-    }
+  void _next() {
+    if (_currentIndex < _allQrs.length - 1) setState(() => _currentIndex++);
   }
 
   Future<void> _saveCurrentQrAsImage() async {
@@ -3896,7 +3980,7 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
         return;
       }
       final painter = QrPainter(
-        data: _currentSheet.qrDataList[_chunkIndex],
+        data: _currentQrData,
         version: QrVersions.auto,
         errorCorrectionLevel: QrErrorCorrectLevel.L,
         color: const Color(0xFF000000),
@@ -3947,12 +4031,23 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final sheet = _currentSheet;
+    final total = _allQrs.length;
+    final cur = _allQrs[_currentIndex];
+    final sheet = _sheet;
     final totalSheets = widget.sheets.length;
-    final totalChunks = sheet.qrDataList.length;
+    final sheetChunks = sheet.qrDataList.length;
+
     final width = MediaQuery.of(context).size.width;
     final height = MediaQuery.of(context).size.height;
-    final qrSize = (width < height ? width : height) * 0.72;
+    final qrSize = (width < height ? width : height) * 0.84;
+
+    // シート内のチャンク番号（シートが複数チャンクを持つ場合のみ表示）
+    final chunkLabel =
+        sheetChunks > 1 ? '  (${cur.chunkIdx + 1}/$sheetChunks枚目)' : '';
+    // シート番号ラベル（複数シートの場合のみ表示）
+    final sheetLabel = totalSheets > 1
+        ? 'シート ${cur.sheetIdx + 1} / $totalSheets  ·  '
+        : '';
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -3970,53 +4065,82 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ヘッダー: シート名 & ナビゲーション
+            // ヘッダー: シート名
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+              child: Column(
+                children: [
+                  Text(
+                    sheet.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '$sheetLabel${sheet.itemCount}件$chunkLabel',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 11,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            // QR コード
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              child: Container(
+                width: qrSize,
+                height: qrSize,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: QrImageView(
+                  data: _currentQrData,
+                  version: QrVersions.auto,
+                  errorCorrectionLevel: QrErrorCorrectLevel.L,
+                ),
+              ),
+            ),
+            // ナビゲーション（常に表示、1枚のみのときは矢印が無効）
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
-                    onPressed: _sheetIndex > 0 ? _prevSheet : null,
+                    onPressed: _currentIndex > 0 ? _prev : null,
                     icon: Icon(
-                      Icons.chevron_left_rounded,
-                      color: _sheetIndex > 0
+                      Icons.arrow_back_ios_rounded,
+                      size: 22,
+                      color: _currentIndex > 0
                           ? Colors.purpleAccent
                           : Colors.white24,
                     ),
                   ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          sheet.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'シート ${_sheetIndex + 1} / $totalSheets  ·  ${sheet.itemCount}件',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.4),
-                            fontSize: 11,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                  Text(
+                    '${_currentIndex + 1} / $total',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   IconButton(
-                    onPressed: _sheetIndex < totalSheets - 1
-                        ? _nextSheet
-                        : null,
+                    onPressed: _currentIndex < total - 1 ? _next : null,
                     icon: Icon(
-                      Icons.chevron_right_rounded,
-                      color: _sheetIndex < totalSheets - 1
+                      Icons.arrow_forward_ios_rounded,
+                      size: 22,
+                      color: _currentIndex < total - 1
                           ? Colors.purpleAccent
                           : Colors.white24,
                     ),
@@ -4024,68 +4148,9 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
                 ],
               ),
             ),
-            // QR コード
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              child: Container(
-                width: qrSize,
-                height: qrSize,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: QrImageView(
-                  data: sheet.qrDataList[_chunkIndex],
-                  version: QrVersions.auto,
-                  errorCorrectionLevel: QrErrorCorrectLevel.L,
-                ),
-              ),
-            ),
-            // チャンク ナビゲーション（複数チャンクのとき）
-            if (totalChunks > 1) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      onPressed: _chunkIndex > 0 ? _prevChunk : null,
-                      icon: Icon(
-                        Icons.arrow_back_ios_rounded,
-                        size: 18,
-                        color: _chunkIndex > 0
-                            ? Colors.white70
-                            : Colors.white24,
-                      ),
-                    ),
-                    Text(
-                      '${_chunkIndex + 1} / $totalChunks',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _chunkIndex < totalChunks - 1
-                          ? _nextChunk
-                          : null,
-                      icon: Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 18,
-                        color: _chunkIndex < totalChunks - 1
-                            ? Colors.white70
-                            : Colors.white24,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
             // 保存 & 閉じるボタン
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
               child: Row(
                 children: [
                   Expanded(
