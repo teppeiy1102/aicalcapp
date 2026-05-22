@@ -180,6 +180,28 @@ class _GraphModel extends ChangeNotifier {
     reheat(0.2);
   }
 
+  /// シートの全ノードを一括移動する（シートタイトルドラッグ用）
+  void moveSheetNodes(
+      String sheetName, Map<String, Offset> startPos, Offset delta) {
+    for (final n in nodes.where((n) => n.sheetName == sheetName)) {
+      final sp = startPos[n.id];
+      if (sp != null) {
+        n.pos = sp + delta;
+        n.vel = Offset.zero;
+      }
+    }
+    reheat(0.1);
+    notifyListeners();
+  }
+
+  /// シートの全ノードのピンを外す
+  void unpinSheet(String sheetName) {
+    for (final n in nodes.where((n) => n.sheetName == sheetName)) {
+      n.pinned = false;
+    }
+    reheat(0.3);
+  }
+
   _Node? nodeById(String id) => _map[id];
 
   Set<String> connectedTo(String id) {
@@ -267,6 +289,11 @@ class _LinkGraphPageState extends State<LinkGraphPage>
   Offset _pinchStartOff = Offset.zero;
   Offset _dragStartScene = Offset.zero;
   Offset _dragStartNodePos = Offset.zero;
+
+  // ── シートクラスタードラッグ ─────────────────────────────────────────
+  String? _draggingSheetName;
+  Offset _sheetDragStartScene = Offset.zero;
+  Map<String, Offset> _sheetDragStartPositions = {};
 
   // ── ダブルタップ / ダブルタップ+ドラッグズーム ────────────────────────
   int _lastTapMs = 0;
@@ -506,6 +533,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
 
     final size = MediaQuery.of(context).size;
     final topPad = kToolbarHeight + MediaQuery.of(context).padding.top;
+    final bottomPad = MediaQuery.of(context).padding.bottom;
     const pad = 70.0;
 
     double minX = visible.first.pos.dx, maxX = minX;
@@ -518,7 +546,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
     final cW = (maxX - minX) + pad * 2;
     final cH = (maxY - minY) + pad * 2;
     final aW = size.width;
-    final aH = size.height - topPad;
+    final aH = size.height - topPad - bottomPad;
     final scale = math.min(2.5, math.min(aW / cW, aH / cH));
     final cx = (minX + maxX) / 2;
     final cy = (minY + maxY) / 2;
@@ -536,6 +564,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
 
     final size = MediaQuery.of(context).size;
     final topPad = kToolbarHeight + MediaQuery.of(context).padding.top;
+    final bottomPad = MediaQuery.of(context).padding.bottom;
     const pad = 70.0;
 
     double minX = ns.first.pos.dx, maxX = minX;
@@ -548,7 +577,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
     final cW = (maxX - minX) + pad * 2;
     final cH = (maxY - minY) + pad * 2;
     final aW = size.width;
-    final aH = size.height - topPad;
+    final aH = size.height - topPad - bottomPad;
     final scale = math.min(4.0, math.min(aW / cW, aH / cH));
     final cx = (minX + maxX) / 2;
     final cy = (minY + maxY) / 2;
@@ -563,6 +592,33 @@ class _LinkGraphPageState extends State<LinkGraphPage>
   void _fitToSheetById(String sheetId) {
     final match = _visibleNodes.where((n) => n.sheetId == sheetId).firstOrNull;
     if (match != null) _fitToSheet(match.sheetName);
+  }
+
+  /// 画面座標がシートクラスターのタイトル帯（上部ストリップ）内かどうかを判定
+  String? _hitTestClusterTitle(Offset screenPos) {
+    final scenePos = _view.toScene(screenPos);
+    final bySheet = <String, List<_Node>>{};
+    for (final n in _visibleNodes) {
+      bySheet.putIfAbsent(n.sheetName, () => []).add(n);
+    }
+    for (final entry in bySheet.entries) {
+      final ns = entry.value;
+      if (ns.length < 2) continue;
+      double minX = ns.first.pos.dx, maxX = minX;
+      double minY = ns.first.pos.dy, maxY = minY;
+      for (final n in ns) {
+        minX = math.min(minX, n.pos.dx); maxX = math.max(maxX, n.pos.dx);
+        minY = math.min(minY, n.pos.dy); maxY = math.max(maxY, n.pos.dy);
+      }
+      const p = 55.0;
+      // タイトル帯: クラスター上端から 40 シーン単位（シート名 + バッジ分）
+      const titleH = 40.0;
+      if (scenePos.dx >= minX - p && scenePos.dx <= maxX + p &&
+          scenePos.dy >= minY - p && scenePos.dy <= minY - p + titleH) {
+        return entry.key;
+      }
+    }
+    return null;
   }
 
   /// 画面座標がシートクラスター内に収まるか判定し、シート名を返す
@@ -620,6 +676,20 @@ class _LinkGraphPageState extends State<LinkGraphPage>
         _dragStartNodePos = hit.pos;
         _model.pinAndMove(hit.id, hit.pos);
       } else {
+        // シートタイトル帯ドラッグの判定
+        final titleSheet = _hitTestClusterTitle(e.localPosition);
+        if (titleSheet != null) {
+          _draggingSheetName = titleSheet;
+          _sheetDragStartScene = _view.toScene(e.localPosition);
+          _sheetDragStartPositions = {
+            for (final n in _model.nodes.where((n) => n.sheetName == titleSheet))
+              n.id: n.pos
+          };
+          for (final n in _model.nodes.where((n) => n.sheetName == titleSheet)) {
+            n.pinned = true;
+            n.vel = Offset.zero;
+          }
+        }
         _view.update(draggingIdFn: () => null);
       }
     } else if (_ptrs.length == 2) {
@@ -659,6 +729,12 @@ class _LinkGraphPageState extends State<LinkGraphPage>
       if (did != null) {
         final scene = _view.toScene(e.localPosition);
         _model.pinAndMove(did, _dragStartNodePos + (scene - _dragStartScene));
+      } else if (_draggingSheetName != null) {
+        // シートクラスター一括ドラッグ
+        final scene = _view.toScene(e.localPosition);
+        final delta = scene - _sheetDragStartScene;
+        _model.moveSheetNodes(
+            _draggingSheetName!, _sheetDragStartPositions, delta);
       } else {
         _view.update(offset: _panStartOff + (e.localPosition - _panStartFocal));
       }
@@ -724,6 +800,11 @@ class _LinkGraphPageState extends State<LinkGraphPage>
       _model.unpin(did);
       _view.update(draggingIdFn: () => null);
     }
+    if (_draggingSheetName != null && _ptrs.isEmpty) {
+      _model.unpinSheet(_draggingSheetName!);
+      _draggingSheetName = null;
+      _sheetDragStartPositions = {};
+    }
   }
 
   void _onPointerCancel(PointerCancelEvent e) {
@@ -732,6 +813,11 @@ class _LinkGraphPageState extends State<LinkGraphPage>
     final did = _view.draggingId;
     _ptrs.remove(e.pointer);
     if (did != null) { _model.unpin(did); _view.update(draggingIdFn: () => null); }
+    if (_draggingSheetName != null) {
+      _model.unpinSheet(_draggingSheetName!);
+      _draggingSheetName = null;
+      _sheetDragStartPositions = {};
+    }
   }
 
   void _onScrollWheel(PointerScrollEvent e) {
@@ -766,8 +852,8 @@ class _LinkGraphPageState extends State<LinkGraphPage>
               Text(
                 _showAll
                     ? '全 ${_model.nodes.length} ノード'
-                    : 'リンク済み ${visible.length} ノード · ${_model.edges.length} 接続',
-                style: const TextStyle(color: Colors.white38, fontSize: 11),
+                    : 'リンク済み ${visible.length} ノード',
+                style: const TextStyle(color: Color.fromARGB(151, 221, 254, 181), fontSize: 14),
               ),
           ],
         ),
@@ -1045,10 +1131,10 @@ class _GraphPainter extends CustomPainter {
         )..layout();
         sheetTp.paint(canvas, Offset(minX - p + 10, minY - p + 6));
 
-        // 結合シートバッジ（シート名の右隣に各バッジを並べる）
+        // 結合シートバッジ（シート名の下に縦に並べる）
         if (hasMerged && sc > 0.3) {
-          double bx = minX - p + 10 + sheetTp.width + (6 / sc);
-          final by = minY - p + 5;
+          final bx = minX - p + 6;
+          double by = minY - p + 4 + sheetTp.height + (4 / sc);
           final badgeFontSize = (10 / sc).clamp(7.0, 13.0);
           for (final mTitle in merged) {
             final col = _mergedColor(mTitle);
@@ -1056,37 +1142,21 @@ class _GraphPainter extends CustomPainter {
               text: TextSpan(
                 text: mTitle,
                 style: TextStyle(
-                  color: col,
+                  color: col.withOpacity(0.55),
                   fontSize: badgeFontSize,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w100,
                 ),
               ),
               textDirection: TextDirection.ltr,
             )..layout();
             const hPad = 6.0;
             const vPad = 3.0;
-            final bw = badgeTp.width + hPad * 2 / sc;
             final bh = badgeTp.height + vPad * 2 / sc;
-            final badgeRect = RRect.fromRectAndRadius(
-              Rect.fromLTWH(bx, by, bw, bh),
-              Radius.circular(4 / sc),
-            );
-            canvas.drawRRect(
-              badgeRect,
-              Paint()..color = col.withOpacity(0.15),
-            );
-            canvas.drawRRect(
-              badgeRect,
-              Paint()
-                ..color = col.withOpacity(0.5)
-                ..style = PaintingStyle.stroke
-                ..strokeWidth = 0.8 / sc,
-            );
             badgeTp.paint(
               canvas,
               Offset(bx + hPad / sc, by + vPad / sc),
             );
-            bx += bw + (4 / sc);
+            by += bh + (-3 / sc);
           }
         }
       }
@@ -1348,69 +1418,63 @@ class _LegendWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F1020).withOpacity(0.92),
+        color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.92),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.07)),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.45),
-              blurRadius: 12,
-              offset: const Offset(0, 2)),
-        ],
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _LegRow(
-              color: const Color(0xFF7B7FFF),
-              label: '計算式',
-              count: calcCount),
-          const SizedBox(width: 10),
-          _LegRow(
-              color: const Color(0xFFFFAA33),
-              label: '論理式',
-              count: logicCount),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 6),
-            child: Divider(color: Colors.white10, height: 1),
-          ),
-          const SizedBox(width: 10),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(width: 16, height: 1.2, color: const Color(0xFF404060)),
-              const SizedBox(width: 7),
-              Text('接続 $edgeCount 本',
-                  style: const TextStyle(
-                      color: Color(0xFF505070), fontSize: 10)),
-            ],
-          ),
-          const SizedBox(width: 10),
-          ListenableBuilder(
-            listenable: model,
-            builder: (_, __) {
-              if (model.settled) return const SizedBox.shrink();
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 10, height: 10,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1.2,
-                      value: 1.0 - model.alpha,
-                      color: const Color(0xFF7B7FFF),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _LegRow(
+                color: const Color(0xFF7B7FFF),
+                label: '計算式',
+                count: calcCount),
+            const SizedBox(height: 6),
+            _LegRow(
+                color: const Color(0xFFFFAA33),
+                label: '論理式',
+                count: logicCount),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 3),
+              child: Divider(color: Colors.white10, height: 1),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(width: 16, height: 1.2, color: const Color(0xFF404060)),
+                const SizedBox(width: 7),
+                Text('接続 $edgeCount 本',
+                    style: const TextStyle(
+                        color: Color(0xFF505070), fontSize: 10)),
+              ],
+            ),
+            const SizedBox(width: 10),
+            ListenableBuilder(
+              listenable: model,
+              builder: (_, __) {
+                if (model.settled) return const SizedBox.shrink();
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 10, height: 10,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.2,
+                        value: 1.0 - model.alpha,
+                        color: const Color(0xFF7B7FFF),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Text('配置計算中…',
-                      style: TextStyle(
-                          color: Color(0xFF4A4A6A), fontSize: 9.5)),
-                ],
-              );
-            },
-          ),
-        ],
+                    const SizedBox(width: 6),
+                    const Text('配置計算中…',
+                        style: TextStyle(
+                            color: Color(0xFF4A4A6A), fontSize: 9.5)),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1610,6 +1674,7 @@ class _DetailCard extends StatelessWidget {
                         title: '← 参照元',
                         accentColor: const Color(0xFF5EFFBB),
                         edges: incoming,
+                        allEdges: edges,
                         nodeMap: nodeMap,
                         isIncoming: true,
                         resolveLabel: _resolveLabel,
@@ -1621,6 +1686,7 @@ class _DetailCard extends StatelessWidget {
                         title: '→ 参照先',
                         accentColor: const Color(0xFFFF9B5E),
                         edges: outgoing,
+                        allEdges: edges,
                         nodeMap: nodeMap,
                         isIncoming: false,
                         resolveLabel: _resolveLabel,
@@ -1643,23 +1709,132 @@ class _DetailCard extends StatelessWidget {
 // リンクを辿って計算結果を再帰的に解決するヘルパー
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+/// 項変換を適用する（calculator_row.dart の _applyTermTransform と同等）
+double _applyTermTransformLocal(double v, String? transform, double powExp) {
+  switch (transform) {
+    case 'sqrt':      return math.sqrt(v < 0 ? 0 : v);
+    case 'pow':       return math.pow(v, powExp).toDouble();
+    case 'nroot':     return powExp != 0 ? math.pow(v < 0 ? 0 : v, 1.0 / powExp).toDouble() : 0;
+    case 'abs':       return v.abs();
+    case 'floor':     return v.floorToDouble();
+    case 'ceil':      return v.ceilToDouble();
+    case 'round':     return v.roundToDouble();
+    case 'log10':     return v > 0 ? math.log(v) / math.ln10 : 0;
+    case 'reciprocal': return v != 0 ? 1.0 / v : 0;
+    case 'sin':       return math.sin(v);
+    case 'cos':       return math.cos(v);
+    case 'tan':       return math.tan(v);
+    default:          return v;
+  }
+}
+
+/// 単一演算（calculator_widget.dart の _calculateSingle と同等）
+double _calcSingle(double a, String op, double b) {
+  switch (op) {
+    case '+': return a + b;
+    case '-': return a - b;
+    case 'x': return a * b;
+    case '/': return b != 0 ? a / b : double.nan;
+    case '%': return b != 0 ? a % b : double.nan;
+    default:  return a;
+  }
+}
+
+/// トークンリストを優先順位付きで評価（calculator_widget.dart の _evaluateTokens と同等）
+double _evaluateTokensLocal(List<dynamic> tokens) {
+  if (tokens.isEmpty) return 0.0;
+  double extractVal(dynamic t) =>
+      (t is Map ? (t['val'] ?? 0.0) : (t ?? 0.0) as num).toDouble();
+
+  // 第1パス: 高優先度の演算子（x, /, %）を先に評価
+  final work = List<dynamic>.from(tokens);
+  int i = 1;
+  while (i < work.length) {
+    final op = work[i] as String;
+    if (op == 'x' || op == '/' || op == '%') {
+      final result = _calcSingle(extractVal(work[i - 1]), op, extractVal(work[i + 1]));
+      work.replaceRange(i - 1, i + 2, [<String, dynamic>{'val': result}]);
+    } else {
+      i += 2;
+    }
+  }
+
+  // 第2パス: 低優先度の演算子（+, -）を評価
+  double res = extractVal(work[0]);
+  for (int j = 1; j < work.length; j += 2) {
+    res = _calcSingle(res, work[j] as String, extractVal(work[j + 1]));
+  }
+  return res;
+}
+
+/// 括弧と演算子優先順位を反映した式全体の評価（calculator_widget.dart の _calculate と同等）
+double _calculateFull(
+  double input,
+  String op,
+  double operand,
+  List<dynamic> others,
+  List<dynamic> brackets,
+) {
+  // トークンリストの構築
+  final tokens = <dynamic>[
+    {'val': input, 'termIdx': 0},
+    op,
+    {'val': operand, 'termIdx': 1},
+  ];
+  for (int idx = 0; idx < others.length; idx++) {
+    final m = others[idx] as Map;
+    tokens.add(m['op'] as String? ?? '+');
+    tokens.add({'val': (m['val'] as num? ?? 0.0).toDouble(), 'termIdx': idx + 2});
+  }
+
+  if (brackets.isEmpty) return _evaluateTokensLocal(tokens);
+
+  final currentTokens = List<dynamic>.from(tokens);
+  final bList = brackets.map((e) {
+    final m = e as Map;
+    return {'start': (m['start'] as num).toInt(), 'end': (m['end'] as num).toInt()};
+  }).toList()
+    ..sort((a, b) {
+      final aSpan = (a['end'] as int) - (a['start'] as int);
+      final bSpan = (b['end'] as int) - (b['start'] as int);
+      return aSpan.compareTo(bSpan);
+    });
+
+  for (final b in bList) {
+    final start = b['start'] as int;
+    final end = b['end'] as int;
+    int firstIdx = -1, lastIdx = -1;
+    for (int j = 0; j < currentTokens.length; j++) {
+      final t = currentTokens[j];
+      if (t is Map && t.containsKey('termIdx')) {
+        final tidx = (t['termIdx'] as num).toInt();
+        if (tidx <= start) firstIdx = j;
+        if (tidx <= end) lastIdx = j;
+      }
+    }
+    if (firstIdx != -1 && lastIdx != -1 && firstIdx < lastIdx) {
+      final sub = currentTokens.sublist(firstIdx, lastIdx + 1);
+      final res = _evaluateTokensLocal(sub);
+      final firstMap = currentTokens[firstIdx] as Map;
+      currentTokens.replaceRange(firstIdx, lastIdx + 1, [
+        <String, dynamic>{'val': res, 'termIdx': (firstMap['termIdx'] as num).toInt()},
+      ]);
+    }
+  }
+
+  return _evaluateTokensLocal(currentTokens);
+}
+
+/// リンクを辿りながら再帰的に計算結果を解決する
+/// （演算子の正規化・項変換・括弧・優先順位に対応）
 double _calcLinkedResult(
     Map<String, dynamic> item,
     String sheetId,
     Map<String, _Node> nodeMap, [
     Set<String>? visited,
 ]) {
-  double _applyOp(double a, String op, double b) {
-    switch (op) {
-      case '-':   return a - b;
-      case '×':   return a * b;
-      case '÷':   return b == 0 ? double.nan : a / b;
-      case 'mod': return b == 0 ? double.nan : a % b;
-      default:    return a + b;
-    }
-  }
-
-  double getValue(bool linked, Map? src, dynamic rawVal) {
+  // リンク先またはローカル値を解決して返す（再帰対応）
+  double resolveValue(bool linked, Map? src, dynamic rawVal) {
     if (linked && src != null) {
       final sid = src['sheetId'] as String? ?? sheetId;
       final row = src['rowIdx'] as int? ?? 0;
@@ -1675,19 +1850,47 @@ double _calcLinkedResult(
     return (rawVal as num? ?? 0).toDouble();
   }
 
-  double r = getValue(
-      item['inputLink'] == true, item['inputLinkSource'] as Map?, item['input']);
-  r = _applyOp(
-      r,
-      item['op'] as String? ?? '+',
-      getValue(item['operandLink'] == true,
-          item['operandLinkSource'] as Map?, item['operand']));
-  for (final o
-      in (item['others'] as List? ?? []).map((x) => Map<String, dynamic>.from(x as Map))) {
-    r = _applyOp(r, o['op'] as String? ?? '+',
-        getValue(o['valLink'] == true, o['valLinkSource'] as Map?, o['val']));
-  }
-  return r;
+  // 各項の値を解決してから transform を適用
+  final inp = _applyTermTransformLocal(
+    resolveValue(
+      item['inputLink'] == true,
+      item['inputLinkSource'] as Map?,
+      item['input'],
+    ),
+    item['inputTransform'] as String?,
+    (item['inputPowExp'] as num? ?? 2.0).toDouble(),
+  );
+
+  final ope = _applyTermTransformLocal(
+    resolveValue(
+      item['operandLink'] == true,
+      item['operandLinkSource'] as Map?,
+      item['operand'],
+    ),
+    item['operandTransform'] as String?,
+    (item['operandPowExp'] as num? ?? 2.0).toDouble(),
+  );
+
+  final op = item['op'] as String? ?? '+';
+
+  final others = (item['others'] as List? ?? []).map((x) {
+    final m = Map<String, dynamic>.from(x as Map);
+    final resolvedVal = resolveValue(
+      m['valLink'] == true,
+      m['valLinkSource'] as Map?,
+      m['val'],
+    );
+    m['val'] = _applyTermTransformLocal(
+      resolvedVal,
+      m['transform'] as String?,
+      (m['powExp'] as num? ?? 2.0).toDouble(),
+    );
+    return m;
+  }).toList();
+
+  final brackets = item['brackets'] as List? ?? [];
+
+  return _calculateFull(inp, op, ope, others, brackets);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1722,52 +1925,58 @@ class _CalcFormulaView extends StatelessWidget {
   static const _noLinkColor = Color(0xFF1E1E30);
   static const _opColor = Color(0xFF5050A0);
 
-  /// リンクソースの接続種別を返す
+  /// リンクソースの接続種別を返す（循環参照判定用）
   String _connType(Map? src) {
-    if (src == null) return 'none';
+    if (src == null) return 'source';
     final sid = src['sheetId'] as String? ?? sheetId;
-    final row = src['rowIdx'] as int? ?? 0;
+    final row = (src['rowIdx'] as num?)?.toInt() ?? 0;
     final srcId = '${sid}_c$row';
     final isFrom = incomingEdges?.any((e) => e.fromId == srcId) ?? false;
     final isDest = outgoingEdges?.any((e) => e.toId == srcId) ?? false;
     if (isFrom && isDest) return 'both';
     if (isDest) return 'dest';
-    return 'source'; // linked → 少なくとも source
+    return 'source';
   }
 
   Widget _term(String text, {bool linked = false, Map? src}) {
-    final ct = (linked && src != null) ? _connType(src) : (linked ? 'source' : 'none');
+    // linked == true の場合は常にマーキング（エッジ有無を問わない）
+    if (!linked) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: _noLinkColor,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: Colors.white12, width: 1),
+        ),
+        child: Text(text,
+            style: const TextStyle(color: Colors.white60, fontSize: 11)),
+      );
+    }
+    final ct = src != null ? _connType(src) : 'source';
     final Color accent;
     switch (ct) {
       case 'dest':   accent = _dstColor;  break;
       case 'both':   accent = _bothColor; break;
-      case 'source': accent = _srcColor;  break;
-      default:       accent = Colors.transparent;
+      default:       accent = _srcColor;  break;
     }
-    final isColored = ct != 'none';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: isColored ? accent.withOpacity(0.15) : _noLinkColor,
+        color: accent.withOpacity(0.15),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: isColored ? accent.withOpacity(0.50) : Colors.white12,
-          width: 1,
-        ),
+        border: Border.all(color: accent.withOpacity(0.50), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (isColored) ...[
-            Icon(Icons.link, size: 10, color: accent.withOpacity(0.9)),
-            const SizedBox(width: 3),
-          ],
+          Icon(Icons.link, size: 10, color: accent.withOpacity(0.9)),
+          const SizedBox(width: 3),
           Text(
             text,
             style: TextStyle(
-              color: isColored ? accent : Colors.white60,
+              color: accent,
               fontSize: 11,
-              fontWeight: isColored ? FontWeight.w600 : FontWeight.normal,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -1840,14 +2049,9 @@ class _CalcFormulaView extends StatelessWidget {
           Wrap(spacing: 0, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: children),
             _op('='),
             Builder(builder: (context) {
-              // 中継ノード（参照元かつ参照先）→ gold、参照元のみ → green、それ以外 → plain
-              final hasIncoming = incomingEdges?.isNotEmpty == true;
+              // 答え自体に参照先がある場合のみマーキング（自身の式は考慮しない）
               final hasOutgoing = outgoingEdges?.isNotEmpty == true;
-              final Color? chipColor = (hasIncoming && hasOutgoing)
-                  ? _bothColor
-                  : hasOutgoing
-                      ? _srcColor
-                      : null;
+              final Color? chipColor = hasOutgoing ? _dstColor : null;
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -2140,6 +2344,7 @@ class _ConSection extends StatelessWidget {
   final String title;
   final Color accentColor;
   final List<_Edge> edges;
+  final List<_Edge> allEdges;
   final Map<String, _Node> nodeMap;
   final bool isIncoming;
   final String Function(Map, String, Map<String, _Node>) resolveLabel;
@@ -2149,6 +2354,7 @@ class _ConSection extends StatelessWidget {
     required this.title,
     required this.accentColor,
     required this.edges,
+    required this.allEdges,
     required this.nodeMap,
     required this.isIncoming,
     required this.resolveLabel,
@@ -2189,17 +2395,6 @@ class _ConSection extends StatelessWidget {
     return -1;
   }
 
-  /// 項インデックス ti がデータモデル上でリンク設定されているか
-  static bool _isLinked(Map<String, dynamic> data, int ti) {
-    if (ti == 0) return data['inputLink'] == true;
-    if (ti == 2) return data['operandLink'] == true;
-    if (ti >= 4) {
-      final j = (ti - 4) ~/ 2;
-      final others = data['others'] as List? ?? [];
-      if (j < others.length) return (others[j] as Map)['valLink'] == true;
-    }
-    return false;
-  }
 
   /// エッジラベル（複合ラベル '項1, 項2' も可）に ti が含まれるか
   static bool _isEdgeTarget(String label, int ti) {
@@ -2207,6 +2402,21 @@ class _ConSection extends StatelessWidget {
       if (_labelToTermIdx(part.trim()) == ti) return true;
     }
     return false;
+  }
+
+  /// 各項のリンク状態を返す（演算子インデックスは false）
+  /// インデックスは _formulaTerms と同じ構造 [term0, op, term1, op, term2, ...]
+  static List<bool> _formulaTermLinkStatus(Map<String, dynamic> item) {
+    final status = <bool>[];
+    status.add(item['inputLink'] == true);
+    status.add(false); // op
+    status.add(item['operandLink'] == true);
+    for (final o in (item['others'] as List? ?? [])
+        .map((e) => Map<String, dynamic>.from(e as Map))) {
+      status.add(false); // op
+      status.add(o['valLink'] == true);
+    }
+    return status;
   }
 
   @override
@@ -2246,6 +2456,9 @@ class _ConSection extends StatelessWidget {
           final terms = oth.isLogic
               ? null
               : _formulaTerms(oth.rawData, oth.sheetId);
+          final linkStatuses = (terms != null)
+              ? _formulaTermLinkStatus(oth.rawData)
+              : null;
 
           return Container(
             margin: const EdgeInsets.only(bottom: 6),
@@ -2322,22 +2535,31 @@ class _ConSection extends StatelessWidget {
                             // 値チップ
                             // リンク設定済みの項 OR 参照先でエッジラベル指定の項 → 色付け
                             Builder(builder: (_) {
-                              final isLinked = _isLinked(oth.rawData, ti);
-                              final isEdgeTarget =
+                              // 参照先セクション: このノードのデータを受け取る項をハイライト
+                              final isHighlighted =
                                   !isIncoming && _isEdgeTarget(e.label, ti);
-                              final isHighlighted = isLinked || isEdgeTarget;
+                              // 参照元セクション: ソースノード自身のリンク項を緑で示す
+                              // （isHighlighted が true の場合は accentColor を優先）
+                              final isLinked = !isHighlighted &&
+                                  (linkStatuses != null &&
+                                      ti < linkStatuses.length &&
+                                      linkStatuses[ti]);
+                              const linkColor = Color(0xFF5EFFBB); // 参照元色（緑）
+                              final Color? chipColor = isHighlighted
+                                  ? accentColor
+                                  : (isLinked ? linkColor : null);
                               return Container(
                                 margin: const EdgeInsets.only(right: 1),
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: isHighlighted
-                                      ? accentColor.withOpacity(0.15)
+                                  color: chipColor != null
+                                      ? chipColor.withOpacity(0.15)
                                       : const Color(0xFF1A1A2A),
                                   borderRadius: BorderRadius.circular(5),
                                   border: Border.all(
-                                    color: isHighlighted
-                                        ? accentColor.withOpacity(0.45)
+                                    color: chipColor != null
+                                        ? chipColor.withOpacity(0.45)
                                         : Colors.white10,
                                     width: 1,
                                   ),
@@ -2345,19 +2567,17 @@ class _ConSection extends StatelessWidget {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    if (isHighlighted) ...[
+                                    if (chipColor != null) ...[
                                       Icon(Icons.link,
                                           size: 9,
-                                          color: accentColor.withOpacity(0.9)),
+                                          color: chipColor.withOpacity(0.9)),
                                       const SizedBox(width: 3),
                                     ],
                                     Text(terms[ti],
                                         style: TextStyle(
-                                            color: isHighlighted
-                                                ? accentColor
-                                                : Colors.white38,
+                                            color: chipColor ?? Colors.white38,
                                             fontSize: 10,
-                                            fontWeight: isHighlighted
+                                            fontWeight: chipColor != null
                                                 ? FontWeight.w600
                                                 : FontWeight.normal)),
                                   ],
@@ -2374,25 +2594,47 @@ class _ConSection extends StatelessWidget {
                                   fontWeight: FontWeight.bold)),
                         ),
                         Builder(builder: (_) {
-                          // 結果チップは常にプレーン（色・矢印なし）
                           final r = _calcLinkedResult(
                               oth.rawData, oth.sheetId, nodeMap);
                           final resultStr = r.isNaN ? '÷0' : r.isInfinite ? '∞' : fmtNum(r);
+                          // 答え自身が他ノードから参照されているかのみ判定（式のリンク設定は無関係）
+                          final isHighlighted = allEdges.any((e) => e.fromId == oth.id);
                           return Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1A1A2A),
+                              color: isHighlighted
+                                  ? accentColor.withOpacity(0.15)
+                                  : const Color(0xFF1A1A2A),
                               borderRadius: BorderRadius.circular(5),
                               border: Border.all(
-                                  color: Colors.white10, width: 1),
+                                color: isHighlighted
+                                    ? accentColor.withOpacity(0.45)
+                                    : Colors.white10,
+                                width: 1,
+                              ),
                             ),
-                            child: Text(
-                              resultStr,
-                              style: const TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.normal),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isHighlighted) ...[
+                                  Icon(Icons.call_made,
+                                      size: 9,
+                                      color: accentColor.withOpacity(0.9)),
+                                  const SizedBox(width: 3),
+                                ],
+                                Text(
+                                  resultStr,
+                                  style: TextStyle(
+                                      color: isHighlighted
+                                          ? accentColor
+                                          : Colors.white38,
+                                      fontSize: 10,
+                                      fontWeight: isHighlighted
+                                          ? FontWeight.w600
+                                          : FontWeight.normal),
+                                ),
+                              ],
                             ),
                           );
                         }),

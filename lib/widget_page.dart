@@ -1949,6 +1949,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
   // ── 結合ビュー用電卓オーバーレイ ──
   OverlayEntry? _mergedCalcOverlay;
   bool _mergedCalcOpen = false;
+  String? _pendingMergedCalcDisplay;
 
   @override
   void initState() {
@@ -1976,6 +1977,24 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
   }
 
   // ── 結合ビュー用電卓 ──────────────────────────────────────────────────────
+  Future<void> _handleMergedCalcAiCountRequest() async {
+    _closeMergedCalcSheet();
+    final ai = GemmaAi();
+    if (!mounted) return;
+    final count = await Navigator.push<int>(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (ctx) => _AiCountPage(onCount: ai.countInImage),
+      ),
+    );
+    if (!mounted) return;
+    if (count != null) {
+      _pendingMergedCalcDisplay = count.toString();
+    }
+    _openMergedCalcSheet();
+  }
+
   void _openMergedCalcSheet() {
     if (_mergedCalcOpen) {
       _closeMergedCalcSheet();
@@ -1986,14 +2005,17 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
       builder: (ctx) => _CalcDraggableSheetContent(
         existingItemCount: 0,
         isDark: true,
+        initialDisplay: _pendingMergedCalcDisplay,
         onAddItem: (item) {
           _closeMergedCalcSheet();
           Future.microtask(() => _pickSheetAndAdd(item));
         },
+        onRequestAiCount: _handleMergedCalcAiCountRequest,
         onRequestHistory: _showMergedHistoryForCalc,
         onClose: _closeMergedCalcSheet,
       ),
     );
+    _pendingMergedCalcDisplay = null;
     Overlay.of(context).insert(_mergedCalcOverlay!);
   }
 
@@ -2912,6 +2934,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
   OverlayEntry? _calcOverlay;
   bool _calcSheetOpen = false;
   bool _isAiGenerating = false;
+  String? _pendingCalcDisplay;
   late WidgetConfig _config;
 
   @override
@@ -2951,6 +2974,24 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
     widget.onUpdate(data);
   }
 
+  Future<void> _handleCalcAiCountRequest() async {
+    _closeCalcSheet();
+    final ai = GemmaAi();
+    if (!mounted) return;
+    final count = await Navigator.push<int>(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (ctx) => _AiCountPage(onCount: ai.countInImage),
+      ),
+    );
+    if (!mounted) return;
+    if (count != null) {
+      _pendingCalcDisplay = count.toString();
+    }
+    _openCalcSheet();
+  }
+
   void _openCalcSheet() {
     if (_calcSheetOpen) {
       _closeCalcSheet();
@@ -2975,10 +3016,13 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
         existingItemCount: currentItems.length,
         isDark: isDark,
         bgColor: bgColorValue,
+        initialDisplay: _pendingCalcDisplay,
+        onRequestAiCount: _handleCalcAiCountRequest,
         onAddItem: (item) => state?._addItemFromMap(item),
         onClose: _closeCalcSheet,
       ),
     );
+    _pendingCalcDisplay = null;
     Overlay.of(context).insert(_calcOverlay!);
   }
 
@@ -3217,6 +3261,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                   label: 'AI生成',
                   color: const Color(0xFF9E7AFF),
                   isLoading: _isAiGenerating,
+                  showLabel: false,
                   onTap: () =>
                       _calcKey.currentState?._showAiGenerateCalcDialog(),
                 ),
@@ -3224,6 +3269,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                   icon: modeIcon,
                   label: modeLabel,
                   color: modeColor,
+                  showLabel: false,
                   onTap: () {
                     if (isTableMode) {
                       _handleUpdate({
@@ -3251,12 +3297,14 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                   icon: Icons.calculate_rounded,
                   label: '電卓',
                   color: isDarkBar ? Colors.white38 : Colors.black45,
+                  showLabel: false,
                   onTap: _openCalcSheet,
                 ),
                 _ToolbarButton(
                   icon: Icons.add_rounded,
                   label: '行追加',
                   color: isDarkBar ? Colors.white54 : Colors.black54,
+                  showLabel: false,
                   onTap: () => _calcKey.currentState?._addItem(),
                 ),
               ],
@@ -3446,6 +3494,7 @@ class _ToolbarButton extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
   final bool isLoading;
+  final bool showLabel;
 
   const _ToolbarButton({
     required this.icon,
@@ -3454,6 +3503,7 @@ class _ToolbarButton extends StatelessWidget {
     required this.onTap,
     this.onLongPress,
     this.isLoading = false,
+    this.showLabel = true,
   });
 
   @override
@@ -3477,16 +3527,18 @@ class _ToolbarButton extends StatelessWidget {
                     ),
                   )
                 : Icon(icon, color: color, size: 24),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: color.withOpacity(isLoading ? 0.5 : 0.8),
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.2,
+            if (showLabel) ...[  
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color.withOpacity(isLoading ? 0.5 : 0.8),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.2,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

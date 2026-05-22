@@ -535,41 +535,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               const Divider(color: Colors.white10, indent: 16, endIndent: 16),
-              ListTile(
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.amberAccent.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.tune_rounded,
-                    color: Colors.amberAccent,
-                    size: 22,
-                  ),
-                ),
-                title: const Text(
-                  '設定',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                subtitle: Text(
-                  'ユーザー定義定数の管理',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
-                    fontSize: 12,
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _openSettings();
-                },
-              ),
-              const Divider(color: Colors.white10, indent: 16, endIndent: 16),
-              ListTile(
+             ListTile(
                 leading: Container(
                   width: 40,
                   height: 40,
@@ -611,7 +577,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 })
                             .toList(),
                         onOpenSheet: (sheetId) {
-                          Navigator.pop(context);
                           final idx =
                               _configs.indexWhere((c) => c.id == sheetId);
                           if (idx != -1) _openDetail(idx);
@@ -621,6 +586,41 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
+              const Divider(color: Colors.white10, indent: 16, endIndent: 16),
+    ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.amberAccent.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.tune_rounded,
+                    color: Colors.amberAccent,
+                    size: 22,
+                  ),
+                ),
+                title: const Text(
+                  '設定',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  'ユーザー定義定数の管理',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.4),
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _openSettings();
+                },
+              ),
+           
             ],
           ),
         ),
