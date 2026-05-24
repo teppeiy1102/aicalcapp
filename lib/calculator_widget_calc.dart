@@ -107,6 +107,19 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
           }
           _calcTermOps.add(key);
           _calcA = currentVal;
+          // 複数項がある場合、そこまでの計算結果を表示
+          if (_calcTermValues.length >= 2) {
+            double runningResult = _calcTermValues[0];
+            for (int i = 0; i + 1 < _calcTermValues.length; i++) {
+              runningResult = _evalCalcSimple(
+                runningResult,
+                _calcTermOps[i],
+                _calcTermValues[i + 1],
+              );
+            }
+            _calcDisplay = _fmtCalc(runningResult);
+            _calcA = runningResult;
+          }
         } else if (_calcOp.isNotEmpty) {
           // 演算子を押し直した場合（直前の演算子を置換）
           if (_calcTermOps.isNotEmpty) {

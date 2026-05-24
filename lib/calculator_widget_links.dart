@@ -545,35 +545,41 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                               6,
                                             ),
                                             child: Row(
-                                              children: List.generate(items.length, (
-                                                i,
-                                              ) {
-                                                final calcName =
-                                                    items[i]['name']
-                                                        as String? ??
-                                                    '計算 ${i + 1}';
-                                                final isSel =
-                                                    selectedSrcCalcIdx == i &&
-                                                    selectedSrcSheetId == null;
-                                                return Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                        right: 8,
-                                                      ),
-                                                  child: GestureDetector(
-                                                    onTap: () => setDs(() {
-                                                      savePending();
-                                                      selectedSrcSheetId = null;
-                                                      selectedSrcCalcIdx = i;
-                                                      selectedSrcField =
-                                                          'result';
-                                                      selectedDests =
-                                                          loadPendingOrExisting(
-                                                            null,
-                                                            i,
-                                                            'result',
-                                                          );
-                                                    }),
+                                              children: (() {
+                                                final calcDisplayOrder = _effectiveDisplayOrder
+                                                    .where((e) => e['type'] == 'calc')
+                                                    .map((e) => e['calcIdx'] as int)
+                                                    .toList();
+                                                return List.generate(calcDisplayOrder.length, (
+                                                  di,
+                                                ) {
+                                                  final i = calcDisplayOrder[di];
+                                                  final calcName =
+                                                      items[i]['name']
+                                                          as String? ??
+                                                      '計算 ${i + 1}';
+                                                  final isSel =
+                                                      selectedSrcCalcIdx == i &&
+                                                      selectedSrcSheetId == null;
+                                                  return Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          right: 8,
+                                                        ),
+                                                    child: GestureDetector(
+                                                      onTap: () => setDs(() {
+                                                        savePending();
+                                                        selectedSrcSheetId = null;
+                                                        selectedSrcCalcIdx = i;
+                                                        selectedSrcField =
+                                                            'result';
+                                                        selectedDests =
+                                                            loadPendingOrExisting(
+                                                              null,
+                                                              i,
+                                                              'result',
+                                                            );
+                                                      }),
                                                     child: AnimatedContainer(
                                                       duration: const Duration(
                                                         milliseconds: 150,
@@ -624,7 +630,8 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                                     ),
                                                   ),
                                                 );
-                                              }),
+                                                });
+                                              }()),
                                             ),
                                           ),
                                           if (selectedSrcCalcIdx != null &&
@@ -1900,12 +1907,26 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                     ),
                                   );
                                 }
+                                // リンク先の表示順: 現在シートは displayOrder に従う
+                                final List<int> destCalcOrder;
+                                if (destSheetId == null) {
+                                  destCalcOrder = _effectiveDisplayOrder
+                                      .where((e) => e['type'] == 'calc')
+                                      .map((e) => e['calcIdx'] as int)
+                                      .toList();
+                                } else {
+                                  destCalcOrder = List.generate(
+                                    destItems.length,
+                                    (i) => i,
+                                  );
+                                }
                                 return ListView.builder(
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 8,
                                   ),
-                                  itemCount: destItems.length,
-                                  itemBuilder: (context, i) {
+                                  itemCount: destCalcOrder.length,
+                                  itemBuilder: (context, di) {
+                                    final i = destCalcOrder[di];
                                     // 同一シート内のリンク元行はスキップ
                                     if (destSheetId == null &&
                                         selectedSrcSheetId == null &&

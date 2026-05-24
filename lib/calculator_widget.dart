@@ -3555,9 +3555,39 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final canUse = await RevenueCatService.consumeUse();
     if (!canUse) {
       if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const StorePage()),
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1E2E),
+            title: const Text(
+              'AI機能は購入が必要です',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            content: const Text(
+              'AI機能を使用するには、AI利用回数のチャージが必要です。ストアページで購入してください。',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purpleAccent,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StorePage()),
+                  );
+                },
+                child: const Text('ストアへ'),
+              ),
+            ],
+          ),
         );
       }
       return;

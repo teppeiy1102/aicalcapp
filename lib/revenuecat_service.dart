@@ -8,9 +8,6 @@ class RevenueCatService {
   static const String _appleApiKey = 'apple_api_key_here';
   static const String _googleApiKey = 'google_api_key_here';
 
-  // 1回の購入で付与されるAI利用回数（パッケージごとの設定が必要な場合は変更してください）
-  static const int usesPerPurchase = 100;
-
   static Future<void> init() async {
     await Purchases.setLogLevel(LogLevel.debug);
 
@@ -34,15 +31,13 @@ class RevenueCatService {
   /// AIの残りの使用回数を取得する
   static Future<int> getRemainingUses() async {
     final prefs = await SharedPreferences.getInstance();
-    // デフォルトで初回は10回程度のお試し枠を付与するなどの処理もここで行えます。
-    // 今回は初期値は0とします。
-    return prefs.getInt('ai_remaining_uses') ?? 10; // 初回無料分として10を設定
+    return prefs.getInt('ai_remaining_uses') ?? 0;
   }
 
   /// AIの使用回数を1消費する
   static Future<bool> consumeUse() async {
     final prefs = await SharedPreferences.getInstance();
-    int current = prefs.getInt('ai_remaining_uses') ?? 10;
+    int current = prefs.getInt('ai_remaining_uses') ?? 0;
     if (current > 0) {
       await prefs.setInt('ai_remaining_uses', current - 1);
       return true;
@@ -53,8 +48,24 @@ class RevenueCatService {
   /// AI利用回数を追加する
   static Future<void> addUses(int amount) async {
     final prefs = await SharedPreferences.getInstance();
-    int current = prefs.getInt('ai_remaining_uses') ?? 10;
+    int current = prefs.getInt('ai_remaining_uses') ?? 0;
     await prefs.setInt('ai_remaining_uses', current + amount);
+  }
+
+  /// RevenueCatのOfferingメタデータから付与回数を取得する
+  /// ダッシュボードの Offerings → (対象Offering) → Metadata に
+  /// キー "uses_per_purchase"、値 50 (数値) を設定してください。
+  static Future<int> getUsesPerPurchase() async {
+    try {
+      final offerings = await Purchases.getOfferings();
+      final meta = offerings.current?.metadata;
+      if (meta != null && meta.containsKey('uses_per_purchase')) {
+        return (meta['uses_per_purchase'] as num).toInt();
+      }
+    } catch (e) {
+      debugPrint('Error fetching offering metadata: $e');
+    }
+    return 50; // フォールバック値
   }
 
   /// 利用可能なパッケージ（消耗型アイテムなど）を取得する
@@ -76,9 +87,9 @@ class RevenueCatService {
   static Future<bool> purchasePackage(Package package) async {
     try {
       await Purchases.purchasePackage(package);
-      // 購入が完了したら、利用回数を追加する
-      // ※どのパッケージを買ったかによって付与回数を変えたい場合は、package.identifierなどで判定する。
-      await addUses(usesPerPurchase);
+      // RevenueCatダッシュボードのOfferingメタデータから付与回数を取得して追加する
+      final uses = await getUsesPerPurchase();
+      await addUses(uses);
       return true;
     } catch (e) {
       debugPrint('Error purchasing package: $e');

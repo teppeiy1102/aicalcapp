@@ -77,11 +77,18 @@ class _NoteColorPreset {
 }
 
 const List<_NoteColorPreset> _kNoteColorPresets = [
-  _NoteColorPreset(0xFFF5F5F5, isDark: false),
-  _NoteColorPreset(0xFFE8F4FD, isDark: false),
-  _NoteColorPreset(0xFFFFF3E0, isDark: false),
-  _NoteColorPreset(0xFFE8F5E9, isDark: false),
-  _NoteColorPreset(0xFFFCE4EC, isDark: false),
+  // ── ライト系 (10) ──
+  _NoteColorPreset(0xFFFFFFFF, isDark: false), // 白
+  _NoteColorPreset(0xFFF5F5F5, isDark: false), // オフホワイト
+  _NoteColorPreset(0xFFECEFF1, isDark: false), // ブルーグレー
+  _NoteColorPreset(0xFFE8F4FD, isDark: false), // ライトブルー
+  _NoteColorPreset(0xFFE0F7FA, isDark: false), // ライトシアン
+  _NoteColorPreset(0xFFFFF9C4, isDark: false), // ライトイエロー
+  _NoteColorPreset(0xFFFFF3E0, isDark: false), // ライトオレンジ
+  _NoteColorPreset(0xFFE8F5E9, isDark: false), // ライトグリーン
+  _NoteColorPreset(0xFFFCE4EC, isDark: false), // ライトピンク
+  _NoteColorPreset(0xFFF3E5F5, isDark: false), // ライトラベンダー
+  // ── ダーク系 (10) ──
   _NoteColorPreset(0xFF1A1A2E, isDark: true),
   _NoteColorPreset(0xFF16213E, isDark: true),
   _NoteColorPreset(0xFF0F3460, isDark: true),
@@ -91,6 +98,7 @@ const List<_NoteColorPreset> _kNoteColorPresets = [
   _NoteColorPreset(0xFF2D4A22, isDark: true),
   _NoteColorPreset(0xFF4A1942, isDark: true),
   _NoteColorPreset(0xFF3D1C02, isDark: true),
+  _NoteColorPreset(0xFF000000, isDark: true), // 黒
 ];
 
 // ── AI プロンプト入力シート ────────────────────────────────────────────────────
@@ -519,6 +527,19 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
           }
           _termOps.add(key);
           _calcA = cur;
+          // 複数項がある場合、そこまでの計算結果を表示
+          if (_termValues.length >= 2) {
+            double runningResult = _termValues[0];
+            for (int i = 0; i + 1 < _termValues.length; i++) {
+              runningResult = _evalSimple(
+                runningResult,
+                _termOps[i],
+                _termValues[i + 1],
+              );
+            }
+            _display = _fmt(runningResult);
+            _calcA = runningResult;
+          }
         } else if (_calcOp.isNotEmpty) {
           if (_termOps.isNotEmpty) _termOps[_termOps.length - 1] = key;
           _calcOp = key;
@@ -1937,6 +1958,7 @@ class MergedDetailPage extends StatefulWidget {
 
 class _MergedDetailPageState extends State<MergedDetailPage> {
   late String _title;
+  late int _bgColor;
   late List<String> _sheetIds;
   late List<WidgetConfig> _localSheets;
   // 0 = 編集, 1 = 閲覧, 2 = 表
@@ -1955,6 +1977,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
   void initState() {
     super.initState();
     _title = widget.mergedConfig.data['title'] as String? ?? '結合ビュー';
+    _bgColor = widget.mergedConfig.data['bgColor'] as int? ?? 0xFF0D0D14;
     _sheetIds = (widget.mergedConfig.data['sheetIds'] as List<dynamic>? ?? [])
         .map((e) => e as String)
         .toList();
@@ -2345,6 +2368,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
       ...widget.mergedConfig.data,
       'title': _title,
       'sheetIds': _sheetIds,
+      'bgColor': _bgColor,
     });
   }
 
@@ -2503,62 +2527,160 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final bgColor = Color(_bgColor);
+    final mergedIsDark = bgColor.computeLuminance() < 0.5;
+    final titleTextColor = mergedIsDark ? Colors.white : Colors.black87;
+    final iconColor = mergedIsDark ? Colors.white70 : Colors.black54;
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0D14),
+        backgroundColor: bgColor,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: Colors.white70,
+            color: iconColor,
           ),
           onPressed: () => Navigator.pop(context),
         ),
         title: GestureDetector(
           onTap: () async {
             final ctrl = TextEditingController(text: _title);
-            final res = await showDialog<String>(
+            int tempColor = _bgColor;
+            final res = await showModalBottomSheet<Map<String, dynamic>>(
               context: context,
-              builder: (ctx) => AlertDialog(
-                backgroundColor: Colors.black,
-                title: const Text(
-                  'タイトル編集',
-                  style: TextStyle(color: Colors.white),
-                ),
-                content: TextField(
-                  controller: ctrl,
-                  autofocus: true,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white24),
-                    ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF5E81FF)),
-                    ),
+              isScrollControlled: true,
+              backgroundColor: Colors.black,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              builder: (ctx) => StatefulBuilder(
+                builder: (context, setSheetState) => Padding(
+                  padding: EdgeInsets.only(
+                    left: 24,
+                    right: 24,
+                    top: 24,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              '結合ビュー名・カラー',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.close,
+                              color: Colors.white54,
+                            ),
+                            onPressed: () => Navigator.pop(ctx),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'ビュー名',
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: ctrl,
+                        autofocus: true,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                          hintText: '例: プロジェクト計算',
+                          hintStyle: TextStyle(color: Colors.white24),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        '背景カラー（アプバー・背景）',
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      const SizedBox(height: 10),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: _kNoteColorPresets.map((preset) {
+                            final isSelected = tempColor == preset.value;
+                            return GestureDetector(
+                              onTap: () => setSheetState(
+                                () => tempColor = preset.value,
+                              ),
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 10),
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Color(preset.value),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? Colors.blueAccent
+                                        : Colors.white24,
+                                    width: isSelected ? 2.5 : 1,
+                                  ),
+                                ),
+                                child: isSelected
+                                    ? Icon(
+                                        Icons.check,
+                                        size: 18,
+                                        color: preset.isDark
+                                            ? Colors.white
+                                            : Colors.black54,
+                                      )
+                                    : null,
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blueAccent,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          onPressed: () => Navigator.pop(ctx, {
+                            'title': ctrl.text,
+                            'bgColor': tempColor,
+                          }),
+                          child: const Text(
+                            '保存',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text(
-                      'キャンセル',
-                      style: TextStyle(color: Colors.white54),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-                    child: const Text(
-                      '保存',
-                      style: TextStyle(color: Color(0xFF5E81FF)),
-                    ),
-                  ),
-                ],
               ),
             );
-            if (res != null && res.isNotEmpty) {
-              setState(() => _title = res);
+            if (res != null) {
+              setState(() {
+                if ((res['title'] as String).isNotEmpty) {
+                  _title = res['title'] as String;
+                }
+                _bgColor = res['bgColor'] as int;
+              });
               _persistMerged();
             }
           },
@@ -2568,8 +2690,8 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
               Flexible(
                 child: Text(
                   _title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: titleTextColor,
                     fontWeight: FontWeight.w800,
                     fontSize: 18,
                   ),
@@ -2582,8 +2704,13 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
         actions: const [],
       ),
       body: _sheetIds.isEmpty
-          ? const Center(
-              child: Text('シートがありません', style: TextStyle(color: Colors.white38)),
+          ? Center(
+              child: Text(
+                'シートがありません',
+                style: TextStyle(
+                  color: mergedIsDark ? Colors.white38 : Colors.black38,
+                ),
+              ),
             )
           : SafeArea(
               child: Column(
@@ -2613,7 +2740,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                         if (sheetConfig == null) return const SizedBox.shrink();
                         return Padding(
                           key: _keyForSheet(id),
-                          padding: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.only(bottom: 16,right: 0, left: 0),
                           child: _MergedSheetSection(
                             key: ValueKey(id),
                             config: sheetConfig,
@@ -2669,6 +2796,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
               ),
             ),
       bottomNavigationBar: _MergedBottomNavBar(
+        bgColor: _bgColor,
         globalMode: _globalMode,
         calcOpen: _mergedCalcOpen,
         onModeTap: () => _applyModeToAll((_globalMode + 1) % 3),
@@ -2684,6 +2812,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
 
 // ── 結合ビュー用ボトムナビゲーションバー ───────────────────────────────────────
 class _MergedBottomNavBar extends StatelessWidget {
+  final int bgColor;
   final int globalMode;
   final bool calcOpen;
   final VoidCallback onModeTap;
@@ -2694,6 +2823,7 @@ class _MergedBottomNavBar extends StatelessWidget {
   final VoidCallback? onClipboardClear;
 
   const _MergedBottomNavBar({
+    required this.bgColor,
     required this.globalMode,
     required this.calcOpen,
     required this.onModeTap,
@@ -2725,7 +2855,7 @@ class _MergedBottomNavBar extends StatelessWidget {
 
     final navBar = Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0D0D14),
+        color: Color(bgColor),
         border: Border(
           top: BorderSide(color: Colors.white.withOpacity(0.08), width: 1),
         ),
@@ -2793,7 +2923,7 @@ class _MergedBottomNavBar extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF1E1E2E), Color(0xFF252535)],
+                          colors: [Color.fromARGB(255, 0, 0, 0), Color(0xFF252535)],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
@@ -2855,7 +2985,7 @@ class _MergedBottomNavBar extends StatelessWidget {
                               : Icons.calculate_rounded,
                           color: calcOpen
                               ? const Color(0xFF5E81FF)
-                              : Colors.white54,
+                              : const Color(0xFF5E81FF),
                           size: 22,
                         ),
                       ),
@@ -2865,7 +2995,7 @@ class _MergedBottomNavBar extends StatelessWidget {
                         style: TextStyle(
                           color: calcOpen
                               ? const Color(0xFF5E81FF)
-                              : Colors.white38,
+                              : const Color(0xFF5E81FF),
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                         ),

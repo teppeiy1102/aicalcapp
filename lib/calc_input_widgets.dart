@@ -218,6 +218,19 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
           }
           _termOps.add(key);
           _calcA = cur;
+          // 複数項がある場合、そこまでの計算結果を表示
+          if (_termValues.length >= 2) {
+            double runningResult = _termValues[0];
+            for (int i = 0; i + 1 < _termValues.length; i++) {
+              runningResult = _evalSimple(
+                runningResult,
+                _termOps[i],
+                _termValues[i + 1],
+              );
+            }
+            _display = _fmt(runningResult);
+            _calcA = runningResult;
+          }
         } else if (_calcOp.isNotEmpty) {
           if (_termOps.isNotEmpty) _termOps[_termOps.length - 1] = key;
           _calcOp = key;
@@ -382,7 +395,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                 ),
               ),
               Container(
-                height: 90,
+                height: 100,
                 padding: const EdgeInsets.only(
                   left: 4,
                   right: 14,
@@ -458,7 +471,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                               style: const TextStyle(
                                 height: 1,
                                 color: textColor,
-                                fontSize: 64,
+                                fontSize: 54,
                                 fontWeight: FontWeight.w200,
                               ),
                               textAlign: TextAlign.right,

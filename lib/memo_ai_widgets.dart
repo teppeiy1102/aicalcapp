@@ -298,9 +298,39 @@ class _AiCountPageState extends State<_AiCountPage> {
     final canUse = await RevenueCatService.consumeUse();
     if (!canUse) {
       if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const StorePage()),
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1E2E),
+            title: const Text(
+              'AI機能は購入が必要です',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            content: const Text(
+              'AI機能を使用するには、AI利用回数のチャージが必要です。ストアページで購入してください。',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purpleAccent,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StorePage()),
+                  );
+                },
+                child: const Text('ストアへ'),
+              ),
+            ],
+          ),
         );
       }
       return;
@@ -947,6 +977,19 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
           }
           _calcTermOps.add(key);
           _calcA = currentVal;
+          // 複数項がある場合、そこまでの計算結果を表示
+          if (_calcTermValues.length >= 2) {
+            double runningResult = _calcTermValues[0];
+            for (int i = 0; i + 1 < _calcTermValues.length; i++) {
+              runningResult = _evalCalcSimple(
+                runningResult,
+                _calcTermOps[i],
+                _calcTermValues[i + 1],
+              );
+            }
+            _calcDisplay = _fmtCalc(runningResult);
+            _calcA = runningResult;
+          }
         } else if (_calcOp.isNotEmpty) {
           if (_calcTermOps.isNotEmpty) {
             _calcTermOps[_calcTermOps.length - 1] = key;

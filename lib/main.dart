@@ -1796,9 +1796,9 @@ class _WidgetCardState extends State<_WidgetCard> {
     final accent = _WidgetCard
         ._accentColors[widget.index % _WidgetCard._accentColors.length];
     final bgColorValue = widget.config.data['bgColor'] as int?;
-    // For merged, derive bg from first resolved sheet
-    final effectiveBgValue = isMerged && resolvedSheets.isNotEmpty
-        ? resolvedSheets.first.data['bgColor'] as int?
+    // For merged: prefer the merged config's own bgColor; fall back to first resolved sheet
+    final effectiveBgValue = isMerged
+        ? (bgColorValue ?? (resolvedSheets.isNotEmpty ? resolvedSheets.first.data['bgColor'] as int? : null))
         : bgColorValue;
     final cardBgColor = effectiveBgValue != null
         ? Color(effectiveBgValue)

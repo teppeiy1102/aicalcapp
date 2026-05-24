@@ -1238,13 +1238,17 @@ class _CalculatorRow extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setSheetState) => SingleChildScrollView(
+        builder: (context, setSheetState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+          Flexible(
+          child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.only(
+            padding: const EdgeInsets.only(
               left: 24,
               right: 24,
               top: 24,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              bottom: 8,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1286,13 +1290,23 @@ class _CalculatorRow extends StatelessWidget {
                         ),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 20,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
                         ),
                         autofocus: true,
                         readOnly: tempLink,
                         decoration: InputDecoration(
                           hintText: '0.0',
                           hintStyle: const TextStyle(color: Colors.white24),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: tempLink
+                                  ? Colors.blueAccent.withOpacity(0.5)
+                                  : Colors.white24,
+                              width: 1,
+                            ),
+                          ),
                           suffix: tempLink
                               ? GestureDetector(
                                   onTap: () => setSheetState(() {
@@ -1345,34 +1359,6 @@ class _CalculatorRow extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (!tempLink) ...[
-                      IconButton(
-                        icon: const Icon(
-                          Icons.calculate_outlined,
-                          color: Colors.blueAccent,
-                        ),
-                        tooltip: '電卓',
-                        onPressed: () => _showMiniCalcSheet(context, (v) {
-                          setSheetState(() {
-                            if (v == v.truncateToDouble() && v.abs() < 1e15) {
-                              ctrl.text = v.toInt().toString();
-                            } else {
-                              ctrl.text = v
-                                  .toStringAsFixed(15)
-                                  .replaceAll(RegExp(r'0+$'), '')
-                                  .replaceAll(RegExp(r'\.$'), '');
-                            }
-                          });
-                        }),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.backspace_outlined,
-                          color: Colors.white54,
-                        ),
-                        onPressed: () => setSheetState(() => ctrl.clear()),
-                      ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -2145,48 +2131,77 @@ class _CalculatorRow extends StatelessWidget {
                   ),
                 ],
                 const SizedBox(height: 8),
-
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    if (others.isNotEmpty)
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, {'delete': true}),
-                        child: const Text(
-                          '項を削除',
-                          style: TextStyle(color: Colors.redAccent),
-                        ),
-                      ),
-                    const Spacer(),
-                    SizedBox(
-                      width: 140,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, {
-                          'val': ctrl.text,
-                          'unit': unitCtrl.text,
-                          'link': tempLink,
-                          'source': tempLinkSource,
-                          'transform': tempTransform,
-                          'powExp': tempPowExp,
-                          'applyToAll': tempApplyToAll,
-                          'delete': false,
-                        }),
-                        child: const Text('保存', style: TextStyle(fontSize: 16)),
-                      ),
+              ],
+            ),
+          ),
+          ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 8,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            ),
+            child: Row(
+              children: [
+                if (!tempLink)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.calculate_outlined,
+                      color: Colors.blueAccent,
                     ),
-                  ],
+                    tooltip: '電卓',
+                    onPressed: () => _showMiniCalcSheet(context, (v) {
+                      setSheetState(() {
+                        if (v == v.truncateToDouble() && v.abs() < 1e15) {
+                          ctrl.text = v.toInt().toString();
+                        } else {
+                          ctrl.text = v
+                              .toStringAsFixed(15)
+                              .replaceAll(RegExp(r'0+$'), '')
+                              .replaceAll(RegExp(r'\.$'), '');
+                        }
+                      });
+                    }),
+                  ),
+                if (others.isNotEmpty)
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, {'delete': true}),
+                    child: const Text(
+                      '項を削除',
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
+                  ),
+                const Spacer(),
+                SizedBox(
+                  width: 140,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () => Navigator.pop(ctx, {
+                      'val': ctrl.text,
+                      'unit': unitCtrl.text,
+                      'link': tempLink,
+                      'source': tempLinkSource,
+                      'transform': tempTransform,
+                      'powExp': tempPowExp,
+                      'applyToAll': tempApplyToAll,
+                      'delete': false,
+                    }),
+                    child: const Text('保存', style: TextStyle(fontSize: 16)),
+                  ),
                 ),
               ],
             ),
           ),
+          ],
         ),
       ),
     );
@@ -2276,13 +2291,17 @@ class _CalculatorRow extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setSheetState) => SingleChildScrollView(
+        builder: (context, setSheetState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+          Flexible(
+          child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.only(
+            padding: const EdgeInsets.only(
               left: 24,
               right: 24,
               top: 24,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              bottom: 8,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -2324,13 +2343,22 @@ class _CalculatorRow extends StatelessWidget {
                         ),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 20,
+                          fontSize: 26,
                         ),
                         autofocus: true,
                         readOnly: tempLink,
                         decoration: InputDecoration(
                           hintText: '0.0',
                           hintStyle: const TextStyle(color: Colors.white24),
+                                                    border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: tempLink
+                                  ? Colors.blueAccent.withOpacity(0.5)
+                                  : Colors.white24,
+                              width: 1,
+                            ),
+                          ),
                           suffix: tempLink
                               ? GestureDetector(
                                   onTap: () => setSheetState(() {
@@ -2383,34 +2411,6 @@ class _CalculatorRow extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (!tempLink) ...[
-                      IconButton(
-                        icon: const Icon(
-                          Icons.calculate_outlined,
-                          color: Colors.blueAccent,
-                        ),
-                        tooltip: '電卓',
-                        onPressed: () => _showMiniCalcSheet(context, (v) {
-                          setSheetState(() {
-                            if (v == v.truncateToDouble() && v.abs() < 1e15) {
-                              ctrl.text = v.toInt().toString();
-                            } else {
-                              ctrl.text = v
-                                  .toStringAsFixed(15)
-                                  .replaceAll(RegExp(r'0+$'), '')
-                                  .replaceAll(RegExp(r'\.$'), '');
-                            }
-                          });
-                        }),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.backspace_outlined,
-                          color: Colors.white54,
-                        ),
-                        onPressed: () => setSheetState(() => ctrl.clear()),
-                      ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -3185,46 +3185,77 @@ class _CalculatorRow extends StatelessWidget {
                 ],
 
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    if (others.isNotEmpty)
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx, {'delete': true}),
-                        child: const Text(
-                          '項を削除',
-                          style: TextStyle(color: Colors.redAccent),
-                        ),
-                      ),
-                    const Spacer(),
-                    SizedBox(
-                      width: 140,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, {
-                          'val': ctrl.text,
-                          'unit': unitCtrl.text,
-                          'link': tempLink,
-                          'source': tempLinkSource,
-                          'transform': tempTransform,
-                          'powExp': tempPowExp,
-                          'applyToAll': tempApplyToAll,
-                          'delete': false,
-                        }),
-                        child: const Text('保存', style: TextStyle(fontSize: 16)),
-                      ),
+              ],
+            ),
+          ),
+          ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 8,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            ),
+            child: Row(
+              children: [
+                if (!tempLink)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.calculate_outlined,
+                      color: Colors.blueAccent,
                     ),
-                  ],
+                    tooltip: '電卓',
+                    onPressed: () => _showMiniCalcSheet(context, (v) {
+                      setSheetState(() {
+                        if (v == v.truncateToDouble() && v.abs() < 1e15) {
+                          ctrl.text = v.toInt().toString();
+                        } else {
+                          ctrl.text = v
+                              .toStringAsFixed(15)
+                              .replaceAll(RegExp(r'0+$'), '')
+                              .replaceAll(RegExp(r'\.$'), '');
+                        }
+                      });
+                    }),
+                  ),
+                if (others.isNotEmpty)
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, {'delete': true}),
+                    child: const Text(
+                      '項を削除',
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
+                  ),
+                const Spacer(),
+                SizedBox(
+                  width: 140,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () => Navigator.pop(ctx, {
+                      'val': ctrl.text,
+                      'unit': unitCtrl.text,
+                      'link': tempLink,
+                      'source': tempLinkSource,
+                      'transform': tempTransform,
+                      'powExp': tempPowExp,
+                      'applyToAll': tempApplyToAll,
+                      'delete': false,
+                    }),
+                    child: const Text('保存', style: TextStyle(fontSize: 16)),
+                  ),
                 ),
               ],
             ),
           ),
+          ],
         ),
       ),
     );
@@ -3365,13 +3396,17 @@ class _CalculatorRow extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setSheetState) => SingleChildScrollView(
+        builder: (context, setSheetState) => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+          Flexible(
+          child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.only(
+            padding: const EdgeInsets.only(
               left: 24,
               right: 24,
               top: 24,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              bottom: 8,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -3413,11 +3448,20 @@ class _CalculatorRow extends StatelessWidget {
                         ),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 20,
+                          fontSize: 26,
                         ),
                         autofocus: true,
                         readOnly: tempLink,
                         decoration: InputDecoration(
+                                                    border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: tempLink
+                                  ? Colors.blueAccent.withOpacity(0.5)
+                                  : Colors.white24,
+                              width: 1,
+                            ),
+                          ),
                           hintText: '0.0',
                           hintStyle: const TextStyle(color: Colors.white24),
                           suffix: tempLink
@@ -3472,34 +3516,6 @@ class _CalculatorRow extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (!tempLink) ...[
-                      IconButton(
-                        icon: const Icon(
-                          Icons.calculate_outlined,
-                          color: Colors.blueAccent,
-                        ),
-                        tooltip: '電卓',
-                        onPressed: () => _showMiniCalcSheet(context, (v) {
-                          setSheetState(() {
-                            if (v == v.truncateToDouble() && v.abs() < 1e15) {
-                              ctrl.text = v.toInt().toString();
-                            } else {
-                              ctrl.text = v
-                                  .toStringAsFixed(15)
-                                  .replaceAll(RegExp(r'0+$'), '')
-                                  .replaceAll(RegExp(r'\.$'), '');
-                            }
-                          });
-                        }),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.backspace_outlined,
-                          color: Colors.white54,
-                        ),
-                        onPressed: () => setSheetState(() => ctrl.clear()),
-                      ),
-                    ],
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -4274,45 +4290,76 @@ class _CalculatorRow extends StatelessWidget {
                 ],
 
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, {'delete': true}),
-                      child: const Text(
-                        '項を削除',
-                        style: TextStyle(color: Colors.redAccent),
-                      ),
+              ],
+            ),
+          ),
+          ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 8,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            ),
+            child: Row(
+              children: [
+                if (!tempLink)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.calculate_outlined,
+                      color: Colors.blueAccent,
                     ),
-                    const Spacer(),
-                    SizedBox(
-                      width: 140,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        onPressed: () => Navigator.pop(ctx, {
-                          'val': ctrl.text,
-                          'unit': unitCtrl.text,
-                          'link': tempLink,
-                          'source': tempLinkSource,
-                          'transform': tempTransform,
-                          'powExp': tempPowExp,
-                          'delete': false,
-                          'applyToAll': tempApplyToAll,
-                        }),
-                        child: const Text('保存', style: TextStyle(fontSize: 16)),
+                    tooltip: '電卓',
+                    onPressed: () => _showMiniCalcSheet(context, (v) {
+                      setSheetState(() {
+                        if (v == v.truncateToDouble() && v.abs() < 1e15) {
+                          ctrl.text = v.toInt().toString();
+                        } else {
+                          ctrl.text = v
+                              .toStringAsFixed(15)
+                              .replaceAll(RegExp(r'0+$'), '')
+                              .replaceAll(RegExp(r'\.$'), '');
+                        }
+                      });
+                    }),
+                  ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, {'delete': true}),
+                  child: const Text(
+                    '項を削除',
+                    style: TextStyle(color: Colors.redAccent),
+                  ),
+                ),
+                const Spacer(),
+                SizedBox(
+                  width: 140,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                  ],
+                    onPressed: () => Navigator.pop(ctx, {
+                      'val': ctrl.text,
+                      'unit': unitCtrl.text,
+                      'link': tempLink,
+                      'source': tempLinkSource,
+                      'transform': tempTransform,
+                      'powExp': tempPowExp,
+                      'delete': false,
+                      'applyToAll': tempApplyToAll,
+                    }),
+                    child: const Text('保存', style: TextStyle(fontSize: 16)),
+                  ),
                 ),
               ],
             ),
           ),
+          ],
         ),
       ),
     );
