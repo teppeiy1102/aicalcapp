@@ -166,10 +166,31 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
       final precision = calcIdx < srcItems.length
           ? (srcItems[calcIdx]['precision'] as int? ?? 2)
           : 2;
+      final String valStr;
       if (v == v.truncateToDouble() && v.abs() < 1e12) {
-        return v.toStringAsFixed(0);
+        valStr = v.toStringAsFixed(0);
+      } else {
+        valStr = v.toStringAsFixed(precision);
       }
-      return v.toStringAsFixed(precision);
+      // 単位を取得して付加
+      String unit = '';
+      if (calcIdx < srcItems.length) {
+        final item = srcItems[calcIdx];
+        if (fieldKey == 'input') {
+          unit = item['unit1'] as String? ?? '';
+        } else if (fieldKey == 'operand') {
+          unit = item['unit2'] as String? ?? '';
+        } else if (fieldKey == 'result') {
+          unit = item['unitResult'] as String? ?? '';
+        } else if (fieldKey.startsWith('other_')) {
+          final idx = int.tryParse(fieldKey.split('_')[1]) ?? 0;
+          final others = item['others'] as List? ?? [];
+          if (idx < others.length) {
+            unit = (others[idx] as Map)['unit'] as String? ?? '';
+          }
+        }
+      }
+      return unit.isNotEmpty ? '$valStr $unit' : valStr;
     }
 
     showDialog<void>(
@@ -2055,9 +2076,20 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                                     : '${i}_$fk';
                                                 final isSel = selectedDests
                                                     .contains(dk);
-                                                final valStr = fmtDest(
-                                                  df['val'] as double? ?? 0.0,
-                                                );
+                                                String destUnit = '';
+                                                if (fk == 'input') {
+                                                  destUnit = item['unit1'] as String? ?? '';
+                                                } else if (fk == 'operand') {
+                                                  destUnit = item['unit2'] as String? ?? '';
+                                                } else if (fk.startsWith('other_')) {
+                                                  final oIdx = int.tryParse(fk.split('_')[1]) ?? 0;
+                                                  final oList = item['others'] as List? ?? [];
+                                                  if (oIdx < oList.length) {
+                                                    destUnit = (oList[oIdx] as Map)['unit'] as String? ?? '';
+                                                  }
+                                                }
+                                                final valRaw = fmtDest(df['val'] as double? ?? 0.0);
+                                                final valStr = destUnit.isNotEmpty ? '$valRaw $destUnit' : valRaw;
                                                 final op = df['op'] as String?;
 
                                                 // 既存リンク元ラベルを取得

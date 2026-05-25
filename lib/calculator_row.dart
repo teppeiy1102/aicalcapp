@@ -1311,7 +1311,7 @@ class _CalculatorRow extends StatelessWidget {
                               ? GestureDetector(
                                   onTap: () => setSheetState(() {
                                     tempLink = false;
-                                    tempLinkSource = null;
+                                    // リンク元は保持して一時的に解除（解除ボタンで完全削除）
                                   }),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
@@ -2070,7 +2070,7 @@ class _CalculatorRow extends StatelessWidget {
                         if (x.isInfinite || x.isNaN) return 'エラー';
                         if (x == x.truncateToDouble() && x.abs() < 1e12)
                           return x.toInt().toString();
-                        final s = x.toStringAsFixed(10);
+                        final s = x.toStringAsFixed(15);
                         return s
                             .replaceAll(RegExp(r'0+$'), '')
                             .replaceAll(RegExp(r'\.$'), '');
@@ -2363,7 +2363,7 @@ class _CalculatorRow extends StatelessWidget {
                               ? GestureDetector(
                                   onTap: () => setSheetState(() {
                                     tempLink = false;
-                                    tempLinkSource = null;
+                                    // リンク元は保持して一時的に解除（解除ボタンで完全削除）
                                   }),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
@@ -3123,7 +3123,7 @@ class _CalculatorRow extends StatelessWidget {
                         if (x.isInfinite || x.isNaN) return 'エラー';
                         if (x == x.truncateToDouble() && x.abs() < 1e12)
                           return x.toInt().toString();
-                        final s = x.toStringAsFixed(10);
+                        final s = x.toStringAsFixed(15);
                         return s
                             .replaceAll(RegExp(r'0+$'), '')
                             .replaceAll(RegExp(r'\.$'), '');
@@ -3468,7 +3468,7 @@ class _CalculatorRow extends StatelessWidget {
                               ? GestureDetector(
                                   onTap: () => setSheetState(() {
                                     tempLink = false;
-                                    tempLinkSource = null;
+                                    // リンク元は保持して一時的に解除（解除ボタンで完全削除）
                                   }),
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
@@ -4228,7 +4228,7 @@ class _CalculatorRow extends StatelessWidget {
                         if (x.isInfinite || x.isNaN) return 'エラー';
                         if (x == x.truncateToDouble() && x.abs() < 1e12)
                           return x.toInt().toString();
-                        final s = x.toStringAsFixed(10);
+                        final s = x.toStringAsFixed(15);
                         return s
                             .replaceAll(RegExp(r'0+$'), '')
                             .replaceAll(RegExp(r'\.$'), '');

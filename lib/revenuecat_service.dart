@@ -5,8 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class RevenueCatService {
   // TODO: RevenueCatのダッシュボードから取得したAPIキーを設定してください
-  static const String _appleApiKey = 'apple_api_key_here';
-  static const String _googleApiKey = 'google_api_key_here';
+  static const String _appleApiKey = 'appl_zHsobuxMwVlEqFKNklXHwvbyrPw';
+  static const String _googleApiKey = 'goog_IWMvniZrCNWNIAUYVXhfeaKUeQb';
 
   static Future<void> init() async {
     await Purchases.setLogLevel(LogLevel.debug);

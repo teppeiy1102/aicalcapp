@@ -191,7 +191,7 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
     if (v.abs() < 1e-15 || v.abs() >= 1e15) {
       return v.toString();
     }
-    // それ以外は固定小数点表示（最大15桁）
+    // それ以外は固定小数点表示（最大10桁）
     String s = v.toStringAsFixed(15);
     return s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
   }

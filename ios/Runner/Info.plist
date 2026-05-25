@@ -26,6 +26,14 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>このアプリでは、計算機で使用する画像を取得するためにカメラを使用します。</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>カメラを使用する際にiOSシステムが必要とします。このアプリでは音声や動画の録音・録画は行いません。</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>QRコードの画像を写真ライブラリに保存します。</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>このアプリでは、保存された画像から計算を行うために写真ライブラリにアクセスします。</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -55,24 +63,16 @@
 	<string>Main</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
-		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>このアプリでは、計算機で使用する画像を取得するためにカメラを使用します。</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>このアプリでは、保存された画像から計算を行うために写真ライブラリにアクセスします。</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>QRコードの画像を写真ライブラリに保存します。</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>カメラを使用する際にiOSシステムが必要とします。このアプリでは音声や動画の録音・録画は行いません。</string>
 </dict>
 </plist>
