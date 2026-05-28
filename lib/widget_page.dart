@@ -2921,67 +2921,71 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                   ),
                   const SizedBox(height: 8),
                   // ── 表示部 ──
-                  SizedBox(
-                    height: 80,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (subtitle.isNotEmpty)
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Text(
-                              subtitle,
-                              style: TextStyle(
-                                height: 0.9,
-                                color: Colors.white.withOpacity(0.45),
-                                fontSize: 16,
+                  SafeArea(
+                    child: SizedBox(
+                      height: 80,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (subtitle.isNotEmpty)
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Text(
+                                subtitle,
+                                style: TextStyle(
+                                  height: 0.9,
+                                  color: Colors.white.withOpacity(0.45),
+                                  fontSize: 16,
+                                ),
                               ),
                             ),
-                          ),
-                        FittedBox(
-                          child: Text(
-                            _display,
-                            maxLines: 1,
-                            style: const TextStyle(
-                              height: 1,
-                              color: Colors.white,
-                              fontSize: 64,
-                              fontWeight: FontWeight.w200,
+                          FittedBox(
+                            child: Text(
+                              _display,
+                              maxLines: 1,
+                              style: const TextStyle(
+                                height: 1,
+                                color: Colors.white,
+                                fontSize: 64,
+                                fontWeight: FontWeight.w200,
+                              ),
+                              textAlign: TextAlign.right,
                             ),
-                            textAlign: TextAlign.right,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
                   // ── ボタングリッド ──
-                  SizedBox(
-                    height: 5 * buttonH + 4 * 6,
-                    child: GridView.count(
-                      padding: EdgeInsets.zero,
-                      crossAxisCount: 4,
-                      mainAxisSpacing: 6,
-                      crossAxisSpacing: 6,
-                      childAspectRatio: ratio,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: [
-                        calcKey('C', bg: Colors.redAccent.withOpacity(0.18), fg: Colors.redAccent),
-                        calcKey('+/-'),
-                        calcKey('%'),
-                        calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
-                        calcKey('7'), calcKey('8'), calcKey('9'),
-                        calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
-                        calcKey('4'), calcKey('5'), calcKey('6'),
-                        calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
-                        calcKey('1'), calcKey('2'), calcKey('3'),
-                        calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
-                        calcKey('⌫'),
-                        calcKey('0'),
-                        calcKey('.'),
-                        calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
-                      ],
+                  SafeArea(
+                    child: SizedBox(
+                      height: 5 * buttonH + 4 * 6,
+                      child: GridView.count(
+                        padding: EdgeInsets.zero,
+                        crossAxisCount: 4,
+                        mainAxisSpacing: 6,
+                        crossAxisSpacing: 6,
+                        childAspectRatio: ratio,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: [
+                          calcKey('C', bg: Colors.redAccent.withOpacity(0.18), fg: Colors.redAccent),
+                          calcKey('+/-'),
+                          calcKey('%'),
+                          calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
+                          calcKey('7'), calcKey('8'), calcKey('9'),
+                          calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
+                          calcKey('4'), calcKey('5'), calcKey('6'),
+                          calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
+                          calcKey('1'), calcKey('2'), calcKey('3'),
+                          calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
+                          calcKey('⌫'),
+                          calcKey('0'),
+                          calcKey('.'),
+                          calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
+                        ],
+                      ),
                     ),
                   ),
                 ],
