@@ -219,6 +219,22 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     });
   }
 
+  void _addItemsFromMaps(List<Map<String, dynamic>> items) {
+    if (items.isEmpty) return;
+    final newItems = List<Map<String, dynamic>>.from(_items);
+    final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
+    for (final item in items) {
+      final newCalcIdx = newItems.length;
+      newItems.add(item);
+      order.add({'type': 'calc', 'calcIdx': newCalcIdx});
+    }
+    widget.onUpdate({
+      ...widget.config.data,
+      'items': newItems,
+      'displayOrder': order,
+    });
+  }
+
   void _insertItemAfter(int calcIdx) {
     final newItems = List<Map<String, dynamic>>.from(_items);
     final newCalcIdx = newItems.length;
@@ -1266,42 +1282,15 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                       decoration: const InputDecoration(
                         hintText: '0.0',
                         hintStyle: TextStyle(color: Colors.white24),
+                        border: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.white24),
+                          borderRadius: BorderRadius.all(Radius.circular(16)),
+
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.calculate_outlined,
-                      color: Colors.blueAccent,
-                    ),
-                    tooltip: '電卓',
-                    onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.black,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(20),
-                          ),
-                        ),
-                        builder: (calcCtx) => _MiniCalcSheet(
-                          onResult: (v) {
-                            setSheetState(() {
-                              if (v == v.truncateToDouble() && v.abs() < 1e15) {
-                                valCtrl.text = v.toInt().toString();
-                              } else {
-                                valCtrl.text = v
-                                    .toStringAsFixed(15)
-                                    .replaceAll(RegExp(r'0+$'), '')
-                                    .replaceAll(RegExp(r'\.$'), '');
-                              }
-                            });
-                          },
-                        ),
-                      );
-                    },
-                  ),
+                  ),),
+                  const SizedBox(width: 8),
+                 
                   IconButton(
                     icon: const Icon(
                       Icons.backspace_outlined,
@@ -1391,6 +1380,45 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               const SizedBox(height: 20),
               Row(
                 children: [
+ Container(
+  decoration: BoxDecoration(
+    color: Colors.white.withOpacity(1),
+    shape: BoxShape.circle,
+    border: Border.all(color: Colors.white)),
+   child: IconButton(
+                      icon: const Icon(
+                        Icons.calculate_outlined,
+                        color: Colors.black,
+                      ),
+                      tooltip: '電卓',
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.black,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(20),
+                            ),
+                          ),
+                          builder: (calcCtx) => _MiniCalcSheet(
+                            onResult: (v) {
+                              setSheetState(() {
+                                if (v == v.truncateToDouble() && v.abs() < 1e15) {
+                                  valCtrl.text = v.toInt().toString();
+                                } else {
+                                  valCtrl.text = v
+                                      .toStringAsFixed(15)
+                                      .replaceAll(RegExp(r'0+$'), '')
+                                      .replaceAll(RegExp(r'\.$'), '');
+                                }
+                              });
+                            },
+                          ),
+                        );
+                      },
+                    ),
+ ),
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, {'delete': true}),
                     child: const Text(
@@ -3780,6 +3808,10 @@ Example output:
         onClear: () {
           CalcHistoryManager.instance.clearAll();
           Navigator.pop(ctx);
+        },
+        onAddMultiple: (selectedEntries) {
+          Navigator.pop(ctx);
+          _addItemsFromMaps(selectedEntries.map(_historyEntryToItem).toList());
         },
       ),
     );

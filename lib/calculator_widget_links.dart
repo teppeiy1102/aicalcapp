@@ -200,7 +200,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDs) => Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+          insetPadding: EdgeInsets.zero,
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
 
@@ -2549,7 +2549,11 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                                     ),
                                                     const SizedBox(height: 3),
                                                     Text(
-                                                      fmtDest(resultVal),
+                                                      () {
+                                                        final unitResult = item['unitResult'] as String? ?? '';
+                                                        final resultStr = fmtDest(resultVal);
+                                                        return unitResult.isNotEmpty ? '$resultStr $unitResult' : resultStr;
+                                                      }(),
                                                       style: const TextStyle(
                                                         color: Colors.white70,
                                                         fontSize: 13,

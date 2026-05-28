@@ -254,7 +254,6 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
         final double calcWidth = constraints.maxWidth.clamp(0.0, kMaxCalcWidth);
         final double scale = calcWidth / kMaxCalcWidth;
         final double keyFontSize = (32.0 * scale).clamp(18.0, 32.0);
-        final double displayFontSize = (52.0 * scale).clamp(28.0, 52.0);
         final double subtitleFontSize = (20.0 * scale).clamp(12.0, 20.0);
 
         final textColor = isDark ? Colors.white : Colors.black;
@@ -294,38 +293,115 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 46),
-              AnimatedOpacity(
-                opacity: _calcHasResult ? 1.0 : 0.35,
-                duration: const Duration(milliseconds: 200),
-                child: GestureDetector(
-                  onTap: _calcHasResult ? _addCalcResult : null,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: _calcHasResult
-                          ? Colors.blueAccent
-                          : Colors.grey.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(40),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add, color: Colors.white, size: 16),
-                        SizedBox(width: 6),
-                        Text(
-                          'この計算を追加',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // AIカウントアイコンボタン
+                  GestureDetector(
+                    onTap: _isAiCounting ? null : _showAiCountDialog,
+                    child: AnimatedOpacity(
+                      opacity: _isAiCounting ? 0.4 : 1.0,
+                      duration: const Duration(milliseconds: 150),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.teal.withOpacity(
+                            isDark ? 0.25 : 0.12,
                           ),
+                          border: Border.all(
+                            color: Colors.tealAccent.withOpacity(0.45),
+                            width: 0.8,
+                          ),
+                          shape: BoxShape.circle,
                         ),
-                      ],
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            const Icon(
+                              Icons.camera_alt_outlined,
+                              color: Colors.tealAccent,
+                              size: 16,
+                            ),
+                            if (_isAiCounting)
+                              SizedBox(
+                                width: (36.0 * scale).clamp(26.0, 36.0),
+                                height: (36.0 * scale).clamp(26.0, 36.0),
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color: Colors.tealAccent,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ), // 表示部
+                  const SizedBox(width: 8),
+                  // 履歴ボタン
+                  GestureDetector(
+                    onTap: _showCalcHistory,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withOpacity(0.08)
+                            : Colors.black.withOpacity(0.06),
+                        border: Border.all(
+                          color: isDark
+                              ? Colors.white.withOpacity(0.2)
+                              : Colors.black.withOpacity(0.15),
+                          width: 0.8,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.history_rounded,
+                        color: isDark ? Colors.white70 : Colors.black54,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 「この計算を追加」ボタン
+                  Expanded(
+                    child: AnimatedOpacity(
+                      opacity: _calcHasResult ? 1.0 : 0.35,
+                      duration: const Duration(milliseconds: 200),
+                      child: GestureDetector(
+                        onTap: _calcHasResult ? _addCalcResult : null,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: _calcHasResult
+                                ? Colors.blueAccent
+                                : Colors.grey.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(40),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add, color: Colors.white, size: 16),
+                              SizedBox(width: 6),
+                              Text(
+                                'この計算を追加',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              // 表示部
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
                 height: 80,
@@ -338,74 +414,6 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // AIカウントアイコンボタン（横長）
-                    GestureDetector(
-                      onTap: _isAiCounting ? null : _showAiCountDialog,
-                      child: AnimatedOpacity(
-                        opacity: _isAiCounting ? 0.4 : 1.0,
-                        duration: const Duration(milliseconds: 150),
-                        child: Container(
-                          width: 70,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.teal.withOpacity(
-                              isDark ? 0.25 : 0.12,
-                            ),
-                            border: Border.all(
-                              color: Colors.tealAccent.withOpacity(0.45),
-                              width: 0.8,
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              const Icon(
-                                Icons.camera_alt_outlined,
-                                color: Colors.tealAccent,
-                                size: 16,
-                              ),
-                              if (_isAiCounting)
-                                SizedBox(
-                                  width: (36.0 * scale).clamp(26.0, 36.0),
-                                  height: (36.0 * scale).clamp(26.0, 36.0),
-                                  child: const CircularProgressIndicator(
-                                    strokeWidth: 1.5,
-                                    color: Colors.tealAccent,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    // 履歴ボタン
-                    GestureDetector(
-                      onTap: _showCalcHistory,
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withOpacity(0.08)
-                              : Colors.black.withOpacity(0.06),
-                          border: Border.all(
-                            color: isDark
-                                ? Colors.white.withOpacity(0.2)
-                                : Colors.black.withOpacity(0.15),
-                            width: 0.8,
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.history_rounded,
-                          color: isDark ? Colors.white70 : Colors.black54,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
                     // 数値・式表示エリア
                     Expanded(
                       child: Column(

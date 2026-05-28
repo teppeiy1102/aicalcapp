@@ -9,6 +9,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'widget_page.dart';
 import 'link_graph_page.dart';
 import 'revenuecat_service.dart';
+import 'ai_service.dart';
+import 'store_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,7 +59,9 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _userConstants = [];
   bool _isLoading = true;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
-  PersistentBottomSheetController? _calcSheetController;
+  bool _isHomeAiGenerating = false;
+  bool _isCalcExpanded = true;
+  final GlobalKey<HomeCalcBottomPanelState> _homeCalcPanelKey = GlobalKey();
   bool _isSelectMode = false;
   final Set<int> _selectedForMerge = {};
   String? _appendTargetSheetId;
@@ -242,31 +246,212 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _openHomeCalc() {
-    if (_calcSheetController != null) {
-      _calcSheetController!.close();
+  /// 電卓パネルの計算結果を新規シートに追加する
+  void _addCalcItemToNewSheet(Map<String, dynamic> item) {
+    _addCalcItemsToNewSheet([item]);
+  }
+
+  void _addCalcItemsToNewSheet(List<Map<String, dynamic>> items) {
+    if (items.isEmpty) return;
+    final newConfig = WidgetConfig(
+      id: '${DateTime.now().millisecondsSinceEpoch}',
+      type: 'calculator',
+      data: {
+        'title': '無題のシート',
+        'items': items,
+        'isExpanded': true,
+        'bgColor': 0xFF1A1A2E,
+      },
+    );
+    setState(() => _configs.insert(0, newConfig));
+    _saveConfigs();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(items.length == 1 ? '新規シートに追加しました' : '${items.length}件を新規シートに追加しました'),
+          backgroundColor: const Color(0xFF2A2A3A),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  /// AI に計算式を生成させ、新規シートとして保存する
+  Future<void> _openHomeAiGenerate() async {
+    if (_isHomeAiGenerating) return;
+    final ai = GemmaAi();
+    if (ai.currentModel == AiModel.local && !ai.isInitialized) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ローカルAIが初期化されていません。'),
+          backgroundColor: Color(0xFF2A2A3A),
+        ),
+      );
       return;
     }
-    _calcSheetController = showHomeCalcSheet(
-      scaffoldKey: _scaffoldKey,
-      onAddItem: (item) {
+
+    final result = await showHomeAiGenerateSheet(context);
+    if (result == null || (result.instruction.isEmpty && result.imageBytes == null)) return;
+    if (!mounted) return;
+
+    final canUse = await RevenueCatService.consumeUse();
+    if (!canUse) {
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E2E),
+          title: const Text(
+            'AI機能は購入が必要です',
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+          content: const Text(
+            'AI機能を使用するには、AI利用回数のチャージが必要です。ストアページで購入してください。',
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purpleAccent,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const StorePage()),
+                );
+              },
+              child: const Text('ストアへ'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isHomeAiGenerating = true);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('計算式を生成中...'),
+        duration: Duration(seconds: 3),
+        backgroundColor: Color(0xFF2A2A3A),
+      ),
+    );
+
+    final instruction = result.instruction;
+    final prompt =
+        """
+User wants to generate calculator expression(s) for: "$instruction".
+Return a JSON array of objects. Multiple formulas are allowed if the request implies multiple steps or variations.
+
+[CRITICAL INSTRUCTIONS]
+1. Combine calculation steps into the 'others' list of an item where appropriate. 
+2. For variables the user needs to input (e.g., "base", "height"), set "input" or "val" to 0.0 and put the label in "unit".
+3. For mathematical constants required by the formula (e.g., "2" in triangle area, "3.14" in circle), set the specific numerical value in "input", "operand", or "val".
+4. [IMPORTANT] Be mathematically precise. Only use division or constants (like /2) if the specific formula requires it.
+5. Use "brackets" to specify priority calculations (parentheses). Index 0 is "input", index 1 is "operand", index 2 is "others[0]", index 3 is "others[1]", and so on.
+6. Ensure every formula is mathematically correct.
+
+Structure per item:
+{
+  "name": "Calculation name",
+  "input": 0.0,
+  "unit1": "label for first value",
+  "op": "+", (one of: +, -, x, /, %)
+  "operand": 0.0,
+  "unit2": "label for second value",
+  "others": [
+    { "op": "/", "val": 2.0, "unit": "" }
+  ],
+  "brackets": [
+    { "start": 0, "end": 1 }
+  ],
+  "unitResult": "label for result",
+  "precision": 2
+}
+
+Example output:
+[
+  {
+    "name": "三角形の面積",
+    "input": 0.0,
+    "unit1": "底辺",
+    "op": "x",
+    "operand": 0.0,
+    "unit2": "高さ",
+    "others": [{ "op": "/", "val": 2.0, "unit": "定数" }],
+    "brackets": [],
+    "unitResult": "面積",
+    "precision": 2
+  }
+]
+""";
+
+    try {
+      const systemPrompt =
+          "You are a calculator generator AI. Return a JSON array of formula objects.";
+      final String res;
+      if (result.imageBytes != null) {
+        res = await ai.queryWithImage(
+          prompt,
+          result.imageBytes!,
+          systemPrompt: systemPrompt,
+        );
+      } else {
+        res = await ai.query(prompt, systemPrompt: systemPrompt);
+      }
+
+      final jsonStart = res.indexOf('[');
+      final jsonEnd = res.lastIndexOf(']');
+      if (jsonStart != -1 && jsonEnd != -1) {
+        final jsonStr = res.substring(jsonStart, jsonEnd + 1);
+        final list = jsonDecode(jsonStr) as List<dynamic>;
+        final items = list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+        final title = instruction.isNotEmpty ? instruction : '新規シート';
         final newConfig = WidgetConfig(
           id: '${DateTime.now().millisecondsSinceEpoch}',
           type: 'calculator',
           data: {
-            'title': '無題のシート',
-            'items': [item],
+            'title': title,
+            'items': items,
             'isExpanded': true,
             'bgColor': 0xFF1A1A2E,
           },
         );
-        setState(() => _configs.insert(0, newConfig));
-        _saveConfigs();
-      },
-      onClosed: () {
-        if (mounted) setState(() => _calcSheetController = null);
-      },
-    );
+        if (mounted) {
+          setState(() => _configs.insert(0, newConfig));
+          _saveConfigs();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('「$title」を生成しました'),
+              backgroundColor: const Color(0xFF2A2A3A),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('生成失敗: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isHomeAiGenerating = false);
+    }
   }
 
   static List<Map<String, dynamic>> get _sampleItems => [
@@ -1566,7 +1751,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SliverFillRemaining(child: _EmptyState())
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 140),
+                    padding: EdgeInsets.fromLTRB(24, 8, 24,
+                        (MediaQuery.of(context).size.height * 0.55).clamp(460.0, 580.0) + 80),
                     sliver: SliverReorderableList(
                       itemCount: _configs.length,
                       onReorder: _reorderConfigs,
@@ -1641,20 +1827,16 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
+          // 常時表示電卓パネル（スワイプで開閉）
           Positioned(
             bottom: 0,
-            right: 0,
             left: 0,
-
-            child: Container(
-              height: 80,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [Colors.black, Colors.black, Colors.transparent],
-                ),
-              ),
+            right: 0,
+            child: HomeCalcBottomPanel(
+              key: _homeCalcPanelKey,
+              onAddItem: _addCalcItemToNewSheet,
+              onAddItems: _addCalcItemsToNewSheet,
+              onExpandChanged: (v) => setState(() => _isCalcExpanded = v),
             ),
           ),
         ],
@@ -1672,12 +1854,12 @@ class _HomeScreenState extends State<HomeScreen> {
               onCancel: _cancelSelectMode,
               isAppendMode: _appendTargetSheetId != null,
             )
-          : _calcSheetController != null
+          : _isCalcExpanded
           ? null
           : _HomeFab(
-              onOpenCalc: _openHomeCalc,
+              onAiGenerate: _openHomeAiGenerate,
               onAddSheet: _addConfig,
-              calcActive: false,
+              isAiGenerating: _isHomeAiGenerating,
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: ValueListenableBuilder<Map<String, dynamic>?>(
@@ -2287,105 +2469,106 @@ class _WidgetCardState extends State<_WidgetCard> {
 
 class _HomeFab extends StatelessWidget {
   final VoidCallback onAddSheet;
-  final VoidCallback onOpenCalc;
-  final bool calcActive;
+  final VoidCallback onAiGenerate;
+  final bool isAiGenerating;
   const _HomeFab({
     required this.onAddSheet,
-    required this.onOpenCalc,
-    this.calcActive = false,
+    required this.onAiGenerate,
+    this.isAiGenerating = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return !calcActive
-        ? Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Spacer(),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Spacer(),
 
-              // 新規シートボタン
-              GestureDetector(
-                onTap: onAddSheet,
-                child: Container(
-                  height: 64,
-                  padding: const EdgeInsets.symmetric(horizontal: 28),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
+        // 新規シートボタン
+        GestureDetector(
+          onTap: onAddSheet,
+          child: Container(
+            height: 64,
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.fromARGB(255, 241, 243, 249),
+                  Color.fromARGB(255, 202, 183, 255),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF5E81FF).withOpacity(0.3),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add_rounded, color: Colors.black, size: 28),
+               
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width:16 ),
+        // AI生成ボタン
+        GestureDetector(
+          onTap: isAiGenerating ? null : onAiGenerate,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            height: 64,
+            width: 64,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isAiGenerating
+                    ? [
+                        Colors.purpleAccent.withOpacity(0.4),
+                        Colors.deepPurple.withOpacity(0.4),
+                      ]
+                    : const [
                         Color.fromARGB(255, 241, 243, 249),
                         Color.fromARGB(255, 202, 183, 255),
                       ],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF5E81FF).withOpacity(0.3),
-                        blurRadius: 30,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add_rounded, color: Colors.black, size: 28),
-                      SizedBox(width: 10),
-                      Text(
-                        '新しいシート',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w400,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
-              Spacer(),
-              // 電卓ボタン
-              GestureDetector(
-                onTap: onOpenCalc,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  height: 64,
-                  width: 64,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color.fromARGB(255, 241, 243, 249),
-                        Color.fromARGB(255, 202, 183, 255),
-                      ],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(
-                          0xFF5E81FF,
-                        ).withOpacity(calcActive ? 0.35 : 0.15),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    calcActive
-                        ? Icons.calculate_rounded
-                        : Icons.calculate_outlined,
-                    color: calcActive ? Colors.black : Colors.black,
-                    size: 28,
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.purpleAccent.withOpacity(isAiGenerating ? 0.4 : 0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
                 ),
-              ),
-              const SizedBox(width: 10),
-            ],
-          )
-        : const SizedBox.shrink();
+              ],
+            ),
+            child: isAiGenerating
+                ? const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                : const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: Colors.black,
+                    size: 26,
+                  ),
+          ),
+        ),
+        const SizedBox(width: 10),
+      ],
+    );
   }
 }
 

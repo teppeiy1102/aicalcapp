@@ -269,6 +269,40 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
     });
   }
 
+  void _showCalcHistory() async {
+    final entries = await CalcHistoryManager.instance.loadAll();
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _CalcHistorySheet(
+        entries: entries,
+        isDark: true,
+        onSelect: (entry) {
+          Navigator.pop(ctx);
+          setState(() {
+            _display = entry.result;
+            _calcA = double.tryParse(entry.result);
+            _newEntry = true;
+            _hasResult = true;
+            _isClearState = true;
+            _calcOp = '';
+            _termValues = _calcA != null ? [_calcA!] : [];
+            _termOps = [];
+            _exprStr = '${entry.expression} = ${entry.result}';
+          });
+        },
+        onClear: () {
+          CalcHistoryManager.instance.clearAll();
+          Navigator.pop(ctx);
+        },
+        onAddMultiple: null,
+      ),
+    );
+  }
+
   void _showAiCountDialog() async {
     final ai = GemmaAi();
     setState(() => _isAiCounting = true);
@@ -340,7 +374,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                 children: [
                   const Expanded(
                     child: Text(
-                      '電卓',
+                      '',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -357,42 +391,113 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                 ],
               ),
               const SizedBox(height: 4),
-              AnimatedOpacity(
-                opacity: _hasResult ? 1.0 : 0.35,
-                duration: const Duration(milliseconds: 200),
-                child: GestureDetector(
-                  onTap: _hasResult
-                      ? () {
-                          widget.onResult(double.tryParse(_display) ?? 0.0);
-                          Navigator.pop(context);
-                        }
-                      : null,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: _hasResult
-                          ? Colors.blueAccent
-                          : Colors.grey.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check, color: Colors.white, size: 16),
-                        SizedBox(width: 6),
-                        Text(
-                          'この値を入力',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // AIカウントアイコンボタン
+                  GestureDetector(
+                    onTap: _isAiCounting ? null : _showAiCountDialog,
+                    child: AnimatedOpacity(
+                      opacity: _isAiCounting ? 0.4 : 1.0,
+                      duration: const Duration(milliseconds: 150),
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.85),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.45),
+                            width: 0.8,
                           ),
+                          shape: BoxShape.circle,
                         ),
-                      ],
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            const Icon(
+                              Icons.camera_alt_outlined,
+                              color: Colors.black,
+                              size: 24,
+                            ),
+                            if (_isAiCounting)
+                              const SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color: Colors.tealAccent,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  // 履歴ボタン
+                  GestureDetector(
+                    onTap: _showCalcHistory,
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 0.8,
+                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.history_rounded,
+                        color: Colors.white70,
+                        size: 26,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 「この値を入力」ボタン
+                  Expanded(
+                    child: AnimatedOpacity(
+                      opacity: _hasResult ? 1.0 : 0.35,
+                      duration: const Duration(milliseconds: 200),
+                      child: GestureDetector(
+                        onTap: _hasResult
+                            ? () {
+                                widget.onResult(
+                                    double.tryParse(_display) ?? 0.0);
+                                Navigator.pop(context);
+                              }
+                            : null,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: _hasResult
+                                ? Colors.blueAccent
+                                : Colors.grey.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check, color: Colors.white, size: 16),
+                              SizedBox(width: 6),
+                              Text(
+                                'この値を入力',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               Container(
                 height: 100,
@@ -405,46 +510,6 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // AIカウントアイコンボタン（横長）
-                    GestureDetector(
-                      onTap: _isAiCounting ? null : _showAiCountDialog,
-                      child: AnimatedOpacity(
-                        opacity: _isAiCounting ? 0.4 : 1.0,
-                        duration: const Duration(milliseconds: 150),
-                        child: Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.85),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.45),
-                              width: 0.8,
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              const Icon(
-                                Icons.camera_alt_outlined,
-                                color: Colors.black,
-                                size: 16,
-                              ),
-                              if (_isAiCounting)
-                                const SizedBox(
-                                  width: 32,
-                                  height: 32,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 1.5,
-                                    color: Colors.tealAccent,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
                     // 数値・式表示エリア
                     Expanded(
                       child: Column(

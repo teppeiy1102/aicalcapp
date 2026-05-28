@@ -1086,6 +1086,29 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
           CalcHistoryManager.instance.clearAll();
           Navigator.pop(ctx);
         },
+        addMultipleLabel: 'メモに挿入',
+        onAddMultiple: (selectedEntries) {
+          Navigator.pop(ctx);
+          final sb = StringBuffer();
+          for (final e in selectedEntries) {
+            if (sb.isNotEmpty) sb.write('\n');
+            sb.write('${e.expression} = ${e.result}');
+          }
+          final insertText = sb.toString();
+          final sel = _ctrl.selection;
+          final text = _ctrl.text;
+          final start = sel.isValid ? sel.start : text.length;
+          final end = sel.isValid ? sel.end : text.length;
+          final needsNewline = start > 0 && text[start - 1] != '\n';
+          final insert = needsNewline ? '\n$insertText' : insertText;
+          final newText = text.replaceRange(start, end, insert);
+          setState(() {
+            _ctrl.value = TextEditingValue(
+              text: newText,
+              selection: TextSelection.collapsed(offset: start + insert.length),
+            );
+          });
+        },
       ),
     );
   }
@@ -1132,42 +1155,112 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             const SizedBox(height: 8),
-            // 挿入ボタン
-            AnimatedOpacity(
-              opacity: _calcHasResult ? 1.0 : 0.3,
-              duration: const Duration(milliseconds: 200),
-              child: GestureDetector(
-                onTap: _calcHasResult ? _insertCalcValue : null,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: _calcHasResult
-                        ? Colors.blueAccent
-                        : Colors.grey.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(40),
-                  ),
-                  alignment: Alignment.center,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _calcHasResult && _calcExprStr.isNotEmpty
-                              ? _calcExprStr
-                              : 'メモに挿入',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
+            // カメラ・履歴ボタンと挿入ボタンを横並びに
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // AIカウントアイコン
+                GestureDetector(
+                  onTap: _isAiCounting ? null : _showAiCountDialog,
+                  child: AnimatedOpacity(
+                    opacity: _isAiCounting ? 0.4 : 1.0,
+                    duration: const Duration(milliseconds: 150),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.85),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.45),
+                          width: 0.8,
                         ),
+                        shape: BoxShape.circle,
                       ),
-                    ],
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          const Icon(
+                            Icons.camera_alt_outlined,
+                            color: Colors.black,
+                            size: 16,
+                          ),
+                          if (_isAiCounting)
+                            const SizedBox(
+                              width: 28,
+                              height: 28,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                                color: Colors.tealAccent,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                // 履歴アイコン
+                GestureDetector(
+                  onTap: _showCalcHistory,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 0.8,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.history_rounded,
+                      color: Colors.white70,
+                      size: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // 挿入ボタン
+                Expanded(
+                  child: AnimatedOpacity(
+                    opacity: _calcHasResult ? 1.0 : 0.3,
+                    duration: const Duration(milliseconds: 200),
+                    child: GestureDetector(
+                      onTap: _calcHasResult ? _insertCalcValue : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _calcHasResult
+                              ? Colors.blueAccent
+                              : Colors.grey.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _calcHasResult && _calcExprStr.isNotEmpty
+                                    ? _calcExprStr
+                                    : 'メモに挿入',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
 
             // 表示エリア
@@ -1177,68 +1270,6 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // AIカウントアイコン
-                  GestureDetector(
-                    onTap: _isAiCounting ? null : _showAiCountDialog,
-                    child: AnimatedOpacity(
-                      opacity: _isAiCounting ? 0.4 : 1.0,
-                      duration: const Duration(milliseconds: 150),
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.85),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.45),
-                            width: 0.8,
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            const Icon(
-                              Icons.camera_alt_outlined,
-                              color: Colors.black,
-                              size: 16,
-                            ),
-                            if (_isAiCounting)
-                              const SizedBox(
-                                width: 28,
-                                height: 28,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 1.5,
-                                  color: Colors.tealAccent,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // 履歴アイコン
-                  GestureDetector(
-                    onTap: _showCalcHistory,
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 0.8,
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.history_rounded,
-                        color: Colors.white70,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
                   // 数値・式表示エリア
                   Expanded(
                     child: Column(

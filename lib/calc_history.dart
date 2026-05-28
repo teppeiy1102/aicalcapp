@@ -88,6 +88,20 @@ class CalcHistoryManager {
     _save();
   }
 
+  Future<void> deleteEntries(List<CalcHistoryEntry> toDelete) async {
+    await _ensureLoaded();
+    for (final entry in toDelete) {
+      _entries.removeWhere(
+        (e) =>
+            e.expression == entry.expression &&
+            e.result == entry.result &&
+            e.dateTime == entry.dateTime,
+      );
+    }
+    changeNotifier.value++;
+    _save();
+  }
+
   Future<List<CalcHistoryEntry>> loadAll() async {
     await _ensureLoaded();
     return entries;

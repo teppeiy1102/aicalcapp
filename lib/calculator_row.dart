@@ -1193,6 +1193,7 @@ class _CalculatorRow extends StatelessWidget {
     String? tempTransform = inputTransform;
     double tempPowExp = inputPowExp;
     bool tempApplyToAll = false;
+    bool tempOptionsExpanded = false;
     final suggestedUnits = _collectUsedUnits();
     final powExpCtrl = TextEditingController(
       text: inputPowExp == inputPowExp.truncateToDouble()
@@ -1369,8 +1370,32 @@ class _CalculatorRow extends StatelessWidget {
                   setSheetState,
                   suggestedUnits: suggestedUnits,
                 ),
-
-                const SizedBox(height: 16),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () => setSheetState(
+                      () => tempOptionsExpanded = !tempOptionsExpanded),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        const Text(
+                          'オプション',
+                          style: TextStyle(color: Colors.white54, fontSize: 12),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          tempOptionsExpanded
+                              ? Icons.expand_less_rounded
+                              : Icons.expand_more_rounded,
+                          color: Colors.white38,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (tempOptionsExpanded) ...[
+                  const SizedBox(height: 8),
                 // _editInputLinkSection
                 CheckboxListTile(
                   title: const Text(
@@ -2130,6 +2155,7 @@ class _CalculatorRow extends StatelessWidget {
                     },
                   ),
                 ],
+                ], // end オプション
                 const SizedBox(height: 8),
               ],
             ),
@@ -2146,24 +2172,31 @@ class _CalculatorRow extends StatelessWidget {
             child: Row(
               children: [
                 if (!tempLink)
-                  IconButton(
-                    icon: const Icon(
-                      Icons.calculate_outlined,
-                      color: Colors.blueAccent,
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
                     ),
-                    tooltip: '電卓',
-                    onPressed: () => _showMiniCalcSheet(context, (v) {
-                      setSheetState(() {
-                        if (v == v.truncateToDouble() && v.abs() < 1e15) {
-                          ctrl.text = v.toInt().toString();
-                        } else {
-                          ctrl.text = v
-                              .toStringAsFixed(15)
-                              .replaceAll(RegExp(r'0+$'), '')
-                              .replaceAll(RegExp(r'\.$'), '');
-                        }
-                      });
-                    }),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.calculate_outlined,
+                        color: Colors.black,
+                      ),
+                      tooltip: '電卓',
+                      onPressed: () => _showMiniCalcSheet(context, (v) {
+                        setSheetState(() {
+                          if (v == v.truncateToDouble() && v.abs() < 1e15) {
+                            ctrl.text = v.toInt().toString();
+                          } else {
+                            ctrl.text = v
+                                .toStringAsFixed(15)
+                                .replaceAll(RegExp(r'0+$'), '')
+                                .replaceAll(RegExp(r'\.$'), '');
+                          }
+                        });
+                      }),
+                    ),
                   ),
                 if (others.isNotEmpty)
                   TextButton(
@@ -2246,6 +2279,7 @@ class _CalculatorRow extends StatelessWidget {
     String? tempTransform = operandTransform;
     double tempPowExp = operandPowExp;
     bool tempApplyToAll = false;
+    bool tempOptionsExpanded = false;
     final suggestedUnits = _collectUsedUnits();
     final powExpCtrl = TextEditingController(
       text: operandPowExp == operandPowExp.truncateToDouble()
@@ -2421,7 +2455,32 @@ class _CalculatorRow extends StatelessWidget {
                   setSheetState,
                   suggestedUnits: suggestedUnits,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () => setSheetState(
+                      () => tempOptionsExpanded = !tempOptionsExpanded),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        const Text(
+                          'オプション',
+                          style: TextStyle(color: Colors.white54, fontSize: 12),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          tempOptionsExpanded
+                              ? Icons.expand_less_rounded
+                              : Icons.expand_more_rounded,
+                          color: Colors.white38,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (tempOptionsExpanded) ...[
+                  const SizedBox(height: 8),
                 // _editOperandLinkSection
                 CheckboxListTile(
                   title: const Text(
@@ -3183,6 +3242,7 @@ class _CalculatorRow extends StatelessWidget {
                     },
                   ),
                 ],
+                ], // end オプション
 
                 const SizedBox(height: 16),
               ],
@@ -3200,24 +3260,31 @@ class _CalculatorRow extends StatelessWidget {
             child: Row(
               children: [
                 if (!tempLink)
-                  IconButton(
-                    icon: const Icon(
-                      Icons.calculate_outlined,
-                      color: Colors.blueAccent,
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
                     ),
-                    tooltip: '電卓',
-                    onPressed: () => _showMiniCalcSheet(context, (v) {
-                      setSheetState(() {
-                        if (v == v.truncateToDouble() && v.abs() < 1e15) {
-                          ctrl.text = v.toInt().toString();
-                        } else {
-                          ctrl.text = v
-                              .toStringAsFixed(15)
-                              .replaceAll(RegExp(r'0+$'), '')
-                              .replaceAll(RegExp(r'\.$'), '');
-                        }
-                      });
-                    }),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.calculate_outlined,
+                        color: Colors.black,
+                      ),
+                      tooltip: '電卓',
+                      onPressed: () => _showMiniCalcSheet(context, (v) {
+                        setSheetState(() {
+                          if (v == v.truncateToDouble() && v.abs() < 1e15) {
+                            ctrl.text = v.toInt().toString();
+                          } else {
+                            ctrl.text = v
+                                .toStringAsFixed(15)
+                                .replaceAll(RegExp(r'0+$'), '')
+                                .replaceAll(RegExp(r'\.$'), '');
+                          }
+                        });
+                      }),
+                    ),
                   ),
                 if (others.isNotEmpty)
                   TextButton(
@@ -3351,6 +3418,7 @@ class _CalculatorRow extends StatelessWidget {
     String? tempTransform = currentTransform;
     double tempPowExp = currentPowExp;
     bool tempApplyToAll = false;
+    bool tempOptionsExpanded = false;
     final suggestedUnits = _collectUsedUnits();
     final powExpCtrl = TextEditingController(
       text: currentPowExp == currentPowExp.truncateToDouble()
@@ -3526,7 +3594,32 @@ class _CalculatorRow extends StatelessWidget {
                   setSheetState,
                   suggestedUnits: suggestedUnits,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () => setSheetState(
+                      () => tempOptionsExpanded = !tempOptionsExpanded),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
+                      children: [
+                        const Text(
+                          'オプション',
+                          style: TextStyle(color: Colors.white54, fontSize: 12),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          tempOptionsExpanded
+                              ? Icons.expand_less_rounded
+                              : Icons.expand_more_rounded,
+                          color: Colors.white38,
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (tempOptionsExpanded) ...[
+                  const SizedBox(height: 4),
                 // _editOtherValLinkSection
                 CheckboxListTile(
                   title: const Text(
@@ -4288,6 +4381,7 @@ class _CalculatorRow extends StatelessWidget {
                     },
                   ),
                 ],
+                ], // end オプション
 
                 const SizedBox(height: 16),
               ],
@@ -4305,24 +4399,31 @@ class _CalculatorRow extends StatelessWidget {
             child: Row(
               children: [
                 if (!tempLink)
-                  IconButton(
-                    icon: const Icon(
-                      Icons.calculate_outlined,
-                      color: Colors.blueAccent,
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
                     ),
-                    tooltip: '電卓',
-                    onPressed: () => _showMiniCalcSheet(context, (v) {
-                      setSheetState(() {
-                        if (v == v.truncateToDouble() && v.abs() < 1e15) {
-                          ctrl.text = v.toInt().toString();
-                        } else {
-                          ctrl.text = v
-                              .toStringAsFixed(15)
-                              .replaceAll(RegExp(r'0+$'), '')
-                              .replaceAll(RegExp(r'\.$'), '');
-                        }
-                      });
-                    }),
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.calculate_outlined,
+                        color: Colors.black,
+                      ),
+                      tooltip: '電卓',
+                      onPressed: () => _showMiniCalcSheet(context, (v) {
+                        setSheetState(() {
+                          if (v == v.truncateToDouble() && v.abs() < 1e15) {
+                            ctrl.text = v.toInt().toString();
+                          } else {
+                            ctrl.text = v
+                                .toStringAsFixed(15)
+                                .replaceAll(RegExp(r'0+$'), '')
+                                .replaceAll(RegExp(r'\.$'), '');
+                          }
+                        });
+                      }),
+                    ),
                   ),
                 TextButton(
                   onPressed: () => Navigator.pop(ctx, {'delete': true}),
@@ -4644,188 +4745,195 @@ class _CalculatorRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Container(
+                  constraints: const BoxConstraints(maxHeight: 220),
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.04),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: Colors.white.withOpacity(0.08)),
                   ),
-                  child: Column(
-                    children: [
-                      ...formulaParts.asMap().entries.map((entry) {
-                        final line = entry.value;
-                        final isLast = entry.key == formulaParts.length - 1;
-                        return Container(
+                  child: SingleChildScrollView(
+                    reverse: true,
+                    
+                    child: Column(
+                      children: [
+                        ...formulaParts.asMap().entries.map((entry) {
+                          final line = entry.value;
+                          final isLast = entry.key == formulaParts.length - 1;
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 11,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.white.withOpacity(0.06),
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                               
+                                const SizedBox(width: 8),
+                                // ラベル列
+                                Expanded(
+                                  flex: 3,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (line.isLink &&
+                                          line.linkLabel.isNotEmpty)
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.link_rounded,
+                                              size: 9,
+                                              color: Colors.blueAccent,
+                                            ),
+                                            const SizedBox(width: 2),
+                                            Flexible(
+                                              child: Text(
+                                                line.linkLabel,
+                                                style: const TextStyle(
+                                                  color: Colors.blueAccent,
+                                                  fontSize: 9,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      Text(
+                                        line.label,
+                                        style: TextStyle(
+                                          color: line.isLink
+                                              ? Colors.blueAccent.withOpacity(0.7)
+                                              : Colors.white54,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                               // 値列
+                                Expanded(
+                                  flex: 4,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+// 演算子列
+                                SizedBox(
+                                  width: 28,
+                                  child: line.op != null
+                                      ? Text(
+                                          line.op!,
+                                          textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            color: Colors.orangeAccent,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w900,
+                                          ),
+                                        )
+                                      : const SizedBox(),
+                                ),
+  
+                                      if (line.isLink)
+                                        const Padding(
+                                          padding: EdgeInsets.only(right: 4),
+                                          child: Icon(
+                                            Icons.link_rounded,
+                                            size: 12,
+                                            color: Colors.blueAccent,
+                                          ),
+                                        ),
+                                      Flexible(
+                                        child: Text(
+                                          line.value +
+                                              (line.unit.isNotEmpty
+                                                  ? ' ${line.unit}'
+                                                  : ''),
+                                          textAlign: TextAlign.right,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: line.isLink
+                                                ? Colors.blueAccent.withOpacity(
+                                                    0.9,
+                                                  )
+                                                : Colors.white70,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                        // 答え行
+                        Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
-                            vertical: 11,
+                            vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color: Colors.white.withOpacity(0.06),
-                              ),
+                            color: Colors.white.withOpacity(0.03),
+                            borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(14),
                             ),
                           ),
                           child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              // 演算子列
-                              SizedBox(
+                              const SizedBox(
                                 width: 28,
-                                child: line.op != null
-                                    ? Text(
-                                        line.op!,
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: Colors.orangeAccent,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      )
-                                    : const SizedBox(),
-                              ),
-                              const SizedBox(width: 8),
-                              // ラベル列
-                              Expanded(
-                                flex: 3,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (line.isLink &&
-                                        line.linkLabel.isNotEmpty)
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.link_rounded,
-                                            size: 9,
-                                            color: Colors.blueAccent,
-                                          ),
-                                          const SizedBox(width: 2),
-                                          Flexible(
-                                            child: Text(
-                                              line.linkLabel,
-                                              style: const TextStyle(
-                                                color: Colors.blueAccent,
-                                                fontSize: 9,
-                                              ),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    Text(
-                                      line.label,
-                                      style: TextStyle(
-                                        color: line.isLink
-                                            ? Colors.blueAccent.withOpacity(0.7)
-                                            : Colors.white54,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  '=',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w900,
+                                  ),
                                 ),
                               ),
-                              // 値列
+                              const SizedBox(width: 8),
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  '答え',
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
                               Expanded(
                                 flex: 4,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    if (line.isLink)
-                                      const Padding(
-                                        padding: EdgeInsets.only(right: 4),
-                                        child: Icon(
-                                          Icons.link_rounded,
-                                          size: 12,
-                                          color: Colors.blueAccent,
-                                        ),
-                                      ),
-                                    Flexible(
-                                      child: Text(
-                                        line.value +
-                                            (line.unit.isNotEmpty
-                                                ? ' ${line.unit}'
-                                                : ''),
-                                        textAlign: TextAlign.right,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: line.isLink
-                                              ? Colors.blueAccent.withOpacity(
-                                                  0.9,
-                                                )
-                                              : Colors.white70,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  resultStr +
+                                      (unitResult.isNotEmpty
+                                          ? ' $unitResult'
+                                          : ''),
+                                  textAlign: TextAlign.right,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        );
-                      }),
-                      // 答え行
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.03),
-                          borderRadius: const BorderRadius.vertical(
-                            bottom: Radius.circular(14),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            const SizedBox(
-                              width: 28,
-                              child: Text(
-                                '=',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                '答え',
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 4,
-                              child: Text(
-                                resultStr +
-                                    (unitResult.isNotEmpty
-                                        ? ' $unitResult'
-                                        : ''),
-                                textAlign: TextAlign.right,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -4943,6 +5051,7 @@ class _CalculatorRow extends StatelessWidget {
     }
 
     final box = Container(
+      constraints: const BoxConstraints(maxWidth: 250),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: isDark
@@ -4956,7 +5065,7 @@ class _CalculatorRow extends StatelessWidget {
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.baseline,
+        crossAxisAlignment: CrossAxisAlignment.center,
         textBaseline: TextBaseline.alphabetic,
         children: [
           if (isLink)
@@ -4968,24 +5077,32 @@ class _CalculatorRow extends StatelessWidget {
                 color: Colors.blueAccent,
               ),
             ),
-          Text(
-            value,
-            style: TextStyle(
-              color: isDark ? Colors.white : Colors.black,
-              fontSize: fontSize,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isDark ? Colors.white : Colors.black,
+                fontSize: fontSize,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+              ),
             ),
           ),
           if (unit.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(left: 6),
-              child: Text(
-                unit,
-                style: TextStyle(
-                  color: isDark ? Colors.white38 : Colors.black45,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: Text(
+                  unit,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isDark ? Colors.white38 : Colors.black45,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ),

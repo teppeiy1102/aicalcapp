@@ -1,5 +1,6 @@
 library widget_page;
 
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:convert';
@@ -30,6 +31,51 @@ part 'calculator_widget_view.dart';
 part 'calculator_row.dart';
 part 'calculator_widget_source_picker.dart';
 part 'memo_ai_widgets.dart';
+
+// ── 履歴エントリから計算行アイテムを生成するヘルパー ────────────────────────────────────
+/// 履歴の expression 文字列 (例: "3 + 5 × 2") を解析して
+/// _CalculatorRow が期待する Map<String, dynamic> を返す。
+Map<String, dynamic> _historyEntryToItem(CalcHistoryEntry e) {
+  String _convertOp(String op) {
+    if (op == '×') return 'x';
+    if (op == '÷') return '/';
+    return op;
+  }
+
+  final parts = e.expression.trim().split(' ');
+  // 有効な形式: value op value [op value ...]  → 要素数が奇数かつ 3 以上
+  if (parts.length >= 3 && parts.length % 2 == 1) {
+    final input = double.tryParse(parts[0]) ?? 0.0;
+    final op = _convertOp(parts[1]);
+    final operand = double.tryParse(parts[2]) ?? 0.0;
+    final others = <Map<String, dynamic>>[];
+    for (int i = 3; i + 1 < parts.length; i += 2) {
+      others.add({
+        'op': _convertOp(parts[i]),
+        'val': double.tryParse(parts[i + 1]) ?? 0.0,
+        'unit': '',
+      });
+    }
+    return {
+      'name': '',
+      'input': input,
+      'op': op,
+      'operand': operand,
+      'others': others,
+      'brackets': [],
+    };
+  }
+  // フォールバック: 結果値のみ使用
+  final val = double.tryParse(e.result) ?? 0.0;
+  return {
+    'name': '',
+    'input': val,
+    'op': '+',
+    'operand': 0.0,
+    'others': [],
+    'brackets': [],
+  };
+}
 
 // ── アプリ設定 ────────────────────────────────────────────────────────────────────────────
 class AppSettings {
@@ -351,6 +397,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
 class _CalcBottomSheet extends StatefulWidget {
   final int existingItemCount;
   final void Function(Map<String, dynamic> item) onAddItem;
+  final void Function(List<Map<String, dynamic>> items)? onAddItems;
   final bool isDark;
   final VoidCallback onClose;
   final ScrollController? scrollController;
@@ -376,6 +423,7 @@ class _CalcBottomSheet extends StatefulWidget {
     this.initialDisplay,
     this.onRequestAiCount,
     this.onRequestHistory,
+    this.onAddItems,
   });
 
   @override
@@ -694,6 +742,13 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
           CalcHistoryManager.instance.clearAll();
           Navigator.pop(ctx);
         },
+        onAddMultiple: (selectedEntries) {
+          Navigator.pop(ctx);
+          final items = selectedEntries.map(_historyEntryToItem).toList();
+          widget.onAddItems != null
+              ? widget.onAddItems!(items)
+              : items.forEach(widget.onAddItem);
+        },
       ),
     );
   }
@@ -810,38 +865,108 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
             ),
 
             const SizedBox(height: 4),
-            // 「追加」ボタン
-            AnimatedOpacity(
-              opacity: _hasResult ? 1.0 : 0.35,
-              duration: const Duration(milliseconds: 200),
-              child: GestureDetector(
-                onTap: _hasResult ? _addResult : null,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: _hasResult
-                        ? Colors.blueAccent
-                        : Colors.grey.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(40),
-                  ),
-                  alignment: Alignment.center,
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add, color: Colors.white, size: 16),
-                      SizedBox(width: 6),
-                      Text(
-                        'この計算を追加',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+            // カメラ・履歴ボタンと「追加」ボタンを横並びに
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // AIカウントアイコンボタン
+                GestureDetector(
+                  onTap: _isAiCounting ? null : _showAiCountDialog,
+                  child: AnimatedOpacity(
+                    opacity: _isAiCounting ? 0.4 : 1.0,
+                    duration: const Duration(milliseconds: 150),
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(1000),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.45),
+                          width: 0.8,
                         ),
                       ),
-                    ],
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            Icons.camera_alt_outlined,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          if (_isAiCounting)
+                            SizedBox(
+                              width: (buttonH * 0.5).clamp(24.0, 38.0),
+                              height: (buttonH * 0.5).clamp(24.0, 38.0),
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                                color: Colors.white,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                // 履歴ボタン
+                GestureDetector(
+                  onTap: _showHistory,
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(1000),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.45),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.history_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // 「この計算を追加」ボタン
+                Expanded(
+                  child: AnimatedOpacity(
+                    opacity: _hasResult ? 1.0 : 0.35,
+                    duration: const Duration(milliseconds: 200),
+                    child: GestureDetector(
+                      onTap: _hasResult ? _addResult : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: _hasResult
+                              ? Colors.blueAccent
+                              : Colors.grey.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(40),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add, color: Colors.white, size: 16),
+                            SizedBox(width: 6),
+                            Text(
+                              'この計算を追加',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             SizedBox(height: 8),
             // 表示部
@@ -851,68 +976,6 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // AIカウントアイコンボタン（横長）
-                  GestureDetector(
-                    onTap: _isAiCounting ? null : _showAiCountDialog,
-                    child: AnimatedOpacity(
-                      opacity: _isAiCounting ? 0.4 : 1.0,
-                      duration: const Duration(milliseconds: 150),
-                      child: Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(1),
-                          borderRadius: BorderRadius.circular(1000),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.45),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Icon(
-                              Icons.camera_alt_outlined,
-                              color: Colors.black,
-                              size: 24,
-                            ),
-                            if (_isAiCounting)
-                              SizedBox(
-                                width: (buttonH * 0.5).clamp(24.0, 38.0),
-                                height: (buttonH * 0.5).clamp(24.0, 38.0),
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 1.5,
-                                  color: Colors.white,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  // 履歴ボタン
-                  GestureDetector(
-                    onTap: _showHistory,
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(1),
-                        borderRadius: BorderRadius.circular(1000),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.45),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: const Icon(
-                        Icons.history_rounded,
-                        color: Colors.black,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
                   // 数値・式表示エリア
                   Expanded(
                     child: Column(
@@ -995,18 +1058,51 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
 }
 
 // ── 計算履歴ボトムシート ──────────────────────────────────────────────────────
-class _CalcHistorySheet extends StatelessWidget {
+enum _HistorySelectMode { none, add, delete }
+
+class _CalcHistorySheet extends StatefulWidget {
   final List<CalcHistoryEntry> entries;
   final bool isDark;
   final void Function(CalcHistoryEntry) onSelect;
   final VoidCallback onClear;
+
+  /// 複数選択してシートに追加するコールバック。null の場合は機能を非表示。
+  final void Function(List<CalcHistoryEntry>)? onAddMultiple;
+
+  /// 複数選択追加ボタンのラベル（デフォルト: "シートに追加"）
+  final String addMultipleLabel;
 
   const _CalcHistorySheet({
     required this.entries,
     required this.isDark,
     required this.onSelect,
     required this.onClear,
+    this.onAddMultiple,
+    this.addMultipleLabel = 'シートに追加',
   });
+
+  @override
+  State<_CalcHistorySheet> createState() => _CalcHistorySheetState();
+}
+
+class _CalcHistorySheetState extends State<_CalcHistorySheet> {
+  _HistorySelectMode _selectMode = _HistorySelectMode.none;
+  final Set<int> _selectedIndices = {};
+  late List<CalcHistoryEntry> _localEntries;
+
+  @override
+  void initState() {
+    super.initState();
+    _localEntries = List.from(widget.entries);
+  }
+
+  @override
+  void didUpdateWidget(_CalcHistorySheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.entries != widget.entries) {
+      setState(() => _localEntries = List.from(widget.entries));
+    }
+  }
 
   String _formatDate(DateTime dt) {
     final now = DateTime.now();
@@ -1020,11 +1116,169 @@ class _CalcHistorySheet extends StatelessWidget {
     return '${dt.month}/${dt.day} $h:$m';
   }
 
+  void _enterSelectMode(_HistorySelectMode mode, {int? initialIndex}) {
+    setState(() {
+      _selectMode = mode;
+      _selectedIndices.clear();
+      if (initialIndex != null) _selectedIndices.add(initialIndex);
+    });
+  }
+
+  void _exitSelectMode() {
+    setState(() {
+      _selectMode = _HistorySelectMode.none;
+      _selectedIndices.clear();
+    });
+  }
+
+  void _toggleSelection(int index) {
+    setState(() {
+      if (_selectedIndices.contains(index)) {
+        _selectedIndices.remove(index);
+        if (_selectedIndices.isEmpty) {
+          _selectMode = _HistorySelectMode.none;
+        }
+      } else {
+        _selectedIndices.add(index);
+      }
+    });
+  }
+
+  void _addSelected() {
+    if (_selectedIndices.isEmpty) return;
+    final selected = _selectedIndices.toList()..sort();
+    final selectedEntries = selected.map((i) => _localEntries[i]).toList();
+    widget.onAddMultiple!(selectedEntries);
+    _exitSelectMode();
+  }
+
+  Future<bool?> _showConfirmation({
+    required String title,
+    required String content,
+    required String confirmLabel,
+  }) async {
+    final isDark = widget.isDark;
+    final completer = Completer<bool?>();
+    bool removed = false;
+    late OverlayEntry entry;
+    void close(bool? result) {
+      if (!removed) {
+        removed = true;
+        entry.remove();
+      }
+      if (!completer.isCompleted) completer.complete(result);
+    }
+    entry = OverlayEntry(
+      builder: (_) => Material(
+        color: Colors.black54,
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 40),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 8, 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Text(
+                      content,
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.black87,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => close(false),
+                        child: Text(
+                          'キャンセル',
+                          style: TextStyle(
+                            color: isDark ? Colors.white54 : Colors.black54,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => close(true),
+                        child: Text(
+                          confirmLabel,
+                          style: const TextStyle(color: Colors.redAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    Overlay.of(context, rootOverlay: true).insert(entry);
+    return completer.future;
+  }
+
+  Future<void> _deleteSelected() async {
+    if (_selectedIndices.isEmpty) return;
+    final count = _selectedIndices.length;
+    final confirmed = await _showConfirmation(
+      title: '履歴を削除',
+      content: '選択した$count件の履歴を削除しますか？',
+      confirmLabel: '削除',
+    );
+    if (confirmed != true || !mounted) return;
+    final sorted = _selectedIndices.toList()..sort((a, b) => b.compareTo(a));
+    final toDelete = sorted.map((i) => _localEntries[i]).toList();
+    await CalcHistoryManager.instance.deleteEntries(toDelete);
+    setState(() {
+      for (final i in sorted) {
+        _localEntries.removeAt(i);
+      }
+      _selectMode = _HistorySelectMode.none;
+      _selectedIndices.clear();
+    });
+  }
+
+  Future<void> _confirmAndClearAll() async {
+    final confirmed = await _showConfirmation(
+      title: '全削除',
+      content: 'すべての履歴を削除しますか？',
+      confirmLabel: '削除',
+    );
+    if (confirmed != true || !mounted) return;
+    widget.onClear();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = widget.isDark;
     final bgColor = isDark ? const Color(0xFF111118) : Colors.white;
     final fgColor = isDark ? Colors.white : Colors.black;
     final subColor = isDark ? Colors.white54 : Colors.black45;
+    final entries = _localEntries;
+    final inSelectMode = _selectMode != _HistorySelectMode.none;
+    final isDeleteMode = _selectMode == _HistorySelectMode.delete;
+    final checkboxColor = isDeleteMode ? Colors.redAccent : Colors.blueAccent;
+    final selectedBgColor =
+        isDeleteMode ? Colors.redAccent.withOpacity(0.15) : Colors.blueAccent.withOpacity(0.15);
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.75,
@@ -1036,28 +1290,90 @@ class _CalcHistorySheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ハンドル & ヘッダー
+          // ヘッダー
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 28),
             child: Row(
               children: [
-                Text(
-                  '計算履歴',
-                  style: TextStyle(
-                    color: fgColor,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                if (entries.isNotEmpty)
+                if (inSelectMode)...[
                   TextButton(
-                    onPressed: onClear,
+                    onPressed: _exitSelectMode,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      'キャンセル',
+                      style: TextStyle(color: subColor, fontSize: 13),
+                    ),
+                  ),
+                  Spacer()
+                  
+                  ]
+                else
+                  ...[Text(
+                    '計算履歴',
+                    style: TextStyle(
+                      color: fgColor,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                const Spacer(),
+                  ],
+
+                if (inSelectMode) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '${_selectedIndices.length}件選択',
+                    style: TextStyle(color: subColor, fontSize: 13),
+                  ),
+                ],
+                // 削除モード時は全削除ボタンを表示
+                if (isDeleteMode)
+                  TextButton(
+                    onPressed: _confirmAndClearAll,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     child: const Text(
                       '全削除',
                       style: TextStyle(color: Colors.redAccent, fontSize: 13),
                     ),
                   ),
+                // 通常モード時は追加・削除ボタンを表示
+                if (!inSelectMode && entries.isNotEmpty) ...[
+                  if (widget.onAddMultiple != null)
+                    TextButton(
+                      onPressed: () => _enterSelectMode(_HistorySelectMode.add),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        '追加',
+                        style: TextStyle(color: Colors.blueAccent, fontSize: 14),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                  TextButton(
+                    onPressed: () => _enterSelectMode(_HistorySelectMode.delete),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text(
+                      '削除',
+                      style: TextStyle(color: Colors.redAccent, fontSize: 14),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1080,15 +1396,38 @@ class _CalcHistorySheet extends StatelessWidget {
                     Divider(height: 1, color: fgColor.withOpacity(0.06)),
                 itemBuilder: (ctx, i) {
                   final e = entries[i];
+                  final isSelected = _selectedIndices.contains(i);
                   return InkWell(
-                    onTap: () => onSelect(e),
-                    child: Padding(
+                    onTap: () {
+                      if (inSelectMode) {
+                        _toggleSelection(i);
+                      } else {
+                        widget.onSelect(e);
+                      }
+                    },
+                    onLongPress: !inSelectMode
+                        ? () => _enterSelectMode(
+                              _HistorySelectMode.delete,
+                              initialIndex: i,
+                            )
+                        : null,
+                    child: Container(
+                      color: isSelected ? selectedBgColor : null,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 10,
                       ),
                       child: Row(
                         children: [
+                          if (inSelectMode) ...[
+                            Checkbox(
+                              value: isSelected,
+                              onChanged: (_) => _toggleSelection(i),
+                              activeColor: checkboxColor,
+                              side: BorderSide(color: subColor),
+                            ),
+                            const SizedBox(width: 4),
+                          ],
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1123,7 +1462,80 @@ class _CalcHistorySheet extends StatelessWidget {
                 },
               ),
             ),
-          SizedBox(height: MediaQuery.of(context).padding.bottom),
+          // 選択時アクションバー
+          if (inSelectMode)
+            Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: fgColor.withOpacity(0.1)),
+                ),
+              ),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                12 + MediaQuery.of(context).padding.bottom,
+              ),
+              child: _selectMode == _HistorySelectMode.add &&
+                      widget.onAddMultiple != null
+                  ? SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed:
+                            _selectedIndices.isNotEmpty ? _addSelected : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          disabledBackgroundColor:
+                              Colors.blueAccent.withOpacity(0.3),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        icon: const Icon(Icons.add_rounded, size: 18),
+                        label: Text(
+                          _selectedIndices.isEmpty
+                              ? widget.addMultipleLabel
+                              : '${widget.addMultipleLabel} (${_selectedIndices.length}件)',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    )
+                  : SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _selectedIndices.isNotEmpty
+                            ? _deleteSelected
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          disabledBackgroundColor:
+                              Colors.redAccent.withOpacity(0.3),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        icon: const Icon(Icons.delete_rounded, size: 18),
+                        label: Text(
+                          _selectedIndices.isEmpty
+                              ? '削除'
+                              : '削除 (${_selectedIndices.length}件)',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+            )
+          else
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
         ],
       ),
     );
@@ -1254,6 +1666,12 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                       onClear();
                       closeHistory();
                     },
+                    onAddMultiple: (selectedEntries) {
+                      closeHistory();
+                      _calcKey.currentState?._addItemsFromMaps(
+                        selectedEntries.map(_historyEntryToItem).toList(),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -1310,21 +1728,23 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
         : true;
 
     setState(() => _calcSheetOpen = true);
+    final pendingDisplay = _pendingCalcDisplay;
+    _pendingCalcDisplay = null;
     _calcSheetOverlay = OverlayEntry(
       builder: (ctx) => _CalcDraggableSheetContent(
         existingItemCount: currentItems.length,
         isDark: isDark,
         bgColor: bgColorValue,
-        initialDisplay: _pendingCalcDisplay,
+        initialDisplay: pendingDisplay,
         onRequestAiCount: _handleCalcAiCountRequest,
         onRequestHistory: _showHistoryForCalc,
         onAddItem: (item) {
           state?._addItemFromMap(item);
         },
+        onAddItems: (items) => state?._addItemsFromMaps(items),
         onClose: _closeCalcSheet,
       ),
     );
-    _pendingCalcDisplay = null;
     Overlay.of(context).insert(_calcSheetOverlay!);
   }
 
@@ -1789,6 +2209,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
 class _CalcDraggableSheetContent extends StatefulWidget {
   final int existingItemCount;
   final void Function(Map<String, dynamic> item) onAddItem;
+  final void Function(List<Map<String, dynamic>> items)? onAddItems;
   final bool isDark;
   final int? bgColor;
   final VoidCallback onClose;
@@ -1809,6 +2230,7 @@ class _CalcDraggableSheetContent extends StatefulWidget {
     this.initialDisplay,
     this.onRequestAiCount,
     this.onRequestHistory,
+    this.onAddItems,
   });
 
   @override
@@ -1865,6 +2287,7 @@ class _CalcDraggableSheetContentState
               existingItemCount: widget.existingItemCount,
               isDark: widget.isDark,
               onAddItem: widget.onAddItem,
+              onAddItems: widget.onAddItems,
               onClose: widget.onClose,
               initialDisplay: widget.initialDisplay,
               onRequestAiCount: widget.onRequestAiCount,
@@ -1881,6 +2304,7 @@ class _CalcDraggableSheetContentState
 PersistentBottomSheetController? showHomeCalcSheet({
   required GlobalKey<ScaffoldState> scaffoldKey,
   required void Function(Map<String, dynamic> item) onAddItem,
+  void Function(List<Map<String, dynamic>> items)? onAddItems,
   VoidCallback? onClosed,
 }) {
   PersistentBottomSheetController? ctrl;
@@ -1891,11 +2315,684 @@ PersistentBottomSheetController? showHomeCalcSheet({
       existingItemCount: 0,
       isDark: true,
       onAddItem: onAddItem,
+      onAddItems: onAddItems,
       onClose: () => ctrl?.close(),
     ),
   );
   ctrl?.closed.then((_) => onClosed?.call());
   return ctrl;
+}
+
+/// ホーム画面でAI生成用プロンプトシートを表示するユーティリティ
+Future<({String instruction, bool isModify, Uint8List? imageBytes})?> showHomeAiGenerateSheet(
+  BuildContext context,
+) {
+  return showModalBottomSheet<({String instruction, bool isModify, Uint8List? imageBytes})>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => const _AiPromptSheet(
+      title: 'AIで計算式を生成',
+      initialText: '',
+      showModeSwitcher: false,
+    ),
+  );
+}
+
+/// ホーム画面の常時表示電卓ボトムパネル（スワイプで開閉）
+class HomeCalcBottomPanel extends StatefulWidget {
+  final void Function(Map<String, dynamic> item) onAddItem;
+  final void Function(List<Map<String, dynamic>> items)? onAddItems;
+  final void Function(bool isExpanded)? onExpandChanged;
+
+  const HomeCalcBottomPanel({
+    super.key,
+    required this.onAddItem,
+    this.onAddItems,
+    this.onExpandChanged,
+  });
+
+  @override
+  State<HomeCalcBottomPanel> createState() => HomeCalcBottomPanelState();
+}
+
+class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
+    with SingleTickerProviderStateMixin {
+  static const double _kHandleHeight = 64.0;
+  bool _isExpanded = true;
+  bool _isAiCounting = false;
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  // ── 電卓ステート ──
+  String _display = '0';
+  double? _calcA;
+  String _calcOp = '';
+  bool _newEntry = true;
+  bool _hasResult = false;
+  bool _isClearState = true;
+  List<double> _termValues = [];
+  List<String> _termOps = [];
+  String _exprStr = '';
+  double _calcLastA = 0;
+  double _calcLastB = 0;
+  String _calcLastOp = '+';
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+    _ctrl.value = 1.0;
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void expand() {
+    if (!_isExpanded) {
+      setState(() => _isExpanded = true);
+      _ctrl.forward();
+      widget.onExpandChanged?.call(true);
+    }
+  }
+
+  void collapse() {
+    if (_isExpanded) {
+      setState(() => _isExpanded = false);
+      _ctrl.reverse();
+      widget.onExpandChanged?.call(false);
+    }
+  }
+
+  void _toggle() {
+    if (_isExpanded) {
+      collapse();
+    } else {
+      expand();
+    }
+  }
+
+  String _fmt(double v) {
+    if (v.isInfinite || v.isNaN) return '0';
+    if (v == 0) return '0';
+    if (v == v.truncateToDouble() && v.abs() < 1e15) return v.toInt().toString();
+    if (v.abs() < 1e-15 || v.abs() >= 1e15) return v.toString();
+    final s = v.toStringAsFixed(15);
+    return s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+  }
+
+  double _eval(double a, String op, double b) {
+    switch (op) {
+      case '+': return a + b;
+      case '-': return a - b;
+      case '×': return a * b;
+      case '÷': return b != 0 ? a / b : 0;
+      default: return a;
+    }
+  }
+
+  String _opToDart(String op) {
+    switch (op) {
+      case '×': return 'x';
+      case '÷': return '/';
+      default: return op;
+    }
+  }
+
+  void _onKey(String key) {
+    setState(() {
+      if (key == 'C' || key == 'AC') {
+        if (_display == '0' || key == 'AC') {
+          _display = '0';
+          _calcA = null;
+          _calcOp = '';
+          _newEntry = true;
+          _hasResult = false;
+          _exprStr = '';
+          _termValues = [];
+          _termOps = [];
+          _isClearState = true;
+        } else {
+          _display = '0';
+          _newEntry = true;
+          _isClearState = true;
+        }
+      } else if (key == '⌫') {
+        if (!_newEntry && _display.length > 1) {
+          _display = _display.substring(0, _display.length - 1);
+        } else {
+          _display = '0';
+          _newEntry = true;
+        }
+      } else if (key == '+/-') {
+        _isClearState = false;
+        _display = _fmt(-(double.tryParse(_display) ?? 0));
+      } else if (key == '%') {
+        _isClearState = false;
+        _display = _fmt((double.tryParse(_display) ?? 0) / 100);
+      } else if (key == '=') {
+        _isClearState = true;
+        if (_calcA != null && _calcOp.isNotEmpty) {
+          final List<double> allTerms;
+          final List<String> effectiveOps;
+          if (_newEntry) {
+            allTerms = List<double>.from(_termValues);
+            effectiveOps = List<String>.from(_termOps)..removeLast();
+          } else {
+            final b = double.tryParse(_display) ?? 0;
+            allTerms = List<double>.from(_termValues)..add(b);
+            effectiveOps = List<String>.from(_termOps);
+            _calcLastA = _calcA!;
+            _calcLastOp = _opToDart(_calcOp);
+            _calcLastB = b;
+          }
+          double result;
+          if (allTerms.length == effectiveOps.length + 1 && allTerms.length >= 2) {
+            result = allTerms[0];
+            for (int i = 0; i < effectiveOps.length; i++) {
+              result = _eval(result, effectiveOps[i], allTerms[i + 1]);
+            }
+          } else {
+            result = allTerms.isNotEmpty ? allTerms.last : (_calcA ?? 0);
+          }
+          final parts = <String>[];
+          for (int i = 0; i < allTerms.length; i++) {
+            parts.add(_fmt(allTerms[i]));
+            if (i < effectiveOps.length) parts.add(effectiveOps[i]);
+          }
+          _exprStr = '${parts.join(' ')} = ${_fmt(result)}';
+          _termValues = allTerms;
+          _termOps = effectiveOps;
+          _calcA = result;
+          _calcOp = '';
+          _display = _fmt(result);
+          _hasResult = true;
+          _newEntry = true;
+          CalcHistoryManager.instance.addEntry(parts.join(' '), _fmt(result));
+        } else {
+          if (_display != '0' || _calcA != null) _hasResult = true;
+        }
+      } else if (['+', '-', '×', '÷'].contains(key)) {
+        _isClearState = true;
+        if (!_newEntry || _calcA == null) {
+          final cur = double.tryParse(_display) ?? 0;
+          if (_termValues.isEmpty) {
+            _termValues.add(cur);
+          } else if (!_newEntry) {
+            _termValues.add(cur);
+          }
+          _termOps.add(key);
+          _calcA = cur;
+          if (_termValues.length >= 2) {
+            double running = _termValues[0];
+            for (int i = 0; i + 1 < _termValues.length; i++) {
+              running = _eval(running, _termOps[i], _termValues[i + 1]);
+            }
+            _display = _fmt(running);
+            _calcA = running;
+          }
+        } else if (_calcOp.isNotEmpty) {
+          if (_termOps.isNotEmpty) _termOps[_termOps.length - 1] = key;
+          _calcOp = key;
+          return;
+        } else {
+          _termValues = [_calcA!];
+          _termOps = [key];
+        }
+        _calcOp = key;
+        _newEntry = true;
+        _hasResult = false;
+      } else if (key == '.') {
+        _isClearState = false;
+        if (_newEntry) {
+          _display = '0.';
+          _newEntry = false;
+          _hasResult = false;
+        } else if (!_display.contains('.')) {
+          _display += '.';
+        }
+      } else {
+        _isClearState = false;
+        if (_newEntry || _display == '0') {
+          if (_hasResult && _calcOp.isEmpty) {
+            _termValues = [];
+            _termOps = [];
+            _calcA = null;
+          }
+          _display = key;
+          _newEntry = false;
+          _hasResult = false;
+        } else if (_display.length < 12) {
+          _display += key;
+        }
+      }
+    });
+  }
+
+  void _addToSheet() {
+    if (!_hasResult) return;
+    Map<String, dynamic> item;
+    if (_termValues.length >= 3 && _termOps.length == _termValues.length - 1) {
+      final others = List.generate(
+        _termValues.length - 2,
+        (i) => {'op': _opToDart(_termOps[i + 1]), 'val': _termValues[i + 2], 'unit': ''},
+      );
+      item = {
+        'name': '計算 1',
+        'input': _termValues[0],
+        'op': _opToDart(_termOps[0]),
+        'operand': _termValues[1],
+        'others': others,
+        'brackets': [],
+      };
+    } else {
+      item = {
+        'name': '計算 1',
+        'input': _calcLastA,
+        'op': _calcLastOp,
+        'operand': _calcLastB,
+        'others': [],
+        'brackets': [],
+      };
+    }
+    widget.onAddItem(item);
+  }
+
+  void _showAiCountDialog() async {
+    final ai = GemmaAi();
+    setState(() => _isAiCounting = true);
+    final count = await Navigator.push<int>(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (ctx) => _AiCountPage(onCount: ai.countInImage),
+      ),
+    );
+    if (!mounted) return;
+    setState(() {
+      _isAiCounting = false;
+      if (count != null) {
+        _display = count.toString();
+        _newEntry = true;
+        _hasResult = false;
+        _isClearState = false;
+        _calcA = null;
+        _calcOp = '';
+        _termValues = [];
+        _termOps = [];
+        _exprStr = '';
+      }
+    });
+  }
+
+  void _showHistory() async {
+    final entries = await CalcHistoryManager.instance.loadAll();
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _CalcHistorySheet(
+        entries: entries,
+        isDark: true,
+        onSelect: (entry) {
+          Navigator.pop(ctx);
+          setState(() {
+            _display = entry.result;
+            _calcA = double.tryParse(entry.result);
+            _newEntry = true;
+            _hasResult = true;
+            _isClearState = true;
+            _calcOp = '';
+            _termValues = _calcA != null ? [_calcA!] : [];
+            _termOps = [];
+            _exprStr = '${entry.expression} = ${entry.result}';
+          });
+        },
+        onClear: () {
+          CalcHistoryManager.instance.clearAll();
+          Navigator.pop(ctx);
+        },
+        onAddMultiple: (selectedEntries) {
+          Navigator.pop(ctx);
+          final items = selectedEntries.map(_historyEntryToItem).toList();
+          widget.onAddItems != null
+              ? widget.onAddItems!(items)
+              : items.forEach(widget.onAddItem);
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenH = MediaQuery.of(context).size.height;
+    final topPad = MediaQuery.of(context).padding.top;
+
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (ctx, _) {
+        final t = _anim.value;
+        // 収納時: 64px  →  展開時: 画面全体
+        final panelH = _kHandleHeight + (screenH - _kHandleHeight) * t;
+        // ハンドル: 展開につれて上部セーフエリア分だけ高くなる
+        final handleH = _kHandleHeight + topPad * t;
+        final contentH = panelH - handleH;
+        return SizedBox(
+          height: panelH,
+          child: ClipRect(
+            child: Column(
+              children: [
+                _buildHandle(handleH: handleH),
+                if (contentH > 0)
+                  SizedBox(height: contentH, child: _buildCalcContent()),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHandle({required double handleH}) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _toggle,
+      onVerticalDragUpdate: (d) {
+        if (d.delta.dy > 3 && _isExpanded) collapse();
+        if (d.delta.dy < -3 && !_isExpanded) expand();
+      },
+      child: Container(
+        height: handleH,
+        decoration: const BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: _isExpanded
+            ? Padding(
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top,
+                  left: 20,
+                  right: 8,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Genba Calc',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      onPressed: collapse,
+                      icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                      color: Colors.white60,
+                      iconSize: 32,
+                    ),
+                  ],
+                ),
+              )
+            : Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20,vertical: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.calculate_rounded, color: Colors.white60, size: 30),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Calculator',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white38, size: 28),
+                  ],
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildCalcContent() {
+    String inProg = '';
+    if (_termValues.isNotEmpty) {
+      final parts = <String>[];
+      for (int i = 0; i < _termValues.length; i++) {
+        parts.add(_fmt(_termValues[i]));
+        if (i < _termOps.length) parts.add(_termOps[i]);
+      }
+      inProg = parts.join(' ');
+    }
+    final subtitle = _hasResult ? _exprStr : inProg;
+
+    return Container(
+      color: Colors.black,
+      child: LayoutBuilder(
+          builder: (ctx, constraints) {
+          final screenH = MediaQuery.of(ctx).size.height;
+          final topPad = MediaQuery.of(ctx).padding.top;
+          // 展開時の最大コンテンツ高さをレイアウト計算の基準とする
+          final targetContentH = screenH - 64.0 - topPad; // 64.0 is _kHandleHeight
+
+          // viewPadding.bottom は Scaffold/SafeArea に左右されず常にホームインジケーター高さを返す
+          final bottomPad = MediaQuery.of(ctx).viewPadding.bottom;
+          final screenW = MediaQuery.of(ctx).size.width;
+          // innerH = ホームインジケーターを除いた使用可能高さ
+          final innerH = targetContentH - bottomPad;
+          // kFixed: topPad(8) + actionRow(50) + gap(8) + display(80) + gap(8) + buffer(8) + gridGaps(4*6=24) = 186
+          const kFixed = 186.0;
+          final gridAvail = innerH - kFixed;
+          final buttonH = (gridAvail / 5).clamp(28.0, 72.0);
+          final buttonW = (screenW - 20.0 - 18.0) / 4;
+          final ratio = buttonW / buttonH;
+          final fontSize = (buttonH * 0.42).clamp(14.0, 32.0);
+
+          const keyBg = Color(0x1AFFFFFF);
+          const opColor = Colors.blueAccent;
+          const eqColor = Colors.orangeAccent;
+
+          Widget calcKey(String label, {Color? bg, Color? fg}) {
+            final lbl = (label == 'C' || label == 'AC')
+                ? (_isClearState ? 'AC' : 'C')
+                : label;
+            return _CalcKeyButton(
+              label: lbl,
+              bg: bg ?? keyBg,
+              fg: fg ?? Colors.white,
+              fontSize: fontSize,
+              onTap: () => _onKey(lbl),
+            );
+          }
+
+          return SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            child: SizedBox(
+              height: targetContentH,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(10, 8, 10, bottomPad + 8),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                  // ── Action row ──
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      GestureDetector(
+                        onTap: _isAiCounting ? null : _showAiCountDialog,
+                        child: AnimatedOpacity(
+                          opacity: _isAiCounting ? 0.4 : 1.0,
+                          duration: const Duration(milliseconds: 150),
+                          child: Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(1000),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.45),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 24),
+                                if (_isAiCounting)
+                                  const SizedBox(
+                                    width: 34,
+                                    height: 34,
+                                    child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.white),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: _showHistory,
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(1000),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.45),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: const Icon(Icons.history_rounded, color: Colors.white, size: 24),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: AnimatedOpacity(
+                          opacity: _hasResult ? 1.0 : 0.35,
+                          duration: const Duration(milliseconds: 200),
+                          child: GestureDetector(
+                            onTap: _hasResult ? _addToSheet : null,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              decoration: BoxDecoration(
+                                color: _hasResult
+                                    ? Colors.blueAccent
+                                    : Colors.grey.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(40),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.add, color: Colors.white, size: 16),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'この計算を追加',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // ── 表示部 ──
+                  SizedBox(
+                    height: 80,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (subtitle.isNotEmpty)
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Text(
+                              subtitle,
+                              style: TextStyle(
+                                height: 0.9,
+                                color: Colors.white.withOpacity(0.45),
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        FittedBox(
+                          child: Text(
+                            _display,
+                            maxLines: 1,
+                            style: const TextStyle(
+                              height: 1,
+                              color: Colors.white,
+                              fontSize: 64,
+                              fontWeight: FontWeight.w200,
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // ── ボタングリッド ──
+                  SizedBox(
+                    height: 5 * buttonH + 4 * 6,
+                    child: GridView.count(
+                      padding: EdgeInsets.zero,
+                      crossAxisCount: 4,
+                      mainAxisSpacing: 6,
+                      crossAxisSpacing: 6,
+                      childAspectRatio: ratio,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        calcKey('C', bg: Colors.redAccent.withOpacity(0.18), fg: Colors.redAccent),
+                        calcKey('+/-'),
+                        calcKey('%'),
+                        calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
+                        calcKey('7'), calcKey('8'), calcKey('9'),
+                        calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
+                        calcKey('4'), calcKey('5'), calcKey('6'),
+                        calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
+                        calcKey('1'), calcKey('2'), calcKey('3'),
+                        calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
+                        calcKey('⌫'),
+                        calcKey('0'),
+                        calcKey('.'),
+                        calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              ))
+          );
+        },
+      ),
+    );
+
+  }
 }
 
 /// 計算シートを閲覧モードで表示するパブリックウィジェット（HomeScreen のカード展開用）
@@ -2087,6 +3184,12 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                       onClear();
                       closeHistory();
                     },
+                    onAddMultiple: (selectedEntries) {
+                      closeHistory();
+                      _closeMergedCalcSheet();
+                      final items = selectedEntries.map(_historyEntryToItem).toList();
+                      Future.microtask(() => _pickSheetAndAddMultiple(items));
+                    },
                   ),
                 ),
               ),
@@ -2206,6 +3309,124 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
     final newData = {
       ...sheet.data,
       'items': newItems,
+      if (newOrder != null) 'displayOrder': newOrder,
+    };
+    setState(() {
+      _localSheets = _localSheets
+          .map((s) => s.id == selectedId ? s.copyWith(data: newData) : s)
+          .toList();
+    });
+    widget.onSheetUpdate(selectedId, newData);
+  }
+
+  /// 複数アイテムをシート選択ダイアログで選んだ1つのシートに一括追加する
+  Future<void> _pickSheetAndAddMultiple(
+    List<Map<String, dynamic>> items,
+  ) async {
+    if (!mounted || items.isEmpty) return;
+    final selectedId = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '追加するシートを選択 (${items.length}件)',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white54),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(color: Colors.white12, height: 1),
+              for (final id in _sheetIds) ...[
+                Builder(
+                  builder: (bCtx) {
+                    WidgetConfig? sheet;
+                    try {
+                      sheet = _localSheets.firstWhere((s) => s.id == id);
+                    } catch (_) {}
+                    final title =
+                        sheet?.data['title'] as String? ?? '定型計算';
+                    final itemCount =
+                        (sheet?.data['items'] as List?)?.length ?? 0;
+                    return ListTile(
+                      leading: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF5E81FF).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.calculate_rounded,
+                          color: Color(0xFF5E81FF),
+                          size: 18,
+                        ),
+                      ),
+                      title: Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '$itemCount 件の計算',
+                        style: const TextStyle(
+                          color: Colors.white38,
+                          fontSize: 11,
+                        ),
+                      ),
+                      onTap: () => Navigator.pop(ctx, id),
+                    );
+                  },
+                ),
+              ],
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (selectedId == null || !mounted) return;
+    final sheetIdx = _localSheets.indexWhere((s) => s.id == selectedId);
+    if (sheetIdx == -1) return;
+    final sheet = _localSheets[sheetIdx];
+    var rawItems = List<dynamic>.from(
+      sheet.data['items'] as List<dynamic>? ?? [],
+    );
+    var rawOrder = sheet.data['displayOrder'] as List<dynamic>?;
+    var newOrder = rawOrder != null ? List<dynamic>.from(rawOrder) : null;
+    for (final item in items) {
+      newOrder?.add({'type': 'calc', 'calcIdx': rawItems.length});
+      rawItems.add(item);
+    }
+    final newData = {
+      ...sheet.data,
+      'items': rawItems,
       if (newOrder != null) 'displayOrder': newOrder,
     };
     setState(() {
@@ -3143,18 +4364,20 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
         : true;
 
     setState(() => _calcSheetOpen = true);
+    final pendingDisplay = _pendingCalcDisplay;
+    _pendingCalcDisplay = null;
     _calcOverlay = OverlayEntry(
       builder: (ctx) => _CalcDraggableSheetContent(
         existingItemCount: currentItems.length,
         isDark: isDark,
         bgColor: bgColorValue,
-        initialDisplay: _pendingCalcDisplay,
+        initialDisplay: pendingDisplay,
         onRequestAiCount: _handleCalcAiCountRequest,
         onAddItem: (item) => state?._addItemFromMap(item),
+        onAddItems: (items) => state?._addItemsFromMaps(items),
         onClose: _closeCalcSheet,
       ),
     );
-    _pendingCalcDisplay = null;
     Overlay.of(context).insert(_calcOverlay!);
   }
 
