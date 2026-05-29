@@ -408,7 +408,44 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       if (!mounted) return;
       showDialog<Map<String, dynamic>?>(
         context: context,
-        builder: (ctx) => const _LogicItemEditDialog(initial: null),
+        builder: (ctx) => _LogicItemEditDialog(
+          initial: null,
+          onPickLinkSource: () => _showLinkSourcePicker(excludeRowIdx: null),
+          getSourceRowName: (source) {
+            if (source == null) return 'リンク';
+            final sheetId = source['sheetId'] as String?;
+            final rowIdx = source['rowIdx'] as int? ?? 0;
+            final target = source['target'] as String? ?? 'result';
+            final effectiveId = sheetId ?? widget.config.id;
+            final srcConfig = widget.allConfigs.firstWhere(
+              (c) => c.id == effectiveId,
+              orElse: () => widget.config,
+            );
+            final srcItems = (srcConfig.data['items'] as List? ?? [])
+                .map((e) => Map<String, dynamic>.from(e as Map))
+                .toList();
+            if (rowIdx < 0 || rowIdx >= srcItems.length) return 'リンク';
+            final item = srcItems[rowIdx];
+            final rowName = item['name'] as String? ?? '計算 ${rowIdx + 1}';
+            String targetLabel;
+            if (target == 'input') {
+              targetLabel = '項1';
+            } else if (target == 'operand') {
+              targetLabel = '項2';
+            } else if (target.startsWith('other_')) {
+              final oi = int.tryParse(target.split('_')[1]) ?? 0;
+              targetLabel = '項${oi + 3}';
+            } else {
+              targetLabel = '答え';
+            }
+            final v = _resolveExternalValue(effectiveId, rowIdx, target);
+            final precision = item['precision'] as int? ?? 2;
+            final valStr = (v == v.truncateToDouble() && v.abs() < 1e12)
+                ? v.toStringAsFixed(0)
+                : v.toStringAsFixed(precision);
+            return '$rowName / $targetLabel: $valStr';
+          },
+        ),
       ).then((result) {
         if (result == null || !mounted) return;
         final newId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -1611,7 +1648,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               ),
               onTap: () {
                 Navigator.pop(ctx);
-                _shareAsCsvQr();
+                ProGuard.checkAndRun(context, _shareAsCsvQr);
               },
             ),
 
@@ -1652,77 +1689,6 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       }
     }
     return dests;
-  }
-
-  void _applyLinkDestsForRow(
-    int srcRowIdx,
-    String srcField,
-    Set<String> selectedDests,
-  ) {
-    final items = _items;
-    final newItems = items
-        .map((item) => Map<String, dynamic>.from(item))
-        .toList();
-    for (int i = 0; i < newItems.length; i++) {
-      if (i == srcRowIdx) continue;
-      final item = newItems[i];
-      final origItem = items[i];
-      bool wasLinked(Map? src) =>
-          src != null &&
-          src['rowIdx'] == srcRowIdx &&
-          src['target'] == srcField;
-
-      // input
-      final inputDest = '${i}_input';
-      final inputWas =
-          origItem['inputLink'] == true &&
-          wasLinked(origItem['inputLinkSource'] as Map?);
-      if (selectedDests.contains(inputDest)) {
-        item['inputLink'] = true;
-        item['inputLinkSource'] = {'rowIdx': srcRowIdx, 'target': srcField};
-      } else if (inputWas) {
-        item['inputLink'] = false;
-        item['inputLinkSource'] = null;
-      }
-
-      // operand
-      final operandDest = '${i}_operand';
-      final operandWas =
-          origItem['operandLink'] == true &&
-          wasLinked(origItem['operandLinkSource'] as Map?);
-      if (selectedDests.contains(operandDest)) {
-        item['operandLink'] = true;
-        item['operandLinkSource'] = {'rowIdx': srcRowIdx, 'target': srcField};
-      } else if (operandWas) {
-        item['operandLink'] = false;
-        item['operandLinkSource'] = null;
-      }
-
-      // others
-      final othersList = ((item['others'] as List? ?? []).map(
-        (e) => Map<String, dynamic>.from(e as Map),
-      )).toList();
-      final origOthersList = origItem['others'] as List? ?? [];
-      for (int j = 0; j < othersList.length; j++) {
-        final otherDest = '${i}_other_$j';
-        final origO = j < origOthersList.length ? origOthersList[j] as Map : {};
-        final otherWas =
-            origO['valLink'] == true &&
-            wasLinked(origO['valLinkSource'] as Map?);
-        if (selectedDests.contains(otherDest)) {
-          othersList[j]['valLink'] = true;
-          othersList[j]['valLinkSource'] = {
-            'rowIdx': srcRowIdx,
-            'target': srcField,
-          };
-        } else if (otherWas) {
-          othersList[j]['valLink'] = false;
-          othersList[j]['valLinkSource'] = null;
-        }
-      }
-      item['others'] = othersList;
-    }
-    widget.onUpdate({...widget.config.data, 'items': newItems});
   }
 
   // ---- 他シート開放 --------------------------------------------------------
@@ -1814,7 +1780,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       if (src['type'] == 'constant') {
         final ci = src['constIdx'] as int? ?? 0;
         // まずソースシートの定数、なければグローバル定数を参照
-        final allConsts = [...srcConstants, ...(widget.globalConstants ?? [])];
+        final allConsts = [...srcConstants, ...widget.globalConstants];
         if (ci >= 0 && ci < allConsts.length) {
           return (allConsts[ci]['value'] as num? ?? 0.0).toDouble();
         }
@@ -2118,78 +2084,6 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       }
     }
     return dests;
-  }
-
-  /// 別シートの行/フィールドのリンク先を現在シートに保存する
-  void _applyLinkDestsForExternalRow(
-    String sheetId,
-    int srcRowIdx,
-    String srcField,
-    Set<String> selectedDests,
-  ) {
-    final linkSource = {
-      'sheetId': sheetId,
-      'rowIdx': srcRowIdx,
-      'target': srcField,
-    };
-    final items = _items;
-    final newItems = items
-        .map((item) => Map<String, dynamic>.from(item))
-        .toList();
-    for (int i = 0; i < newItems.length; i++) {
-      final item = newItems[i];
-      final origItem = items[i];
-      bool wasLinked(Map? src) =>
-          src != null &&
-          src['sheetId'] == sheetId &&
-          src['rowIdx'] == srcRowIdx &&
-          src['target'] == srcField;
-
-      final inputDest = '${i}_input';
-      final inputWas =
-          origItem['inputLink'] == true &&
-          wasLinked(origItem['inputLinkSource'] as Map?);
-      if (selectedDests.contains(inputDest)) {
-        item['inputLink'] = true;
-        item['inputLinkSource'] = linkSource;
-      } else if (inputWas) {
-        item['inputLink'] = false;
-        item['inputLinkSource'] = null;
-      }
-
-      final operandDest = '${i}_operand';
-      final operandWas =
-          origItem['operandLink'] == true &&
-          wasLinked(origItem['operandLinkSource'] as Map?);
-      if (selectedDests.contains(operandDest)) {
-        item['operandLink'] = true;
-        item['operandLinkSource'] = linkSource;
-      } else if (operandWas) {
-        item['operandLink'] = false;
-        item['operandLinkSource'] = null;
-      }
-
-      final othersList = ((item['others'] as List? ?? []).map(
-        (e) => Map<String, dynamic>.from(e as Map),
-      )).toList();
-      final origOthersList = origItem['others'] as List? ?? [];
-      for (int j = 0; j < othersList.length; j++) {
-        final otherDest = '${i}_other_$j';
-        final origO = j < origOthersList.length ? origOthersList[j] as Map : {};
-        final otherWas =
-            origO['valLink'] == true &&
-            wasLinked(origO['valLinkSource'] as Map?);
-        if (selectedDests.contains(otherDest)) {
-          othersList[j]['valLink'] = true;
-          othersList[j]['valLinkSource'] = linkSource;
-        } else if (otherWas) {
-          othersList[j]['valLink'] = false;
-          othersList[j]['valLinkSource'] = null;
-        }
-      }
-      item['others'] = othersList;
-    }
-    widget.onUpdate({...widget.config.data, 'items': newItems});
   }
 
   void _copyAsCsv() {

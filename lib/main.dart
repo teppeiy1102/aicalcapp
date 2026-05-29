@@ -9,6 +9,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'widget_page.dart';
 import 'link_graph_page.dart';
 import 'revenuecat_service.dart';
+import 'pro_guard.dart';
 import 'ai_service.dart';
 import 'store_page.dart';
 
@@ -269,7 +270,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(items.length == 1 ? '新規シートに追加しました' : '${items.length}件を新規シートに追加しました'),
-          backgroundColor: const Color(0xFF2A2A3A),
+          backgroundColor: const Color.fromARGB(255, 234, 234, 235),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
         ),
@@ -433,7 +434,7 @@ Example output:
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('「$title」を生成しました'),
-              backgroundColor: const Color(0xFF2A2A3A),
+              backgroundColor: const Color.fromARGB(255, 230, 230, 230),
               behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 3),
             ),
@@ -648,7 +649,7 @@ Example output:
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
-                  _startSelectMode();
+                  ProGuard.checkAndRun(context, _startSelectMode);
                 },
               ),
               const Divider(color: Colors.white10, indent: 16, endIndent: 16),
@@ -682,7 +683,7 @@ Example output:
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
-                  _startQrSelectMode();
+                  ProGuard.checkAndRun(context, _startQrSelectMode);
                 },
               ),
               const Divider(color: Colors.white10, indent: 16, endIndent: 16),
@@ -716,7 +717,7 @@ Example output:
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
-                  _showQrScanner();
+                  ProGuard.checkAndRun(context, _showQrScanner);
                 },
               ),
               const Divider(color: Colors.white10, indent: 16, endIndent: 16),
@@ -750,25 +751,27 @@ Example output:
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => LinkGraphPage(
-                        configs: _configs
-                            .map((c) => {
-                                  'id': c.id,
-                                  'type': c.type,
-                                  'data': c.data,
-                                })
-                            .toList(),
-                        onOpenSheet: (sheetId) {
-                          final idx =
-                              _configs.indexWhere((c) => c.id == sheetId);
-                          if (idx != -1) _openDetail(idx);
-                        },
+                  ProGuard.checkAndRun(context, () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LinkGraphPage(
+                          configs: _configs
+                              .map((c) => {
+                                    'id': c.id,
+                                    'type': c.type,
+                                    'data': c.data,
+                                  })
+                              .toList(),
+                          onOpenSheet: (sheetId) {
+                            final idx =
+                                _configs.indexWhere((c) => c.id == sheetId);
+                            if (idx != -1) _openDetail(idx);
+                          },
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  });
                 },
               ),
               const Divider(color: Colors.white10, indent: 16, endIndent: 16),
@@ -1856,11 +1859,14 @@ Example output:
             )
           : _isCalcExpanded
           ? null
-          : _HomeFab(
-              onAiGenerate: _openHomeAiGenerate,
-              onAddSheet: _addConfig,
-              isAiGenerating: _isHomeAiGenerating,
-            ),
+          : Padding(
+            padding: const EdgeInsets.only(bottom: 40.0),
+            child: _HomeFab(
+                onAiGenerate: _openHomeAiGenerate,
+                onAddSheet: _addConfig,
+                isAiGenerating: _isHomeAiGenerating,
+              ),
+          ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: ValueListenableBuilder<Map<String, dynamic>?>(
         valueListenable: _clipboardNotifier,
@@ -2009,7 +2015,7 @@ class _WidgetCardState extends State<_WidgetCard> {
               border: Border.all(
                 color: widget.isSelected
                     ? const Color(0xFF5E81FF)
-                    : (isDark ? Colors.white38 : Colors.black38),
+                    : (isDark ? Colors.transparent : Colors.transparent),
                 width: 2,
               ),
             ),
@@ -2034,11 +2040,18 @@ class _WidgetCardState extends State<_WidgetCard> {
             ? Border.all(color: const Color(0xFF5E81FF), width: 2.5)
             : null,
         boxShadow: [
+   BoxShadow(
+            color: widget.isSelected
+                ? const Color(0xFF5E81FF).withOpacity(0.25)
+                : const Color.fromARGB(255, 234, 130, 255).withOpacity(isDark ? 0.05 : 0.05),
+            blurRadius: 34,
+            offset: const Offset(5, 5),
+          ),
           BoxShadow(
             color: widget.isSelected
                 ? const Color(0xFF5E81FF).withOpacity(0.25)
-                : Colors.black.withOpacity(isDark ? 0.4 : 0.15),
-            blurRadius: 24,
+                : const Color.fromARGB(255, 130, 199, 255).withOpacity(isDark ? 0.05 : 0.05),
+            blurRadius: 34,
             offset: const Offset(0, 12),
           ),
         ],
@@ -2290,15 +2303,15 @@ class _WidgetCardState extends State<_WidgetCard> {
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                             //   color: Colors.white.withOpacity(0.2),
                                 shape: BoxShape.circle,
                               ),
                               child: Center(
                                 child: Icon(
                                   Icons.delete_sweep_rounded,
                                   color: isDark
-                                      ? Colors.white.withOpacity(0.2)
-                                      : Colors.black.withOpacity(0.25),
+                                      ? Colors.white.withOpacity(0.5)
+                                      : Colors.black.withOpacity(0.55),
                                   size: 22,
                                 ),
                               ),

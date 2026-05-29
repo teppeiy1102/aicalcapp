@@ -456,7 +456,6 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                       final key = col['key'] as String;
                       final label = col['label'] as String;
                       final w = colWidth(key);
-                      final c = colColor(key);
                       final isLast = col == visibleColumns.last;
                       final isEditable = key != 'result' && key != 'name';
                       final isNameCol = key == 'name';
@@ -653,8 +652,45 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                   onTap: () {
                     showDialog<Map<String, dynamic>?>(
                       context: context,
-                      builder: (ctx) =>
-                          _LogicItemEditDialog(initial: logicItem, resolver: resolveForLogicDisplay),
+                      builder: (ctx) => _LogicItemEditDialog(
+                        initial: logicItem,
+                        resolver: resolveForLogicDisplay,
+                        onPickLinkSource: () => _showLinkSourcePicker(excludeRowIdx: null),
+                        getSourceRowName: (source) {
+                          if (source == null) return 'リンク';
+                          final sheetId = source['sheetId'] as String?;
+                          final rowIdx = source['rowIdx'] as int? ?? 0;
+                          final target = source['target'] as String? ?? 'result';
+                          final effectiveId = sheetId ?? widget.config.id;
+                          final srcConfig = widget.allConfigs.firstWhere(
+                            (c) => c.id == effectiveId,
+                            orElse: () => widget.config,
+                          );
+                          final srcItems = (srcConfig.data['items'] as List? ?? [])
+                              .map((e) => Map<String, dynamic>.from(e as Map))
+                              .toList();
+                          if (rowIdx < 0 || rowIdx >= srcItems.length) return 'リンク';
+                          final item = srcItems[rowIdx];
+                          final rowName = item['name'] as String? ?? '計算 ${rowIdx + 1}';
+                          String targetLabel;
+                          if (target == 'input') {
+                            targetLabel = '項1';
+                          } else if (target == 'operand') {
+                            targetLabel = '項2';
+                          } else if (target.startsWith('other_')) {
+                            final oi = int.tryParse(target.split('_')[1]) ?? 0;
+                            targetLabel = '項${oi + 3}';
+                          } else {
+                            targetLabel = '答え';
+                          }
+                          final v = _resolveExternalValue(effectiveId, rowIdx, target);
+                          final precision = item['precision'] as int? ?? 2;
+                          final valStr = (v == v.truncateToDouble() && v.abs() < 1e12)
+                              ? v.toStringAsFixed(0)
+                              : v.toStringAsFixed(precision);
+                          return '$rowName / $targetLabel: $valStr';
+                        },
+                      ),
                     ).then((result) {
                       if (result == null || !mounted) return;
                       _updateLogicItem(itemId, result);

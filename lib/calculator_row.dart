@@ -821,7 +821,7 @@ class _CalculatorRow extends StatelessWidget {
     if (logic == null) return '不明な論理式';
     final name = logic['name'] as String? ?? '';
     final expr = _CalculatorWidgetState._buildLogicExprString(
-      logic as Map<String, dynamic>,
+      logic,
     );
     return name.isNotEmpty ? '$name ($expr)' : expr;
   }
@@ -1372,8 +1372,7 @@ class _CalculatorRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 GestureDetector(
-                  onTap: () => setSheetState(
-                      () => tempOptionsExpanded = !tempOptionsExpanded),
+                  onTap: () => ProGuard.checkAndRun(context, () => setSheetState(() => tempOptionsExpanded = !tempOptionsExpanded)),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
@@ -1737,12 +1736,7 @@ class _CalculatorRow extends StatelessWidget {
                                       vertical: 8,
                                     ),
                                   ),
-                                  onPressed: () {
-                                    Navigator.pop(ctx);
-                                    if (onLinkSettingsPressed != null) {
-                                      onLinkSettingsPressed!('source', 'input');
-                                    }
-                                  },
+                                  onPressed: () { Navigator.pop(ctx); ProGuard.checkAndRun(context, () { if (onLinkSettingsPressed != null) { onLinkSettingsPressed!('source', 'input'); } }); },
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -1766,12 +1760,7 @@ class _CalculatorRow extends StatelessWidget {
                                       vertical: 8,
                                     ),
                                   ),
-                                  onPressed: () {
-                                    Navigator.pop(ctx);
-                                    if (onLinkSettingsPressed != null) {
-                                      onLinkSettingsPressed!('target', 'input');
-                                    }
-                                  },
+                                  onPressed: () { Navigator.pop(ctx); ProGuard.checkAndRun(context, () { if (onLinkSettingsPressed != null) { onLinkSettingsPressed!('target', 'input'); } }); },
                                 ),
                               ),
                             ],
@@ -2457,8 +2446,7 @@ class _CalculatorRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 GestureDetector(
-                  onTap: () => setSheetState(
-                      () => tempOptionsExpanded = !tempOptionsExpanded),
+                  onTap: () => ProGuard.checkAndRun(context, () => setSheetState(() => tempOptionsExpanded = !tempOptionsExpanded)),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
@@ -2818,15 +2806,7 @@ class _CalculatorRow extends StatelessWidget {
                                       vertical: 8,
                                     ),
                                   ),
-                                  onPressed: () {
-                                    Navigator.pop(ctx);
-                                    if (onLinkSettingsPressed != null) {
-                                      onLinkSettingsPressed!(
-                                        'source',
-                                        'operand',
-                                      );
-                                    }
-                                  },
+                                  onPressed: () { Navigator.pop(ctx); ProGuard.checkAndRun(context, () { if (onLinkSettingsPressed != null) { onLinkSettingsPressed!('source', 'operand'); } }); },
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -2850,15 +2830,7 @@ class _CalculatorRow extends StatelessWidget {
                                       vertical: 8,
                                     ),
                                   ),
-                                  onPressed: () {
-                                    Navigator.pop(ctx);
-                                    if (onLinkSettingsPressed != null) {
-                                      onLinkSettingsPressed!(
-                                        'target',
-                                        'operand',
-                                      );
-                                    }
-                                  },
+                                  onPressed: () { Navigator.pop(ctx); ProGuard.checkAndRun(context, () { if (onLinkSettingsPressed != null) { onLinkSettingsPressed!('target', 'operand'); } }); },
                                 ),
                               ),
                             ],
@@ -3427,30 +3399,30 @@ class _CalculatorRow extends StatelessWidget {
     );
 
     final trueValCtrl = TextEditingController(
-      text: (currentSource != null && currentSource!['type'] == 'logic')
-          ? (currentSource!['trueVal'] as num? ?? 1.0).toString()
+      text: (currentSource != null && currentSource['type'] == 'logic')
+          ? (currentSource['trueVal'] as num? ?? 1.0).toString()
           : '1.0',
     );
     final falseValCtrl = TextEditingController(
-      text: (currentSource != null && currentSource!['type'] == 'logic')
-          ? (currentSource!['falseVal'] as num? ?? 0.0).toString()
+      text: (currentSource != null && currentSource['type'] == 'logic')
+          ? (currentSource['falseVal'] as num? ?? 0.0).toString()
           : '0.0',
     );
     bool tempTrueLink = (currentSource != null &&
-            currentSource!['type'] == 'logic')
-        ? (currentSource!['trueLink'] as bool? ?? false)
+            currentSource['type'] == 'logic')
+        ? (currentSource['trueLink'] as bool? ?? false)
         : false;
     Map<String, dynamic>? tempTrueLinkSource = (currentSource != null &&
-            currentSource!['type'] == 'logic')
-        ? (currentSource!['trueLinkSource'] as Map<String, dynamic>?)
+            currentSource['type'] == 'logic')
+        ? (currentSource['trueLinkSource'] as Map<String, dynamic>?)
         : null;
     bool tempFalseLink = (currentSource != null &&
-            currentSource!['type'] == 'logic')
-        ? (currentSource!['falseLink'] as bool? ?? false)
+            currentSource['type'] == 'logic')
+        ? (currentSource['falseLink'] as bool? ?? false)
         : false;
     Map<String, dynamic>? tempFalseLinkSource = (currentSource != null &&
-            currentSource!['type'] == 'logic')
-        ? (currentSource!['falseLinkSource'] as Map<String, dynamic>?)
+            currentSource['type'] == 'logic')
+        ? (currentSource['falseLinkSource'] as Map<String, dynamic>?)
         : null;
     final localLogicItems = List<Map<String, dynamic>>.from(
       logicItems.map((e) => Map<String, dynamic>.from(e as Map)),
@@ -3596,8 +3568,7 @@ class _CalculatorRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 GestureDetector(
-                  onTap: () => setSheetState(
-                      () => tempOptionsExpanded = !tempOptionsExpanded),
+                  onTap: () => ProGuard.checkAndRun(context, () => setSheetState(() => tempOptionsExpanded = !tempOptionsExpanded)),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Row(
@@ -3957,15 +3928,7 @@ class _CalculatorRow extends StatelessWidget {
                                       vertical: 8,
                                     ),
                                   ),
-                                  onPressed: () {
-                                    Navigator.pop(ctx);
-                                    if (onLinkSettingsPressed != null) {
-                                      onLinkSettingsPressed!(
-                                        'source',
-                                        'other_$idx',
-                                      );
-                                    }
-                                  },
+                                  onPressed: () { Navigator.pop(ctx); ProGuard.checkAndRun(context, () { if (onLinkSettingsPressed != null) { onLinkSettingsPressed!('source', 'other_$idx'); } }); },
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -3989,15 +3952,7 @@ class _CalculatorRow extends StatelessWidget {
                                       vertical: 8,
                                     ),
                                   ),
-                                  onPressed: () {
-                                    Navigator.pop(ctx);
-                                    if (onLinkSettingsPressed != null) {
-                                      onLinkSettingsPressed!(
-                                        'target',
-                                        'other_$idx',
-                                      );
-                                    }
-                                  },
+                                  onPressed: () { Navigator.pop(ctx); ProGuard.checkAndRun(context, () { if (onLinkSettingsPressed != null) { onLinkSettingsPressed!('target', 'other_$idx'); } }); },
                                 ),
                               ),
                             ],
@@ -4724,12 +4679,7 @@ class _CalculatorRow extends StatelessWidget {
                                     vertical: 8,
                                   ),
                                 ),
-                                onPressed: () {
-                                  Navigator.pop(ctx);
-                                  if (onLinkSettingsPressed != null) {
-                                    onLinkSettingsPressed!('source', 'result');
-                                  }
-                                },
+                                onPressed: () { Navigator.pop(ctx); ProGuard.checkAndRun(context, () { if (onLinkSettingsPressed != null) { onLinkSettingsPressed!('source', 'result'); } }); },
                               ),
                             ),
                           ],
@@ -4759,7 +4709,6 @@ class _CalculatorRow extends StatelessWidget {
                       children: [
                         ...formulaParts.asMap().entries.map((entry) {
                           final line = entry.value;
-                          final isLast = entry.key == formulaParts.length - 1;
                           return Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
@@ -5401,7 +5350,7 @@ class _CalculatorRow extends StatelessWidget {
             if (val == 'toggle_name') onToggleName?.call();
             if (val == 'insert_below') onInsertBelow?.call();
             if (val == 'insert_memo_below') onInsertMemoBelow?.call();
-            if (val == 'expose') onToggleExpose?.call();
+            if (val == 'expose') ProGuard.checkAndRun(context, () => onToggleExpose?.call());
           },
         ),
       ],

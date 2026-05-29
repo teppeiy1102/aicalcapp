@@ -3,6 +3,7 @@ part of 'widget_page.dart';
 extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
   // ── 電卓ロジック ──
   void _onCalcKey(String key) {
+    // ignore: invalid_use_of_protected_member
     setState(() {
       if (key == 'C' || key == 'AC') {
         if (_calcDisplay == '0' || key == 'AC') {
@@ -234,6 +235,7 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
 
     newItems.add(newItem);
     widget.onUpdate({...widget.config.data, 'items': newItems});
+    // ignore: invalid_use_of_protected_member
     setState(() {
       _calcHasResult = false;
       _calcDisplay = '0';

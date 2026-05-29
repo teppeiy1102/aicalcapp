@@ -51,15 +51,15 @@ class _CalcKeyButtonState extends State<_CalcKeyButton>
   }
 
   void _handleTapDown(TapDownDetails _) => _ctrl.forward();
-  void _handleTapUp(TapUpDetails _) {
-    _ctrl.reverse();
+  void _handleTapUp(TapUpDetails _) => _ctrl.reverse();
+  void _handleTapCancel() => _ctrl.reverse();
+
+  void _handleTap() {
     if (AppSettings.instance.vibrateOnTap) {
-      HapticFeedback.mediumImpact();
+      HapticFeedback.lightImpact();
     }
     widget.onTap();
   }
-
-  void _handleTapCancel() => _ctrl.reverse();
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +67,7 @@ class _CalcKeyButtonState extends State<_CalcKeyButton>
       onTapDown: _handleTapDown,
       onTapUp: _handleTapUp,
       onTapCancel: _handleTapCancel,
+      onTap: _handleTap,
       child: ScaleTransition(
         scale: _scale,
         child: Container(

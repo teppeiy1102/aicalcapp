@@ -7,6 +7,22 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
     int? initialDestCalcIdx,
     String? initialDestField,
   }) {
+    ProGuard.checkAndRun(context, () {
+      _showSheetLinkSettingsDialogInner(
+        initialSrcCalcIdx: initialSrcCalcIdx,
+        initialSrcField: initialSrcField,
+        initialDestCalcIdx: initialDestCalcIdx,
+        initialDestField: initialDestField,
+      );
+    });
+  }
+
+  void _showSheetLinkSettingsDialogInner({
+    int? initialSrcCalcIdx,
+    String? initialSrcField,
+    int? initialDestCalcIdx,
+    String? initialDestField,
+  }) {
     final items = _items;
     if (items.isEmpty) return;
 
@@ -2871,7 +2887,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
     return newItems;
   }
 
-  /// 兄弟シートのアイテムにリンク先として設定する
+  // ignore: unused_element
   void _applyLinkDestsToSiblingSheet(
     String destSheetId,
     String? srcSheetId,

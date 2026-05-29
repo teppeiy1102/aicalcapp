@@ -83,13 +83,48 @@ class RevenueCatService {
     }
   }
 
-  /// パッケージ（消耗型）を購入する
+  /// プロ版（買い切り）が有効かどうか判定する
+  static Future<bool> isProActive() async {
+    try {
+      final customerInfo = await Purchases.getCustomerInfo();
+      // 非消耗型の購入履歴（トランザクション）に該当IDがあるか
+      final hasProTransaction = customerInfo.nonSubscriptionTransactions.any((tx) =>
+          tx.productIdentifier == 'com.openpro' ||
+          tx.productIdentifier == 'com.yama.genbacalc.openpro');
+
+      // エンタイトルメントが有効か (設定している場合)
+      final hasEntitlement = (customerInfo.entitlements.all['openpro']?.isActive == true) ||
+          (customerInfo.entitlements.all['macopenpro']?.isActive == true);
+
+      return hasProTransaction || hasEntitlement;
+    } catch (e) {
+      debugPrint('Error checking pro status: $e');
+      return false;
+    }
+  }
+
+  /// 購入を復元する
+  static Future<bool> restorePurchases() async {
+    try {
+      await Purchases.restorePurchases();
+      return await isProActive();
+    } catch (e) {
+      debugPrint('Error restoring purchases: $e');
+      return false;
+    }
+  }
+
+  /// パッケージ（消耗型・買い切り）を購入する
   static Future<bool> purchasePackage(Package package) async {
     try {
       await Purchases.purchasePackage(package);
-      // RevenueCatダッシュボードのOfferingメタデータから付与回数を取得して追加する
-      final uses = await getUsesPerPurchase();
-      await addUses(uses);
+      final isProPackage = package.storeProduct.identifier == 'com.openpro' ||
+                           package.storeProduct.identifier == 'com.yama.genbacalc.openpro';
+      if (!isProPackage) {
+        // RevenueCatダッシュボードのOfferingメタデータから付与回数を取得して追加する
+        final uses = await getUsesPerPurchase();
+        await addUses(uses);
+      }
       return true;
     } catch (e) {
       debugPrint('Error purchasing package: $e');

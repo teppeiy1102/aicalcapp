@@ -1,5 +1,7 @@
 library widget_page;
 
+import 'pro_guard.dart';
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -2686,7 +2688,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
         final handleH = _kHandleHeight + topPad * t;
         final contentH = panelH - handleH;
         return SizedBox(
-          height: panelH,
+          height: panelH + 20,
           child: ClipRect(
             child: Column(
               children: [
@@ -2702,6 +2704,8 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
   }
 
   Widget _buildHandle({required double handleH}) {
+ String inProg = '';
+    final subtitle = _hasResult ? _exprStr : inProg;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _toggle,
@@ -2710,10 +2714,15 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
         if (d.delta.dy < -3 && !_isExpanded) expand();
       },
       child: Container(
-        height: handleH,
+        height: handleH + 20,
         decoration: const BoxDecoration(
-          color: Colors.black,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+
+          borderRadius: BorderRadius.vertical(top: Radius.circular(0)),
+          gradient: LinearGradient(
+            colors: [Color.fromARGB(255, 0, 0, 0),Color.fromARGB(255, 68, 172, 241), Color(0xFF7B7FFF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
         child: _isExpanded
             ? Padding(
@@ -2725,8 +2734,10 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+  const Icon(Icons.calculate_rounded, color: Colors.white60, size: 30),
+                    const SizedBox(width: 12),
                     const Text(
-                      'Genba Calc',
+                      'Calculator',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 22,
@@ -2735,6 +2746,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                       ),
                     ),
                     const Spacer(),
+
                     IconButton(
                       onPressed: collapse,
                       icon: const Icon(Icons.keyboard_arrow_down_rounded),
@@ -2745,22 +2757,53 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                 ),
               )
             : Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20,vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 10,vertical: 12),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Icon(Icons.calculate_rounded, color: Colors.white60, size: 30),
+                  //  const Icon(Icons.calculate_rounded, color: Colors.white60, size: 30),
                     const SizedBox(width: 12),
-                    const Text(
-                      'Calculator',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
+                   
+  subtitle.isNotEmpty?
+                            Expanded(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Text(
+                                  subtitle,
+                                    maxLines: 1,
+                                  style: TextStyle(
+                                    height: 1,
+                                    color: Colors.white54,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                            ):Expanded(
+                              child: const Text(
+                                                    'Calculator',
+                                                    style: TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: 22,
+                                                      fontWeight: FontWeight.w600,
+                                                      letterSpacing: 0.5,
+                                                    ),
+                                                  ),
+                            ),
+GestureDetector(
+                        onTap: _showHistory,
+                        child: Container(
+                          margin: const EdgeInsets.only(left:10),
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(1000),
+                         
+                          ),
+                          child: const Icon(Icons.history_rounded, color: Colors.white, size: 24),
+                        ),
                       ),
-                    ),
-                    const Spacer(),
                     const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white38, size: 28),
                   ],
                 ),

@@ -44,7 +44,7 @@ class _StorePageState extends State<StorePage> {
     if (success) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('購入が完了しました。AI利用回数が追加されました。')),
+          const SnackBar(content: Text('購入が完了しました。')),
         );
       }
     } else {
@@ -62,7 +62,24 @@ class _StorePageState extends State<StorePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('AI利用回数のチャージ')),
+      appBar: AppBar(
+        title: const Text('ストア'),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              setState(() => _isLoading = true);
+              final isPro = await RevenueCatService.restorePurchases();
+              setState(() => _isLoading = false);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(isPro ? '購入を復元しました（プロ版有効）' : '復元できる情報がありません')),
+                );
+              }
+            },
+            child: const Text('購入を復元', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
