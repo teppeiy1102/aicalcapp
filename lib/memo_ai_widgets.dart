@@ -296,6 +296,7 @@ class _AiCountPageState extends State<_AiCountPage> {
     if (_imageBytes == null) return;
 
     final canUse = await RevenueCatService.consumeUse();
+    //final canUse = true; // --- IGNORE ---
     if (!canUse) {
       if (mounted) {
         await showDialog(
@@ -360,6 +361,84 @@ class _AiCountPageState extends State<_AiCountPage> {
       }
     } finally {
       if (mounted) setState(() => _isCounting = false);
+    }
+  }
+
+  Future<void> _detectAndListObjects() async {
+    if (_imageBytes == null) return;
+    setState(() {
+      _isCounting = true;
+      _lastResult = null;
+    });
+
+    try {
+      final prompt = 'この画像に写っている主要なオブジェクト（物体）の名称を、カンマ区切りでリストアップしてください。不要な説明や箇条書きの記号は省き、必ず名称のみをカンマ区切りで出力してください。';
+      final resultText = await GemmaAi().queryWithImage(
+        prompt, 
+        _imageBytes!, 
+        systemPrompt: "You are an object detector.",
+      );
+      if (!mounted) return;
+      
+      final objects = resultText
+          .split(RegExp(r'[,、\n]'))
+          .map((e) => e.replaceAll(RegExp(r'^[-・* ]+|[-・* ]+$'), '').trim()) // remove markdown list dashes or stars
+          .where((e) => e.isNotEmpty && e != 'なし')
+          .toList();
+
+      if (objects.isEmpty) {
+        throw Exception('対象が見つかりませんでした。');
+      }
+
+      final selected = await showModalBottomSheet<String>(
+        context: context,
+        backgroundColor: const Color(0xFF1E1E2E),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('カウントする対象を選択', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: objects.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(objects[index], style: const TextStyle(color: Colors.white)),
+                      leading: const Icon(Icons.check_circle_outline, color: Colors.tealAccent),
+                      onTap: () {
+                        Navigator.pop(ctx, objects[index]);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (selected != null && mounted) {
+        _labelCtrl.text = selected;
+        // 自動でカウント開始
+        await _runLlmCount();
+      } else {
+        if (mounted) setState(() => _isCounting = false);
+      }
+
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isCounting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('エラー: $e')),
+        );
+      }
     }
   }
 
@@ -790,6 +869,27 @@ class _AiCountPageState extends State<_AiCountPage> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: isBusy ? null : _detectAndListObjects,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal.withOpacity(0.2),
+                  foregroundColor: Colors.tealAccent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  elevation: 0,
+                ),
+                icon: const Icon(Icons.list_alt, size: 20),
+                label: const Text(
+                  '画像を検知しカウントするものをリストアップ',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
           ],
         ),
@@ -1497,10 +1597,10 @@ class _MarkerPainter extends CustomPainter {
     final borderPaint = Paint()
       ..color = Colors.white
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
+      ..strokeWidth = 0.5;
 
     final shadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.5)
+      ..color = Colors.black.withOpacity(0.0)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
 
     for (int i = 0; i < points.length; i++) {
@@ -1519,8 +1619,9 @@ class _MarkerPainter extends CustomPainter {
         text: '${i + 1}',
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
+          fontSize: 8,
+          letterSpacing: -0.8,
+          fontWeight: FontWeight.w500,
         ),
       );
       final textPainter = TextPainter(

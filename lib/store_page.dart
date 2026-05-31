@@ -125,8 +125,8 @@ class _StorePageState extends State<StorePage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildHeroSection(),
-                    _buildFeatureDescriptionSection(),
                     _buildPackagesSection(),
+                    _buildFeatureDescriptionSection(),
                     _buildNotesSection(),
                     const SizedBox(height: 32),
                   ],
@@ -236,27 +236,12 @@ class _StorePageState extends State<StorePage>
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
       child: Column(
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
-            ),
-            child: const Icon(
-              Icons.workspace_premium_rounded,
-              size: 44,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
+         const Text(
             'プロ版',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
+              fontSize: 50,
+              fontWeight: FontWeight.w900,
               letterSpacing: 1.0,
             ),
           ),
@@ -303,33 +288,20 @@ class _StorePageState extends State<StorePage>
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
       child: Column(
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withOpacity(0.4), width: 1.5),
-            ),
-            child: const Icon(
-              Icons.auto_awesome_rounded,
-              size: 44,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 16),
+          
           const Text(
-            'AI利用回数チャージ',
+            'AIチャージ',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
+              fontSize: 50,
+              fontWeight: FontWeight.w900,
               letterSpacing: 0.5,
             ),
           ),
           const SizedBox(height: 8),
+      
           Text(
-            'AI機能をさらに活用しよう',
+            '一度の購入で50回分のAI利用がチャージされます',
             style: TextStyle(
               color: Colors.white.withOpacity(0.85),
               fontSize: 15,
@@ -420,7 +392,6 @@ class _StorePageState extends State<StorePage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeader(
-            icon: Icons.star_rounded,
             title: 'プロ版でできること',
             subtitle: '一度購入すれば永久に利用可能',
           ),
@@ -442,7 +413,7 @@ class _StorePageState extends State<StorePage>
           _buildFeatureItem(
             icon: Icons.share_rounded,
             title: 'データのエクスポート・共有',
-            description: 'CSVやその他の形式でデータをエクスポートし、チームメンバーやクライアントと共有できます。',
+            description: 'QRコードを生成し、その場で計算シートの共有が可能です。CSVやその他の形式でデータをエクスポートし、チームメンバーやクライアントと共有できます。',
             color: const Color(0xFF0277BD),
           ),
           _buildDivider(),
@@ -451,13 +422,6 @@ class _StorePageState extends State<StorePage>
             title: 'リンクグラフの完全機能',
             description: '計算機間のリンク・依存関係をビジュアルで管理できるリンクグラフ機能が完全に解放されます。',
             color: const Color(0xFF1565C0),
-          ),
-          _buildDivider(),
-          _buildFeatureItem(
-            icon: Icons.cloud_sync_rounded,
-            title: '優先サポート',
-            description: 'プロ版ユーザーは優先的なカスタマーサポートを受けることができます。',
-            color: const Color(0xFF0288D1),
           ),
           const SizedBox(height: 8),
         ],
@@ -483,15 +447,22 @@ class _StorePageState extends State<StorePage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeader(
-            icon: Icons.auto_awesome_rounded,
             title: 'AI機能でできること',
             subtitle: 'チャージした回数分だけAIを活用',
           ),
           const Divider(height: 1, color: Color(0xFFE3EEFF)),
+
           _buildFeatureItem(
             icon: Icons.functions_rounded,
             title: '計算式のAIアシスト',
             description: '複雑な計算式の作成をAIがサポート。自然言語で条件を伝えるだけで適切な数式を提案します。',
+            color: const Color(0xFF0288D1),
+          ),
+  const Divider(height: 1, color: Color(0xFFE3EEFF)),
+          _buildFeatureItem(
+            icon: Icons.camera_alt_rounded,
+            title: 'AIカウント機能',
+            description: '画像から指定したアイテムをAIがカウントします。カウントした数値は電卓に即座にインポートします。',
             color: const Color(0xFF0288D1),
           ),
           _buildDivider(),
@@ -528,7 +499,6 @@ class _StorePageState extends State<StorePage>
   }
 
   Widget _buildSectionHeader({
-    required IconData icon,
     required String title,
     required String subtitle,
   }) {
@@ -536,22 +506,9 @@ class _StorePageState extends State<StorePage>
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [_gradientStart, _gradientEnd],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, size: 22, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
+          Spacer(),
           Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 title,
@@ -570,6 +527,7 @@ class _StorePageState extends State<StorePage>
               ),
             ],
           ),
+          Spacer(),
         ],
       ),
     );
