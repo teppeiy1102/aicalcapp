@@ -732,8 +732,8 @@ class _CalculatorRow extends StatelessWidget {
   /// リンク元の値を文字列フォーマット
   String _fmtLinkVal(double? v, int precision) {
     if (v == null) return '';
-    if (v == v.truncateToDouble() && v.abs() < 1e12) return v.toInt().toString();
-    return v.toStringAsFixed(precision).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+    if (v == v.truncateToDouble() && v.abs() < 1e12) return _addCommas(v.toInt().toString());
+    return _addCommas(v.toStringAsFixed(precision).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), ''));
   }
 
   /// リンク元チップのラベル（式名 / 項目: 値）
@@ -1182,10 +1182,11 @@ class _CalculatorRow extends StatelessWidget {
 
   void _editInput(BuildContext context) async {
     final _inputText = input.toString();
-    final ctrl = TextEditingController(text: _inputText)
+    final _displayInputText = _addCommas(_inputText);
+    final ctrl = TextEditingController(text: _displayInputText)
       ..selection = TextSelection(
         baseOffset: 0,
-        extentOffset: _inputText.length,
+        extentOffset: _displayInputText.length,
       );
     final unitCtrl = TextEditingController(text: unit1);
     bool tempLink = inputLink;
@@ -1381,6 +1382,8 @@ class _CalculatorRow extends StatelessWidget {
                           'オプション',
                           style: TextStyle(color: Colors.white54, fontSize: 12),
                         ),
+                        const SizedBox(width: 8),
+                        const ProBadge(),
                         const Spacer(),
                         Icon(
                           tempOptionsExpanded
@@ -1723,9 +1726,16 @@ class _CalculatorRow extends StatelessWidget {
                                     Icons.upload_rounded,
                                     size: 16,
                                   ),
-                                  label: const Text(
-                                    'リンク元に設定',
-                                    style: TextStyle(fontSize: 12),
+                                  label: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'リンク元に設定',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                      SizedBox(width: 4),
+                                      ProBadge(),
+                                    ],
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.blueAccent
@@ -1746,9 +1756,16 @@ class _CalculatorRow extends StatelessWidget {
                                     Icons.download_rounded,
                                     size: 16,
                                   ),
-                                  label: const Text(
-                                    'リンク先に設定',
-                                    style: TextStyle(fontSize: 12),
+                                  label: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'リンク先に設定',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                      SizedBox(width: 4),
+                                      ProBadge(),
+                                    ],
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.cyan.withOpacity(
@@ -1901,7 +1918,7 @@ class _CalculatorRow extends StatelessWidget {
                                       'type': 'logic',
                                       'logicId': selectedId,
                                       'trueVal':
-                                          double.tryParse(ctrl.text) ?? 1.0,
+                                          double.tryParse(ctrl.text.replaceAll(',', '')) ?? 1.0,
                                       'falseVal': 0.0,
                                       'trueLink': false,
                                       'trueLinkSource': null,
@@ -1913,7 +1930,7 @@ class _CalculatorRow extends StatelessWidget {
                                     tempFalseLink = false;
                                     tempFalseLinkSource = null;
                                     trueValCtrl.text =
-                                        (double.tryParse(ctrl.text) ?? 1.0)
+                                        (double.tryParse(ctrl.text.replaceAll(',', '')) ?? 1.0)
                                             .toString();
                                     falseValCtrl.text = '0.0';
                                   });
@@ -2074,7 +2091,7 @@ class _CalculatorRow extends StatelessWidget {
                   const SizedBox(height: 10),
                   Builder(
                     builder: (_) {
-                      final v = double.tryParse(ctrl.text) ?? 0.0;
+                      final v = double.tryParse(ctrl.text.replaceAll(',', '')) ?? 0.0;
                       final res = _applyTermTransform(
                         v,
                         tempTransform,
@@ -2132,7 +2149,7 @@ class _CalculatorRow extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                fmtPreview(res),
+                                _addCommas(fmtPreview(res)),
                                 style: TextStyle(
                                   color: color,
                                   fontSize: 16,
@@ -2178,13 +2195,13 @@ class _CalculatorRow extends StatelessWidget {
                       onPressed: () => _showMiniCalcSheet(context, (v) {
                         setSheetState(() {
                           if (v == v.truncateToDouble() && v.abs() < 1e15) {
-                            ctrl.text = v.toInt().toString();
+                            ctrl.text = _addCommas(v.toInt().toString());
                           } else {
                             final intD = v.abs() >= 1 ? v.abs().toInt().toString().length : 0;
                             final decD = (10 - intD).clamp(0, 10);
-                            ctrl.text = v.toStringAsFixed(decD)
+                            ctrl.text = _addCommas(v.toStringAsFixed(decD)
                                 .replaceAll(RegExp(r'0+$'), '')
-                                .replaceAll(RegExp(r'\.$'), '');
+                                .replaceAll(RegExp(r'\.$'), ''));
                           }
                         });
                       }),
@@ -2236,7 +2253,7 @@ class _CalculatorRow extends StatelessWidget {
         _removeInput();
         return;
       }
-      final val = double.tryParse(result['val'] as String) ?? 0.0;
+      final val = double.tryParse((result['val'] as String).replaceAll(',', '')) ?? 0.0;
       bool skipLinked = false;
       if (result['applyToAll'] == true && _hasLinkedRowsForKey('input')) {
         final choice = await _confirmOverwriteLinks(context);
@@ -2260,10 +2277,11 @@ class _CalculatorRow extends StatelessWidget {
 
   void _editOperand(BuildContext context) async {
     final _operandText = operand.toString();
-    final ctrl = TextEditingController(text: _operandText)
+    final _displayOperandText = _addCommas(_operandText);
+    final ctrl = TextEditingController(text: _displayOperandText)
       ..selection = TextSelection(
         baseOffset: 0,
-        extentOffset: _operandText.length,
+        extentOffset: _displayOperandText.length,
       );
     final unitCtrl = TextEditingController(text: unit2);
     bool tempLink = operandLink;
@@ -2458,6 +2476,8 @@ class _CalculatorRow extends StatelessWidget {
                           'オプション',
                           style: TextStyle(color: Colors.white54, fontSize: 12),
                         ),
+                        const SizedBox(width: 8),
+                        const ProBadge(),
                         const Spacer(),
                         Icon(
                           tempOptionsExpanded
@@ -2796,9 +2816,16 @@ class _CalculatorRow extends StatelessWidget {
                                     Icons.upload_rounded,
                                     size: 16,
                                   ),
-                                  label: const Text(
-                                    'リンク元に設定',
-                                    style: TextStyle(fontSize: 12),
+                                  label: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'リンク元に設定',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                      SizedBox(width: 4),
+                                      ProBadge(),
+                                    ],
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.blueAccent
@@ -2819,9 +2846,16 @@ class _CalculatorRow extends StatelessWidget {
                                     Icons.download_rounded,
                                     size: 16,
                                   ),
-                                  label: const Text(
-                                    'リンク先に設定',
-                                    style: TextStyle(fontSize: 12),
+                                  label: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'リンク先に設定',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                      SizedBox(width: 4),
+                                      ProBadge(),
+                                    ],
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.cyan.withOpacity(
@@ -2974,7 +3008,7 @@ class _CalculatorRow extends StatelessWidget {
                                       'type': 'logic',
                                       'logicId': selectedId,
                                       'trueVal':
-                                          double.tryParse(ctrl.text) ?? 1.0,
+                                          double.tryParse(ctrl.text.replaceAll(',', '')) ?? 1.0,
                                       'falseVal': 0.0,
                                       'trueLink': false,
                                       'trueLinkSource': null,
@@ -2986,7 +3020,7 @@ class _CalculatorRow extends StatelessWidget {
                                     tempFalseLink = false;
                                     tempFalseLinkSource = null;
                                     trueValCtrl.text =
-                                        (double.tryParse(ctrl.text) ?? 1.0)
+                                        (double.tryParse(ctrl.text.replaceAll(',', '')) ?? 1.0)
                                             .toString();
                                     falseValCtrl.text = '0.0';
                                   });
@@ -3147,7 +3181,7 @@ class _CalculatorRow extends StatelessWidget {
                   const SizedBox(height: 10),
                   Builder(
                     builder: (_) {
-                      final v = double.tryParse(ctrl.text) ?? 0.0;
+                      final v = double.tryParse(ctrl.text.replaceAll(',', '')) ?? 0.0;
                       final res = _applyTermTransform(
                         v,
                         tempTransform,
@@ -3205,7 +3239,7 @@ class _CalculatorRow extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                fmtPreview(res),
+                                _addCommas(fmtPreview(res)),
                                 style: TextStyle(
                                   color: color,
                                   fontSize: 16,
@@ -3252,13 +3286,13 @@ class _CalculatorRow extends StatelessWidget {
                       onPressed: () => _showMiniCalcSheet(context, (v) {
                         setSheetState(() {
                           if (v == v.truncateToDouble() && v.abs() < 1e15) {
-                            ctrl.text = v.toInt().toString();
+                            ctrl.text = _addCommas(v.toInt().toString());
                           } else {
                             final intD = v.abs() >= 1 ? v.abs().toInt().toString().length : 0;
                             final decD = (10 - intD).clamp(0, 10);
-                            ctrl.text = v.toStringAsFixed(decD)
+                            ctrl.text = _addCommas(v.toStringAsFixed(decD)
                                 .replaceAll(RegExp(r'0+$'), '')
-                                .replaceAll(RegExp(r'\.$'), '');
+                                .replaceAll(RegExp(r'\.$'), ''));
                           }
                         });
                       }),
@@ -3310,7 +3344,7 @@ class _CalculatorRow extends StatelessWidget {
         _removeOperand();
         return;
       }
-      final val = double.tryParse(result['val'] as String) ?? 0.0;
+      final val = double.tryParse((result['val'] as String).replaceAll(',', '')) ?? 0.0;
       bool skipLinked = false;
       if (result['applyToAll'] == true && _hasLinkedRowsForKey('operand')) {
         final choice = await _confirmOverwriteLinks(context);
@@ -3385,10 +3419,11 @@ class _CalculatorRow extends StatelessWidget {
     final currentTransform = currentOther['transform'] as String?;
     final currentPowExp = ((currentOther['powExp'] as num? ?? 2.0).toDouble());
     final _otherValText = currentVal.toString();
-    final ctrl = TextEditingController(text: _otherValText)
+    final _displayOtherValText = _addCommas(_otherValText);
+    final ctrl = TextEditingController(text: _displayOtherValText)
       ..selection = TextSelection(
         baseOffset: 0,
-        extentOffset: _otherValText.length,
+        extentOffset: _displayOtherValText.length,
       );
     final unitCtrl = TextEditingController(text: currentUnit);
     bool tempLink = currentLink;
@@ -3583,6 +3618,8 @@ class _CalculatorRow extends StatelessWidget {
                           'オプション',
                           style: TextStyle(color: Colors.white54, fontSize: 12),
                         ),
+                        const SizedBox(width: 8),
+                        const ProBadge(),
                         const Spacer(),
                         Icon(
                           tempOptionsExpanded
@@ -3921,9 +3958,16 @@ class _CalculatorRow extends StatelessWidget {
                                     Icons.upload_rounded,
                                     size: 16,
                                   ),
-                                  label: const Text(
-                                    'リンク元に設定',
-                                    style: TextStyle(fontSize: 12),
+                                  label: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'リンク元に設定',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                      SizedBox(width: 4),
+                                      ProBadge(),
+                                    ],
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.blueAccent
@@ -3944,9 +3988,16 @@ class _CalculatorRow extends StatelessWidget {
                                     Icons.download_rounded,
                                     size: 16,
                                   ),
-                                  label: const Text(
-                                    'リンク先に設定',
-                                    style: TextStyle(fontSize: 12),
+                                  label: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'リンク先に設定',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
+                                      SizedBox(width: 4),
+                                      ProBadge(),
+                                    ],
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.cyan.withOpacity(
@@ -4099,7 +4150,7 @@ class _CalculatorRow extends StatelessWidget {
                                       'type': 'logic',
                                       'logicId': selectedId,
                                       'trueVal':
-                                          double.tryParse(ctrl.text) ?? 1.0,
+                                          double.tryParse(ctrl.text.replaceAll(',', '')) ?? 1.0,
                                       'falseVal': 0.0,
                                       'trueLink': false,
                                       'trueLinkSource': null,
@@ -4111,7 +4162,7 @@ class _CalculatorRow extends StatelessWidget {
                                     tempFalseLink = false;
                                     tempFalseLinkSource = null;
                                     trueValCtrl.text =
-                                        (double.tryParse(ctrl.text) ?? 1.0)
+                                        (double.tryParse(ctrl.text.replaceAll(',', '')) ?? 1.0)
                                             .toString();
                                     falseValCtrl.text = '0.0';
                                   });
@@ -4272,7 +4323,7 @@ class _CalculatorRow extends StatelessWidget {
                   const SizedBox(height: 10),
                   Builder(
                     builder: (_) {
-                      final v = double.tryParse(ctrl.text) ?? 0.0;
+                      final v = double.tryParse(ctrl.text.replaceAll(',', '')) ?? 0.0;
                       final res = _applyTermTransform(
                         v,
                         tempTransform,
@@ -4330,7 +4381,7 @@ class _CalculatorRow extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                fmtPreview(res),
+                                _addCommas(fmtPreview(res)),
                                 style: TextStyle(
                                   color: color,
                                   fontSize: 16,
@@ -4377,13 +4428,13 @@ class _CalculatorRow extends StatelessWidget {
                       onPressed: () => _showMiniCalcSheet(context, (v) {
                         setSheetState(() {
                           if (v == v.truncateToDouble() && v.abs() < 1e15) {
-                            ctrl.text = v.toInt().toString();
+                            ctrl.text = _addCommas(v.toInt().toString());
                           } else {
                             final intD = v.abs() >= 1 ? v.abs().toInt().toString().length : 0;
                             final decD = (10 - intD).clamp(0, 10);
-                            ctrl.text = v.toStringAsFixed(decD)
+                            ctrl.text = _addCommas(v.toStringAsFixed(decD)
                                 .replaceAll(RegExp(r'0+$'), '')
-                                .replaceAll(RegExp(r'\.$'), '');
+                                .replaceAll(RegExp(r'\.$'), ''));
                           }
                         });
                       }),
@@ -4434,7 +4485,7 @@ class _CalculatorRow extends StatelessWidget {
         _removeOther(idx);
         return;
       }
-      final val = double.tryParse(result['val'] as String) ?? 0.0;
+      final val = double.tryParse((result['val'] as String).replaceAll(',', '')) ?? 0.0;
       bool skipLinked = false;
       if (result['applyToAll'] == true &&
           _hasLinkedRowsForKey('other', otherIdx: idx)) {
@@ -4467,8 +4518,8 @@ class _CalculatorRow extends StatelessWidget {
     String fmtV(double v, int prec) {
       if (v.isNaN || v.isInfinite) return '0';
       if (v == v.truncateToDouble() && v.abs() < 1e12)
-        return v.toInt().toString();
-      return v.toStringAsFixed(prec);
+        return _addCommas(v.toInt().toString());
+      return _addCommas(v.toStringAsFixed(prec));
     }
 
     String termStr(double rawV, String? transform, double powExp, int prec) {
@@ -4675,9 +4726,16 @@ class _CalculatorRow extends StatelessWidget {
                                   Icons.upload_rounded,
                                   size: 16,
                                 ),
-                                label: const Text(
-                                  'リンク元に設定',
-                                  style: TextStyle(fontSize: 12),
+                                label: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'リンク元に設定',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                                    SizedBox(width: 4),
+                                    ProBadge(),
+                                  ],
                                 ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.blueAccent
@@ -5037,7 +5095,7 @@ class _CalculatorRow extends StatelessWidget {
             ),
           Flexible(
             child: Text(
-              value,
+              _addCommas(value),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(

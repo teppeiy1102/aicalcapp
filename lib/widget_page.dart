@@ -34,6 +34,23 @@ part 'calculator_row.dart';
 part 'calculator_widget_source_picker.dart';
 part 'memo_ai_widgets.dart';
 
+// ── 数値文字列に3桁区切りカンマを追加するユーティリティ ────────────────────────────────
+/// 数値文字列 (例: "1234567.89") を "1,234,567.89" に変換する。
+/// 指数表記 ("1e15") はそのまま返す。
+String _addCommas(String s) {
+  if (s.contains('e') || s.contains('E')) return s;
+  final neg = s.startsWith('-');
+  final abs = neg ? s.substring(1) : s;
+  final dotIdx = abs.indexOf('.');
+  final intPart = dotIdx >= 0 ? abs.substring(0, dotIdx) : abs;
+  final decPart = dotIdx >= 0 ? abs.substring(dotIdx) : '';
+  final formatted = intPart.replaceAllMapped(
+    RegExp(r'(\d)(?=(\d{3})+$)'),
+    (m) => '${m[0]},',
+  );
+  return '${neg ? '-' : ''}$formatted$decPart';
+}
+
 // ── 履歴エントリから計算行アイテムを生成するヘルパー ────────────────────────────────────
 /// 履歴の expression 文字列 (例: "3 + 5 × 2") を解析して
 /// _CalculatorRow が期待する Map<String, dynamic> を返す。
@@ -555,7 +572,8 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
             parts.add(_fmt(allTerms[i]));
             if (i < effectiveOps.length) parts.add(effectiveOps[i]);
           }
-          _exprStr = '${parts.join(' ')} = ${_fmt(result)}';
+          final displayParts = parts.map((p) => double.tryParse(p) != null ? _addCommas(p) : p).toList();
+          _exprStr = '${displayParts.join(' ')} = ${_addCommas(_fmt(result))}';
           _termValues = allTerms;
           _termOps = effectiveOps;
           _calcA = result;
@@ -739,7 +757,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
             _calcOp = '';
             _termValues = _calcA != null ? [_calcA!] : [];
             _termOps = [];
-            _exprStr = '${entry.expression} = ${entry.result}';
+            _exprStr = '${entry.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(entry.result)}';
           });
         },
         onClear: () {
@@ -782,7 +800,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
     if (_termValues.isNotEmpty) {
       final parts = <String>[];
       for (int i = 0; i < _termValues.length; i++) {
-        parts.add(_fmt(_termValues[i]));
+        parts.add(_addCommas(_fmt(_termValues[i])));
         if (i < _termOps.length) parts.add(_termOps[i]);
       }
       inProg = parts.join(' ');
@@ -1000,7 +1018,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                           ),
                         FittedBox(
                           child: Text(
-                            _display,
+                            _addCommas(_display),
                             maxLines: 1,
                             style: TextStyle(
                               height: 1,
@@ -1437,7 +1455,7 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  e.expression,
+                                  e.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' '),
                                   style: TextStyle(
                                     color: subColor,
                                     fontSize: 20,
@@ -1445,7 +1463,7 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '= ${e.result}',
+                                  '= ${_addCommas(e.result)}',
                                   style: TextStyle(
                                     color: fgColor,
                                     fontSize: 24,
@@ -1791,11 +1809,22 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.link_rounded, size: 22),
-            onPressed: () =>
-                _calcKey.currentState?._showSheetLinkSettingsDialog(),
-            tooltip: '値をリンク',
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.link_rounded, size: 22),
+                onPressed: () => ProGuard.checkAndRun(
+                  context,
+                  () => _calcKey.currentState?._showSheetLinkSettingsDialog(),
+                ),
+                tooltip: '値をリンク',
+              ),
+              const Padding(
+                padding: EdgeInsets.only(right: 8.0),
+                child: ProBadge(),
+              ),
+            ],
           ),
           IconButton(
             icon: const Icon(Icons.more_horiz_rounded, size: 24),
@@ -2513,7 +2542,8 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
             parts.add(_fmt(allTerms[i]));
             if (i < effectiveOps.length) parts.add(effectiveOps[i]);
           }
-          _exprStr = '${parts.join(' ')} = ${_fmt(result)}';
+          final displayParts = parts.map((p) => double.tryParse(p) != null ? _addCommas(p) : p).toList();
+          _exprStr = '${displayParts.join(' ')} = ${_addCommas(_fmt(result))}';
           _termValues = allTerms;
           _termOps = effectiveOps;
           _calcA = result;
@@ -2659,7 +2689,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
             _calcOp = '';
             _termValues = _calcA != null ? [_calcA!] : [];
             _termOps = [];
-            _exprStr = '${entry.expression} = ${entry.result}';
+            _exprStr = '${entry.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(entry.result)}';
           });
         },
         onClear: () {
@@ -2821,7 +2851,7 @@ GestureDetector(
     if (_termValues.isNotEmpty) {
       final parts = <String>[];
       for (int i = 0; i < _termValues.length; i++) {
-        parts.add(_fmt(_termValues[i]));
+        parts.add(_addCommas(_fmt(_termValues[i])));
         if (i < _termOps.length) parts.add(_termOps[i]);
       }
       inProg = parts.join(' ');
@@ -2989,7 +3019,7 @@ GestureDetector(
                             ),
                           FittedBox(
                             child: Text(
-                              _display,
+                              _addCommas(_display),
                               maxLines: 1,
                               style: const TextStyle(
                                 height: 1,
@@ -4771,17 +4801,26 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                   ),
                 ),
                 if (_config.type != 'merged')
-                  IconButton(
-                    icon: Icon(
-                      Icons.link_rounded,
-                      color: isDark ? Colors.blueAccent : Colors.blue,
-                      size: 20,
-                    ),
-                    onPressed: () =>
-                        _calcKey.currentState?._showSheetLinkSettingsDialog(),
-                    tooltip: '値をリンク',
-                    padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.link_rounded,
+                          color: isDark ? Colors.blueAccent : Colors.blue,
+                          size: 20,
+                        ),
+                        onPressed: () => ProGuard.checkAndRun(
+                          context,
+                          () => _calcKey.currentState?._showSheetLinkSettingsDialog(),
+                        ),
+                        tooltip: '値をリンク',
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 4),
+                      const ProBadge(),
+                    ],
                   ),
                 if (_config.type != 'merged')
                   IconButton(

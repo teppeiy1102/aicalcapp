@@ -47,11 +47,11 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
               final value = (c['value'] as num? ?? 0.0).toDouble();
               final valStr =
                   value == value.truncateToDouble() && value.abs() < 1e12
-                  ? value.toInt().toString()
-                  : value
+                  ? _addCommas(value.toInt().toString())
+                  : _addCommas(value
                         .toStringAsFixed(4)
                         .replaceAll(RegExp(r'0+$'), '')
-                        .replaceAll(RegExp(r'\.$'), '');
+                        .replaceAll(RegExp(r'\.$'), ''));
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(
@@ -277,9 +277,9 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
     String fmtNum(double v, int precision) {
       if (v.isNaN || v.isInfinite) return '0';
       if (v == v.truncateToDouble() && v.abs() < 1e12) {
-        return v.toInt().toString();
+        return _addCommas(v.toInt().toString());
       }
-      return v.toStringAsFixed(precision);
+      return _addCommas(v.toStringAsFixed(precision));
     }
 
     // 計算式文字列を組み立て（括弧・トランスフォーム対応）

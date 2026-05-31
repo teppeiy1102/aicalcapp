@@ -203,7 +203,15 @@ class _HomeScreenState extends State<HomeScreen> {
     _saveConfigs();
   }
 
-  void _duplicateConfig(int index) {
+  Future<void> _duplicateConfig(int index) async {
+    if (_configs.length >= _kFreeSheetLimit) {
+      final isPro = await RevenueCatService.isProActive();
+      if (!isPro) {
+        if (!mounted) return;
+        await showSheetLimitDialog(context);
+        return;
+      }
+    }
     final src = _configs[index];
     setState(() {
       _configs.insert(
@@ -219,7 +227,18 @@ class _HomeScreenState extends State<HomeScreen> {
     _saveConfigs();
   }
 
-  void _addConfig() {
+  static const int _kFreeSheetLimit = 5;
+
+  Future<void> _addConfig() async {
+    // 無料版は5枚まで
+    if (_configs.length >= _kFreeSheetLimit) {
+      final isPro = await RevenueCatService.isProActive();
+      if (!isPro) {
+        if (!mounted) return;
+        await showSheetLimitDialog(context);
+        return;
+      }
+    }
     final newConfig = WidgetConfig(
       id: '${DateTime.now().millisecondsSinceEpoch}',
       type: 'calculator',
@@ -232,6 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     setState(() => _configs.insert(0, newConfig));
     _saveConfigs();
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -252,8 +272,17 @@ class _HomeScreenState extends State<HomeScreen> {
     _addCalcItemsToNewSheet([item]);
   }
 
-  void _addCalcItemsToNewSheet(List<Map<String, dynamic>> items) {
+  Future<void> _addCalcItemsToNewSheet(List<Map<String, dynamic>> items) async {
     if (items.isEmpty) return;
+    // 無料版は5枚まで
+    if (_configs.length >= _kFreeSheetLimit) {
+      final isPro = await RevenueCatService.isProActive();
+      if (!isPro) {
+        if (!mounted) return;
+        await showSheetLimitDialog(context);
+        return;
+      }
+    }
     final newConfig = WidgetConfig(
       id: '${DateTime.now().millisecondsSinceEpoch}',
       type: 'calculator',
@@ -633,19 +662,32 @@ Example output:
                     size: 22,
                   ),
                 ),
-                title: const Text(
-                  '計算シートを結合する',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
+                title: const Row(
+                  children: [
+                    Text(
+                      '計算シートを結合する',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    ProBadge(),
+                  ],
                 ),
-                subtitle: Text(
-                  '複数のシートを1画面に並べて表示',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
-                    fontSize: 12,
-                  ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '複数のシートを1画面に並べて表示',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.4),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const ProRequiredLabel(text: 'プロ版が必要です'),
+                  ],
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -667,19 +709,32 @@ Example output:
                     size: 22,
                   ),
                 ),
-                title: const Text(
-                  'QRコードで共有',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
+                title: const Row(
+                  children: [
+                    Text(
+                      'QRコードで共有',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    ProBadge(),
+                  ],
                 ),
-                subtitle: Text(
-                  'シートを選択してQRコードで書き出す',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
-                    fontSize: 12,
-                  ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'シートを選択してQRコードで書き出す',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.4),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const ProRequiredLabel(text: 'プロ版が必要です'),
+                  ],
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -701,19 +756,32 @@ Example output:
                     size: 22,
                   ),
                 ),
-                title: const Text(
-                  'シートを取り込む',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
+                title: const Row(
+                  children: [
+                    Text(
+                      'シートを取り込む',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    ProBadge(),
+                  ],
                 ),
-                subtitle: Text(
-                  'QRコードからシートをインポート',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
-                    fontSize: 12,
-                  ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'QRコードからシートをインポート',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.4),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const ProRequiredLabel(text: 'プロ版が必要です'),
+                  ],
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -735,19 +803,32 @@ Example output:
                     size: 22,
                   ),
                 ),
-                title: const Text(
-                  'リンクグラフ',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
+                title: const Row(
+                  children: [
+                    Text(
+                      'リンクグラフ',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    ProBadge(),
+                  ],
                 ),
-                subtitle: Text(
-                  'シート間のリンク関係をグラフで可視化',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
-                    fontSize: 12,
-                  ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'シート間のリンク関係をグラフで可視化',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.4),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const ProRequiredLabel(text: 'プロ版が必要です'),
+                  ],
                 ),
                 onTap: () {
                   Navigator.pop(ctx);

@@ -1085,7 +1085,7 @@ class _NumLabelFieldState extends State<_NumLabelField> {
       return v.toString();
     }
 
-    _valCtrl = TextEditingController(text: fmtN(widget.initVal));
+    _valCtrl = TextEditingController(text: _addCommas(fmtN(widget.initVal)));
     _labelCtrl = TextEditingController(text: widget.initLabel);
   }
 
@@ -1097,7 +1097,7 @@ class _NumLabelFieldState extends State<_NumLabelField> {
   }
 
   void _notify() {
-    widget.onChanged(double.tryParse(_valCtrl.text) ?? 0.0, _labelCtrl.text);
+    widget.onChanged(double.tryParse(_valCtrl.text.replaceAll(',', '')) ?? 0.0, _labelCtrl.text);
   }
 
   @override

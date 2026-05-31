@@ -199,7 +199,11 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
             parts.add(_fmt(allTerms[i]));
             if (i < effectiveOps.length) parts.add(effectiveOps[i]);
           }
-          _exprStr = '${parts.join(' ')} = ${_fmt(result)}';
+          final displayParts = parts.map((p) {
+            final v = double.tryParse(p);
+            return v != null ? _addCommas(p) : p;
+          }).toList();
+          _exprStr = '${displayParts.join(' ')} = ${_addCommas(_fmt(result))}';
           _termValues = allTerms;
           _termOps = effectiveOps;
           _calcA = result;
@@ -294,7 +298,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
             _calcOp = '';
             _termValues = _calcA != null ? [_calcA!] : [];
             _termOps = [];
-            _exprStr = '${entry.expression} = ${entry.result}';
+            _exprStr = '${entry.expression.split(' ').map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).join(' ')} = ${_addCommas(entry.result)}';
           });
         },
         onClear: () {
@@ -357,7 +361,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
     if (_termValues.isNotEmpty) {
       final parts = <String>[];
       for (int i = 0; i < _termValues.length; i++) {
-        parts.add(_fmt(_termValues[i]));
+        parts.add(_addCommas(_fmt(_termValues[i])));
         if (i < _termOps.length) parts.add(_termOps[i]);
       }
       inProg = parts.join(' ');
@@ -534,7 +538,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                           const SizedBox(height: 6),
                           FittedBox(
                             child: Text(
-                              _display,
+                              _addCommas(_display),
                               maxLines: 1,
                               style: const TextStyle(
                                 height: 1,

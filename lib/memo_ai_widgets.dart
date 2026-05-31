@@ -950,7 +950,8 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
             exprParts.add(_fmtCalc(allTerms[i]));
             if (i < effectiveOps.length) exprParts.add(effectiveOps[i]);
           }
-          _calcExprStr = '${exprParts.join(' ')} = ${_fmtCalc(result)}';
+          final displayExprParts = exprParts.map((p) => double.tryParse(p) != null ? _addCommas(p) : p).toList();
+          _calcExprStr = '${displayExprParts.join(' ')} = ${_addCommas(_fmtCalc(result))}';
           _calcTermValues = allTerms;
           _calcTermOps = effectiveOps;
           _calcA = result;
@@ -1081,7 +1082,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
             _calcOp = '';
             _calcTermValues = _calcA != null ? [_calcA!] : [];
             _calcTermOps = [];
-            _calcExprStr = '${entry.expression} = ${entry.result}';
+            _calcExprStr = '${entry.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(entry.result)}';
           });
         },
         onClear: () {
@@ -1094,7 +1095,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
           final sb = StringBuffer();
           for (final e in selectedEntries) {
             if (sb.isNotEmpty) sb.write('\n');
-            sb.write('${e.expression} = ${e.result}');
+            sb.write('${e.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(e.result)}');
           }
           final insertText = sb.toString();
           final sel = _ctrl.selection;
@@ -1141,7 +1142,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
     if (_calcTermValues.isNotEmpty) {
       final ipParts = <String>[];
       for (int i = 0; i < _calcTermValues.length; i++) {
-        ipParts.add(_fmtCalc(_calcTermValues[i]));
+        ipParts.add(_addCommas(_fmtCalc(_calcTermValues[i])));
         if (i < _calcTermOps.length) ipParts.add(_calcTermOps[i]);
       }
       inProgressExpr = ipParts.join(' ');
@@ -1291,7 +1292,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                           ),
                         FittedBox(
                           child: Text(
-                            _calcDisplay,
+                            _addCommas(_calcDisplay),
                             maxLines: 1,
                             style: const TextStyle(
                               color: textColor,

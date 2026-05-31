@@ -441,8 +441,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             final v = _resolveExternalValue(effectiveId, rowIdx, target);
             final precision = item['precision'] as int? ?? 2;
             final valStr = (v == v.truncateToDouble() && v.abs() < 1e12)
-                ? v.toStringAsFixed(0)
-                : v.toStringAsFixed(precision);
+                ? _addCommas(v.toStringAsFixed(0))
+                : _addCommas(v.toStringAsFixed(precision));
             return '$rowName / $targetLabel: $valStr';
           },
         ),
@@ -621,12 +621,12 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
     String fmtN(double v) {
       if (v == v.truncateToDouble() && v.abs() < 1e12) {
-        return v.toInt().toString();
+        return _addCommas(v.toInt().toString());
       }
-      return v
+      return _addCommas(v
           .toStringAsFixed(4)
           .replaceAll(RegExp(r'0+$'), '')
-          .replaceAll(RegExp(r'\.$'), '');
+          .replaceAll(RegExp(r'\.$'), ''));
     }
 
     final lhs = (lhsLink && resolver != null)
@@ -1165,11 +1165,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               final value = (c['value'] as num? ?? 0.0).toDouble();
               final valStr =
                   value == value.truncateToDouble() && value.abs() < 1e12
-                  ? value.toInt().toString()
-                  : value
+                  ? _addCommas(value.toInt().toString())
+                  : _addCommas(value
                         .toStringAsFixed(4)
                         .replaceAll(RegExp(r'0+$'), '')
-                        .replaceAll(RegExp(r'\.$'), '');
+                        .replaceAll(RegExp(r'\.$'), ''));
               return GestureDetector(
                 onTap: () => _editConstant(idx),
                 child: Container(
@@ -1547,9 +1547,15 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 Icons.rule_rounded,
                 color: Colors.deepPurpleAccent,
               ),
-              title: const Text(
-                '論理式を追加',
-                style: TextStyle(color: Colors.white),
+              title: const Row(
+                children: [
+                  Text(
+                    '論理式を追加',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  SizedBox(width: 8),
+                  ProBadge(),
+                ],
               ),
               subtitle: const Text(
                 '比較・AND/OR条件の真偽判定',
@@ -1557,7 +1563,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               ),
               onTap: () {
                 Navigator.pop(ctx);
-                _addLogicItem();
+                ProGuard.checkAndRun(context, _addLogicItem);
               },
             ),
             const Divider(color: Colors.white12, height: 1),
@@ -1632,20 +1638,32 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 Icons.table_chart_outlined,
                 color: Colors.white70,
               ),
-              title: const Text(
-                'CSV形式でコピーする',
-                style: TextStyle(color: Colors.white),
+              title: const Row(
+                children: [
+                  Text(
+                    'CSV形式でコピーする',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  SizedBox(width: 8),
+                  ProBadge(),
+                ],
               ),
               onTap: () {
                 Navigator.pop(ctx);
-                _copyAsCsv();
+                ProGuard.checkAndRun(context, _copyAsCsv);
               },
             ),
             ListTile(
               leading: const Icon(Icons.qr_code_rounded, color: Colors.white70),
-              title: const Text(
-                'QRコードで共有する',
-                style: TextStyle(color: Colors.white),
+              title: const Row(
+                children: [
+                  Text(
+                    'QRコードで共有する',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  SizedBox(width: 8),
+                  ProBadge(),
+                ],
               ),
               onTap: () {
                 Navigator.pop(ctx);
@@ -3292,8 +3310,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                               final v = _resolveExternalValue(effectiveId, rowIdx, target);
                                               final precision = item['precision'] as int? ?? 2;
                                               final valStr = (v == v.truncateToDouble() && v.abs() < 1e12)
-                                                  ? v.toStringAsFixed(0)
-                                                  : v.toStringAsFixed(precision);
+                                                  ? _addCommas(v.toStringAsFixed(0))
+                                                  : _addCommas(v.toStringAsFixed(precision));
                                               return '$rowName / $targetLabel: $valStr';
                                             },
                                             dragHandle:
@@ -3697,7 +3715,7 @@ Example output:
             _calcOp = '';
             _calcTermValues = _calcA != null ? [_calcA!] : [];
             _calcTermOps = [];
-            _calcExprStr = '${entry.expression} = ${entry.result}';
+            _calcExprStr = '${entry.expression.split(' ').map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).join(' ')} = ${_addCommas(entry.result)}';
           });
         },
         onClear: () {

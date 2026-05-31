@@ -215,9 +215,9 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
     String fmtNum(double v, int precision) {
       if (v.isNaN || v.isInfinite) return '0';
       if (v == v.truncateToDouble() && v.abs() < 1e12) {
-        return v.toInt().toString();
+        return _addCommas(v.toInt().toString());
       }
-      return v.toStringAsFixed(precision);
+      return _addCommas(v.toStringAsFixed(precision));
     }
 
     // 変換オプション付きの値表示文字列
@@ -686,8 +686,8 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                           final v = _resolveExternalValue(effectiveId, rowIdx, target);
                           final precision = item['precision'] as int? ?? 2;
                           final valStr = (v == v.truncateToDouble() && v.abs() < 1e12)
-                              ? v.toStringAsFixed(0)
-                              : v.toStringAsFixed(precision);
+                              ? _addCommas(v.toStringAsFixed(0))
+                              : _addCommas(v.toStringAsFixed(precision));
                           return '$rowName / $targetLabel: $valStr';
                         },
                       ),

@@ -76,7 +76,12 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
             exprParts.add(_fmtCalc(allTerms[i]));
             if (i < effectiveOps.length) exprParts.add(effectiveOps[i]);
           }
-          _calcExprStr = '${exprParts.join(' ')} = ${_fmtCalc(result)}';
+          // 表示用（カンマ付き）
+          final exprDisplayParts = exprParts.map((p) {
+            final v = double.tryParse(p);
+            return v != null ? _addCommas(p) : p;
+          }).toList();
+          _calcExprStr = '${exprDisplayParts.join(' ')} = ${_addCommas(_fmtCalc(result))}';
           _calcTermValues = allTerms;
           _calcTermOps = effectiveOps;
           _calcA = result;
@@ -84,7 +89,7 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
           _calcDisplay = _fmtCalc(result);
           _calcHasResult = true;
           _calcNewEntry = true;
-          // 履歴に保存
+          // 履歴に保存（カンマなし）
           CalcHistoryManager.instance.addEntry(
             exprParts.join(' '),
             _fmtCalc(result),
@@ -285,7 +290,7 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
         if (_calcTermValues.isNotEmpty) {
           final ipParts = <String>[];
           for (int i = 0; i < _calcTermValues.length; i++) {
-            ipParts.add(_fmtCalc(_calcTermValues[i]));
+            ipParts.add(_addCommas(_fmtCalc(_calcTermValues[i])));
             if (i < _calcTermOps.length) ipParts.add(_calcTermOps[i]);
           }
           inProgressExpr = ipParts.join(' ');
@@ -441,7 +446,7 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
                           SizedBox(
                             child: FittedBox(
                               child: Text(
-                                _calcDisplay,
+                                _addCommas(_calcDisplay),
                                 maxLines: 1,
                                 style: TextStyle(
                                   height: 1,
