@@ -24,7 +24,7 @@ class ProGuard {
                 Navigator.pop(ctx);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const StorePage()),
+                  MaterialPageRoute(builder: (_) => const StorePage(isProContext: true)),
                 );
               },
               child: const Text('ストアへ'),

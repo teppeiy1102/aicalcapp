@@ -52,13 +52,47 @@ class RevenueCatService {
     await prefs.setInt('ai_remaining_uses', current + amount);
   }
 
-  /// RevenueCatのOfferingメタデータから付与回数を取得する
-  /// ダッシュボードの Offerings → (対象Offering) → Metadata に
+  /// プロ版パッケージの製品IDリスト
+  static const List<String> proProductIds = [
+    'com.openpro',
+    'com.yama.genbacalc.openpro',
+  ];
+
+  /// Offering の識別子
+  static const String _proOfferingId = 'default';
+  static const String _aiChargeOfferingId = 'ai_charge';
+
+  /// プロ版パッケージを取得する（"default" Offering から）
+  static Future<List<Package>> getProPackages() async {
+    try {
+      final offerings = await Purchases.getOfferings();
+      final offering = offerings.all[_proOfferingId];
+      return offering?.availablePackages ?? [];
+    } catch (e) {
+      debugPrint('Error fetching pro packages: $e');
+      return [];
+    }
+  }
+
+  /// AIチャージパッケージを取得する（"ai_charge" Offering から）
+  static Future<List<Package>> getAiChargePackages() async {
+    try {
+      final offerings = await Purchases.getOfferings();
+      final offering = offerings.all[_aiChargeOfferingId];
+      return offering?.availablePackages ?? [];
+    } catch (e) {
+      debugPrint('Error fetching AI charge packages: $e');
+      return [];
+    }
+  }
+
+  /// "ai_charge" Offering のメタデータから付与回数を取得する
+  /// ダッシュボードの Offerings → ai_charge → Metadata に
   /// キー "uses_per_purchase"、値 50 (数値) を設定してください。
   static Future<int> getUsesPerPurchase() async {
     try {
       final offerings = await Purchases.getOfferings();
-      final meta = offerings.current?.metadata;
+      final meta = offerings.all[_aiChargeOfferingId]?.metadata;
       if (meta != null && meta.containsKey('uses_per_purchase')) {
         return (meta['uses_per_purchase'] as num).toInt();
       }
@@ -66,21 +100,6 @@ class RevenueCatService {
       debugPrint('Error fetching offering metadata: $e');
     }
     return 50; // フォールバック値
-  }
-
-  /// 利用可能なパッケージ（消耗型アイテムなど）を取得する
-  static Future<List<Package>> getOfferings() async {
-    try {
-      Offerings offerings = await Purchases.getOfferings();
-      if (offerings.current != null &&
-          offerings.current!.availablePackages.isNotEmpty) {
-        return offerings.current!.availablePackages;
-      }
-      return [];
-    } catch (e) {
-      debugPrint('Error fetching offerings: $e');
-      return [];
-    }
   }
 
   /// プロ版（買い切り）が有効かどうか判定する
@@ -118,8 +137,7 @@ class RevenueCatService {
   static Future<bool> purchasePackage(Package package) async {
     try {
       await Purchases.purchasePackage(package);
-      final isProPackage = package.storeProduct.identifier == 'com.openpro' ||
-                           package.storeProduct.identifier == 'com.yama.genbacalc.openpro';
+      final isProPackage = proProductIds.contains(package.storeProduct.identifier);
       if (!isProPackage) {
         // RevenueCatダッシュボードのOfferingメタデータから付与回数を取得して追加する
         final uses = await getUsesPerPurchase();

@@ -879,7 +879,9 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
       return v.toInt().toString();
     }
     if (v.abs() < 1e-15 || v.abs() >= 1e15) return v.toString();
-    String s = v.toStringAsFixed(15);
+    int intDigits = v.abs() >= 1 ? v.abs().toInt().toString().length : 0;
+    int decDigits = (10 - intDigits).clamp(0, 10);
+    String s = v.toStringAsFixed(decDigits);
     return s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
   }
 

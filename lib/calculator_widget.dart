@@ -1444,8 +1444,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                 if (v == v.truncateToDouble() && v.abs() < 1e15) {
                                   valCtrl.text = v.toInt().toString();
                                 } else {
-                                  valCtrl.text = v
-                                      .toStringAsFixed(15)
+                                  final intD = v.abs() >= 1 ? v.abs().toInt().toString().length : 0;
+                                  final decD = (10 - intD).clamp(0, 10);
+                                  valCtrl.text = v.toStringAsFixed(decD)
                                       .replaceAll(RegExp(r'0+$'), '')
                                       .replaceAll(RegExp(r'\.$'), '');
                                 }

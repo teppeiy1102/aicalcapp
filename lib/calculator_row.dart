@@ -2084,7 +2084,9 @@ class _CalculatorRow extends StatelessWidget {
                         if (x.isInfinite || x.isNaN) return 'エラー';
                         if (x == x.truncateToDouble() && x.abs() < 1e12)
                           return x.toInt().toString();
-                        final s = x.toStringAsFixed(15);
+                        final intD = x.abs() >= 1 ? x.abs().toInt().toString().length : 0;
+                        final decD = (10 - intD).clamp(0, 10);
+                        final s = x.toStringAsFixed(decD);
                         return s
                             .replaceAll(RegExp(r'0+$'), '')
                             .replaceAll(RegExp(r'\.$'), '');
@@ -2178,8 +2180,9 @@ class _CalculatorRow extends StatelessWidget {
                           if (v == v.truncateToDouble() && v.abs() < 1e15) {
                             ctrl.text = v.toInt().toString();
                           } else {
-                            ctrl.text = v
-                                .toStringAsFixed(15)
+                            final intD = v.abs() >= 1 ? v.abs().toInt().toString().length : 0;
+                            final decD = (10 - intD).clamp(0, 10);
+                            ctrl.text = v.toStringAsFixed(decD)
                                 .replaceAll(RegExp(r'0+$'), '')
                                 .replaceAll(RegExp(r'\.$'), '');
                           }
@@ -3154,7 +3157,9 @@ class _CalculatorRow extends StatelessWidget {
                         if (x.isInfinite || x.isNaN) return 'エラー';
                         if (x == x.truncateToDouble() && x.abs() < 1e12)
                           return x.toInt().toString();
-                        final s = x.toStringAsFixed(15);
+                        final intD = x.abs() >= 1 ? x.abs().toInt().toString().length : 0;
+                        final decD = (10 - intD).clamp(0, 10);
+                        final s = x.toStringAsFixed(decD);
                         return s
                             .replaceAll(RegExp(r'0+$'), '')
                             .replaceAll(RegExp(r'\.$'), '');
@@ -3249,8 +3254,9 @@ class _CalculatorRow extends StatelessWidget {
                           if (v == v.truncateToDouble() && v.abs() < 1e15) {
                             ctrl.text = v.toInt().toString();
                           } else {
-                            ctrl.text = v
-                                .toStringAsFixed(15)
+                            final intD = v.abs() >= 1 ? v.abs().toInt().toString().length : 0;
+                            final decD = (10 - intD).clamp(0, 10);
+                            ctrl.text = v.toStringAsFixed(decD)
                                 .replaceAll(RegExp(r'0+$'), '')
                                 .replaceAll(RegExp(r'\.$'), '');
                           }
@@ -4276,7 +4282,9 @@ class _CalculatorRow extends StatelessWidget {
                         if (x.isInfinite || x.isNaN) return 'エラー';
                         if (x == x.truncateToDouble() && x.abs() < 1e12)
                           return x.toInt().toString();
-                        final s = x.toStringAsFixed(15);
+                        final intD = x.abs() >= 1 ? x.abs().toInt().toString().length : 0;
+                        final decD = (10 - intD).clamp(0, 10);
+                        final s = x.toStringAsFixed(decD);
                         return s
                             .replaceAll(RegExp(r'0+$'), '')
                             .replaceAll(RegExp(r'\.$'), '');
@@ -4371,8 +4379,9 @@ class _CalculatorRow extends StatelessWidget {
                           if (v == v.truncateToDouble() && v.abs() < 1e15) {
                             ctrl.text = v.toInt().toString();
                           } else {
-                            ctrl.text = v
-                                .toStringAsFixed(15)
+                            final intD = v.abs() >= 1 ? v.abs().toInt().toString().length : 0;
+                            final decD = (10 - intD).clamp(0, 10);
+                            ctrl.text = v.toStringAsFixed(decD)
                                 .replaceAll(RegExp(r'0+$'), '')
                                 .replaceAll(RegExp(r'\.$'), '');
                           }

@@ -192,8 +192,10 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
     if (v.abs() < 1e-15 || v.abs() >= 1e15) {
       return v.toString();
     }
-    // それ以外は固定小数点表示（最大10桁）
-    String s = v.toStringAsFixed(15);
+    // 浮動小数点誤差を除去するため、有効数字10桁で丸める
+    int intDigits = v.abs() >= 1 ? v.abs().toInt().toString().length : 0;
+    int decDigits = (10 - intDigits).clamp(0, 10);
+    String s = v.toStringAsFixed(decDigits);
     return s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
   }
 
