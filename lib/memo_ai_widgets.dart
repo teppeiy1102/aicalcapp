@@ -296,7 +296,6 @@ class _AiCountPageState extends State<_AiCountPage> {
     if (_imageBytes == null) return;
 
     final canUse = await RevenueCatService.consumeUse();
-    //final canUse = true; // --- IGNORE ---
     if (!canUse) {
       if (mounted) {
         await showDialog(
@@ -372,10 +371,52 @@ class _AiCountPageState extends State<_AiCountPage> {
     });
 
     try {
-      final prompt = 'この画像に写っている主要なオブジェクト（物体）の名称を、カンマ区切りでリストアップしてください。不要な説明や箇条書きの記号は省き、必ず名称のみをカンマ区切りで出力してください。';
+      // AIクレジットを消費してから検出を行う
+      final canUse = await RevenueCatService.consumeUse();
+      if (!canUse) {
+        if (!mounted) return;
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1E2E),
+            title: const Text(
+              'AI機能は購入が必要です',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            content: const Text(
+              'AI機能を使用するには、AI利用回数のチャージが必要です。ストアページで購入してください。',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purpleAccent,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StorePage()),
+                  );
+                },
+                child: const Text('ストアへ'),
+              ),
+            ],
+          ),
+        );
+        if (mounted) setState(() => _isCounting = false);
+        return;
+      }
+
+      final prompt = 'この画像に写っている主要なオブジェクト（物体）の名称を、カンマ区切りでリストアップしてください。できるだけ多くの対象を列挙し、不要な説明や箇条書きの記号は省き、必ず名称のみを日本語でカンマ区切りで出力してください。';
       final resultText = await GemmaAi().queryWithImage(
-        prompt, 
-        _imageBytes!, 
+        prompt,
+        _imageBytes!,
         systemPrompt: "You are an object detector.",
       );
       if (!mounted) return;
@@ -425,9 +466,9 @@ class _AiCountPageState extends State<_AiCountPage> {
       );
 
       if (selected != null && mounted) {
+        // 選択されたアイテムはテキストフィールドに入力するだけ
         _labelCtrl.text = selected;
-        // 自動でカウント開始
-        await _runLlmCount();
+        setState(() => _isCounting = false);
       } else {
         if (mounted) setState(() => _isCounting = false);
       }
@@ -534,8 +575,6 @@ class _AiCountPageState extends State<_AiCountPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.image_search, color: Colors.white30, size: 150),
-            const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.all(30.0),
               child: const Text(
@@ -644,7 +683,7 @@ class _AiCountPageState extends State<_AiCountPage> {
             right: 0,
             child: IconButton(
               style: IconButton.styleFrom(
-                backgroundColor: Colors.teal,
+                backgroundColor: Colors.teal.withOpacity(0.8),
                 shape: const CircleBorder(),
                 padding: const EdgeInsets.all(8),
               ),
@@ -664,14 +703,18 @@ class _AiCountPageState extends State<_AiCountPage> {
             left: 0,
             right: 0,
             child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
+              child: SizedBox(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+  padding: const EdgeInsets.symmetric(
                   horizontal: 32,
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.teal.withOpacity(0.92),
-                  borderRadius: BorderRadius.circular(40),
+                  color: Colors.teal.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.5),
@@ -679,16 +722,16 @@ class _AiCountPageState extends State<_AiCountPage> {
                     ),
                   ],
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${_lastResult!.count}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 46,
-                        fontWeight: FontWeight.bold,
-                        height: 1,
+
+
+                      child: Text(
+                        '${_lastResult!.count}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 46,
+                          fontWeight: FontWeight.bold,
+                          height: 1,
+                        ),
                       ),
                     ),
                     SizedBox(height: 8),
@@ -711,7 +754,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                         size: 18,
                       ),
                       label: Text(
-                        '${_lastResult!.count} を反映',
+                        '電卓に反映',
                         style: const TextStyle(
                           color: Colors.teal,
                           fontWeight: FontWeight.bold,
@@ -760,11 +803,11 @@ class _AiCountPageState extends State<_AiCountPage> {
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.refresh, color: Colors.white70, size: 14),
+                  Icon(Icons.refresh, color: Colors.white, size: 14),
                   SizedBox(width: 4),
                   Text(
                     '写真を変更',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -886,7 +929,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                 ),
                 icon: const Icon(Icons.list_alt, size: 20),
                 label: const Text(
-                  '画像を検知しカウントするものをリストアップ',
+                  '画像からカウントするものをリストアップ',
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                 ),
               ),

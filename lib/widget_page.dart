@@ -1812,7 +1812,12 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+  const Padding(
+                padding: EdgeInsets.only(right: 0.0),
+                child: ProBadge(),
+              ),
               IconButton(
+                padding: EdgeInsets.zero,
                 icon: const Icon(Icons.link_rounded, size: 22),
                 onPressed: () => ProGuard.checkAndRun(
                   context,
@@ -1820,10 +1825,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                 ),
                 tooltip: '値をリンク',
               ),
-              const Padding(
-                padding: EdgeInsets.only(right: 8.0),
-                child: ProBadge(),
-              ),
+            
             ],
           ),
           IconButton(
@@ -2212,6 +2214,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                 'シート間のリンク関係をグラフで可視化します',
                 style: TextStyle(color: Colors.white38, fontSize: 12),
               ),
+
               onTap: () {
                 Navigator.pop(ctx);
                 Navigator.push(

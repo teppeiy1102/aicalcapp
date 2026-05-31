@@ -99,7 +99,7 @@ class RevenueCatService {
     } catch (e) {
       debugPrint('Error fetching offering metadata: $e');
     }
-    return 50; // フォールバック値
+    return 0; // フォールバック値
   }
 
   /// プロ版（買い切り）が有効かどうか判定する

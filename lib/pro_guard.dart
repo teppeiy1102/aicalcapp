@@ -44,7 +44,7 @@ class ProBadge extends StatelessWidget {
   const ProBadge({
     super.key,
     this.fontSize = 10,
-    this.padding = const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+    this.padding = const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
   });
 
   @override

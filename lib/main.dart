@@ -812,8 +812,6 @@ Example output:
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    SizedBox(width: 8),
-                    ProBadge(),
                   ],
                 ),
                 subtitle: Column(
@@ -826,13 +824,10 @@ Example output:
                         fontSize: 12,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    const ProRequiredLabel(text: 'プロ版が必要です'),
                   ],
                 ),
                 onTap: () {
                   Navigator.pop(ctx);
-                  ProGuard.checkAndRun(context, () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -852,7 +847,6 @@ Example output:
                         ),
                       ),
                     );
-                  });
                 },
               ),
               const Divider(color: Colors.white10, indent: 16, endIndent: 16),
