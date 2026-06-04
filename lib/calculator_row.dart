@@ -381,7 +381,9 @@ class _CalculatorRow extends StatelessWidget {
       return TextEditingController(text: (e as Map)['unit'] as String? ?? '');
     }).toList();
     final suggestedUnits = _collectUsedUnits();
+    var _unitsExpanded = false;
 
+    var _valSelected = false;
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -390,7 +392,19 @@ class _CalculatorRow extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => Padding(
+        builder: (context, setDialogState) { 
+
+  if (!_valSelected) {
+            _valSelected = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              nameCtrl.selection = TextSelection(
+                baseOffset: 0,
+                extentOffset: nameCtrl.text.length,
+              );
+            });
+          }
+          
+          return Padding(
           padding: EdgeInsets.only(
             left: 24,
             right: 24,
@@ -431,47 +445,114 @@ class _CalculatorRow extends StatelessWidget {
                       _buildFieldLabel('計算の名前'),
                       TextField(
                         controller: nameCtrl,
+                        autofocus: true,
                         style: const TextStyle(color: Colors.white),
                         decoration: const InputDecoration(
                           hintText: '例: 消費税計算',
-                          hintStyle: TextStyle(color: Colors.white24),
+                          hintStyle: TextStyle(color: Colors.grey),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(16)),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      _buildUnitSection(
-                        context,
-                        '項1の単位',
-                        unit1Ctrl,
-                        setDialogState,
-                        suggestedUnits: suggestedUnits,
                       ),
                       const SizedBox(height: 16),
-                      _buildUnitSection(
-                        context,
-                        '項2の単位',
-                        unit2Ctrl,
-                        setDialogState,
-                        suggestedUnits: suggestedUnits,
-                      ),
-                      const SizedBox(height: 16),
-                      for (int i = 0; i < others.length; i++) ...[
-                        _buildUnitSection(
-                          context,
-                          '項${i + 3}の単位',
-                          othersUnitsCtrls[i],
-                          setDialogState,
-                          suggestedUnits: suggestedUnits,
+                      InkWell(
+                        onTap: () => setDialogState(
+                          () => _unitsExpanded = !_unitsExpanded,
                         ),
-                        const SizedBox(height: 16),
-                      ],
-                      _buildUnitSection(
-                        context,
-                        '答えの単位',
-                        unitResCtrl,
-                        setDialogState,
-                        suggestedUnits: suggestedUnits,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.1),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.straighten_outlined,
+                                size: 16,
+                                color: Colors.white54,
+                              ),
+                              const SizedBox(width: 8),
+                              const Expanded(
+                                child: Text(
+                                  '単位の設定',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                _unitsExpanded
+                                    ? Icons.expand_less
+                                    : Icons.expand_more,
+                                color: Colors.white54,
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 24),
+                      Container(
+                        constraints: BoxConstraints(minHeight:_unitsExpanded ? MediaQuery.of(context).size.height*0.3 : 0),
+                        height: _unitsExpanded ? 1 : 0,
+                        margin: const EdgeInsets.only(top: 8, bottom: 12),
+                        //color: Colors.white.withOpacity(0.1),
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: [
+                                                if (_unitsExpanded) ...[
+                          const SizedBox(height: 16),
+                          _buildUnitSection(
+                            context,
+                            '項1の単位',
+                            unit1Ctrl,
+                            setDialogState,
+                            suggestedUnits: suggestedUnits,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildUnitSection(
+                            context,
+                            '項2の単位',
+                            unit2Ctrl,
+                            setDialogState,
+                            suggestedUnits: suggestedUnits,
+                          ),
+                          const SizedBox(height: 16),
+                          for (int i = 0; i < others.length; i++) ...[
+                            _buildUnitSection(
+                              context,
+                              '項${i + 3}の単位',
+                              othersUnitsCtrls[i],
+                              setDialogState,
+                              suggestedUnits: suggestedUnits,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          _buildUnitSection(
+                            context,
+                            '答えの単位',
+                            unitResCtrl,
+                            setDialogState,
+                            suggestedUnits: suggestedUnits,
+                          ),
+                                                ],
+                           
+                          
+                          
+                            ],
+                          ),
+                        ),
+                      ),
+                     const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -518,7 +599,8 @@ class _CalculatorRow extends StatelessWidget {
               ),
             ],
           ),
-        ),
+        );
+  },
       ),
     );
   }

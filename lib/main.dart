@@ -1796,33 +1796,7 @@ Example output:
                             bottom: 0,
                           ),
                           centerTitle: false,
-                          title: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Spacer(flex: 4),
-                              const Text(
-                                'Genba Calc',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              Text(
-                                '現場を支える、次世代の電卓',
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.35),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.2,
-                                ),
-                              ),
-                              Spacer(flex: 1),
-                            ],
-                          ),
+                          title: _HomeLogoTitle(),
                         ),
                 ),
                 if (_configs.isEmpty)
@@ -1953,6 +1927,106 @@ Example output:
           );
         },
       ),
+    );
+  }
+}
+
+// ── ホーム画面ロゴ（Pro対応グラデーション） ──────────────────────────────────────
+class _HomeLogoTitle extends StatefulWidget {
+  const _HomeLogoTitle();
+
+  @override
+  State<_HomeLogoTitle> createState() => _HomeLogoTitleState();
+}
+
+class _HomeLogoTitleState extends State<_HomeLogoTitle> {
+  bool _isPro = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPro();
+  }
+
+  Future<void> _checkPro() async {
+    final isPro = await RevenueCatService.isProActive();
+    if (mounted) setState(() => _isPro = isPro);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Spacer(flex: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ShaderMask(
+              shaderCallback: (bounds) => const LinearGradient(
+                colors: [Color(0xFF5E81FF), Color(0xFFB08FFF), Color(0xFF82C8FF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ).createShader(bounds),
+              child: const Text(
+                'Genba Calc',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+            if (
+             true 
+             // _isPro
+              ) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color.fromARGB(255, 255, 185, 94), Color.fromARGB(255, 255, 122, 246)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF5E81FF).withOpacity(0.5),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Text(
+                  'Pro',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        Text(
+          '現場を支える、次世代の電卓',
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.35),
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.2,
+          ),
+        ),
+        const Spacer(flex: 1),
+      ],
     );
   }
 }
@@ -2844,6 +2918,9 @@ class _SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<_SettingsPage> {
   late List<Map<String, dynamic>> _constants;
   late bool _vibrateOnTap;
+  bool _isPro = false;
+  int _remainingUses = 0;
+  bool _isBillingLoading = false;
 
   static const _builtinConstants = [
     {'label': 'π (円周率)', 'symbol': 'π', 'value': 3.14159265358979},
@@ -2858,6 +2935,18 @@ class _SettingsPageState extends State<_SettingsPage> {
     super.initState();
     _constants = List<Map<String, dynamic>>.from(widget.userConstants);
     _vibrateOnTap = AppSettings.instance.vibrateOnTap;
+    _loadBillingStatus();
+  }
+
+  Future<void> _loadBillingStatus() async {
+    final isPro = await RevenueCatService.isProActive();
+    final uses = await RevenueCatService.getRemainingUses();
+    if (mounted) {
+      setState(() {
+        _isPro = isPro;
+        _remainingUses = uses;
+      });
+    }
   }
 
   String _fmt(double v) {
@@ -3065,6 +3154,237 @@ class _SettingsPageState extends State<_SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
         children: [
+    // ── 課金・購入 ───────────────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+            child: Text(
+              '課金・購入',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.45),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              children: [
+                // ── プロ版 ──
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 6,
+                  ),
+                  leading: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF5E81FF), Color(0xFF9E7AFF)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.workspace_premium_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                  title: const Text(
+                    'プロ版',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    _isPro ? 'すべての機能が利用可能です' : 'すべての機能を永久にアンロック（買い切り）',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 12,
+                    ),
+                  ),
+                  trailing: _isBillingLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Color(0xFF5E81FF),
+                          ),
+                        )
+                      : _isPro
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF5E81FF), Color(0xFF9E7AFF)],
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            '購入済み ✓',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        )
+                      : GestureDetector(
+                          onTap: () async {
+                            final result = await Navigator.push<bool>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const StorePage(isProContext: true),
+                              ),
+                            );
+                            if (result == true && mounted) {
+                              setState(() => _isBillingLoading = true);
+                              await _loadBillingStatus();
+                              setState(() => _isBillingLoading = false);
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF5E81FF), Color(0xFF9E7AFF)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF5E81FF).withOpacity(0.4),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Text(
+                              '購入する →',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+                const Divider(color: Colors.white10, height: 1, indent: 16, endIndent: 16),
+                // ── AIクレジット ──
+                ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 6,
+                  ),
+                  leading: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF00C9A7), Color(0xFF0288D1)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.bolt_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                  title: const Text(
+                    'AIクレジット',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '残り $_remainingUses 回 ／ 何度でもチャージ可能',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 12,
+                    ),
+                  ),
+                  trailing: GestureDetector(
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const StorePage(isProContext: false),
+                        ),
+                      );
+                      if (mounted) {
+                        await _loadBillingStatus();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF00C9A7), Color(0xFF0288D1)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00C9A7).withOpacity(0.4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Text(
+                        'チャージ →',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              'AIクレジットは累積されます。有効期限はありません。',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.3),
+                fontSize: 11,
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
           // ── 組み込み定数 ────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
@@ -3334,6 +3654,11 @@ class _SettingsPageState extends State<_SettingsPage> {
               },
             ),
           ),
+
+          const SizedBox(height: 32),
+
+      
+          const SizedBox(height: 32),
         ],
       ),
     );
