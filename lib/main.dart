@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:home_widget/home_widget.dart';
 import 'widget_page.dart';
 import 'link_graph_page.dart';
 import 'revenuecat_service.dart';
@@ -16,6 +17,7 @@ import 'store_page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+  HomeWidget.setAppGroupId('group.com.yama.genbacalc');
   await AppSettings.instance.load();
   await RevenueCatService.init();
   runApp(const MyApp());
@@ -1748,7 +1750,7 @@ Example output:
                                 style: TextStyle(
                                   color: _selectedForMerge.length >= 2
                                       ? const Color(0xFF5E81FF)
-                                      : Colors.white38,
+                                      : Colors.white,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -1763,12 +1765,12 @@ Example output:
                               padding: const EdgeInsets.only(right: 4),
                               child: Text(
                                 _selectedForQrShare.isEmpty
-                                    ? '共有するシートを選択'
+                                    ? '共有するシートを選択してください'
                                     : '${_selectedForQrShare.length}件選択中',
                                 style: TextStyle(
                                   color: _selectedForQrShare.isNotEmpty
                                       ? Colors.purpleAccent
-                                      : Colors.white38,
+                                      : Colors.white,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -1981,15 +1983,12 @@ class _HomeLogoTitleState extends State<_HomeLogoTitle> {
                 ),
               ),
             ),
-            if (
-             true 
-             // _isPro
-              ) ...[
+            if (_isPro) ...[
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                   gradient: const LinearGradient(
                     colors: [Color.fromARGB(255, 255, 185, 94), Color.fromARGB(255, 255, 122, 246)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -2889,6 +2888,7 @@ class _QrShareActionBar extends StatelessWidget {
                       : '1件以上選択してください',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: canShare ? Colors.white : Colors.white38,
                     fontSize: 14,
@@ -3229,7 +3229,7 @@ class _SettingsPageState extends State<_SettingsPage> {
                           ),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [Color(0xFF5E81FF), Color(0xFF9E7AFF)],
+                              colors: [Color.fromARGB(255, 255, 94, 94), Color(0xFF9E7AFF)],
                             ),
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -3385,11 +3385,11 @@ class _SettingsPageState extends State<_SettingsPage> {
             ),
           ),
           const SizedBox(height: 32),
-          // ── 組み込み定数 ────────────────────────────────────────────────────
+   // ── 操作設定 ─────────────────────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
             child: Text(
-              '組み込み定数',
+              '操作設定',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.45),
                 fontSize: 12,
@@ -3403,64 +3403,46 @@ class _SettingsPageState extends State<_SettingsPage> {
               color: Colors.black,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Column(
-              children: _builtinConstants.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final c = entry.value;
-                final isLast = idx == _builtinConstants.length - 1;
-                return Column(
-                  children: [
-                    ListTile(
-                      leading: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.amberAccent.withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Center(
-                          child: Text(
-                            c['symbol'] as String,
-                            style: const TextStyle(
-                              color: Colors.amberAccent,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'ZenOldMincho',
-                            ),
-                          ),
-                        ),
-                      ),
-                      title: Text(
-                        c['label'] as String,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
-                      ),
-                      trailing: Text(
-                        _fmt((c['value'] as num).toDouble()),
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    if (!isLast)
-                      const Divider(
-                        color: Colors.white10,
-                        height: 1,
-                        indent: 16,
-                        endIndent: 16,
-                      ),
-                  ],
-                );
-              }).toList(),
+            child: SwitchListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 4,
+              ),
+              title: const Text(
+                'ボタン振動',
+                style: TextStyle(color: Colors.white, fontSize: 14),
+              ),
+              subtitle: Text(
+                '電卓ボタンをタップしたときにバイブレーションでフィードバック',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.4),
+                  fontSize: 12,
+                ),
+              ),
+              secondary: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.blueAccent.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.vibration_rounded,
+                  color: Colors.blueAccent,
+                  size: 18,
+                ),
+              ),
+              value: _vibrateOnTap,
+              activeColor: Colors.blueAccent,
+              onChanged: (val) {
+                setState(() => _vibrateOnTap = val);
+                AppSettings.instance.setVibrateOnTap(val);
+              },
             ),
           ),
 
-          const SizedBox(height: 24),
-
-          // ── ユーザー定義定数 ─────────────────────────────────────────────────
+          const SizedBox(height: 32),
+   // ── ユーザー定義定数 ─────────────────────────────────────────────────
           Row(
             children: [
               Expanded(
@@ -3598,12 +3580,11 @@ class _SettingsPageState extends State<_SettingsPage> {
           ),
 
           const SizedBox(height: 32),
-
-          // ── 操作設定 ─────────────────────────────────────────────────────────────────
+          // ── 組み込み定数 ────────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
             child: Text(
-              '操作設定',
+              '組み込み定数',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.45),
                 fontSize: 12,
@@ -3617,48 +3598,70 @@ class _SettingsPageState extends State<_SettingsPage> {
               color: Colors.black,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: SwitchListTile(
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 4,
-              ),
-              title: const Text(
-                'ボタン振動',
-                style: TextStyle(color: Colors.white, fontSize: 14),
-              ),
-              subtitle: Text(
-                '電卓ボタンをタップしたときにバイブレーションでフィードバック',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
-                  fontSize: 12,
-                ),
-              ),
-              secondary: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: Colors.blueAccent.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.vibration_rounded,
-                  color: Colors.blueAccent,
-                  size: 18,
-                ),
-              ),
-              value: _vibrateOnTap,
-              activeColor: Colors.blueAccent,
-              onChanged: (val) {
-                setState(() => _vibrateOnTap = val);
-                AppSettings.instance.setVibrateOnTap(val);
-              },
+            child: Column(
+              children: _builtinConstants.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final c = entry.value;
+                final isLast = idx == _builtinConstants.length - 1;
+                return Column(
+                  children: [
+                    ListTile(
+                      leading: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.amberAccent.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: Text(
+                            c['symbol'] as String,
+                            style: const TextStyle(
+                              color: Colors.amberAccent,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'ZenOldMincho',
+                            ),
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        c['label'] as String,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                      trailing: Text(
+                        _fmt((c['value'] as num).toDouble()),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    if (!isLast)
+                      const Divider(
+                        color: Colors.white10,
+                        height: 1,
+                        indent: 16,
+                        endIndent: 16,
+                      ),
+                  ],
+                );
+              }).toList(),
             ),
           ),
 
+          const SizedBox(height: 24),
+
+       
           const SizedBox(height: 32),
 
+       
+
+
       
-          const SizedBox(height: 32),
         ],
       ),
     );
@@ -3803,7 +3806,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
   }
 
   /// QRコードを1枚検出したときの処理
-  void _onDetected(String rawValue) {
+  Future<void> _onDetected(String rawValue) async {
     if (_done) return;
 
     Map<String, dynamic> decoded;
@@ -3830,11 +3833,20 @@ class _QrScannerPageState extends State<_QrScannerPage>
       final result = widget.onScanned(rawValue);
       if (mounted) {
         if (result != null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('「$result」を取り込みました'),
-            backgroundColor: const Color(0xFF1A3A2A),
-            duration: const Duration(seconds: 2),
-          ));
+          await showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: const Color(0xFF1A2A1A),
+              title: const Text('取り込み完了', style: TextStyle(color: Colors.white)),
+              content: Text('「$result」を取り込みました', style: const TextStyle(color: Colors.white70)),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('OK', style: TextStyle(color: Color(0xFF5E81FF))),
+                ),
+              ],
+            ),
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('有効なシートQRコードではありません'),
@@ -3927,11 +3939,20 @@ class _QrScannerPageState extends State<_QrScannerPage>
         final result = widget.onScanned(assembled);
         if (mounted) {
           if (result != null) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('「$result」を取り込みました'),
-              backgroundColor: const Color(0xFF1A3A2A),
-              duration: const Duration(seconds: 2),
-            ));
+            await showDialog<void>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: const Color(0xFF1A2A1A),
+                title: const Text('取り込み完了', style: TextStyle(color: Colors.white)),
+                content: Text('「$result」を取り込みました', style: const TextStyle(color: Colors.white70)),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('OK', style: TextStyle(color: Color(0xFF5E81FF))),
+                  ),
+                ],
+              ),
+            );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
               content: Text('有効なシートQRコードではありません'),

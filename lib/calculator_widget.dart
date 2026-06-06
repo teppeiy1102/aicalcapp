@@ -211,7 +211,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   void _addItemFromMap(Map<String, dynamic> item) {
     final newItems = List<Map<String, dynamic>>.from(_items);
     final newCalcIdx = newItems.length;
-    newItems.add(item);
+    final Map<String, dynamic> newItem = Map<String, dynamic>.from(item);
+    if (newItem['name'] == null ||
+        (newItem['name'] as String).isEmpty ||
+        newItem['name'] == '計算') {
+      newItem['name'] = '計算 ${newItems.length + 1}';
+    }
+    newItems.add(newItem);
     final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
     order.add({'type': 'calc', 'calcIdx': newCalcIdx});
     widget.onUpdate({
@@ -227,7 +233,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
     for (final item in items) {
       final newCalcIdx = newItems.length;
-      newItems.add(item);
+      final Map<String, dynamic> newItem = Map<String, dynamic>.from(item);
+      if (newItem['name'] == null ||
+          (newItem['name'] as String).isEmpty ||
+          newItem['name'] == '計算') {
+        newItem['name'] = '計算 ${newItems.length + 1}';
+      }
+      newItems.add(newItem);
       order.add({'type': 'calc', 'calcIdx': newCalcIdx});
     }
     widget.onUpdate({
@@ -415,6 +427,32 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           onPickLinkSource: () => _showLinkSourcePicker(excludeRowIdx: null),
           getSourceRowName: (source) {
             if (source == null) return 'リンク';
+            if (source['type'] == 'constant') {
+              final ci = source['constIdx'] as int? ?? 0;
+              final consts = _constants;
+              final name = (ci >= 0 && ci < consts.length)
+                  ? consts[ci]['name'] as String? ?? '定数'
+                  : '定数';
+              final value = (ci >= 0 && ci < consts.length)
+                  ? (consts[ci]['value'] as num? ?? 0.0).toDouble()
+                  : 0.0;
+              final valStr = (value == value.truncateToDouble() && value.abs() < 1e12)
+                  ? _addCommas(value.toStringAsFixed(0))
+                  : value.toString();
+              return '$name: $valStr';
+            }
+            if (source['type'] == 'globalConstant') {
+              final name = source['constName'] as String? ?? '定数';
+              final idx = source['constIdx'] as int? ?? 0;
+              final consts = widget.globalConstants;
+              final value = (idx >= 0 && idx < consts.length)
+                  ? (consts[idx]['value'] as num? ?? 0.0).toDouble()
+                  : 0.0;
+              final valStr = (value == value.truncateToDouble() && value.abs() < 1e12)
+                  ? _addCommas(value.toStringAsFixed(0))
+                  : value.toString();
+              return '$name: $valStr';
+            }
             final sheetId = source['sheetId'] as String?;
             final rowIdx = source['rowIdx'] as int? ?? 0;
             final target = source['target'] as String? ?? 'result';
@@ -1823,6 +1861,24 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         }
         return fallback;
       }
+      if (src['type'] == 'globalConstant') {
+        final name = src['constName'] as String?;
+        final consts = widget.globalConstants;
+        final match = name != null
+            ? consts.firstWhere(
+                (c) => c['name'] == name,
+                orElse: () => <String, dynamic>{},
+              )
+            : <String, dynamic>{};
+        if (match.isNotEmpty) {
+          return (match['value'] as num? ?? 0.0).toDouble();
+        }
+        final ci = src['constIdx'] as int? ?? 0;
+        if (ci >= 0 && ci < consts.length) {
+          return (consts[ci]['value'] as num? ?? 0.0).toDouble();
+        }
+        return fallback;
+      }
       final sRowIdx = src['rowIdx'] as int? ?? 0;
       final sTarget = src['target'] as String? ?? 'result';
       if (sRowIdx < 0 || sRowIdx >= srcItems.length) return fallback;
@@ -2012,6 +2068,25 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
         final ci = source['constIdx'] as int? ?? 0;
         if (ci >= 0 && ci < constants.length) {
           return (constants[ci]['value'] as num? ?? 0.0).toDouble();
+        }
+        return fallback;
+      }
+      if (source['type'] == 'globalConstant') {
+        final name = source['constName'] as String?;
+        final consts = widget.globalConstants;
+        final match = name != null
+            ? consts.firstWhere(
+                (c) => c['name'] == name,
+                orElse: () => <String, dynamic>{},
+              )
+            : <String, dynamic>{};
+        if (match.isNotEmpty) {
+          return (match['value'] as num? ?? 0.0).toDouble();
+        }
+        // constIdx フォールバック
+        final ci = source['constIdx'] as int? ?? 0;
+        if (ci >= 0 && ci < consts.length) {
+          return (consts[ci]['value'] as num? ?? 0.0).toDouble();
         }
         return fallback;
       }
@@ -2858,6 +2933,27 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                               }
                               return fallback;
                             }
+                            // グローバル定数リンク
+                            if (source['type'] == 'globalConstant') {
+                              final name = source['constName'] as String?;
+                              final consts = widget.globalConstants;
+                              final match = name != null
+                                  ? consts.firstWhere(
+                                      (c) => c['name'] == name,
+                                      orElse: () => <String, dynamic>{},
+                                    )
+                                  : <String, dynamic>{};
+                              if (match.isNotEmpty) {
+                                return (match['value'] as num? ?? 0.0)
+                                    .toDouble();
+                              }
+                              final ci = source['constIdx'] as int? ?? 0;
+                              if (ci >= 0 && ci < consts.length) {
+                                return (consts[ci]['value'] as num? ?? 0.0)
+                                    .toDouble();
+                              }
+                              return fallback;
+                            }
                             // 論理式リンク
                             if (source['type'] == 'logic') {
                               final logicId = source['logicId'] as String?;
@@ -3328,6 +3424,65 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                 ),
                                             getSourceRowName: (source) {
                                               if (source == null) return 'リンク';
+                                              if (source['type'] ==
+                                                  'constant') {
+                                                final ci =
+                                                    source['constIdx'] as int? ??
+                                                    0;
+                                                final consts = _constants;
+                                                final name = (ci >= 0 &&
+                                                        ci < consts.length)
+                                                    ? consts[ci]['name']
+                                                            as String? ??
+                                                        '定数'
+                                                    : '定数';
+                                                final value = (ci >= 0 &&
+                                                        ci < consts.length)
+                                                    ? (consts[ci]['value']
+                                                                as num? ??
+                                                            0.0)
+                                                        .toDouble()
+                                                    : 0.0;
+                                                final valStr = (value ==
+                                                            value
+                                                                .truncateToDouble() &&
+                                                        value.abs() < 1e12)
+                                                    ? _addCommas(
+                                                        value
+                                                            .toStringAsFixed(0),
+                                                      )
+                                                    : value.toString();
+                                                return '$name: $valStr';
+                                              }
+                                              if (source['type'] ==
+                                                  'globalConstant') {
+                                                final name =
+                                                    source['constName']
+                                                        as String? ??
+                                                    '定数';
+                                                final idx =
+                                                    source['constIdx'] as int? ??
+                                                    0;
+                                                final consts =
+                                                    widget.globalConstants;
+                                                final value = (idx >= 0 &&
+                                                        idx < consts.length)
+                                                    ? (consts[idx]['value']
+                                                                as num? ??
+                                                            0.0)
+                                                        .toDouble()
+                                                    : 0.0;
+                                                final valStr = (value ==
+                                                            value
+                                                                .truncateToDouble() &&
+                                                        value.abs() < 1e12)
+                                                    ? _addCommas(
+                                                        value
+                                                            .toStringAsFixed(0),
+                                                      )
+                                                    : value.toString();
+                                                return '$name: $valStr';
+                                              }
                                               final sheetId =
                                                   source['sheetId'] as String?;
                                               final rowIdx =

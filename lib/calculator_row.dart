@@ -2031,7 +2031,7 @@ class _CalculatorRow extends StatelessWidget {
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                'リンク元に設定',
+                                                'リンク元にする',
                                                 style: TextStyle(fontSize: 12),
                                               ),
                                               SizedBox(width: 4),
@@ -2072,7 +2072,7 @@ class _CalculatorRow extends StatelessWidget {
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                'リンク先に設定',
+                                                'リンク先にする',
                                                 style: TextStyle(fontSize: 12),
                                               ),
                                               SizedBox(width: 4),
@@ -3411,7 +3411,7 @@ class _CalculatorRow extends StatelessWidget {
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                'リンク元に設定',
+                                                'リンク元にする',
                                                 style: TextStyle(fontSize: 12),
                                               ),
                                               SizedBox(width: 4),
@@ -3452,7 +3452,7 @@ class _CalculatorRow extends StatelessWidget {
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                'リンク先に設定',
+                                                'リンク先にする',
                                                 style: TextStyle(fontSize: 12),
                                               ),
                                               SizedBox(width: 4),
@@ -4843,7 +4843,7 @@ class _CalculatorRow extends StatelessWidget {
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                'リンク元に設定',
+                                                'リンク元にする',
                                                 style: TextStyle(fontSize: 12),
                                               ),
                                               SizedBox(width: 4),
@@ -4884,7 +4884,7 @@ class _CalculatorRow extends StatelessWidget {
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                'リンク先に設定',
+                                                'リンク先にする',
                                                 style: TextStyle(fontSize: 12),
                                               ),
                                               SizedBox(width: 4),
@@ -5373,6 +5373,7 @@ class _CalculatorRow extends StatelessWidget {
                         icon: const Icon(
                           Icons.calculate_outlined,
                           color: Colors.black,
+                          size: 30,
                         ),
                         tooltip: '電卓',
                         onPressed: () => _showMiniCalcSheet(context, (v) {
@@ -5683,7 +5684,7 @@ class _CalculatorRow extends StatelessWidget {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      'リンク元に設定',
+                                      'リンク元にする',
                                       style: TextStyle(fontSize: 12),
                                     ),
                                     SizedBox(width: 4),

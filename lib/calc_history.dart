@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:home_widget/home_widget.dart';
 
 class CalcHistoryEntry {
   final String expression;
@@ -79,6 +80,17 @@ class CalcHistoryManager {
     }
     changeNotifier.value++;
     _save();
+    _updateWidget(expression, result);
+  }
+
+  void _updateWidget(String expression, String result) {
+    HomeWidget.saveWidgetData<String>('last_expression', expression);
+    HomeWidget.saveWidgetData<String>('last_result', result);
+    HomeWidget.updateWidget(
+      iOSName: 'AiCalcWidget',
+      androidName: 'CalcWidgetProvider',
+      qualifiedAndroidName: 'com.yama.genbacalc.CalcWidgetProvider',
+    );
   }
 
   Future<void> clearAll() async {

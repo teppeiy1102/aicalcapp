@@ -209,42 +209,21 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
       return unit.isNotEmpty ? '$valStr $unit' : valStr;
     }
 
-    showDialog<void>(
-      context: context,
-      barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.6),
+    Navigator.push<void>(context, MaterialPageRoute<void>(
+      fullscreenDialog: true,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDs) => Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: EdgeInsets.zero,
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-
-            child: Container(
-              width: double.infinity,
-              height: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFF161622).withOpacity(0.85),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.12),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.4),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
+        builder: (context, setDs) => Scaffold(
+          backgroundColor: const Color(0xFF161622),
+          body: Container(
+            width: double.infinity,
+            height: double.infinity,
+            child: Column(
                 mainAxisSize: MainAxisSize.max,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // ── ヘッダー ──────────────────────────────────────────
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(24, 35, 16, 2),
                     child: Row(
                       children: [
                         Container(
@@ -271,11 +250,6 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                             ),
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white54),
-                          splashRadius: 20,
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
                       ],
                     ),
                   ),
@@ -285,7 +259,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                       children: const [
                         Icon(
                           Icons.upload_rounded,
-                          size: 20,
+                          size: 40,
                           color: Color.fromARGB(255, 38, 95, 218),
                         ),
                         SizedBox(width: 6),
@@ -293,7 +267,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                           'リンク元',
                           style: TextStyle(
                             color: Color.fromARGB(255, 38, 95, 218),
-                            fontSize: 13,
+                            fontSize: 23,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -1745,7 +1719,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                       children: [
                         const Icon(
                           Icons.download_rounded,
-                          size: 14,
+                          size: 40,
                           color: Color(0xFF26C6DA),
                         ),
                         const SizedBox(width: 6),
@@ -1753,7 +1727,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                           'リンク先',
                           style: TextStyle(
                             color: Color(0xFF26C6DA),
-                            fontSize: 13,
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -2752,10 +2726,9 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                 ],
               ),
             ),
-          ),
         ),
       ),
-    );
+    ));
   }
 
   /// 現在シートのアイテムリストにリンク先を適用した新しいリストを返す（副作用なし）

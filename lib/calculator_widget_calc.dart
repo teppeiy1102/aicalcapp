@@ -240,8 +240,15 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
       };
     }
 
+    final newCalcIdx = newItems.length;
     newItems.add(newItem);
-    widget.onUpdate({...widget.config.data, 'items': newItems});
+    final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
+    order.add({'type': 'calc', 'calcIdx': newCalcIdx});
+    widget.onUpdate({
+      ...widget.config.data,
+      'items': newItems,
+      'displayOrder': order,
+    });
     // ignore: invalid_use_of_protected_member
     setState(() {
       _calcHasResult = false;

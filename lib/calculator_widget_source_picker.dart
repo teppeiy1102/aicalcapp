@@ -14,10 +14,12 @@ extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
       return widget.mergedSiblingIds.contains(c.id);
     }).toList();
 
-    int currentTab = 0; // 0=このシート, 1=開放された式, 2=結合シート
+    int currentTab = 0; // 0=このシート, 1=開放された式, 2=結合シート, 3=定数
     String? selectedSheetId;
     int? selectedRowIdx;
     String? selectedField;
+    int? selectedConstIdx; // 定数タブ用
+    bool selectedConstIsGlobal = false; // true=グローバル定数, false=シート定数
 
     return showDialog<Map<String, dynamic>?>(
       context: context,
@@ -343,6 +345,124 @@ extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
               );
             }
 
+            // 定数タブ: シート定数 + グローバル定数一覧
+            Widget buildConstantsTab() {
+              final localConsts = _constants;
+              final globalConsts = widget.globalConstants;
+              if (localConsts.isEmpty && globalConsts.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'リンク可能な定数がありません',
+                    style: TextStyle(color: Colors.white54),
+                  ),
+                );
+              }
+
+              Widget buildConstItem(
+                int i,
+                Map<String, dynamic> c,
+                bool isGlobal,
+              ) {
+                final name = c['name'] as String? ?? '定数 ${i + 1}';
+                final value = (c['value'] as num? ?? 0.0).toDouble();
+                final valStr =
+                    value == value.truncateToDouble() && value.abs() < 1e12
+                    ? value.toStringAsFixed(0)
+                    : value.toString();
+                final isSel =
+                    selectedConstIdx == i &&
+                    selectedConstIsGlobal == isGlobal;
+                return GestureDetector(
+                  onTap: () => setState(() {
+                    selectedConstIdx = i;
+                    selectedConstIsGlobal = isGlobal;
+                    selectedRowIdx = null;
+                    selectedField = null;
+                  }),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(isSel ? 0.1 : 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSel
+                            ? Colors.blueAccent
+                            : Colors.transparent,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          valStr,
+                          style: TextStyle(
+                            color: isSel ? Colors.white : Colors.white54,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return ListView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                children: [
+                  if (localConsts.isNotEmpty) ...
+                    [
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 6, top: 4),
+                        child: Text(
+                          'シート定数',
+                          style: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                      ...localConsts.asMap().entries.map(
+                        (e) => buildConstItem(e.key, e.value, false),
+                      ),
+                    ],
+                  if (globalConsts.isNotEmpty) ...
+                    [
+                      Padding(
+                        padding: EdgeInsets.only(
+                          bottom: 6,
+                          top: localConsts.isNotEmpty ? 12 : 4,
+                        ),
+                        child: const Text(
+                          'グローバル定数',
+                          style: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                      ...globalConsts.asMap().entries.map(
+                        (e) => buildConstItem(e.key, e.value, true),
+                      ),
+                    ],
+                ],
+              );
+            }
+
             return Dialog(
               insetPadding: const EdgeInsets.all(20),
               backgroundColor: const Color(0xFF161622),
@@ -364,45 +484,68 @@ extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
                         ),
                       ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        GestureDetector(
-                          onTap: () => setState(() => currentTab = 0),
-                          child: Text(
-                            'このシート',
-                            style: TextStyle(
-                              color: currentTab == 0
-                                  ? Colors.blueAccent
-                                  : Colors.white54,
-                            ),
-                          ),
-                        ),
-                        if (exposedSheets.isNotEmpty)
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          const SizedBox(width: 16),
                           GestureDetector(
-                            onTap: () => setState(() => currentTab = 1),
+                            onTap: () => setState(() => currentTab = 0),
                             child: Text(
-                              '開放された式',
+                              'このシート',
                               style: TextStyle(
-                                color: currentTab == 1
+                                color: currentTab == 0
                                     ? Colors.blueAccent
                                     : Colors.white54,
                               ),
                             ),
                           ),
-                        if (mergedSheets.isNotEmpty)
-                          GestureDetector(
-                            onTap: () => setState(() => currentTab = 2),
-                            child: Text(
-                              '結合シート',
-                              style: TextStyle(
-                                color: currentTab == 2
-                                    ? Colors.blueAccent
-                                    : Colors.white54,
+                          if (exposedSheets.isNotEmpty) ...[
+                            const SizedBox(width: 16),
+                            GestureDetector(
+                              onTap: () => setState(() => currentTab = 1),
+                              child: Text(
+                                '開放された式',
+                                style: TextStyle(
+                                  color: currentTab == 1
+                                      ? Colors.blueAccent
+                                      : Colors.white54,
+                                ),
                               ),
                             ),
-                          ),
-                      ],
+                          ],
+                          if (mergedSheets.isNotEmpty) ...[
+                            const SizedBox(width: 16),
+                            GestureDetector(
+                              onTap: () => setState(() => currentTab = 2),
+                              child: Text(
+                                '結合シート',
+                                style: TextStyle(
+                                  color: currentTab == 2
+                                      ? Colors.blueAccent
+                                      : Colors.white54,
+                                ),
+                              ),
+                            ),
+                          ],
+                          if (_constants.isNotEmpty || widget.globalConstants.isNotEmpty) ...[
+                            const SizedBox(width: 16),
+                            GestureDetector(
+                              onTap: () => setState(() => currentTab = 3),
+                              child: Text(
+                                '定数',
+                                style: TextStyle(
+                                  color: currentTab == 3
+                                      ? Colors.blueAccent
+                                      : Colors.white54,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(width: 16),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Expanded(
@@ -410,7 +553,9 @@ extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
                           ? buildCurrentSheet()
                           : currentTab == 1
                           ? buildSheetList(exposedSheets, false)
-                          : buildSheetList(mergedSheets, true),
+                          : currentTab == 2
+                          ? buildSheetList(mergedSheets, true)
+                          : buildConstantsTab(),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -426,16 +571,36 @@ extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
                           ),
                           const SizedBox(width: 8),
                           ElevatedButton(
-                            onPressed: selectedRowIdx == null
+                            onPressed: (selectedRowIdx == null &&
+                                    selectedConstIdx == null)
                                 ? null
                                 : () {
-                                    Navigator.of(context).pop({
-                                      'type': 'calc',
-                                      'sheetId':
-                                          selectedSheetId ?? widget.config.id,
-                                      'rowIdx': selectedRowIdx,
-                                      'target': selectedField,
-                                    });
+                                    if (selectedConstIdx != null) {
+                                      if (selectedConstIsGlobal) {
+                                        final name = widget
+                                                .globalConstants[selectedConstIdx!]
+                                                ['name'] as String? ??
+                                            '';
+                                        Navigator.of(context).pop({
+                                          'type': 'globalConstant',
+                                          'constName': name,
+                                          'constIdx': selectedConstIdx,
+                                        });
+                                      } else {
+                                        Navigator.of(context).pop({
+                                          'type': 'constant',
+                                          'constIdx': selectedConstIdx,
+                                        });
+                                      }
+                                    } else {
+                                      Navigator.of(context).pop({
+                                        'type': 'calc',
+                                        'sheetId':
+                                            selectedSheetId ?? widget.config.id,
+                                        'rowIdx': selectedRowIdx,
+                                        'target': selectedField,
+                                      });
+                                    }
                                   },
                             child: const Text('決定'),
                           ),

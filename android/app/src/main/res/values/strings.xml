@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GenbaCalc</string>
+    <string name="widget_description">最近の計算結果を表示し、アプリを素早く起動できます</string>
+</resources>

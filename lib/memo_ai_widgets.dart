@@ -1315,7 +1315,11 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.85),
+gradient: const LinearGradient(
+                                colors: [Color.fromARGB(255, 255, 207, 165), Color.fromARGB(255, 163, 182, 252)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                         border: Border.all(
                           color: Colors.white.withOpacity(0.45),
                           width: 0.8,
@@ -1325,10 +1329,15 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          const Icon(
-                            Icons.camera_alt_outlined,
-                            color: Colors.black,
-                            size: 16,
+                          Positioned(
+                            top: 14,
+                            bottom: 0,
+
+                            child: const Icon(
+                              Icons.camera_alt_outlined,
+                              color: Colors.black,
+                              size: 24,
+                            ),
                           ),
                           if (_isAiCounting)
                             const SizedBox(
@@ -1339,6 +1348,17 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                                 color: Colors.tealAccent,
                               ),
                             ),
+ Positioned(
+                                     top: -0,
+                                     child: Text(
+                                      'ai',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                                                       ),
+                                   )
                         ],
                       ),
                     ),
@@ -1362,7 +1382,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                     child: const Icon(
                       Icons.history_rounded,
                       color: Colors.white70,
-                      size: 16,
+                      size: 24,
                     ),
                   ),
                 ),

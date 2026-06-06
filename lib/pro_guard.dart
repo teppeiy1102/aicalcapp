@@ -49,37 +49,45 @@ class ProBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFFFF6B6B),
-            Color(0xFFFF9F43),
-            Color(0xFFFFD93D),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(6),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF6B6B).withOpacity(0.4),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+    return FutureBuilder<bool>(
+      future: RevenueCatService.isProActive(),
+      builder: (context, snapshot) {
+        if (snapshot.data == true) {
+          return const SizedBox.shrink();
+        }
+        return Container(
+          padding: padding,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFFFF6B6B),
+                Color(0xFFFF9F43),
+                Color(0xFFFFD93D),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF6B6B).withOpacity(0.4),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Text(
-        'PRO',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: fontSize,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.8,
-          height: 1.0,
-        ),
-      ),
+          child: Text(
+            'PRO',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: fontSize,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+              height: 1.0,
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -95,24 +103,32 @@ class ProRequiredLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ShaderMask(
-      shaderCallback: (bounds) => const LinearGradient(
-        colors: [
-          Color(0xFFFF6B6B),
-          Color(0xFFFF9F43),
-          Color(0xFFFFD93D),
-        ],
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-      ).createShader(bounds),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+    return FutureBuilder<bool>(
+      future: RevenueCatService.isProActive(),
+      builder: (context, snapshot) {
+        if (snapshot.data == true) {
+          return const SizedBox.shrink();
+        }
+        return ShaderMask(
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [
+              Color(0xFFFF6B6B),
+              Color(0xFFFF9F43),
+              Color(0xFFFFD93D),
+            ],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ).createShader(bounds),
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -37,7 +37,8 @@ class RevenueCatService {
   /// AIの使用回数を1消費する
   static Future<bool> consumeUse() async {
     final prefs = await SharedPreferences.getInstance();
-    int current = prefs.getInt('ai_remaining_uses') ?? 0;
+    int current = 10;
+    //int current = prefs.getInt('ai_remaining_uses') ?? 0;
     if (current > 0) {
       await prefs.setInt('ai_remaining_uses', current - 1);
       return true;
@@ -102,8 +103,14 @@ class RevenueCatService {
     return 0; // フォールバック値
   }
 
+  static bool? _cachedIsPro;
+
   /// プロ版（買い切り）が有効かどうか判定する
   static Future<bool> isProActive() async {
+    if (_cachedIsPro != null) {
+      return true;
+    //  return _cachedIsPro!;
+    }
     try {
       final customerInfo = await Purchases.getCustomerInfo();
       // 非消耗型の購入履歴（トランザクション）に該当IDがあるか
@@ -115,16 +122,30 @@ class RevenueCatService {
       final hasEntitlement = (customerInfo.entitlements.all['openpro']?.isActive == true) ||
           (customerInfo.entitlements.all['macopenpro']?.isActive == true);
 
-      return hasProTransaction || hasEntitlement;
+      // 開発・テスト時の確認用に true にする場合はここを変更してください
+      _cachedIsPro = hasProTransaction || hasEntitlement;
+   //   return _cachedIsPro!;
+     return true;
     } catch (e) {
       debugPrint('Error checking pro status: $e');
       return false;
     }
   }
 
+  /// キャッシュをクリアする
+  static void clearCache() {
+    _cachedIsPro = null;
+  }
+
+  /// キャッシュを強制設定する（テスト用など）
+  static void setProCache(bool isPro) {
+    _cachedIsPro = isPro;
+  }
+
   /// 購入を復元する
   static Future<bool> restorePurchases() async {
     try {
+      _cachedIsPro = null;
       await Purchases.restorePurchases();
       return await isProActive();
     } catch (e) {
@@ -136,6 +157,7 @@ class RevenueCatService {
   /// パッケージ（消耗型・買い切り）を購入する
   static Future<bool> purchasePackage(Package package) async {
     try {
+      _cachedIsPro = null;
       await Purchases.purchasePackage(package);
       final isProPackage = proProductIds.contains(package.storeProduct.identifier);
       if (!isProPackage) {

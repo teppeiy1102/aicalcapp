@@ -76,7 +76,7 @@ Map<String, dynamic> _historyEntryToItem(CalcHistoryEntry e) {
       });
     }
     return {
-      'name': '',
+      'name': '計算',
       'input': input,
       'op': op,
       'operand': operand,
@@ -87,7 +87,7 @@ Map<String, dynamic> _historyEntryToItem(CalcHistoryEntry e) {
   // フォールバック: 結果値のみ使用
   final val = double.tryParse(e.result) ?? 0.0;
   return {
-    'name': '',
+    'name': '計算',
     'input': val,
     'op': '+',
     'operand': 0.0,
@@ -901,7 +901,11 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.4),
+  gradient: const LinearGradient(
+                                colors: [Color.fromARGB(255, 255, 207, 165), Color.fromARGB(255, 163, 182, 252)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                         borderRadius: BorderRadius.circular(1000),
                         border: Border.all(
                           color: Colors.white.withOpacity(0.45),
@@ -911,10 +915,15 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          Icon(
-                            Icons.camera_alt_outlined,
-                            color: Colors.white,
-                            size: 24,
+                          Positioned(
+                            top: 14,
+                            bottom: 0,
+
+                            child: Icon(
+                              Icons.camera_alt_outlined,
+                              color: Colors.black,
+                              size: 24,
+                            ),
                           ),
                           if (_isAiCounting)
                             SizedBox(
@@ -925,6 +934,17 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                                 color: Colors.white,
                               ),
                             ),
+  Positioned(
+                                     top: -0,
+                                     child: Text(
+                                      'ai',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                                                       ),
+                                   )
                         ],
                       ),
                     ),
@@ -2923,23 +2943,41 @@ GestureDetector(
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.4),
                               borderRadius: BorderRadius.circular(1000),
                               border: Border.all(
                                 color: Colors.white.withOpacity(0.45),
                                 width: 0.8,
                               ),
+                              gradient: const LinearGradient(
+                                colors: [Color.fromARGB(255, 255, 207, 165), Color.fromARGB(255, 163, 182, 252)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
                             ),
                             child: Stack(
                               alignment: Alignment.center,
                               children: [
-                                const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 24),
+                                Positioned(
+                                 top: 14, 
+                                 bottom: 0,
+                                  child: const Icon(Icons.camera_alt_outlined, color: Colors.black, size: 24)),
                                 if (_isAiCounting)
                                   const SizedBox(
                                     width: 34,
                                     height: 34,
                                     child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.white),
                                   ),
+                                   Positioned(
+                                     top: -0,
+                                     child: Text(
+                                      'ai',
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                                                       ),
+                                   )
                               ],
                             ),
                           ),
@@ -3506,7 +3544,13 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
     var newOrder = rawOrder != null ? List<dynamic>.from(rawOrder) : null;
     for (final item in items) {
       newOrder?.add({'type': 'calc', 'calcIdx': rawItems.length});
-      rawItems.add(item);
+      final newItem = Map<String, dynamic>.from(item);
+      if (newItem['name'] == null ||
+          (newItem['name'] as String).isEmpty ||
+          newItem['name'] == '計算') {
+        newItem['name'] = '計算 ${rawItems.length + 1}';
+      }
+      rawItems.add(newItem);
     }
     final newData = {
       ...sheet.data,
