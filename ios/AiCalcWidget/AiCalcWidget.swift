@@ -1,3 +1,8 @@
+//
+//  AiCalcWidget.swift
+//  AiCalcWidget
+//
+
 import WidgetKit
 import SwiftUI
 
@@ -23,8 +28,7 @@ struct CalcProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<CalcEntry>) -> Void) {
-        let entry = loadEntry()
-        let timeline = Timeline(entries: [entry], policy: .never)
+        let timeline = Timeline(entries: [loadEntry()], policy: .never)
         completion(timeline)
     }
 
@@ -38,7 +42,7 @@ struct CalcProvider: TimelineProvider {
 
 // MARK: - Widget View
 
-struct CalcWidgetEntryView: View {
+struct AiCalcWidgetEntryView: View {
     var entry: CalcProvider.Entry
     @Environment(\.widgetFamily) var family
 
@@ -81,7 +85,7 @@ struct AiCalcWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: CalcProvider()) { entry in
-            CalcWidgetEntryView(entry: entry)
+            AiCalcWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("GenbaCalc")
         .description("最近の計算結果を表示し、アプリを素早く起動できます")
@@ -97,6 +101,7 @@ struct AiCalcWidget: Widget {
 
 // MARK: - Preview
 
+@available(iOS 17.0, *)
 #Preview(as: .systemSmall) {
     AiCalcWidget()
 } timeline: {
