@@ -240,7 +240,11 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.black,
+        gradient: LinearGradient(
+          colors: [Color(0xFF1E1E1E), Color.fromARGB(255, 56, 116, 165)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
@@ -343,7 +347,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
               Expanded(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purpleAccent,
+                    backgroundColor: Colors.blueAccent,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -365,7 +369,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
               const SizedBox(width: 12),
               IconButton(
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.06),
+                  backgroundColor: Colors.blueAccent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),

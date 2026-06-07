@@ -301,7 +301,7 @@ class _StorePageState extends State<StorePage>
           const SizedBox(height: 8),
       
           Text(
-            '一度の購入で50回分のAI利用がチャージされます',
+            '購入したプランの回数分のAI利用がチャージされます',
             style: TextStyle(
               color: Colors.white.withOpacity(0.85),
               fontSize: 15,

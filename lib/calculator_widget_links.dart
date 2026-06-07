@@ -214,7 +214,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
       fullscreenDialog: true,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDs) => Scaffold(
-          backgroundColor: const Color(0xFF161622),
+          backgroundColor: const Color.fromARGB(255, 31, 31, 31),
           body: SafeArea(
             child: Column(
                 mainAxisSize: MainAxisSize.max,
@@ -252,7 +252,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                               'リンク元',
                               style: TextStyle(
                                 color: Color.fromARGB(255, 38, 95, 218),
-                                fontSize: 23,
+                                fontSize: 20,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -1653,7 +1653,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                       // ── STEP 2: 選択済みリンク元 + 再選択ボタン ──────────
                       if (srcConfirmed && selectedSrcCalcIdx != null)
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                          padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
                           child: Builder(
                             builder: (_) {
                               String srcName = '';
@@ -1703,10 +1703,10 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.blueAccent.withOpacity(0.08),
-                                  borderRadius: BorderRadius.circular(8),
+                                  color: Colors.white.withOpacity(0.01),
+                                  borderRadius: BorderRadius.circular(24),
                                   border: Border.all(
-                                    color: Colors.blueAccent.withOpacity(0.3),
+                                    color: Colors.white.withOpacity(0.1),
                                   ),
                                 ),
                                 child: Column(
@@ -1761,9 +1761,9 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                       // ── STEP 2: リンク先セクション ──────────────────────────
                       if (srcConfirmed)
                         const Icon(
-                          Icons.download_rounded,
-                          size: 80,
-                          color: Color.fromARGB(172, 143, 231, 243),
+                          Icons.arrow_downward_rounded,
+                          size: 60,
+                          color: Color.fromARGB(103, 143, 231, 243),
                         ),
                       if (srcConfirmed)
                         Padding(
@@ -2643,7 +2643,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                 style: TextStyle(fontWeight: FontWeight.w500),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            Spacer(),
                             ElevatedButton(
                               onPressed: selectedSrcCalcIdx == null
                                   ? null

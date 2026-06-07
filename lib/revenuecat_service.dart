@@ -37,8 +37,8 @@ class RevenueCatService {
   /// AIの使用回数を1消費する
   static Future<bool> consumeUse() async {
     final prefs = await SharedPreferences.getInstance();
-    int current = 10;
-    //int current = prefs.getInt('ai_remaining_uses') ?? 0;
+    //int current = 10;
+    int current = prefs.getInt('ai_remaining_uses') ?? 0;
     if (current > 0) {
       await prefs.setInt('ai_remaining_uses', current - 1);
       return true;
@@ -161,9 +161,17 @@ class RevenueCatService {
       await Purchases.purchasePackage(package);
       final isProPackage = proProductIds.contains(package.storeProduct.identifier);
       if (!isProPackage) {
-        // RevenueCatダッシュボードのOfferingメタデータから付与回数を取得して追加する
-        final uses = await getUsesPerPurchase();
-        await addUses(uses);
+        final productId = package.storeProduct.identifier;
+        int uses = 0;
+        if (productId == 'com.yama.genbacalc.ai10') {
+          uses = 10;
+        } else {
+          // RevenueCatダッシュボードのOfferingメタデータから付与回数を取得して追加する
+          uses = await getUsesPerPurchase();
+        }
+        if (uses > 0) {
+          await addUses(uses);
+        }
       }
       return true;
     } catch (e) {

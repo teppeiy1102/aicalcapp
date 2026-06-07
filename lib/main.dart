@@ -2650,9 +2650,9 @@ class _HomeFab extends StatelessWidget {
           onTap: onAddSheet,
           child: Container(
             height: 64,
-            padding: const EdgeInsets.symmetric(horizontal: 28),
+            width: 54,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
+              shape: BoxShape.circle,
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -2669,13 +2669,9 @@ class _HomeFab extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+            child:
                 Icon(Icons.add_rounded, color: Colors.black, size: 28),
                
-              ],
-            ),
           ),
         ),
         const SizedBox(width:16 ),
@@ -2684,10 +2680,10 @@ class _HomeFab extends StatelessWidget {
           onTap: isAiGenerating ? null : onAiGenerate,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            height: 64,
-            width: 64,
+            height: 54,
+            width: 54,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
+              shape: BoxShape.circle,
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
