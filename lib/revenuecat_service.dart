@@ -108,8 +108,8 @@ class RevenueCatService {
   /// プロ版（買い切り）が有効かどうか判定する
   static Future<bool> isProActive() async {
     if (_cachedIsPro != null) {
-      return true;
-    //  return _cachedIsPro!;
+    //  return true;
+      return _cachedIsPro!;
     }
     try {
       final customerInfo = await Purchases.getCustomerInfo();
@@ -124,8 +124,8 @@ class RevenueCatService {
 
       // 開発・テスト時の確認用に true にする場合はここを変更してください
       _cachedIsPro = hasProTransaction || hasEntitlement;
-   //   return _cachedIsPro!;
-     return true;
+      return _cachedIsPro!;
+  //   return true;
     } catch (e) {
       debugPrint('Error checking pro status: $e');
       return false;
