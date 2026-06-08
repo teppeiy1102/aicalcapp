@@ -306,6 +306,8 @@ class _HomeScreenState extends State<HomeScreen> {
           duration: const Duration(seconds: 2),
         ),
       );
+      // 追加したシート（先頭）を開く
+      _openDetail(0);
     }
   }
 

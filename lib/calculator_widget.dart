@@ -3952,13 +3952,50 @@ Example output:
           Navigator.pop(ctx);
           setState(() {
             _calcDisplay = entry.result;
-            _calcA = double.tryParse(entry.result);
-            _calcNewEntry = true;
             _calcHasResult = true;
             _isClearState = true;
             _calcOp = '';
-            _calcTermValues = _calcA != null ? [_calcA!] : [];
-            _calcTermOps = [];
+            _calcNewEntry = true;
+
+            // expression を解析して項・演算子を復元する
+            // 保存形式: "value op value [op value ...]"（カンマなしの数値）
+            final parts = entry.expression.trim().split(' ');
+            final termVals = <double>[];
+            final termOps = <String>[];
+            bool valid = parts.length >= 3 && parts.length % 2 == 1;
+            if (valid) {
+              for (int i = 0; i < parts.length; i++) {
+                if (i % 2 == 0) {
+                  final v = double.tryParse(parts[i]);
+                  if (v == null) { valid = false; break; }
+                  termVals.add(v);
+                } else {
+                  // 演算子は+, -, ×, ÷ のいずれか（保存時はそのまま）
+                  termOps.add(parts[i]);
+                }
+              }
+            }
+
+            if (valid && termVals.length >= 2) {
+              _calcTermValues = termVals;
+              _calcTermOps = termOps;
+              _calcA = double.tryParse(entry.result);
+              // 2項用の _calcLast* も最初の2項でセット
+              String opDart(String op) {
+                if (op == '×') return 'x';
+                if (op == '÷') return '/';
+                return op;
+              }
+              _calcLastA = termVals[0];
+              _calcLastOp = opDart(termOps[0]);
+              _calcLastB = termVals[1];
+            } else {
+              // フォールバック: 結果値だけをセット
+              _calcA = double.tryParse(entry.result);
+              _calcTermValues = _calcA != null ? [_calcA!] : [];
+              _calcTermOps = [];
+            }
+
             _calcExprStr =
                 '${entry.expression.split(' ').map((p) {
                   final v = double.tryParse(p);

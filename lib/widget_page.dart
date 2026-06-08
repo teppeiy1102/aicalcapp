@@ -729,14 +729,39 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
         if (!mounted) return;
         setState(() {
           _display = entry.result;
-          _calcA = double.tryParse(entry.result);
-          _newEntry = true;
           _hasResult = true;
           _isClearState = true;
           _calcOp = '';
-          _termValues = _calcA != null ? [_calcA!] : [];
-          _termOps = [];
-          _exprStr = '${entry.expression} = ${entry.result}';
+          _newEntry = true;
+
+          final parts = entry.expression.trim().split(' ');
+          final termVals = <double>[];
+          final termOps = <String>[];
+          bool valid = parts.length >= 3 && parts.length % 2 == 1;
+          if (valid) {
+            for (int i = 0; i < parts.length; i++) {
+              if (i % 2 == 0) {
+                final v = double.tryParse(parts[i]);
+                if (v == null) { valid = false; break; }
+                termVals.add(v);
+              } else {
+                termOps.add(parts[i]);
+              }
+            }
+          }
+          if (valid && termVals.length >= 2) {
+            _termValues = termVals;
+            _termOps = termOps;
+            _calcA = double.tryParse(entry.result);
+            _calcLastA = termVals[0];
+            _calcLastOp = _opToDart(termOps[0]);
+            _calcLastB = termVals[1];
+          } else {
+            _calcA = double.tryParse(entry.result);
+            _termValues = _calcA != null ? [_calcA!] : [];
+            _termOps = [];
+          }
+          _exprStr = '${entry.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(entry.result)}';
         });
       }, () => CalcHistoryManager.instance.clearAll());
       return;
@@ -754,13 +779,38 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
           Navigator.pop(ctx);
           setState(() {
             _display = entry.result;
-            _calcA = double.tryParse(entry.result);
-            _newEntry = true;
             _hasResult = true;
             _isClearState = true;
             _calcOp = '';
-            _termValues = _calcA != null ? [_calcA!] : [];
-            _termOps = [];
+            _newEntry = true;
+
+            final parts = entry.expression.trim().split(' ');
+            final termVals = <double>[];
+            final termOps = <String>[];
+            bool valid = parts.length >= 3 && parts.length % 2 == 1;
+            if (valid) {
+              for (int i = 0; i < parts.length; i++) {
+                if (i % 2 == 0) {
+                  final v = double.tryParse(parts[i]);
+                  if (v == null) { valid = false; break; }
+                  termVals.add(v);
+                } else {
+                  termOps.add(parts[i]);
+                }
+              }
+            }
+            if (valid && termVals.length >= 2) {
+              _termValues = termVals;
+              _termOps = termOps;
+              _calcA = double.tryParse(entry.result);
+              _calcLastA = termVals[0];
+              _calcLastOp = _opToDart(termOps[0]);
+              _calcLastB = termVals[1];
+            } else {
+              _calcA = double.tryParse(entry.result);
+              _termValues = _calcA != null ? [_calcA!] : [];
+              _termOps = [];
+            }
             _exprStr = '${entry.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(entry.result)}';
           });
         },
@@ -2709,13 +2759,38 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
           Navigator.pop(ctx);
           setState(() {
             _display = entry.result;
-            _calcA = double.tryParse(entry.result);
-            _newEntry = true;
             _hasResult = true;
             _isClearState = true;
             _calcOp = '';
-            _termValues = _calcA != null ? [_calcA!] : [];
-            _termOps = [];
+            _newEntry = true;
+
+            final parts = entry.expression.trim().split(' ');
+            final termVals = <double>[];
+            final termOps = <String>[];
+            bool valid = parts.length >= 3 && parts.length % 2 == 1;
+            if (valid) {
+              for (int i = 0; i < parts.length; i++) {
+                if (i % 2 == 0) {
+                  final v = double.tryParse(parts[i]);
+                  if (v == null) { valid = false; break; }
+                  termVals.add(v);
+                } else {
+                  termOps.add(parts[i]);
+                }
+              }
+            }
+            if (valid && termVals.length >= 2) {
+              _termValues = termVals;
+              _termOps = termOps;
+              _calcA = double.tryParse(entry.result);
+              _calcLastA = termVals[0];
+              _calcLastOp = _opToDart(termOps[0]);
+              _calcLastB = termVals[1];
+            } else {
+              _calcA = double.tryParse(entry.result);
+              _termValues = _calcA != null ? [_calcA!] : [];
+              _termOps = [];
+            }
             _exprStr = '${entry.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(entry.result)}';
           });
         },

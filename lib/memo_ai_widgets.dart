@@ -239,24 +239,30 @@ class _AiCountPageState extends State<_AiCountPage> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final Permission perm = source == ImageSource.camera
-        ? Permission.camera
-        : Permission.photos;
-    final status = await perm.request();
-    if (!mounted) return;
-    if (!status.isGranted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            source == ImageSource.camera
-                ? 'カメラのアクセス許可が必要です。'
-                : '写真へのアクセス許可が必要です。',
+    if (source == ImageSource.gallery &&
+        !kIsWeb &&
+        defaultTargetPlatform == TargetPlatform.android) {
+      // Androidのギャラリー選択ではPhoto Pickerを使用するため、権限リクエストをスキップ
+    } else {
+      final Permission perm = source == ImageSource.camera
+          ? Permission.camera
+          : Permission.photos;
+      final status = await perm.request();
+      if (!mounted) return;
+      if (!status.isGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              source == ImageSource.camera
+                  ? 'カメラのアクセス許可が必要です。'
+                  : '写真へのアクセス許可が必要です。',
+            ),
+            action: SnackBarAction(label: '設定を開く', onPressed: openAppSettings),
+            duration: const Duration(seconds: 4),
           ),
-          action: SnackBarAction(label: '設定を開く', onPressed: openAppSettings),
-          duration: const Duration(seconds: 4),
-        ),
-      );
-      return;
+        );
+        return;
+      }
     }
     try {
       final file = await _picker.pickImage(
