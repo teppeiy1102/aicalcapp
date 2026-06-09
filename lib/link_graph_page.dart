@@ -845,7 +845,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
       child: Scaffold(
       backgroundColor: const Color(0xFF0D0D14),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0D14),
+        backgroundColor: const Color.fromARGB(255, 0, 0, 0),
         surfaceTintColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -1034,8 +1034,8 @@ class _GraphPainter extends CustomPainter {
     this.mergedSheetNames = const {},
   }) : super(repaint: Listenable.merge([model, view]));
 
-  static const Color _bg = Color(0xFF0D0D14);
-  static const Color _calcColor = Color(0xFF7B7FFF);
+  static const Color _bg = Color.fromARGB(255, 0, 0, 0);
+  static const Color _calcColor = Color.fromARGB(255, 74, 153, 255);
   static const Color _logicColor = Color(0xFFFFAA33);
   static const Color _edgeColor = Color(0xFF888AAA);
   static const Color _edgeSelColor = Color(0xFFAAB0FF);

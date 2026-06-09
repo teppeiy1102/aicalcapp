@@ -2779,24 +2779,24 @@ class _MergeActionBar extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          GestureDetector(
-            onTap: canMerge ? onMerge : null,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                gradient: canMerge
-                    ? const LinearGradient(
-                        colors: [
-                          Color.fromARGB(255, 255, 94, 172),
-                          Color(0xFF9E7AFF),
-                        ],
-                      )
-                    : null,
-                color: canMerge ? null : Colors.white.withOpacity(0.06),
-              ),
-              child: Expanded(
+          Flexible(
+            child: GestureDetector(
+              onTap: canMerge ? onMerge : null,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: canMerge
+                      ? const LinearGradient(
+                          colors: [
+                            Color.fromARGB(255, 255, 94, 172),
+                            Color(0xFF9E7AFF),
+                          ],
+                        )
+                      : null,
+                  color: canMerge ? null : Colors.white.withOpacity(0.06),
+                ),
                 child: Text(
                   overflow: TextOverflow.ellipsis,
                   canMerge
