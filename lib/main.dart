@@ -147,14 +147,23 @@ class _HomeScreenState extends State<HomeScreen> {
       final jsonStr = prefs.getString(_kPrefsKey);
       if (jsonStr != null && jsonStr.isNotEmpty) {
         final list = json.decode(jsonStr) as List<dynamic>;
+        final _migrationNow = DateTime.now().toIso8601String();
         final loaded = list.map((e) {
           final m = e as Map<String, dynamic>;
+          final data = _deepCopy(m['data']) as Map<String, dynamic>;
+          // マイグレーション: 日付フィールドがない既存シートに現在時刻を設定
+          if (!data.containsKey('createdAt') || data['createdAt'] == null) {
+            data['createdAt'] = _migrationNow;
+          }
+          if (!data.containsKey('updatedAt') || data['updatedAt'] == null) {
+            data['updatedAt'] = _migrationNow;
+          }
           return WidgetConfig(
             id:
                 m['id'] as String? ??
                 '${DateTime.now().millisecondsSinceEpoch}',
             type: m['type'] as String? ?? 'calculator',
-            data: _deepCopy(m['data']) as Map<String, dynamic>,
+            data: data,
           );
         }).toList();
         if (mounted)
@@ -199,8 +208,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _updateConfig(int index, Map<String, dynamic> data) {
+    final now = DateTime.now().toIso8601String();
+    // 既存の createdAt を引き継ぎ、updatedAt を現在時刻で上書き
+    final updated = <String, dynamic>{
+      ...data,
+      'updatedAt': now,
+    };
+    if (!updated.containsKey('createdAt') || updated['createdAt'] == null) {
+      updated['createdAt'] = _configs[index].data['createdAt'] ?? now;
+    }
     setState(() {
-      _configs[index] = _configs[index].copyWith(data: data);
+      _configs[index] = _configs[index].copyWith(data: updated);
     });
     _saveConfigs();
   }
@@ -215,6 +233,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
     final src = _configs[index];
+    final now = DateTime.now().toIso8601String();
     setState(() {
       _configs.insert(
         index + 1,
@@ -222,7 +241,9 @@ class _HomeScreenState extends State<HomeScreen> {
           id: '${DateTime.now().millisecondsSinceEpoch}',
           type: src.type,
           data: Map<String, dynamic>.from(src.data)
-            ..['title'] = '${src.data['title'] ?? '定型計算'} (コピー)',
+            ..['title'] = '${src.data['title'] ?? '定型計算'} (コピー)'
+            ..['createdAt'] = now
+            ..['updatedAt'] = now,
         ),
       );
     });
@@ -241,6 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
     }
+    final _nowStr = DateTime.now().toIso8601String();
     final newConfig = WidgetConfig(
       id: '${DateTime.now().millisecondsSinceEpoch}',
       type: 'calculator',
@@ -249,6 +271,8 @@ class _HomeScreenState extends State<HomeScreen> {
         'items': _sampleItems,
         'isExpanded': true,
         'bgColor': 0xFF1A1A2E,
+        'createdAt': _nowStr,
+        'updatedAt': _nowStr,
       },
     );
     setState(() => _configs.insert(0, newConfig));
@@ -285,6 +309,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
     }
+    final _nowStr2 = DateTime.now().toIso8601String();
     final newConfig = WidgetConfig(
       id: '${DateTime.now().millisecondsSinceEpoch}',
       type: 'calculator',
@@ -293,6 +318,8 @@ class _HomeScreenState extends State<HomeScreen> {
         'items': items,
         'isExpanded': true,
         'bgColor': 0xFF1A1A2E,
+        'createdAt': _nowStr2,
+        'updatedAt': _nowStr2,
       },
     );
     setState(() => _configs.insert(0, newConfig));
@@ -382,28 +409,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final instruction = result.instruction;
     final prompt =
-        """
+"""
 User wants to generate calculator expression(s) for: "$instruction".
 Return a JSON array of objects. Multiple formulas are allowed if the request implies multiple steps or variations.
 
 [CRITICAL INSTRUCTIONS]
 1. Combine calculation steps into the 'others' list of an item where appropriate. 
-2. For variables the user needs to input (e.g., "base", "height"), set "input" or "val" to 0.0 and put the label in "unit".
-3. For mathematical constants required by the formula (e.g., "2" in triangle area, "3.14" in circle), set the specific numerical value in "input", "operand", or "val".
-4. [IMPORTANT] Be mathematically precise. Only use division or constants (like /2) if the specific formula requires it.
-5. Use "brackets" to specify priority calculations (parentheses). Index 0 is "input", index 1 is "operand", index 2 is "others[0]", index 3 is "others[1]", and so on.
-6. Ensure every formula is mathematically correct.
+2. [IMPORTANT] If the user explicitly mentions specific numbers in the instruction (e.g., "3万円", "5人"), use those actual numbers in the corresponding fields ("input", "operand", or "val") instead of 0.0. 
+3. If a value is required for the calculation but NOT specified in the user's instruction, set "input", "operand", or "val" to 0.0 and put the label in "unit".
+4. For mathematical constants required by the formula (e.g., "2" in triangle area, "3.14" in circle), set the specific numerical value in "input", "operand", or "val".
+5. Be mathematically precise. Only use division or constants (like /2) if the specific formula requires it.
+6. Use "brackets" to specify priority calculations (parentheses). Index 0 is "input", index 1 is "operand", index 2 is "others[0]", index 3 is "others[1]", and so on.
+7. Ensure every formula is mathematically correct.
 
 Structure per item:
 {
   "name": "Calculation name",
-  "input": 0.0,
+  "input": 0.0, // Use the user's specified number if available, otherwise 0.0
   "unit1": "label for first value",
   "op": "+", (one of: +, -, x, /, %)
-  "operand": 0.0,
+  "operand": 0.0, // Use the user's specified number if available, otherwise 0.0
   "unit2": "label for second value",
   "others": [
-    { "op": "/", "val": 2.0, "unit": "" }
+    { "op": "/", "val": 2.0, "unit": "" } // Use the user's specified number if available
   ],
   "brackets": [
     { "start": 0, "end": 1 }
@@ -412,19 +440,19 @@ Structure per item:
   "precision": 2
 }
 
-Example output:
+Example output for "3万円を5人で割り勘":
 [
   {
-    "name": "三角形の面積",
-    "input": 0.0,
-    "unit1": "底辺",
-    "op": "x",
-    "operand": 0.0,
-    "unit2": "高さ",
-    "others": [{ "op": "/", "val": 2.0, "unit": "定数" }],
+    "name": "割り勘計算",
+    "input": 30000.0,
+    "unit1": "総額（円）",
+    "op": "/",
+    "operand": 5.0,
+    "unit2": "人数",
+    "others": [],
     "brackets": [],
-    "unitResult": "面積",
-    "precision": 2
+    "unitResult": "1人あたりの支払額",
+    "precision": 0
   }
 ]
 """;
@@ -451,6 +479,7 @@ Example output:
         final items = list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
 
         final title = instruction.isNotEmpty ? instruction : '新規シート';
+        final _aiNowStr = DateTime.now().toIso8601String();
         final newConfig = WidgetConfig(
           id: '${DateTime.now().millisecondsSinceEpoch}',
           type: 'calculator',
@@ -459,6 +488,8 @@ Example output:
             'items': items,
             'isExpanded': true,
             'bgColor': 0xFF1A1A2E,
+            'createdAt': _aiNowStr,
+            'updatedAt': _aiNowStr,
           },
         );
         if (mounted) {
@@ -574,8 +605,16 @@ Example output:
             onSheetUpdate: (sheetId, data) {
               final idx = _configs.indexWhere((c) => c.id == sheetId);
               if (idx != -1) {
+                final _sheetNow = DateTime.now().toIso8601String();
+                final updatedData = <String, dynamic>{
+                  ...data,
+                  'updatedAt': _sheetNow,
+                };
+                if (!updatedData.containsKey('createdAt') || updatedData['createdAt'] == null) {
+                  updatedData['createdAt'] = _configs[idx].data['createdAt'] ?? _sheetNow;
+                }
                 setState(() {
-                  _configs[idx] = _configs[idx].copyWith(data: data);
+                  _configs[idx] = _configs[idx].copyWith(data: updatedData);
                 });
                 _saveConfigs();
               }
@@ -585,11 +624,14 @@ Example output:
               final srcIdx = _configs.indexWhere((c) => c.id == sheetId);
               if (srcIdx == -1) return;
               final src = _configs[srcIdx];
+              final _dupNow = DateTime.now().toIso8601String();
               final newConfig = WidgetConfig(
                 id: '${DateTime.now().millisecondsSinceEpoch}',
                 type: src.type,
                 data: Map<String, dynamic>.from(src.data)
-                  ..['title'] = '${src.data['title'] ?? '定型計算'} (コピー)',
+                  ..['title'] = '${src.data['title'] ?? '定型計算'} (コピー)'
+                  ..['createdAt'] = _dupNow
+                  ..['updatedAt'] = _dupNow,
               );
               setState(() => _configs.insert(srcIdx + 1, newConfig));
               _saveConfigs();
@@ -1460,10 +1502,11 @@ Example output:
         .map((c) => c.data['title'] as String? ?? '定型計算')
         .join(' + ');
     final sheetIds = selectedConfigs.map((c) => c.id).toList();
+    final _mergeNowStr = DateTime.now().toIso8601String();
     final newConfig = WidgetConfig(
       id: '${DateTime.now().millisecondsSinceEpoch}',
       type: 'merged',
-      data: {'title': titles, 'sheetIds': sheetIds},
+      data: {'title': titles, 'sheetIds': sheetIds, 'createdAt': _mergeNowStr, 'updatedAt': _mergeNowStr},
     );
     setState(() {
       _configs.insert(0, newConfig);
@@ -1653,6 +1696,7 @@ Example output:
         }).toList();
       }
 
+      final _qrNowStr = DateTime.now().toIso8601String();
       final newConfig = WidgetConfig(
         id: '${DateTime.now().millisecondsSinceEpoch}',
         type: 'calculator',
@@ -1661,6 +1705,8 @@ Example output:
           'items': items,
           'isExpanded': true,
           'bgColor': 0xFF1A1A2E,
+          'createdAt': _qrNowStr,
+          'updatedAt': _qrNowStr,
           if (memos != null && memos.isNotEmpty) 'memos': memos,
           if (standaloneItems != null && standaloneItems.isNotEmpty)
             'standaloneItems': standaloneItems,
@@ -2150,7 +2196,17 @@ class _WidgetCardState extends State<_WidgetCard> {
         ? Colors.white.withOpacity(0.06)
         : Colors.black.withOpacity(0.12);
 
-    // leading: checkbox in select mode, drag handle otherwise
+    // 最終更新日のフォーマット
+    final _updatedAtStr = widget.config.data['updatedAt'] as String?;
+    String _updatedLabel = '';
+    if (_updatedAtStr != null) {
+      try {
+        final dt = DateTime.parse(_updatedAtStr).toLocal();
+        _updatedLabel =
+            '更新 ${dt.year}/${dt.month.toString().padLeft(2, '0')}/${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+      } catch (_) {}
+    }
+
     final leading = widget.isSelectMode
         ? AnimatedContainer(
             duration: const Duration(milliseconds: 150),
@@ -2442,6 +2498,31 @@ class _WidgetCardState extends State<_WidgetCard> {
                               ],
                             ),
                           ),
+                          if (_updatedLabel.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: 10,
+                                  color: isDark
+                                      ? Colors.white.withOpacity(0.28)
+                                      : Colors.black.withOpacity(0.3),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _updatedLabel,
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? Colors.white.withOpacity(0.28)
+                                        : Colors.black.withOpacity(0.3),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),

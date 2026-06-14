@@ -128,7 +128,8 @@ class GemmaAi {
           responseType: ResponseType.json,
         ),
         data: jsonEncode({
-          'model': '~google/gemini-flash-latest',
+         'model': '~google/gemini-flash-latest',
+      //    'model': '~anthropic/claude-fable-latest',
           'messages': [
             {'role': 'system', 'content': sp},
             {
@@ -217,6 +218,7 @@ class GemmaAi {
         ),
         data: jsonEncode({
           'model': '~google/gemini-flash-latest',
+         // 'model': '~anthropic/claude-fable-latest',
           'messages': [
             {'role': 'system', 'content': sp},
             {'role': 'user', 'content': prompt},
@@ -337,6 +339,7 @@ class GemmaAi {
             ),
             data: jsonEncode({
               'model': '~google/gemini-flash-latest',
+            //  'model': 'anthropic/claude-fable-latest',
               'messages': [
                 {
                   'role': 'user',

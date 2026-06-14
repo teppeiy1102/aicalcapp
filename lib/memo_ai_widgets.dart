@@ -231,6 +231,18 @@ class _AiCountPageState extends State<_AiCountPage> {
   AiCountResult? _lastResult;
   final _labelCtrl = TextEditingController();
   final _picker = ImagePicker();
+  int? _remainingUses;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRemainingUses();
+  }
+
+  Future<void> _loadRemainingUses() async {
+    final uses = await RevenueCatService.getRemainingUses();
+    if (mounted) setState(() => _remainingUses = uses);
+  }
 
   @override
   void dispose() {
@@ -500,6 +512,42 @@ class _AiCountPageState extends State<_AiCountPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (_remainingUses != null)
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StorePage()),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.auto_awesome,
+                        color: Colors.tealAccent,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '残りAI使用回数: $_remainingUses 回 (追加購入)',
+                        style: const TextStyle(
+                          color: Colors.tealAccent,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const Divider(color: Colors.white12, height: 1),
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Colors.tealAccent),
               title: const Text(
@@ -581,6 +629,48 @@ class _AiCountPageState extends State<_AiCountPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (_remainingUses != null)
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StorePage()),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(top: 24, bottom: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.teal.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Colors.tealAccent.withOpacity(0.35),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.auto_awesome,
+                        color: Colors.tealAccent,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '残りAI使用回数: $_remainingUses 回 (追加購入)',
+                        style: const TextStyle(
+                          color: Colors.tealAccent,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.all(30.0),
               child: const Text(
@@ -800,20 +890,21 @@ class _AiCountPageState extends State<_AiCountPage> {
           child: GestureDetector(
             onTap: _isCounting ? null : _showSourcePicker,
             child: Container(
+              constraints: const BoxConstraints(minWidth: 140),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.red,
+                color: Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.refresh, color: Colors.white, size: 14),
+                  Icon(Icons.refresh, color: Colors.red, size: 14),
                   SizedBox(width: 4),
                   Text(
                     '写真を変更',
-                    style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -860,6 +951,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                 Expanded(
                   child: TextField(
                     controller: _labelCtrl,
+                    onChanged: (_) => setState(() {}),
                     style: const TextStyle(color: Colors.white),
                     textInputAction: TextInputAction.done,
                     onSubmitted: isBusy ? null : (_) => _runLlmCount(),
@@ -882,14 +974,14 @@ class _AiCountPageState extends State<_AiCountPage> {
                 const SizedBox(width: 10),
                 // カウントボタン（メインアクション）
                 GestureDetector(
-                  onTap: isBusy ? null : _runLlmCount,
+                  onTap: isBusy ? null : (_labelCtrl.text.isNotEmpty ? _runLlmCount : null),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: isBusy
                           ? Colors.teal.withOpacity(0.3)
-                          : Colors.teal,
+                          :_labelCtrl.text.isEmpty ? Colors.grey.withOpacity(1) : Colors.teal,
                       shape: BoxShape.circle,
                       boxShadow: isBusy
                           ? []
@@ -911,7 +1003,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                             ),
                           )
                         : const Icon(
-                            Icons.auto_awesome_rounded,
+                            Icons.send_rounded,
                             color: Colors.white,
                             size: 22,
                           ),

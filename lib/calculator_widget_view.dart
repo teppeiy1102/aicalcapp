@@ -282,8 +282,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
       return _addCommas(v.toStringAsFixed(precision));
     }
 
-    // 計算式文字列を組み立て（括弧・トランスフォーム対応）
-    String buildFormula(
+    List<InlineSpan> buildFormulaSpans(
       Map<String, dynamic> item,
       Map<String, dynamic> resolved,
       int precision,
@@ -306,24 +305,46 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
       bool hasStart(int idx) => bks.any((b) => (b as Map)['start'] == idx);
       bool hasEnd(int idx) => bks.any((b) => (b as Map)['end'] == idx);
 
-      String termStr(double v, String u, String? transform, double powExp) {
+      final valStyle = TextStyle(
+        color: isDark ? Colors.white60 : Colors.black54,
+        fontSize: 14,
+        fontFamily: 'ZenOldMincho',
+        height: 1.5,
+      );
+      final unitStyle = TextStyle(
+        color: isDark ? Colors.white38 : Colors.black45,
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        height: 1.5,
+      );
+
+      List<InlineSpan> termSpans(double v, String u, String? transform, double powExp) {
         final s = fmtNum(v, precision);
-        final base = u.isNotEmpty ? '$s $u' : s;
-        return _CalculatorRow._transformExprStr(base, transform, powExp);
+        final mapped = _CalculatorRow._transformExprStr('###VAL###', transform, powExp);
+        final parts = mapped.split('###VAL###');
+        final prefix = parts[0];
+        final suffix = parts.length > 1 ? parts[1] : '';
+
+        final spans = <InlineSpan>[];
+        if (prefix.isNotEmpty) spans.add(TextSpan(text: prefix, style: valStyle));
+        spans.add(TextSpan(text: s, style: valStyle));
+        if (u.isNotEmpty) spans.add(TextSpan(text: ' $u', style: unitStyle));
+        if (suffix.isNotEmpty) spans.add(TextSpan(text: suffix, style: valStyle));
+        return spans;
       }
 
       // 各項をトークンリストで組み立て
       final termCount = others.length + 2;
-      final terms = <String>[];
-      terms.add(termStr(iv, u1, inputTr, inputPow));
-      terms.add(termStr(ov, u2, operandTr, operandPow));
+      final terms = <List<InlineSpan>>[];
+      terms.add(termSpans(iv, u1, inputTr, inputPow));
+      terms.add(termSpans(ov, u2, operandTr, operandPow));
       for (final o in others) {
         final m = o as Map;
         final oVal = (m['val'] as num? ?? 0.0).toDouble();
         final oUnit = m['unit'] as String? ?? '';
         final String? oTr = m['transform'] as String?;
         final double oPow = (m['powExp'] as num? ?? 2.0).toDouble();
-        terms.add(termStr(oVal, oUnit, oTr, oPow));
+        terms.add(termSpans(oVal, oUnit, oTr, oPow));
       }
 
       final ops = <String>[opStr];
@@ -331,16 +352,16 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
         ops.add((o as Map)['op'] as String? ?? '+');
       }
 
-      final buf = StringBuffer();
+      final spans = <InlineSpan>[];
       for (int idx = 0; idx < termCount; idx++) {
-        if (hasStart(idx)) buf.write('( ');
-        buf.write(terms[idx]);
-        if (hasEnd(idx)) buf.write(' )');
+        if (hasStart(idx)) spans.add(TextSpan(text: '( ', style: valStyle));
+        spans.addAll(terms[idx]);
+        if (hasEnd(idx)) spans.add(TextSpan(text: ' )', style: valStyle));
         if (idx < ops.length) {
-          buf.write('  ${ops[idx]}  ');
+          spans.add(TextSpan(text: '  ${ops[idx]}  ', style: valStyle));
         }
       }
-      return buf.toString();
+      return spans;
     }
 
     final bgColor = bgColorValue != null
@@ -615,10 +636,21 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                   final name = item['name'] as String? ?? '';
                   final result = finalResults[ci];
                   final unitResult = item['unitResult'] as String? ?? '';
-                  final formula = buildFormula(item, resolved, precision);
-                  final resultStr =
-                      '${fmtNum(result, precision)}${unitResult.isNotEmpty ? ' $unitResult' : ''}';
-        
+                  final formulaSpans = buildFormulaSpans(item, resolved, precision);
+                  
+                  final resultValStyle = TextStyle(
+                    color: isDark ? Colors.white : Colors.black,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'ZenOldMincho',
+                    letterSpacing: -0.5,
+                  );
+                  final resultUnitStyle = TextStyle(
+                    color: isDark ? Colors.white38 : Colors.black45,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  );
+
                   if (!isFirst) {
                     widgets.add(
                       Padding(
@@ -656,17 +688,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                           Text.rich(
                             TextSpan(
                               children: [
-                                TextSpan(
-                                  text: formula,
-                                  style: TextStyle(
-                                    color: isDark
-                                        ? Colors.white60
-                                        : Colors.black54,
-                                    fontSize: 14,
-                                    fontFamily: 'ZenOldMincho',
-                                    height: 1.5,
-                                  ),
-                                ),
+                                ...formulaSpans,
                                 TextSpan(
                                   text: '  =  ',
                                   style: TextStyle(
@@ -677,15 +699,14 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                                   ),
                                 ),
                                 TextSpan(
-                                  text: resultStr,
-                                  style: TextStyle(
-                                    color: isDark ? Colors.white : Colors.black,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    fontFamily: 'ZenOldMincho',
-                                    letterSpacing: -0.5,
-                                  ),
+                                  text: fmtNum(result, precision),
+                                  style: resultValStyle,
                                 ),
+                                if (unitResult.isNotEmpty)
+                                  TextSpan(
+                                    text: ' $unitResult',
+                                    style: resultUnitStyle,
+                                  ),
                               ],
                             ),
                           ),

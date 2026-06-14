@@ -37,8 +37,8 @@ class RevenueCatService {
   /// AIの使用回数を1消費する
   static Future<bool> consumeUse() async {
     final prefs = await SharedPreferences.getInstance();
-    //int current = 10;
-    int current = prefs.getInt('ai_remaining_uses') ?? 0;
+    int current = 10;
+   // int current = prefs.getInt('ai_remaining_uses') ?? 0;
     if (current > 0) {
       await prefs.setInt('ai_remaining_uses', current - 1);
       return true;

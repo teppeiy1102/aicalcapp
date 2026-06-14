@@ -738,6 +738,7 @@ class _CalculatorRow extends StatelessWidget {
                       setDialogState(() => ctrl.text = u);
                     }),
                 child: Container(
+                 constraints: const BoxConstraints(maxWidth: 180),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 8,
@@ -749,22 +750,28 @@ class _CalculatorRow extends StatelessWidget {
                       color: Colors.blueAccent.withOpacity(0.4),
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        suggestedUnits[0],
-                        style: const TextStyle(
-                          color: Colors.blueAccent,
-                          fontSize: 13,
+                  child: Expanded(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          constraints: const BoxConstraints(maxWidth: 130),
+                          child: Text(
+                            overflow: TextOverflow.ellipsis,
+                            suggestedUnits[0],
+                            style: const TextStyle(
+                              color: Colors.blueAccent,
+                              fontSize: 13,
+                            ),
+                          ),
                         ),
-                      ),
-                      const Icon(
-                        Icons.expand_more,
-                        size: 14,
-                        color: Colors.blueAccent,
-                      ),
-                    ],
+                        const Icon(
+                          Icons.expand_more,
+                          size: 14,
+                          color: Colors.blueAccent,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1326,6 +1333,7 @@ class _CalculatorRow extends StatelessWidget {
       backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        side: BorderSide(color: Colors.white10, width: 1),
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setSheetState) => Column(

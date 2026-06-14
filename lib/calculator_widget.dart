@@ -1087,38 +1087,77 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                   const SizedBox(height: 10),
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: _kNoteColorPresets.map((preset) {
-                        final isSelected = selectedColor == preset.value;
-                        return GestureDetector(
-                          onTap: () =>
-                              setSheetState(() => selectedColor = preset.value),
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 10),
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Color(preset.value),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isSelected
-                                    ? Colors.blueAccent
-                                    : Colors.white24,
-                                width: isSelected ? 2.5 : 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: _kNoteColorPresets.where((p) => !p.isDark).map((preset) {
+                            final isSelected = selectedColor == preset.value;
+                            return GestureDetector(
+                              onTap: () =>
+                                  setSheetState(() => selectedColor = preset.value),
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 10),
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Color(preset.value),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? Colors.blueAccent
+                                        : Colors.white24,
+                                    width: isSelected ? 2.5 : 1,
+                                  ),
+                                ),
+                                child: isSelected
+                                    ? Icon(
+                                        Icons.check,
+                                        size: 18,
+                                        color: preset.isDark
+                                            ? Colors.white
+                                            : Colors.black54,
+                                      )
+                                    : null,
                               ),
-                            ),
-                            child: isSelected
-                                ? Icon(
-                                    Icons.check,
-                                    size: 18,
-                                    color: preset.isDark
-                                        ? Colors.white
-                                        : Colors.black54,
-                                  )
-                                : null,
-                          ),
-                        );
-                      }).toList(),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: _kNoteColorPresets.where((p) => p.isDark).map((preset) {
+                            final isSelected = selectedColor == preset.value;
+                            return GestureDetector(
+                              onTap: () =>
+                                  setSheetState(() => selectedColor = preset.value),
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 10),
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Color(preset.value),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? Colors.blueAccent
+                                        : Colors.white24,
+                                    width: isSelected ? 2.5 : 1,
+                                  ),
+                                ),
+                                child: isSelected
+                                    ? Icon(
+                                        Icons.check,
+                                        size: 18,
+                                        color: preset.isDark
+                                            ? Colors.white
+                                            : Colors.black54,
+                                      )
+                                    : null,
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),

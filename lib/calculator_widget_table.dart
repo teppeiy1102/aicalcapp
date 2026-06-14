@@ -320,31 +320,56 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
     Color colColor(String key) => key == 'name' ? Colors.black : Colors.black87;
 
     // セルの表示文字列（リンク解決済み値・変換オプション表示対応）
-    String cellValue(String key, int rowIdx) {
+    List<InlineSpan> cellValueSpans(String key, int rowIdx, bool isRes, bool isEditable, Color fgColor, Color subColor, Color c) {
       final item = items[rowIdx];
       final resolved = resolvedRows[rowIdx];
       final precision = item['precision'] as int? ?? 2;
       final unit1 = item['unit1'] as String? ?? '';
       final unit2 = item['unit2'] as String? ?? '';
       final unitResult = item['unitResult'] as String? ?? '';
-      if (key == 'name') return item['name'] as String? ?? '';
+
+      final textColor = isRes ? fgColor : (isDark ? Colors.white : c);
+      final fontSize = isRes ? 13.0 : 12.0;
+      final fontWeight = isRes ? FontWeight.w700 : FontWeight.w500;
+
+      final valStyle = TextStyle(
+        color: textColor,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        fontFamily: 'ZenOldMincho',
+      );
+      final unitStyle = TextStyle(
+        color: isDark ? Colors.white38 : Colors.black45,
+        fontSize: fontSize - 2.0,
+        fontWeight: FontWeight.w500,
+      );
+
+      List<InlineSpan> buildSpan(String text, String unit) {
+        if (unit.isEmpty) return [TextSpan(text: text, style: valStyle)];
+        return [
+          TextSpan(text: text, style: valStyle),
+          TextSpan(text: ' $unit', style: unitStyle),
+        ];
+      }
+
+      if (key == 'name') return [TextSpan(text: item['name'] as String? ?? '', style: valStyle)];
       if (key == 'input') {
         final v = resolved['input'] as double;
         final transform = item['inputTransform'] as String?;
         final powExp = (item['inputPowExp'] as num? ?? 2.0).toDouble();
-        return termWithTransform(v, transform, powExp, precision) +
-            (unit1.isNotEmpty ? ' $unit1' : '');
+        final text = termWithTransform(v, transform, powExp, precision);
+        return buildSpan(text, unit1);
       }
       if (key == 'operand') {
         final v = resolved['operand'] as double;
         final transform = item['operandTransform'] as String?;
         final powExp = (item['operandPowExp'] as num? ?? 2.0).toDouble();
-        return termWithTransform(v, transform, powExp, precision) +
-            (unit2.isNotEmpty ? ' $unit2' : '');
+        final text = termWithTransform(v, transform, powExp, precision);
+        return buildSpan(text, unit2);
       }
       if (key == 'result') {
-        return fmtNum(finalResults[rowIdx], precision) +
-            (unitResult.isNotEmpty ? ' $unitResult' : '');
+        final text = fmtNum(finalResults[rowIdx], precision);
+        return buildSpan(text, unitResult);
       }
       if (key.startsWith('other_')) {
         final i = int.tryParse(key.split('_')[1]) ?? 0;
@@ -362,12 +387,12 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
           final powExp = i < rawOthers.length
               ? ((rawOthers[i] as Map)['powExp'] as num? ?? 2.0).toDouble()
               : 2.0;
-          return termWithTransform(v, transform, powExp, precision) +
-              (unit.isNotEmpty ? ' $unit' : '');
+          final text = termWithTransform(v, transform, powExp, precision);
+          return buildSpan(text, unit);
         }
-        return '-';
+        return [TextSpan(text: '-', style: valStyle)];
       }
-      return '';
+      return [TextSpan(text: '', style: valStyle)];
     }
 
     bool isResultCol(String key) => key == 'result';
@@ -547,9 +572,9 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                           final w = colWidth(key);
                           final c = colColor(key);
                           final isLastCol = col == visibleColumns.last;
-                          final val = cellValue(key, rowIdx);
                           final isRes = isResultCol(key);
                           final editable = !isRes;
+                          final spans = cellValueSpans(key, rowIdx, isRes, editable, fgColor, subColor, c);
                           return GestureDetector(
                             onTap: isRes
                                 ? () => _showTableItemEditSheet(
@@ -590,21 +615,11 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Flexible(
-                                    child: Text(
-                                      val,
+                                    child: Text.rich(
+                                      TextSpan(children: spans),
                                       textAlign: TextAlign.center,
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: isRes
-                                            ? fgColor
-                                            : (isDark ? Colors.white : c),
-                                        fontSize: isRes ? 13 : 12,
-                                        fontWeight: isRes
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
-                                        fontFamily: 'ZenOldMincho',
-                                      ),
                                     ),
                                   ),
                                 ],

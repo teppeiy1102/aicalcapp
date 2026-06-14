@@ -186,11 +186,18 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
   late final TextEditingController _ctrl;
   bool _isModify = false;
   Uint8List? _attachedImage;
+  int? _remainingUses;
 
   @override
   void initState() {
     super.initState();
     _ctrl = TextEditingController(text: widget.initialText);
+    _loadRemainingUses();
+  }
+
+  Future<void> _loadRemainingUses() async {
+    final uses = await RevenueCatService.getRemainingUses();
+    if (mounted) setState(() => _remainingUses = uses);
   }
 
   @override
@@ -201,13 +208,46 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
+    final remaining = _remainingUses;
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (remaining != null)
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const StorePage()),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.auto_awesome, color: Colors.purpleAccent, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        '残りAI使用回数: $remaining 回 (追加購入)',
+                        style: const TextStyle(
+                          color: Colors.purpleAccent,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const Divider(color: Colors.white12, height: 1),
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Colors.white70),
               title: const Text(
@@ -260,13 +300,47 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  widget.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (_remainingUses != null) ...
+                      [
+                        const SizedBox(height: 4),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const StorePage()),
+                            );
+                          },
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.auto_awesome,
+                                color: Colors.purpleAccent,
+                                size: 13,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '残りAI使用回数: $_remainingUses 回 (追加購入)',
+                                style: const TextStyle(
+                                  color: Colors.purpleAccent,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                  ],
                 ),
               ),
               IconButton(
@@ -2858,7 +2932,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
         height: handleH + 20,
         decoration: const BoxDecoration(
 
-          borderRadius: BorderRadius.vertical(top: Radius.circular(0)),
+          borderRadius: BorderRadius.all(Radius.circular(30)),
           gradient: LinearGradient(
             colors: [Color.fromARGB(255, 0, 0, 0),Color.fromARGB(255, 68, 172, 241), Color(0xFF7B7FFF)],
             begin: Alignment.topLeft,
@@ -2988,7 +3062,7 @@ GestureDetector(
           final fontSize = (buttonH * 0.42).clamp(14.0, 32.0);
 
           const keyBg = Color(0x1AFFFFFF);
-          const opColor = Colors.blueAccent;
+          const opColor = Color.fromARGB(255, 255, 171, 14);
           const eqColor = Colors.orangeAccent;
 
           Widget calcKey(String label, {Color? bg, Color? fg}) {
@@ -3163,29 +3237,29 @@ GestureDetector(
                   // ── ボタングリッド ──
                   SafeArea(
                     child: SizedBox(
-                      height: 5 * buttonH + 4 * 6,
+                      height: 5* buttonH + 4 * 10,
                       child: GridView.count(
                         padding: EdgeInsets.zero,
                         crossAxisCount: 4,
-                        mainAxisSpacing: 6,
-                        crossAxisSpacing: 6,
+                        mainAxisSpacing: 5,
+                        crossAxisSpacing: 5,
                         childAspectRatio: ratio,
                         physics: const NeverScrollableScrollPhysics(),
                         children: [
                           calcKey('C', bg: Colors.redAccent.withOpacity(0.18), fg: Colors.redAccent),
                           calcKey('+/-'),
                           calcKey('%'),
-                          calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
+                          calcKey('÷', bg: opColor.withOpacity(0.18), fg: const Color.fromARGB(255, 255, 255, 255)),
                           calcKey('7'), calcKey('8'), calcKey('9'),
-                          calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
+                          calcKey('×', bg: opColor.withOpacity(0.18), fg: const Color.fromARGB(255, 255, 255, 255)),
                           calcKey('4'), calcKey('5'), calcKey('6'),
-                          calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
+                          calcKey('-', bg: opColor.withOpacity(0.18), fg: const Color.fromARGB(255, 255, 255, 255)),
                           calcKey('1'), calcKey('2'), calcKey('3'),
-                          calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
+                          calcKey('+', bg: opColor.withOpacity(0.18), fg: const Color.fromARGB(255, 255, 255, 255)),
                           calcKey('⌫'),
                           calcKey('0'),
                           calcKey('.'),
-                          calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
+                          calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.black),
                         ],
                       ),
                     ),
@@ -4045,39 +4119,79 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                       const SizedBox(height: 10),
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: _kNoteColorPresets.map((preset) {
-                            final isSelected = tempColor == preset.value;
-                            return GestureDetector(
-                              onTap: () => setSheetState(
-                                () => tempColor = preset.value,
-                              ),
-                              child: Container(
-                                margin: const EdgeInsets.only(right: 10),
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Color(preset.value),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? Colors.blueAccent
-                                        : Colors.white24,
-                                    width: isSelected ? 2.5 : 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: _kNoteColorPresets.where((p) => !p.isDark).map((preset) {
+                                final isSelected = tempColor == preset.value;
+                                return GestureDetector(
+                                  onTap: () => setSheetState(
+                                    () => tempColor = preset.value,
                                   ),
-                                ),
-                                child: isSelected
-                                    ? Icon(
-                                        Icons.check,
-                                        size: 18,
-                                        color: preset.isDark
-                                            ? Colors.white
-                                            : Colors.black54,
-                                      )
-                                    : null,
-                              ),
-                            );
-                          }).toList(),
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 10),
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Color(preset.value),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? Colors.blueAccent
+                                            : Colors.white24,
+                                        width: isSelected ? 2.5 : 1,
+                                      ),
+                                    ),
+                                    child: isSelected
+                                        ? Icon(
+                                            Icons.check,
+                                            size: 18,
+                                            color: preset.isDark
+                                                ? Colors.white
+                                                : Colors.black54,
+                                          )
+                                        : null,
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: _kNoteColorPresets.where((p) => p.isDark).map((preset) {
+                                final isSelected = tempColor == preset.value;
+                                return GestureDetector(
+                                  onTap: () => setSheetState(
+                                    () => tempColor = preset.value,
+                                  ),
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 10),
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Color(preset.value),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? Colors.blueAccent
+                                            : Colors.white24,
+                                        width: isSelected ? 2.5 : 1,
+                                      ),
+                                    ),
+                                    child: isSelected
+                                        ? Icon(
+                                            Icons.check,
+                                            size: 18,
+                                            color: preset.isDark
+                                                ? Colors.white
+                                                : Colors.black54,
+                                          )
+                                        : null,
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 24),
