@@ -16,6 +16,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'l10n/app_localizations.dart';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // データモデル
@@ -838,6 +839,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final visible = _visibleNodes;
 
     return PopScope(
@@ -856,8 +858,8 @@ class _LinkGraphPageState extends State<LinkGraphPage>
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('リンクグラフ',
-                style: TextStyle(
+            Text(l10n.linkGraph,
+                style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 17)),
@@ -2023,6 +2025,7 @@ class _CalcFormulaView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     bool isLinked(Map src) {
       final sid = src['sheetId'] as String? ?? sheetId;
       final type = src['type'] as String?;
@@ -2077,8 +2080,8 @@ class _CalcFormulaView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('式',
-            style: TextStyle(
+        Text(l10n.logicName,
+            style: const TextStyle(
                 color: Color(0xFF5050A0),
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
@@ -2203,6 +2206,7 @@ class _LogicFormulaView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     bool isLinked(Map src) {
       final sid = src['sheetId'] as String? ?? sheetId;
       final type = src['type'] as String?;
@@ -2267,8 +2271,8 @@ class _LogicFormulaView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('条件式',
-            style: TextStyle(
+        Text(l10n.logicConditions,
+            style: const TextStyle(
                 color: Color(0xFFFFAA33),
                 fontSize: 10,
                 fontWeight: FontWeight.bold,

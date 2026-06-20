@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'revenuecat_service.dart';
 import 'store_page.dart';
+import 'l10n/app_localizations.dart';
 
 class ProGuard {
   static Future<void> checkAndRun(BuildContext context, VoidCallback onSuccess) async {
@@ -9,15 +10,16 @@ class ProGuard {
       onSuccess();
     } else {
       if (!context.mounted) return;
+      final l10n = AppLocalizations.of(context)!;
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('プロ版の機能です'),
-          content: const Text('この機能を利用するには、プロ版を購入してください。'),
+          title: Text(l10n.proFeature),
+          content: Text(l10n.proFeatureDesc),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('キャンセル'),
+              child: Text(l10n.cancel),
             ),
             TextButton(
               onPressed: () {
@@ -27,7 +29,7 @@ class ProGuard {
                   MaterialPageRoute(builder: (_) => const StorePage(isProContext: true)),
                 );
               },
-              child: const Text('ストアへ'),
+              child: Text(l10n.goToStore),
             ),
           ],
         ),
@@ -98,7 +100,7 @@ class ProRequiredLabel extends StatelessWidget {
 
   const ProRequiredLabel({
     super.key,
-    this.text = 'プロ版が必要です',
+    this.text = '',
   });
 
   @override
@@ -135,6 +137,7 @@ class ProRequiredLabel extends StatelessWidget {
 
 /// シート追加上限に達したときの Pro アップグレードダイアログを表示する
 Future<void> showSheetLimitDialog(BuildContext context) async {
+  final l10n = AppLocalizations.of(context)!;
   return showDialog(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -144,10 +147,10 @@ Future<void> showSheetLimitDialog(BuildContext context) async {
         children: [
           const ProBadge(fontSize: 12, padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5)),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
-              'シートの上限に達しました',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+              l10n.sheetLimitReached,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
         ],
@@ -156,9 +159,9 @@ Future<void> showSheetLimitDialog(BuildContext context) async {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '無料版では最大5枚までシートを作成できます。',
-            style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+          Text(
+            l10n.sheetLimitDesc,
+            style: const TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
           ),
           const SizedBox(height: 12),
           Container(
@@ -177,14 +180,14 @@ Future<void> showSheetLimitDialog(BuildContext context) async {
                 color: const Color(0xFFFF9F43).withOpacity(0.3),
               ),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFD93D), size: 20),
-                SizedBox(width: 10),
+                const Icon(Icons.workspace_premium_rounded, color: Color(0xFFFFD93D), size: 20),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'プロ版にアップグレードするとシートを無制限に作成できます。',
-                    style: TextStyle(
+                    l10n.upgradeToProUnlimited,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                       height: 1.5,
@@ -199,7 +202,7 @@ Future<void> showSheetLimitDialog(BuildContext context) async {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text('キャンセル', style: TextStyle(color: Colors.white38)),
+          child: Text(l10n.cancel, style: const TextStyle(color: Colors.white38)),
         ),
         Container(
           decoration: BoxDecoration(
@@ -226,9 +229,9 @@ Future<void> showSheetLimitDialog(BuildContext context) async {
                 MaterialPageRoute(builder: (_) => const StorePage(isProContext: true)),
               );
             },
-            child: const Text(
-              'プロ版にアップグレード',
-              style: TextStyle(
+            child: Text(
+              l10n.upgradeToPro,
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 13,

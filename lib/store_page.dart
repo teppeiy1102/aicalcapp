@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'revenuecat_service.dart';
+import 'l10n/app_localizations.dart';
 
 class StorePage extends StatefulWidget {
   /// true の場合はプロ版購入画面として表示する。
@@ -70,9 +71,10 @@ class _StorePageState extends State<StorePage>
   Future<void> _purchasePackage(Package package) async {
     setState(() => _isLoading = true);
     final success = await RevenueCatService.purchasePackage(package);
+    final l10n = _l10n;
     if (success) {
       if (mounted) {
-        _showResultSnackBar('購入が完了しました 🎉', isSuccess: true);
+        _showResultSnackBar(l10n.storePurchaseComplete, isSuccess: true);
         if (widget.isProContext) {
           Navigator.pop(context, true);
           return;
@@ -80,11 +82,13 @@ class _StorePageState extends State<StorePage>
       }
     } else {
       if (mounted) {
-        _showResultSnackBar('購入がキャンセルされたか、エラーが発生しました。', isSuccess: false);
+        _showResultSnackBar(l10n.storePurchaseFailed, isSuccess: false);
       }
     }
     await _loadData();
   }
+
+  AppLocalizations get _l10n => AppLocalizations.of(context)!;
 
   void _showResultSnackBar(String message, {required bool isSuccess}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -110,7 +114,8 @@ class _StorePageState extends State<StorePage>
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.isProContext ? 'プロ版を購入' : 'AI利用回数チャージ';
+    final l10n = _l10n;
+    final title = widget.isProContext ? l10n.storeProTitle : l10n.storeAiTitle;
 
     return Scaffold(
       backgroundColor: _backgroundGrey,
@@ -137,6 +142,7 @@ class _StorePageState extends State<StorePage>
   }
 
   PreferredSizeWidget _buildAppBar(String title) {
+    final l10n = _l10n;
     return AppBar(
       backgroundColor: _surfaceWhite,
       elevation: 0,
@@ -159,7 +165,7 @@ class _StorePageState extends State<StorePage>
             setState(() => _isLoading = false);
             if (mounted) {
               _showResultSnackBar(
-                isPro ? '購入を復元しました（プロ版有効）✅' : '復元できる購入情報がありませんでした。',
+                isPro ? l10n.storeRestoredPro : l10n.storeNoRestore,
                 isSuccess: isPro,
               );
               if (isPro && widget.isProContext) {
@@ -168,9 +174,9 @@ class _StorePageState extends State<StorePage>
             }
           },
           icon: const Icon(Icons.restore, size: 18, color: _accentBlue),
-          label: const Text(
-            '購入を復元',
-            style: TextStyle(color: _accentBlue, fontWeight: FontWeight.w600),
+          label: Text(
+            l10n.storeRestorePurchases,
+            style: const TextStyle(color: _accentBlue, fontWeight: FontWeight.w600),
           ),
         ),
         const SizedBox(width: 8),
@@ -179,6 +185,7 @@ class _StorePageState extends State<StorePage>
   }
 
   Widget _buildLoadingView() {
+    final l10n = _l10n;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -207,9 +214,9 @@ class _StorePageState extends State<StorePage>
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            '読み込み中...',
-            style: TextStyle(color: _textLight, fontSize: 14),
+          Text(
+            l10n.loading,
+            style: const TextStyle(color: _textLight, fontSize: 14),
           ),
         ],
       ),
@@ -232,13 +239,14 @@ class _StorePageState extends State<StorePage>
   }
 
   Widget _buildProHero() {
+    final l10n = _l10n;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
       child: Column(
         children: [
-         const Text(
-            'プロ版',
-            style: TextStyle(
+         Text(
+            l10n.proVersion,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 50,
               fontWeight: FontWeight.w900,
@@ -247,7 +255,7 @@ class _StorePageState extends State<StorePage>
           ),
           const SizedBox(height: 8),
           Text(
-            'すべての機能を永久にアンロック',
+            l10n.proPermanentUnlock,
             style: TextStyle(
               color: Colors.white.withOpacity(0.85),
               fontSize: 15,
@@ -262,14 +270,14 @@ class _StorePageState extends State<StorePage>
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.white.withOpacity(0.3)),
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.lock_open_rounded, size: 16, color: Colors.white),
-                SizedBox(width: 6),
+                const Icon(Icons.lock_open_rounded, size: 16, color: Colors.white),
+                const SizedBox(width: 6),
                 Text(
-                  '買い切り・追加費用なし',
-                  style: TextStyle(
+                  l10n.proOneTime,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -284,14 +292,14 @@ class _StorePageState extends State<StorePage>
   }
 
   Widget _buildAiHero() {
+    final l10n = _l10n;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
       child: Column(
         children: [
-          
-          const Text(
-            'AIチャージ',
-            style: TextStyle(
+          Text(
+            l10n.aiCharge,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 50,
               fontWeight: FontWeight.w900,
@@ -299,9 +307,8 @@ class _StorePageState extends State<StorePage>
             ),
           ),
           const SizedBox(height: 8),
-      
           Text(
-            '購入したプランの回数分のAI利用がチャージされます',
+            l10n.aiChargeDesc,
             style: TextStyle(
               color: Colors.white.withOpacity(0.85),
               fontSize: 15,
@@ -324,7 +331,7 @@ class _StorePageState extends State<StorePage>
             child: Column(
               children: [
                 Text(
-                  '現在の残回数',
+                  l10n.aiCurrentRemaining,
                   style: TextStyle(
                     fontSize: 12,
                     color: _textLight,
@@ -345,11 +352,11 @@ class _StorePageState extends State<StorePage>
                         height: 1.0,
                       ),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 6, left: 4),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6, left: 4),
                       child: Text(
-                        '回',
-                        style: TextStyle(
+                        l10n.aiTimes,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                           color: _accentBlue,
@@ -375,6 +382,7 @@ class _StorePageState extends State<StorePage>
   }
 
   Widget _buildProFeatureDescription() {
+    final l10n = _l10n;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       decoration: BoxDecoration(
@@ -392,35 +400,35 @@ class _StorePageState extends State<StorePage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeader(
-            title: 'プロ版でできること',
-            subtitle: '一度購入すれば永久に利用可能',
+            title: l10n.proFeatures,
+            subtitle: l10n.proFeaturesDesc,
           ),
           const Divider(height: 1, color: Color(0xFFE3EEFF)),
           _buildFeatureItem(
             icon: Icons.calculate_rounded,
-            title: '高度な計算機能のアンロック',
-            description: '複雑な数式や変数計算など、通常版では制限されていた高度な計算機能が全て利用可能になります。',
+            title: l10n.proFeatureAdvancedCalc,
+            description: l10n.proFeatureAdvancedCalcDesc,
             color: const Color(0xFF1565C0),
           ),
           _buildDivider(),
           _buildFeatureItem(
             icon: Icons.table_chart_rounded,
-            title: '無制限のシートとテーブル作成',
-            description: '作成できるシートやテーブルの数が無制限になります。大規模なプロジェクトにも対応可能です。',
+            title: l10n.proFeatureUnlimitedSheets,
+            description: l10n.proFeatureUnlimitedSheetsDesc,
             color: const Color(0xFF0288D1),
           ),
           _buildDivider(),
           _buildFeatureItem(
             icon: Icons.share_rounded,
-            title: 'データのエクスポート・共有',
-            description: 'QRコードを生成し、その場で計算シートの共有が可能です。CSVやその他の形式でデータをエクスポートし、チームメンバーやクライアントと共有できます。',
+            title: l10n.proFeatureExport,
+            description: l10n.proFeatureExportDesc,
             color: const Color(0xFF0277BD),
           ),
           _buildDivider(),
           _buildFeatureItem(
             icon: Icons.hub_rounded,
-            title: 'リンクグラフの完全機能',
-            description: '計算機間のリンク・依存関係をビジュアルで管理できるリンクグラフ機能が完全に解放されます。',
+            title: l10n.proFeatureLinkGraph,
+            description: l10n.proFeatureLinkGraphDesc,
             color: const Color(0xFF1565C0),
           ),
           const SizedBox(height: 8),
@@ -430,6 +438,7 @@ class _StorePageState extends State<StorePage>
   }
 
   Widget _buildAiFeatureDescription() {
+    final l10n = _l10n;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       decoration: BoxDecoration(
@@ -447,22 +456,22 @@ class _StorePageState extends State<StorePage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionHeader(
-            title: 'AI機能でできること',
-            subtitle: 'チャージした回数分だけAIを活用',
+            title: l10n.aiFeatures,
+            subtitle: l10n.aiFeaturesDesc,
           ),
           const Divider(height: 1, color: Color(0xFFE3EEFF)),
 
           _buildFeatureItem(
             icon: Icons.functions_rounded,
-            title: '計算式のAIアシスト',
-            description: '複雑な計算式の作成をAIがサポート。自然言語で条件を伝えるだけで適切な数式を提案します。',
+            title: l10n.aiFeatureFormulaAssist,
+            description: l10n.aiFeatureFormulaAssistDesc,
             color: const Color(0xFF0288D1),
           ),
   const Divider(height: 1, color: Color(0xFFE3EEFF)),
           _buildFeatureItem(
             icon: Icons.camera_alt_rounded,
-            title: 'AIカウント機能',
-            description: '画像から指定したアイテムをAIがカウントします。カウントした数値は電卓に即座にインポートします。',
+            title: l10n.aiFeatureCounting,
+            description: l10n.aiFeatureCountingDesc,
             color: const Color(0xFF0288D1),
           ),
           _buildDivider(),
@@ -480,10 +489,10 @@ class _StorePageState extends State<StorePage>
               children: [
                 Icon(Icons.info_outline_rounded, size: 18, color: _accentBlue),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'AI利用回数は消耗型です。購入後すぐに残回数に反映されます。有効期限はありません。',
-                    style: TextStyle(
+                    l10n.aiFeatureConsumable,
+                    style: const TextStyle(
                       fontSize: 12,
                       color: _textMedium,
                       height: 1.5,
@@ -506,7 +515,7 @@ class _StorePageState extends State<StorePage>
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
       child: Row(
         children: [
-          Spacer(),
+          const Spacer(),
           Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -527,7 +536,7 @@ class _StorePageState extends State<StorePage>
               ),
             ],
           ),
-          Spacer(),
+          const Spacer(),
         ],
       ),
     );
@@ -593,7 +602,8 @@ class _StorePageState extends State<StorePage>
   }
 
   Widget _buildPackagesSection() {
-    final sectionLabel = widget.isProContext ? 'プラン選択' : 'チャージプランを選択';
+    final l10n = _l10n;
+    final sectionLabel = widget.isProContext ? l10n.planSelect : l10n.chargePlanSelect;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,6 +635,7 @@ class _StorePageState extends State<StorePage>
   }
 
   Widget _buildEmptyPackages() {
+    final l10n = _l10n;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(32),
@@ -637,14 +648,14 @@ class _StorePageState extends State<StorePage>
         children: [
           Icon(Icons.inventory_2_outlined, size: 48, color: _textLight),
           const SizedBox(height: 12),
-          const Text(
-            '現在購入できるプランがありません',
-            style: TextStyle(fontSize: 15, color: _textMedium, fontWeight: FontWeight.w500),
+          Text(
+            l10n.noPlansAvailable,
+            style: const TextStyle(fontSize: 15, color: _textMedium, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 6),
-          const Text(
-            '後ほど再度お試しください',
-            style: TextStyle(fontSize: 13, color: _textLight),
+          Text(
+            l10n.tryAgainLater,
+            style: const TextStyle(fontSize: 13, color: _textLight),
           ),
         ],
       ),
@@ -653,6 +664,7 @@ class _StorePageState extends State<StorePage>
 
   Widget _buildPackageCard(Package package, int index) {
     final isRecommended = index == 0;
+    final l10n = _l10n;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -690,9 +702,9 @@ class _StorePageState extends State<StorePage>
                     bottomRight: Radius.circular(8),
                   ),
                 ),
-                child: const Text(
-                  'おすすめ',
-                  style: TextStyle(
+                child: Text(
+                  l10n.recommended,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -792,6 +804,7 @@ class _StorePageState extends State<StorePage>
   }
 
   Widget _buildNotesSection() {
+    final l10n = _l10n;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 24, 16, 0),
       padding: const EdgeInsets.all(20),
@@ -803,13 +816,13 @@ class _StorePageState extends State<StorePage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.info_outline_rounded, size: 18, color: _accentBlue),
-              SizedBox(width: 8),
+              const Icon(Icons.info_outline_rounded, size: 18, color: _accentBlue),
+              const SizedBox(width: 8),
               Text(
-                '購入に関するご注意',
-                style: TextStyle(
+                l10n.purchaseNotes,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: _textDark,
@@ -825,21 +838,22 @@ class _StorePageState extends State<StorePage>
   }
 
   List<Widget> _buildNoteItems() {
+    final l10n = _l10n;
     final notes = widget.isProContext
         ? [
-            '・プロ版は買い切り型です。一度ご購入いただくと、追加費用なしで永久にご利用いただけます。',
-            '・購入はApple IDアカウントに紐づいて管理されます。同じApple IDでサインインすることで複数端末でご利用いただけます。',
-            '・過去にご購入済みの場合は、画面右上の「購入を復元」からご利用を再開いただけます。',
-            '・お支払いはApp Storeを通じて行われます。詳しくはAppleの利用規約をご確認ください。',
-            '・ご不明な点はサポートまでお問い合わせください。',
+            l10n.purchaseNotesPro1,
+            l10n.purchaseNotesPro2,
+            l10n.purchaseNotesPro3,
+            l10n.purchaseNotesPro4,
+            l10n.purchaseNotesPro5,
           ]
         : [
-            '・購入したAI利用回数は消耗型です。ご利用のたびに1回ずつ消費されます。',
-            '・有効期限はありません。購入した回数はいつでもご利用いただけます。',
-            '・購入はApple IDアカウントに紐づいて管理されます。同じApple IDでサインインすることで複数端末でご利用いただけます。',
-            '・回数が不足した場合は、いつでも追加チャージが可能です。',
-            '・お支払いはApp Storeを通じて行われます。詳しくはAppleの利用規約をご確認ください。',
-            '・購入履歴の「購入を復元」機能は、プロ版の復元に使用します。AI利用回数の復元は対象外です。',
+            l10n.purchaseNotesAi1,
+            l10n.purchaseNotesAi2,
+            l10n.purchaseNotesAi3,
+            l10n.purchaseNotesAi4,
+            l10n.purchaseNotesAi5,
+            l10n.purchaseNotesAi6,
           ];
 
     return notes

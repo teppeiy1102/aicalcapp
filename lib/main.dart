@@ -13,6 +13,7 @@ import 'revenuecat_service.dart';
 import 'pro_guard.dart';
 import 'ai_service.dart';
 import 'store_page.dart';
+import 'l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +32,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'AI Calc',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF0D0D14),
         colorScheme: const ColorScheme.dark(
@@ -708,31 +711,33 @@ Example output for "3万円を5人で割り勘":
                     size: 22,
                   ),
                 ),
-                title: const Row(
+                title: Row(
                   children: [
-                    Text(
-                      '計算シートを結合する',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        AppLocalizations.of(context)!.mergeSheets,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                    SizedBox(width: 8),
-                    ProBadge(),
+                    const ProBadge(),
                   ],
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '複数のシートを1画面に並べて表示',
+                      AppLocalizations.of(context)!.mergeSheetsDesc,
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.4),
                         fontSize: 12,
                       ),
                     ),
                     const SizedBox(height: 2),
-                    const ProRequiredLabel(text: 'プロ版が必要です'),
+                    ProRequiredLabel(text: AppLocalizations.of(context)!.proRequired),
                   ],
                 ),
                 onTap: () {
@@ -2005,6 +2010,7 @@ class _HomeLogoTitleState extends State<_HomeLogoTitle> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -2050,9 +2056,9 @@ class _HomeLogoTitleState extends State<_HomeLogoTitle> {
                     ),
                   ],
                 ),
-                child: const Text(
-                  'Pro',
-                  style: TextStyle(
+                child: Text(
+                  l10n.proLabel,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
@@ -2064,7 +2070,7 @@ class _HomeLogoTitleState extends State<_HomeLogoTitle> {
           ],
         ),
         Text(
-          '現場を支える、次世代の電卓',
+          l10n.genbaCalcTagline,
           style: TextStyle(
             color: Colors.white.withOpacity(0.35),
             fontSize: 10,
@@ -2083,6 +2089,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -2102,9 +2109,9 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-          const Text(
-            'まだシートがありません',
-            style: TextStyle(
+          Text(
+            l10n.noSheets,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.w800,
@@ -2113,7 +2120,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            '計算を自動化する魔法を始めましょう',
+            l10n.noSheetsSubtitle,
             style: TextStyle(
               color: Colors.white.withOpacity(0.3),
               fontSize: 14,

@@ -1,3 +1,11 @@
-1. calculator_widget_links.dart からリンク先を選ぶ UI (`_showSheetLinkSettingsDialog`) を独立した Widget (`_LinkPickerSheet` など) として切り出すか、元の関数が `Future<Map<String, dynamic>?>` を返すように変更する。
-2. そのピッカーを `calculator_row.dart` の「真の場合の値」「偽の場合の値」でも呼べるようにし、それらの値を `trueLinkSource`, `falseLinkSource` などのフィールドに保存できるようにする。
-3. `calculator_row.dart` の UI を更新し、そこでもリンク元を選べるボタン (`onPickLinkSource`) を表示するようにする。
+# Localization Implementation Plan
+
+## Problem
+- `main.dart` doesn't use `AppLocalizations` - all UI strings are hardcoded in Japanese
+- `AppLocalizations.of(context)` is only used in `pro_guard.dart`, `link_graph_page.dart`, `store_page.dart`
+- `MaterialApp` doesn't have `localizationsDelegates` or `supportedLocales` configured
+
+## Steps
+1. ✅ Add import, localizationsDelegates, and supportedLocales to MaterialApp in main.dart
+2. 🔲 Replace hardcoded strings with AppLocalizations in main.dart
+3. 🔲 Check/update other files (calculator_widget_view.dart, calculator_widget.dart, etc.)
