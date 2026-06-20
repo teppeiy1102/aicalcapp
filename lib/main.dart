@@ -2245,22 +2245,7 @@ class _WidgetCardState extends State<_WidgetCard> {
         border: widget.isSelected
             ? Border.all(color: const Color(0xFF5E81FF), width: 2.5)
             : null,
-        boxShadow: [
-   BoxShadow(
-            color: widget.isSelected
-                ? const Color(0xFF5E81FF).withOpacity(0.25)
-                : const Color.fromARGB(255, 234, 130, 255).withOpacity(isDark ? 0.05 : 0.05),
-            blurRadius: 34,
-            offset: const Offset(5, 5),
-          ),
-          BoxShadow(
-            color: widget.isSelected
-                ? const Color(0xFF5E81FF).withOpacity(0.25)
-                : const Color.fromARGB(255, 130, 199, 255).withOpacity(isDark ? 0.05 : 0.05),
-            blurRadius: 34,
-            offset: const Offset(0, 12),
-          ),
-        ],
+   
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(

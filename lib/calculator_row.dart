@@ -58,6 +58,7 @@ class _CalculatorRow extends StatelessWidget {
   final List<dynamic> logicItems;
   final void Function(Map<String, dynamic> newItem)? onAddLogicItem;
   final Future<Map<String, dynamic>?> Function()? onPickLinkSource;
+  final void Function(double currentValue, void Function(double) onConfirm)? onValueTap;
 
   const _CalculatorRow({
     required this.name,
@@ -109,6 +110,7 @@ class _CalculatorRow extends StatelessWidget {
     this.logicItems = const [],
     this.onAddLogicItem,
     this.onPickLinkSource,
+    this.onValueTap,
   });
 
   /// termLabels 優先、なければデフォルト
@@ -750,28 +752,26 @@ class _CalculatorRow extends StatelessWidget {
                       color: Colors.blueAccent.withOpacity(0.4),
                     ),
                   ),
-                  child: Expanded(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          constraints: const BoxConstraints(maxWidth: 130),
-                          child: Text(
-                            overflow: TextOverflow.ellipsis,
-                            suggestedUnits[0],
-                            style: const TextStyle(
-                              color: Colors.blueAccent,
-                              fontSize: 13,
-                            ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        constraints: const BoxConstraints(maxWidth: 130),
+                        child: Text(
+                          overflow: TextOverflow.ellipsis,
+                          suggestedUnits[0],
+                          style: const TextStyle(
+                            color: Colors.blueAccent,
+                            fontSize: 13,
                           ),
                         ),
-                        const Icon(
-                          Icons.expand_more,
-                          size: 14,
-                          color: Colors.blueAccent,
-                        ),
-                      ],
-                    ),
+                      ),
+                      const Icon(
+                        Icons.expand_more,
+                        size: 14,
+                        color: Colors.blueAccent,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -1276,6 +1276,11 @@ class _CalculatorRow extends StatelessWidget {
   }
 
   void _editInput(BuildContext context) async {
+    if (onValueTap != null && !inputLink) {
+      onValueTap!(input, (newVal) => _updateWith(newInput: newVal));
+      return;
+    }
+
     final _inputText = input.toString();
     final _displayInputText = _addCommas(_inputText);
     final ctrl = TextEditingController(text: _displayInputText)
@@ -2660,6 +2665,11 @@ class _CalculatorRow extends StatelessWidget {
   }
 
   void _editOperand(BuildContext context) async {
+    if (onValueTap != null && !operandLink) {
+      onValueTap!(operand, (newVal) => _updateWith(newOperand: newVal));
+      return;
+    }
+
     final _operandText = operand.toString();
     final _displayOperandText = _addCommas(_operandText);
     final ctrl = TextEditingController(text: _displayOperandText)
@@ -4088,6 +4098,12 @@ class _CalculatorRow extends StatelessWidget {
     final currentVal = currentOther['val'] as double? ?? 0.0;
     final currentUnit = currentOther['unit'] as String? ?? '';
     final currentLink = currentOther['valLink'] as bool? ?? false;
+
+    if (onValueTap != null && !currentLink) {
+      onValueTap!(currentVal, (newVal) => _updateOther(idx, oVal: newVal));
+      return;
+    }
+
     final currentSource =
         currentOther['valLinkSource'] as Map<String, dynamic>?;
     final currentTransform = currentOther['transform'] as String?;

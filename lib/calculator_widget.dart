@@ -3159,6 +3159,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                               physics: const NeverScrollableScrollPhysics(),
                               buildDefaultDragHandles: false,
                               padding: EdgeInsets.only(bottom: 50),
+                              proxyDecorator: (child, index, animation) {
+                                return Material(
+                                  color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+                                  elevation: 4,
+                                  child: child,
+                                );
+                              },
                               onReorder: (int oldIndex, int newIndex) {
                                 if (newIndex > oldIndex) newIndex -= 1;
                                 _moveItem(oldIndex, newIndex);

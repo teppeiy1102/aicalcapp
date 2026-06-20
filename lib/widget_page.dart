@@ -1028,19 +1028,15 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                     child: Container(
                       width: 50,
                       height: 50,
-                      decoration: BoxDecoration(
-  gradient: const LinearGradient(
-                                colors: [Color.fromARGB(255, 255, 207, 165), Color.fromARGB(255, 163, 182, 252)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                        borderRadius: BorderRadius.circular(1000),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.45),
-                          width: 0.8,
-                        ),
+ decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(1000),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.45),
+                        width: 0.8,
                       ),
-                      child: Stack(
+                    ),
+                     child: Stack(
                         alignment: Alignment.center,
                         children: [
                           Positioned(
@@ -1049,7 +1045,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
 
                             child: Icon(
                               Icons.camera_alt_outlined,
-                              color: Colors.black,
+                              color: Colors.white,
                               size: 24,
                             ),
                           ),
@@ -1067,7 +1063,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                                      child: Text(
                                       'ai',
                                       style: TextStyle(
-                                        color: Colors.black,
+                                        color: Colors.white,
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -2934,7 +2930,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
 
           borderRadius: BorderRadius.all(Radius.circular(30)),
           gradient: LinearGradient(
-            colors: [Color.fromARGB(255, 0, 0, 0),Color.fromARGB(255, 68, 172, 241), Color(0xFF7B7FFF)],
+            colors: [Color.fromARGB(255, 255, 255, 255),Color.fromARGB(255, 255, 255, 255), Color.fromARGB(255, 255, 255, 255)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -2949,12 +2945,10 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-  const Icon(Icons.calculate_rounded, color: Colors.white60, size: 30),
-                    const SizedBox(width: 12),
                     const Text(
                       'Calculator',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Colors.black,
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
@@ -2965,7 +2959,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                     IconButton(
                       onPressed: collapse,
                       icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                      color: Colors.white60,
+                      color: Colors.black,
                       iconSize: 32,
                     ),
                   ],
@@ -2988,7 +2982,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                                     maxLines: 1,
                                   style: TextStyle(
                                     height: 1,
-                                    color: Colors.white54,
+                                    color: Colors.black,
                                     fontSize: 24,
                                     fontWeight: FontWeight.w900,
                                   ),
@@ -2998,7 +2992,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                               child: const Text(
                                                     'Calculator',
                                                     style: TextStyle(
-                                                      color: Colors.white70,
+                                                      color: Colors.black,
                                                       fontSize: 22,
                                                       fontWeight: FontWeight.w600,
                                                       letterSpacing: 0.5,
@@ -3008,18 +3002,18 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
 GestureDetector(
                         onTap: _showHistory,
                         child: Container(
-                          margin: const EdgeInsets.only(left:10),
+                          margin: const EdgeInsets.only(left:10,right: 10),
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.black.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(1000),
                          
                           ),
-                          child: const Icon(Icons.history_rounded, color: Colors.white, size: 24),
+                          child: const Icon(Icons.history_rounded, color: Colors.black, size: 24),
                         ),
                       ),
-                    const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white38, size: 28),
+                    const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.black38, size: 28),
                   ],
                 ),
               ),
@@ -3106,11 +3100,7 @@ GestureDetector(
                                 color: Colors.white.withOpacity(0.45),
                                 width: 0.8,
                               ),
-                              gradient: const LinearGradient(
-                                colors: [Color.fromARGB(255, 255, 207, 165), Color.fromARGB(255, 163, 182, 252)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
+                          
                             ),
                             child: Stack(
                               alignment: Alignment.center,
@@ -3118,7 +3108,7 @@ GestureDetector(
                                 Positioned(
                                  top: 14, 
                                  bottom: 0,
-                                  child: const Icon(Icons.camera_alt_outlined, color: Colors.black, size: 24)),
+                                  child: const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 24)),
                                 if (_isAiCounting)
                                   const SizedBox(
                                     width: 34,
@@ -3130,7 +3120,7 @@ GestureDetector(
                                      child: Text(
                                       'ai',
                                       style: TextStyle(
-                                        color: Colors.black,
+                                        color: Colors.white,
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                       ),

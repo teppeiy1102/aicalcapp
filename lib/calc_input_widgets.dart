@@ -410,20 +410,20 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                       child: Container(
                         width: 50,
                         height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.85),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.45),
-                            width: 0.8,
-                          ),
-                          shape: BoxShape.circle,
+  decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 0.8,
+                        ),
+                         shape: BoxShape.circle,
                         ),
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
                             const Icon(
                               Icons.camera_alt_outlined,
-                              color: Colors.black,
+                              color: Colors.white70,
                               size: 24,
                             ),
                             if (_isAiCounting)
