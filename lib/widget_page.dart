@@ -2928,11 +2928,11 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
         height: handleH + 20,
         decoration: const BoxDecoration(
 
-          borderRadius: BorderRadius.all(Radius.circular(30)),
+          borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
           gradient: LinearGradient(
-            colors: [Color.fromARGB(255, 255, 255, 255),Color.fromARGB(255, 255, 255, 255), Color.fromARGB(255, 255, 255, 255)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            colors: [Color.fromARGB(255, 255, 255, 255),Color.fromARGB(255, 255, 255, 255), Color.fromARGB(181, 255, 255, 255)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
         child: _isExpanded
@@ -2946,7 +2946,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Text(
-                      'Calculator',
+                      'Genba Calc',
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 22,
@@ -2984,7 +2984,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                                     height: 1,
                                     color: Colors.black,
                                     fontSize: 24,
-                                    fontWeight: FontWeight.w900,
+         //                           fontWeight: FontWeight.w900,
                                   ),
                                 ),
                               ),
@@ -3006,14 +3006,14 @@ GestureDetector(
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.grey.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(1000),
                          
                           ),
                           child: const Icon(Icons.history_rounded, color: Colors.black, size: 24),
                         ),
                       ),
-                    const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.black38, size: 28),
+                    const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.black, size: 28),
                   ],
                 ),
               ),
@@ -3034,7 +3034,16 @@ GestureDetector(
     final subtitle = _hasResult ? _exprStr : inProg;
 
     return Container(
-      color: Colors.black,
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(0)),
+        gradient: LinearGradient(
+          colors: [const Color.fromARGB(255, 88, 88, 88), const Color.fromARGB(255, 51, 51, 51), const Color.fromARGB(255, 0, 0, 0).withOpacity(1)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: const [0.0, 0.5, 1],
+        ),
+        
+      ),
       child: LayoutBuilder(
           builder: (ctx, constraints) {
           final screenH = MediaQuery.of(ctx).size.height;
@@ -3095,6 +3104,7 @@ GestureDetector(
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.4),
                               borderRadius: BorderRadius.circular(1000),
                               border: Border.all(
                                 color: Colors.white.withOpacity(0.45),

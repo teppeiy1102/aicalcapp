@@ -2389,6 +2389,300 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Applied to all except linked'**
   String get appliedToAllExceptLinked;
+
+  /// No description provided for @tooltipMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu'**
+  String get tooltipMenu;
+
+  /// No description provided for @tooltipLinkValues.
+  ///
+  /// In en, this message translates to:
+  /// **'Link values'**
+  String get tooltipLinkValues;
+
+  /// No description provided for @toolbarCalculator.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculator'**
+  String get toolbarCalculator;
+
+  /// No description provided for @toolbarAiGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Generate'**
+  String get toolbarAiGenerate;
+
+  /// No description provided for @modeSelect.
+  ///
+  /// In en, this message translates to:
+  /// **'Select display mode'**
+  String get modeSelect;
+
+  /// No description provided for @editModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit formulas'**
+  String get editModeDesc;
+
+  /// No description provided for @viewModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Show constants, memos and results'**
+  String get viewModeDesc;
+
+  /// No description provided for @tableModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit values in spreadsheet format'**
+  String get tableModeDesc;
+
+  /// No description provided for @aiGenerateCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate calculation with AI'**
+  String get aiGenerateCalc;
+
+  /// No description provided for @noContent.
+  ///
+  /// In en, this message translates to:
+  /// **'No content'**
+  String get noContent;
+
+  /// No description provided for @memoEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Memo (tap to edit)'**
+  String get memoEmptyHint;
+
+  /// No description provided for @defaultCalcName.
+  ///
+  /// In en, this message translates to:
+  /// **'Calc {n}'**
+  String defaultCalcName(Object n);
+
+  /// No description provided for @defaultConstantName.
+  ///
+  /// In en, this message translates to:
+  /// **'Constant {n}'**
+  String defaultConstantName(Object n);
+
+  /// No description provided for @previousResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous result (answer)'**
+  String get previousResult;
+
+  /// No description provided for @logicExpression.
+  ///
+  /// In en, this message translates to:
+  /// **'Logic expression'**
+  String get logicExpression;
+
+  /// No description provided for @logicFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (Logic)'**
+  String logicFormat(Object name);
+
+  /// No description provided for @constantFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (Constant)'**
+  String constantFormat(Object name);
+
+  /// No description provided for @sheetTitleUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled sheet'**
+  String get sheetTitleUnknown;
+
+  /// No description provided for @labelFormula.
+  ///
+  /// In en, this message translates to:
+  /// **'Formula'**
+  String get labelFormula;
+
+  /// No description provided for @labelNoFormula.
+  ///
+  /// In en, this message translates to:
+  /// **'No formula'**
+  String get labelNoFormula;
+
+  /// No description provided for @cameraPermissionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera permission is required.'**
+  String get cameraPermissionRequired;
+
+  /// No description provided for @galleryPermissionRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo access permission is required.'**
+  String get galleryPermissionRequired;
+
+  /// No description provided for @openSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get openSettings;
+
+  /// No description provided for @imagePickFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load image: {error}'**
+  String imagePickFailed(Object error);
+
+  /// No description provided for @enterCountInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter what to count.'**
+  String get enterCountInstruction;
+
+  /// No description provided for @countReadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read numbers. Try a different instruction.'**
+  String get countReadFailed;
+
+  /// No description provided for @errorOccurred.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String errorOccurred(Object error);
+
+  /// No description provided for @selectObjectToCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Select object to count'**
+  String get selectObjectToCount;
+
+  /// No description provided for @remainingUsesFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining AI uses: {count} (Purchase more)'**
+  String remainingUsesFormat(Object count);
+
+  /// No description provided for @aiImageAnalyzing.
+  ///
+  /// In en, this message translates to:
+  /// **'AI is analyzing the image...'**
+  String get aiImageAnalyzing;
+
+  /// No description provided for @reflectToCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply to calculator'**
+  String get reflectToCalc;
+
+  /// No description provided for @changePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get changePhoto;
+
+  /// No description provided for @countInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter what to count and AI will analyze the image.'**
+  String get countInstruction;
+
+  /// No description provided for @countHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What to count? (e.g., people, bolts, boxes)'**
+  String get countHint;
+
+  /// No description provided for @categorySelectLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select from category'**
+  String get categorySelectLabel;
+
+  /// No description provided for @deleteHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete history'**
+  String get deleteHistoryTitle;
+
+  /// No description provided for @deleteHistoryConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count} history entries?'**
+  String deleteHistoryConfirm(Object count);
+
+  /// No description provided for @historyToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get historyToday;
+
+  /// No description provided for @historyYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get historyYesterday;
+
+  /// No description provided for @fullClearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get fullClearTitle;
+
+  /// No description provided for @fullClearConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all history entries?'**
+  String get fullClearConfirm;
+
+  /// No description provided for @itemsSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String itemsSelected(Object count);
+
+  /// No description provided for @normalCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculation'**
+  String get normalCalc;
+
+  /// No description provided for @sheetCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sheets'**
+  String sheetCount(Object count);
+
+  /// No description provided for @memoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} memos'**
+  String memoCount(Object count);
+
+  /// No description provided for @exposedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} exposed'**
+  String exposedCount(Object count);
+
+  /// No description provided for @selectAtLeast.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least {count}'**
+  String selectAtLeast(Object count);
+
+  /// No description provided for @selectedCountFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String selectedCountFormat(Object count);
+
+  /// No description provided for @noItemsInSelectionMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select at least 1'**
+  String get noItemsInSelectionMode;
 }
 
 class _AppLocalizationsDelegate

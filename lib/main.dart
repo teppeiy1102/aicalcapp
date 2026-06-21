@@ -330,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(items.length == 1 ? '新規シートに追加しました' : '${items.length}件を新規シートに追加しました'),
+          content: Text(items.length == 1 ? AppLocalizations.of(context)!.addedToNewSheet : AppLocalizations.of(context)!.addedItemsToNewSheet(items.length)),
           backgroundColor: const Color.fromARGB(255, 234, 234, 235),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
@@ -348,9 +348,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (ai.currentModel == AiModel.local && !ai.isInitialized) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ローカルAIが初期化されていません。'),
-          backgroundColor: Color(0xFF2A2A3A),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.aiLocalNotReady),
+          backgroundColor: const Color(0xFF2A2A3A),
         ),
       );
       return;
@@ -367,18 +367,18 @@ class _HomeScreenState extends State<HomeScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           backgroundColor: const Color(0xFF1E1E2E),
-          title: const Text(
-            'AI機能は購入が必要です',
-            style: TextStyle(color: Colors.white, fontSize: 16),
+          title: Text(
+            AppLocalizations.of(context)!.aiPurchaseRequired,
+            style: const TextStyle(color: Colors.white, fontSize: 16),
           ),
-          content: const Text(
-            'AI機能を使用するには、AI利用回数のチャージが必要です。ストアページで購入してください。',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+          content: Text(
+            AppLocalizations.of(context)!.aiPurchaseRequiredDesc,
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+              child: Text(AppLocalizations.of(context)!.cancel, style: const TextStyle(color: Colors.white54)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -392,7 +392,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   MaterialPageRoute(builder: (_) => const StorePage()),
                 );
               },
-              child: const Text('ストアへ'),
+              child: Text(AppLocalizations.of(context)!.goToStore),
             ),
           ],
         ),
@@ -402,13 +402,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() => _isHomeAiGenerating = true);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('計算式を生成中...'),
-        duration: Duration(seconds: 3),
-        backgroundColor: Color(0xFF2A2A3A),
-      ),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.generatingFormula),
+          duration: const Duration(seconds: 3),
+          backgroundColor: const Color(0xFF2A2A3A),
+        ),
+      );
 
     final instruction = result.instruction;
     final prompt =
@@ -500,7 +500,7 @@ Example output for "3万円を5人で割り勘":
           _saveConfigs();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('「$title」を生成しました'),
+              content: Text(AppLocalizations.of(context)!.generatedSheet(title)),
               backgroundColor: const Color.fromARGB(255, 230, 230, 230),
               behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 3),
@@ -512,7 +512,7 @@ Example output for "3万円を5人で割り勘":
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('生成失敗: $e'),
+            content: Text(AppLocalizations.of(context)!.generationFailed(e.toString())),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -540,18 +540,18 @@ Example output for "3万円を5人で割り勘":
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF161625),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          'シートの削除',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        title: Text(
+          AppLocalizations.of(context)!.deleteSheet,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         content: Text(
-          '「${_configs[index].data['title'] ?? '定型計算'}」を削除しますか？この操作は取り消せません。',
+          AppLocalizations.of(context)!.deleteSheetConfirm(_configs[index].data['title'] ?? AppLocalizations.of(context)!.standardCalc),
           style: const TextStyle(color: Colors.white60, fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('キャンセル', style: TextStyle(color: Colors.white38)),
+            child: Text(AppLocalizations.of(context)!.cancel, style: const TextStyle(color: Colors.white38)),
           ),
           TextButton(
             onPressed: () {
@@ -559,9 +559,9 @@ Example output for "3万円を5人で割り勘":
               Navigator.pop(ctx);
               _saveConfigs();
             },
-            child: const Text(
-              '削除する',
-              style: TextStyle(
+            child: Text(
+              AppLocalizations.of(context)!.deleteConfirm,
+              style: const TextStyle(
                 color: Colors.redAccent,
                 fontWeight: FontWeight.bold,
               ),
@@ -760,33 +760,33 @@ Example output for "3万円を5人で割り勘":
                     size: 22,
                   ),
                 ),
-                title: const Row(
-                  children: [
-                    Text(
-                      'QRコードで共有',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+              title: Row(
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.qrShare,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
                     ),
-                    SizedBox(width: 8),
-                    ProBadge(),
-                  ],
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'シートを選択してQRコードで書き出す',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.4),
-                        fontSize: 12,
-                      ),
+                  ),
+                  const SizedBox(width: 8),
+                  const ProBadge(),
+                ],
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.qrShareDesc,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 12,
                     ),
-                    const SizedBox(height: 2),
-                    const ProRequiredLabel(text: 'プロ版が必要です'),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 2),
+                  ProRequiredLabel(text: AppLocalizations.of(context)!.proRequired),
+                ],
+              ),
                 onTap: () {
                   Navigator.pop(ctx);
                   ProGuard.checkAndRun(context, _startQrSelectMode);
@@ -807,33 +807,33 @@ Example output for "3万円を5人で割り勘":
                     size: 22,
                   ),
                 ),
-                title: const Row(
-                  children: [
-                    Text(
-                      'シートを取り込む',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+              title: Row(
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.qrImport,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
                     ),
-                    SizedBox(width: 8),
-                    ProBadge(),
-                  ],
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'QRコードからシートをインポート',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.4),
-                        fontSize: 12,
-                      ),
+                  ),
+                  const SizedBox(width: 8),
+                  const ProBadge(),
+                ],
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.qrImportDesc,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 12,
                     ),
-                    const SizedBox(height: 2),
-                    const ProRequiredLabel(text: 'プロ版が必要です'),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 2),
+                  ProRequiredLabel(text: AppLocalizations.of(context)!.proRequired),
+                ],
+              ),
                 onTap: () {
                   Navigator.pop(ctx);
                   ProGuard.checkAndRun(context, _showQrScanner);
@@ -854,29 +854,29 @@ Example output for "3万円を5人で割り勘":
                     size: 22,
                   ),
                 ),
-                title: const Row(
-                  children: [
-                    Text(
-                      'リンクグラフ',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+              title: Row(
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.linkGraph,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
                     ),
-                  ],
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'シート間のリンク関係をグラフで可視化',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.4),
-                        fontSize: 12,
-                      ),
+                  ),
+                ],
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context)!.linkGraphDesc,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.4),
+                      fontSize: 12,
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
                 onTap: () {
                   Navigator.pop(ctx);
                     Navigator.push(
@@ -915,15 +915,15 @@ Example output for "3万円を5人で割り勘":
                     size: 22,
                   ),
                 ),
-                title: const Text(
-                  '設定',
-                  style: TextStyle(
+                title: Text(
+                  AppLocalizations.of(context)!.settings,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 subtitle: Text(
-                  'ユーザー定義定数の管理',
+                  AppLocalizations.of(context)!.userConstantsDesc,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.4),
                     fontSize: 12,
@@ -1743,7 +1743,8 @@ Example output for "3万円を5人で割り勘":
     }
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: const Color(0xFF0D0D14),
+      //backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       body: Stack(
         children: [
           // 背景のグラデーション装飾
@@ -1788,14 +1789,15 @@ Example output for "3万円を5人で割り勘":
                 SliverAppBar(
                   pinned: true,
                   expandedHeight: (_isSelectMode || _isQrSelectMode) ? 0 : 200,
-                  backgroundColor: const Color(0xFF0D0D14).withOpacity(0.9),
+                  backgroundColor: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.0),
+                  //backgroundColor: const Color(0xFF0D0D14).withOpacity(0.9),
                   surfaceTintColor: Colors.transparent,
                   elevation: 0,
                   actions: _isSelectMode
                       ? [
                           Center(
                             child: Padding(
-                              padding: const EdgeInsets.only(right: 4),
+                              padding: const EdgeInsets.only(right: 10),
                               child: Text(
                                 _selectedForMerge.length < 2
                                     ? '2件以上選択してください'
@@ -1803,7 +1805,7 @@ Example output for "3万円を5人で割り勘":
                                 style: TextStyle(
                                   color: _selectedForMerge.length >= 2
                                       ? const Color(0xFF5E81FF)
-                                      : Colors.white,
+                                      : Colors.black,
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -1835,7 +1837,7 @@ Example output for "3万円を5人で割り勘":
                           IconButton(
                             icon: const Icon(
                               Icons.menu_rounded,
-                              color: Colors.white70,
+                              color: Colors.black87,
                               size: 26,
                             ),
                             onPressed: _showMainMenu,
@@ -2023,7 +2025,8 @@ class _HomeLogoTitleState extends State<_HomeLogoTitle> {
           children: [
             ShaderMask(
               shaderCallback: (bounds) => const LinearGradient(
-                colors: [Color(0xFF5E81FF), Color(0xFFB08FFF), Color(0xFF82C8FF)],
+                colors: [Color.fromARGB(255, 7, 7, 7), Color.fromARGB(255, 40, 40, 40), Color.fromARGB(255, 68, 68, 68)],
+                //colors: [Color(0xFF5E81FF), Color(0xFFB08FFF), Color(0xFF82C8FF)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ).createShader(bounds),
@@ -2072,7 +2075,7 @@ class _HomeLogoTitleState extends State<_HomeLogoTitle> {
         Text(
           l10n.genbaCalcTagline,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.35),
+            color: Colors.black.withOpacity(0.5),
             fontSize: 10,
             fontWeight: FontWeight.w500,
             letterSpacing: 0.2,
@@ -2247,6 +2250,14 @@ class _WidgetCardState extends State<_WidgetCard> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.5),
+            blurRadius: 72,
+            spreadRadius: 6,
+            offset: const Offset(0, 0),
+          ),
+        ],
         borderRadius: BorderRadius.circular(32),
         color: cardBgColor.withAlpha(240),
         border: widget.isSelected
@@ -2269,7 +2280,7 @@ class _WidgetCardState extends State<_WidgetCard> {
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: borderColor,
-                    width: widget.isSelected ? 0 : 1.5,
+                    width: widget.isSelected ? 0 : 0,
                   ),
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(32),
@@ -2732,8 +2743,8 @@ class _HomeFab extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color.fromARGB(255, 241, 243, 249),
-                  Color.fromARGB(255, 202, 183, 255),
+                  Color.fromARGB(255, 0, 0, 0),
+                  Color.fromARGB(255, 0, 0, 0),
                 ],
               ),
               boxShadow: [
@@ -2745,7 +2756,7 @@ class _HomeFab extends StatelessWidget {
               ],
             ),
             child:
-                Icon(Icons.add_rounded, color: Colors.black, size: 28),
+                Icon(Icons.add_rounded, color: Colors.white, size: 28),
                
           ),
         ),
@@ -2768,8 +2779,8 @@ class _HomeFab extends StatelessWidget {
                         Colors.deepPurple.withOpacity(0.4),
                       ]
                     : const [
-                        Color.fromARGB(255, 241, 243, 249),
-                        Color.fromARGB(255, 202, 183, 255),
+                        Color.fromARGB(255, 0, 0, 0),
+                        Color.fromARGB(255, 0, 0, 0),
                       ],
               ),
               boxShadow: [
@@ -2793,7 +2804,7 @@ class _HomeFab extends StatelessWidget {
                   )
                 : const Icon(
                     Icons.auto_awesome_rounded,
-                    color: Colors.black,
+                    color: Colors.white,
                     size: 26,
                   ),
           ),
@@ -2853,13 +2864,14 @@ class _MergeActionBar extends StatelessWidget {
           ),
           const Spacer(),
           Flexible(
+            flex: 2,
             child: GestureDetector(
               onTap: canMerge ? onMerge : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(30),
                   gradient: canMerge
                       ? const LinearGradient(
                           colors: [
@@ -2872,12 +2884,13 @@ class _MergeActionBar extends StatelessWidget {
                 ),
                 child: Text(
                   overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                   canMerge
                       ? (isAppendMode
                             ? '$selectedCount件のシートを追加'
                             : '$selectedCount件のシートを結合')
                       : (isAppendMode ? '1件以上選択' : '2件以上選択'),
-                  maxLines: 1,
+                  maxLines: 2,
                   style: TextStyle(
                     color: canMerge ? Colors.white : Colors.white38,
                     fontSize: 14,
@@ -3109,8 +3122,8 @@ class _SettingsPageState extends State<_SettingsPage> {
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      isNew ? '定数を追加' : '定数を編集',
+            child: Text(
+              isNew ? AppLocalizations.of(context)!.addConstant : AppLocalizations.of(context)!.editConstant,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
@@ -3127,23 +3140,23 @@ class _SettingsPageState extends State<_SettingsPage> {
                 ],
               ),
               const SizedBox(height: 16),
-              const Text(
-                '名前',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+              Text(
+                AppLocalizations.of(context)!.constantName,
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
               ),
               const SizedBox(height: 6),
               TextField(
                 controller: nameCtrl,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  hintText: '例: 消費税率',
-                  hintStyle: TextStyle(color: Colors.white24),
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.constantNameHint,
+                  hintStyle: const TextStyle(color: Colors.white24),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                '値',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+              Text(
+                AppLocalizations.of(context)!.constantValue,
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
               ),
               const SizedBox(height: 6),
               TextField(

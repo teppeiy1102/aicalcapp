@@ -1216,4 +1216,179 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get appliedToAllExceptLinked => 'リンク以外に適用しました';
+
+  @override
+  String get tooltipMenu => 'メニュー';
+
+  @override
+  String get tooltipLinkValues => '値をリンク';
+
+  @override
+  String get toolbarCalculator => '電卓';
+
+  @override
+  String get toolbarAiGenerate => 'AI生成';
+
+  @override
+  String get modeSelect => '表示モードを選択';
+
+  @override
+  String get editModeDesc => '計算式を編集できます';
+
+  @override
+  String get viewModeDesc => '定数・メモ・計算結果を表示します';
+
+  @override
+  String get tableModeDesc => '値のみをシート形式で表示・編集できます';
+
+  @override
+  String get aiGenerateCalc => 'AIで計算式を生成';
+
+  @override
+  String get noContent => '内容がありません';
+
+  @override
+  String get memoEmptyHint => 'メモ（タップして編集）';
+
+  @override
+  String defaultCalcName(Object n) {
+    return '計算 $n';
+  }
+
+  @override
+  String defaultConstantName(Object n) {
+    return '定数$n';
+  }
+
+  @override
+  String get previousResult => '直前の残高（答え）';
+
+  @override
+  String get logicExpression => '論理式';
+
+  @override
+  String logicFormat(Object name) {
+    return '$name（論理式）';
+  }
+
+  @override
+  String constantFormat(Object name) {
+    return '$name（定数）';
+  }
+
+  @override
+  String get sheetTitleUnknown => '名称未設定シート';
+
+  @override
+  String get labelFormula => '式';
+
+  @override
+  String get labelNoFormula => '計算式未設定';
+
+  @override
+  String get cameraPermissionRequired => 'カメラのアクセス許可が必要です。';
+
+  @override
+  String get galleryPermissionRequired => '写真へのアクセス許可が必要です。';
+
+  @override
+  String get openSettings => '設定を開く';
+
+  @override
+  String imagePickFailed(Object error) {
+    return '画像の取得に失敗しました: $error';
+  }
+
+  @override
+  String get enterCountInstruction => '何を数えるか入力してください。';
+
+  @override
+  String get countReadFailed => '数字を読み取れませんでした。別の指示を試してください。';
+
+  @override
+  String errorOccurred(Object error) {
+    return 'エラー: $error';
+  }
+
+  @override
+  String get selectObjectToCount => 'カウントする対象を選択';
+
+  @override
+  String remainingUsesFormat(Object count) {
+    return '残りAI使用回数: $count 回 (追加購入)';
+  }
+
+  @override
+  String get aiImageAnalyzing => 'AIが画像を解析中...';
+
+  @override
+  String get reflectToCalc => '電卓に反映';
+
+  @override
+  String get changePhoto => '写真を変更';
+
+  @override
+  String get countInstruction => 'カウント対象を入力して、AIに画像を解析させましょう。';
+
+  @override
+  String get countHint => '何を数えますか？（例：人、ボルト、箱）';
+
+  @override
+  String get categorySelectLabel => 'カテゴリーから選択';
+
+  @override
+  String get deleteHistoryTitle => '履歴を削除';
+
+  @override
+  String deleteHistoryConfirm(Object count) {
+    return '選択した$count件の履歴を削除しますか？';
+  }
+
+  @override
+  String get historyToday => '今日';
+
+  @override
+  String get historyYesterday => '昨日';
+
+  @override
+  String get fullClearTitle => '全削除';
+
+  @override
+  String get fullClearConfirm => 'すべての履歴を削除しますか？';
+
+  @override
+  String itemsSelected(Object count) {
+    return '$count件選択';
+  }
+
+  @override
+  String get normalCalc => '計算';
+
+  @override
+  String sheetCount(Object count) {
+    return '$count枚';
+  }
+
+  @override
+  String memoCount(Object count) {
+    return '$count件';
+  }
+
+  @override
+  String exposedCount(Object count) {
+    return '$count件';
+  }
+
+  @override
+  String selectAtLeast(Object count) {
+    return '$count件以上選択';
+  }
+
+  @override
+  String selectedCountFormat(Object count) {
+    return '$count件選択中';
+  }
+
+  @override
+  String get noItemsInSelectionMode => '1件以上選択してください';
 }

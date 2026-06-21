@@ -1232,4 +1232,182 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appliedToAllExceptLinked => 'Applied to all except linked';
+
+  @override
+  String get tooltipMenu => 'Menu';
+
+  @override
+  String get tooltipLinkValues => 'Link values';
+
+  @override
+  String get toolbarCalculator => 'Calculator';
+
+  @override
+  String get toolbarAiGenerate => 'AI Generate';
+
+  @override
+  String get modeSelect => 'Select display mode';
+
+  @override
+  String get editModeDesc => 'Edit formulas';
+
+  @override
+  String get viewModeDesc => 'Show constants, memos and results';
+
+  @override
+  String get tableModeDesc => 'Edit values in spreadsheet format';
+
+  @override
+  String get aiGenerateCalc => 'Generate calculation with AI';
+
+  @override
+  String get noContent => 'No content';
+
+  @override
+  String get memoEmptyHint => 'Memo (tap to edit)';
+
+  @override
+  String defaultCalcName(Object n) {
+    return 'Calc $n';
+  }
+
+  @override
+  String defaultConstantName(Object n) {
+    return 'Constant $n';
+  }
+
+  @override
+  String get previousResult => 'Previous result (answer)';
+
+  @override
+  String get logicExpression => 'Logic expression';
+
+  @override
+  String logicFormat(Object name) {
+    return '$name (Logic)';
+  }
+
+  @override
+  String constantFormat(Object name) {
+    return '$name (Constant)';
+  }
+
+  @override
+  String get sheetTitleUnknown => 'Untitled sheet';
+
+  @override
+  String get labelFormula => 'Formula';
+
+  @override
+  String get labelNoFormula => 'No formula';
+
+  @override
+  String get cameraPermissionRequired => 'Camera permission is required.';
+
+  @override
+  String get galleryPermissionRequired =>
+      'Photo access permission is required.';
+
+  @override
+  String get openSettings => 'Open settings';
+
+  @override
+  String imagePickFailed(Object error) {
+    return 'Failed to load image: $error';
+  }
+
+  @override
+  String get enterCountInstruction => 'Enter what to count.';
+
+  @override
+  String get countReadFailed =>
+      'Could not read numbers. Try a different instruction.';
+
+  @override
+  String errorOccurred(Object error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get selectObjectToCount => 'Select object to count';
+
+  @override
+  String remainingUsesFormat(Object count) {
+    return 'Remaining AI uses: $count (Purchase more)';
+  }
+
+  @override
+  String get aiImageAnalyzing => 'AI is analyzing the image...';
+
+  @override
+  String get reflectToCalc => 'Apply to calculator';
+
+  @override
+  String get changePhoto => 'Change photo';
+
+  @override
+  String get countInstruction =>
+      'Enter what to count and AI will analyze the image.';
+
+  @override
+  String get countHint => 'What to count? (e.g., people, bolts, boxes)';
+
+  @override
+  String get categorySelectLabel => 'Select from category';
+
+  @override
+  String get deleteHistoryTitle => 'Delete history';
+
+  @override
+  String deleteHistoryConfirm(Object count) {
+    return 'Delete $count history entries?';
+  }
+
+  @override
+  String get historyToday => 'Today';
+
+  @override
+  String get historyYesterday => 'Yesterday';
+
+  @override
+  String get fullClearTitle => 'Clear All';
+
+  @override
+  String get fullClearConfirm => 'Delete all history entries?';
+
+  @override
+  String itemsSelected(Object count) {
+    return '$count selected';
+  }
+
+  @override
+  String get normalCalc => 'Calculation';
+
+  @override
+  String sheetCount(Object count) {
+    return '$count sheets';
+  }
+
+  @override
+  String memoCount(Object count) {
+    return '$count memos';
+  }
+
+  @override
+  String exposedCount(Object count) {
+    return '$count exposed';
+  }
+
+  @override
+  String selectAtLeast(Object count) {
+    return 'Select at least $count';
+  }
+
+  @override
+  String selectedCountFormat(Object count) {
+    return '$count selected';
+  }
+
+  @override
+  String get noItemsInSelectionMode => 'Please select at least 1';
 }
