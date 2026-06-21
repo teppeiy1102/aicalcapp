@@ -75,6 +75,14 @@ class _CalcKeyButtonState extends State<_CalcKeyButton>
           decoration: BoxDecoration(
             color: widget.bg,
             borderRadius: BorderRadius.circular(1000),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(.1),
+                blurRadius: 9.5,
+                spreadRadius:-1.5 ,
+                offset: const Offset(1, 1),
+              ),
+            ],
           ), 
           alignment: Alignment.center,
           child: Text(
@@ -82,7 +90,7 @@ class _CalcKeyButtonState extends State<_CalcKeyButton>
             style: TextStyle(
               color: widget.fg,
               fontSize: widget.fontSize,
-              fontWeight: FontWeight.w100,
+              fontWeight: FontWeight.w400,
             ),
           ),
         ),
@@ -371,8 +379,16 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
     return SafeArea(
       child: SingleChildScrollView(
         child: Container(
-          constraints: BoxConstraints(maxWidth: 400),
+          constraints: BoxConstraints(maxWidth: 400,maxHeight: 800),
           padding: EdgeInsets.only(left: 10, right: 10, top: 30),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color.fromARGB(255, 34, 34, 34), Color.fromARGB(255, 0, 0, 0)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             // crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -507,7 +523,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                 ],
               ),
               Container(
-                height: 100,
+                height: 110,
                 padding: const EdgeInsets.only(
                   left: 4,
                   right: 14,
@@ -531,7 +547,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                                 style: TextStyle(
                                   height: 1,
                                   color: textColor.withOpacity(0.45),
-                                  fontSize: 16,
+                                  fontSize: 20,
                                 ),
                               ),
                             ),
@@ -594,7 +610,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+            //  const SizedBox(height: 8),
             ],
           ),
         ),

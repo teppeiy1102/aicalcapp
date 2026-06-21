@@ -968,260 +968,281 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
       );
     }
 
-    return SingleChildScrollView(
-      controller: widget.scrollController,
-      physics: const ClampingScrollPhysics(),
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: 10,
-          right: 10,
-          top: 0,
-          //bottom: viewInsetsBottom + 16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(height: 22),
-            // ドラッグハンドル + 閉じるボタン
-            SizedBox(
-              height: 40,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 8),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white24 : Colors.black26,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 0,
-                    top: -8,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, size: 30),
-                      color: isDark ? Colors.white38 : Colors.black38,
-                      splashRadius: 20,
-                      onPressed: widget.onClose,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 4),
-            // カメラ・履歴ボタンと「追加」ボタンを横並びに
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // AIカウントアイコンボタン
-                GestureDetector(
-                  onTap: _isAiCounting ? null : _showAiCountDialog,
-                  child: AnimatedOpacity(
-                    opacity: _isAiCounting ? 0.4 : 1.0,
-                    duration: const Duration(milliseconds: 150),
-                    child: Container(
-                      width: 50,
-                      height: 50,
+    return Container(
  decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(1000),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.45),
-                        width: 0.8,
+  gradient: isDark
+      ? const LinearGradient(
+          colors: [Color.fromARGB(255, 0, 0, 0), Color(0xFF16213E)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        )
+      : const LinearGradient(
+          colors: [Color.fromARGB(255, 255, 255, 255), Color.fromARGB(255, 207, 207, 207)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+      child: SingleChildScrollView(
+        controller: widget.scrollController,
+        physics: const ClampingScrollPhysics(),
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 10,
+            right: 10,
+            top: 0,
+            //bottom: viewInsetsBottom + 16,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(height: 22),
+                // ドラッグハンドル + 閉じるボタン
+                SizedBox(
+                  height: 40,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white24 : Colors.black26,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: 0,
+                        top: -8,
+                        child: IconButton(
+                          icon: const Icon(Icons.close, size: 30),
+                          color: isDark ? Colors.white38 : Colors.black38,
+                          splashRadius: 20,
+                          onPressed: widget.onClose,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            
+                const SizedBox(height: 4),
+                // カメラ・履歴ボタンと「追加」ボタンを横並びに
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // AIカウントアイコンボタン
+                    GestureDetector(
+                      onTap: _isAiCounting ? null : _showAiCountDialog,
+                      child: AnimatedOpacity(
+                        opacity: _isAiCounting ? 0.4 : 1.0,
+                        duration: const Duration(milliseconds: 150),
+                        child: Container(
+                          width: 50,
+                          height: 50,
+             decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(1000),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.45),
+                            width: 0.8,
+                          ),
+                        ),
+                         child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Positioned(
+                                top: 14,
+                                bottom: 0,
+            
+                                child: Icon(
+                                  Icons.camera_alt_outlined,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              if (_isAiCounting)
+                                SizedBox(
+                                  width: (buttonH * 0.5).clamp(24.0, 38.0),
+                                  height: (buttonH * 0.5).clamp(24.0, 38.0),
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 1.5,
+                                    color: Colors.white,
+                                  ),
+                                ),
+              Positioned(
+                                         top: -0,
+                                         child: Text(
+                                          'ai',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                                                           ),
+                                       )
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                     child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Positioned(
-                            top: 14,
-                            bottom: 0,
-
-                            child: Icon(
-                              Icons.camera_alt_outlined,
-                              color: Colors.white,
-                              size: 24,
+                    const SizedBox(width: 8),
+                    // 履歴ボタン
+                    GestureDetector(
+                      onTap: _showHistory,
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(1000),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.45),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.history_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // 「この計算を追加」ボタン
+                    Expanded(
+                      child: AnimatedOpacity(
+                        opacity: _hasResult ? 1.0 : 0.35,
+                        duration: const Duration(milliseconds: 200),
+                        child: GestureDetector(
+                          onTap: _hasResult ? _addResult : null,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            decoration: BoxDecoration(
+                              color: _hasResult
+                                  ? Colors.blueAccent
+                                  : Colors.grey.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(40),
+                            ),
+                            alignment: Alignment.center,
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add, color: Colors.white, size: 16),
+                                SizedBox(width: 6),
+                                Text(
+                                  'この計算を追加',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          if (_isAiCounting)
-                            SizedBox(
-                              width: (buttonH * 0.5).clamp(24.0, 38.0),
-                              height: (buttonH * 0.5).clamp(24.0, 38.0),
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 1.5,
-                                color: Colors.white,
-                              ),
-                            ),
-  Positioned(
-                                     top: -0,
-                                     child: Text(
-                                      'ai',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                                                       ),
-                                   )
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // 履歴ボタン
-                GestureDetector(
-                  onTap: _showHistory,
-                  child: Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(1000),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.45),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.history_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // 「この計算を追加」ボタン
-                Expanded(
-                  child: AnimatedOpacity(
-                    opacity: _hasResult ? 1.0 : 0.35,
-                    duration: const Duration(milliseconds: 200),
-                    child: GestureDetector(
-                      onTap: _hasResult ? _addResult : null,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          color: _hasResult
-                              ? Colors.blueAccent
-                              : Colors.grey.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(40),
                         ),
-                        alignment: Alignment.center,
-                        child: const Row(
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                // 表示部
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+                  height: 80,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // 数値・式表示エリア
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.add, color: Colors.white, size: 16),
-                            SizedBox(width: 6),
-                            Text(
-                              'この計算を追加',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                            if (subtitle.isNotEmpty)
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Text(
+                                  subtitle,
+                                  style: TextStyle(
+                                    height: 0.9,
+                                    color: textColor.withOpacity(0.45),
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            FittedBox(
+                              child: Text(
+                                _addCommas(_display),
+                                maxLines: 1,
+                                style: TextStyle(
+                                  height: 1,
+                                  color: textColor,
+                                  fontSize: 64,
+                                  fontWeight: FontWeight.w200,
+                                ),
+                                textAlign: TextAlign.right,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // ボタングリッド（シート高さに応じてボタンサイズ可変）
+                Container(
+                  constraints: BoxConstraints(
+                    maxWidth:400
+                  ),
+                  child: GridView.count(
+                    padding: EdgeInsets.zero,
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 6,
+                    crossAxisSpacing: 6,
+                    childAspectRatio: ratio,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      calcKey(
+                        'C',
+                        bg: Colors.redAccent.withOpacity(0.18),
+                        fg: Colors.redAccent,
+                      ),
+                      calcKey('+/-', bg: keyBg),
+                      calcKey('%', bg: keyBg),
+                      calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
+                      calcKey('7'),
+                      calcKey('8'),
+                      calcKey('9'),
+                      calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
+                      calcKey('4'),
+                      calcKey('5'),
+                      calcKey('6'),
+                      calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
+                      calcKey('1'),
+                      calcKey('2'),
+                      calcKey('3'),
+                      calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
+                      calcKey('⌫', bg: keyBg),
+                      calcKey('0'),
+                      calcKey('.'),
+                      calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
+                    ],
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 8),
-            // 表示部
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
-              height: 80,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // 数値・式表示エリア
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (subtitle.isNotEmpty)
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Text(
-                              subtitle,
-                              style: TextStyle(
-                                height: 0.9,
-                                color: textColor.withOpacity(0.45),
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        FittedBox(
-                          child: Text(
-                            _addCommas(_display),
-                            maxLines: 1,
-                            style: TextStyle(
-                              height: 1,
-                              color: textColor,
-                              fontSize: 64,
-                              fontWeight: FontWeight.w200,
-                            ),
-                            textAlign: TextAlign.right,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 6),
-            // ボタングリッド（シート高さに応じてボタンサイズ可変）
-            Container(
-              constraints: BoxConstraints(
-                maxWidth:400
-              ),
-              child: GridView.count(
-                padding: EdgeInsets.zero,
-                crossAxisCount: 4,
-                mainAxisSpacing: 6,
-                crossAxisSpacing: 6,
-                childAspectRatio: ratio,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  calcKey(
-                    'C',
-                    bg: Colors.redAccent.withOpacity(0.18),
-                    fg: Colors.redAccent,
-                  ),
-                  calcKey('+/-', bg: keyBg),
-                  calcKey('%', bg: keyBg),
-                  calcKey('÷', bg: opColor.withOpacity(0.18), fg: opColor),
-                  calcKey('7'),
-                  calcKey('8'),
-                  calcKey('9'),
-                  calcKey('×', bg: opColor.withOpacity(0.18), fg: opColor),
-                  calcKey('4'),
-                  calcKey('5'),
-                  calcKey('6'),
-                  calcKey('-', bg: opColor.withOpacity(0.18), fg: opColor),
-                  calcKey('1'),
-                  calcKey('2'),
-                  calcKey('3'),
-                  calcKey('+', bg: opColor.withOpacity(0.18), fg: opColor),
-                  calcKey('⌫', bg: keyBg),
-                  calcKey('0'),
-                  calcKey('.'),
-                  calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -2121,7 +2142,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   _ToolbarButton(
                     icon: Icons.auto_awesome_rounded,
                     label: 'AI生成',
-                    color: const Color(0xFF9E7AFF),
+                    color: isDarkBar ? Colors.white38 : Colors.black45,
                     isLoading: _isAiGenerating,
                     onTap: () {
                       _calcKey.currentState?._showAiGenerateCalcDialog();
@@ -2928,12 +2949,18 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
         height: handleH + 20,
         decoration: const BoxDecoration(
 
-          borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+      //    borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+         // borderRadius: BorderRadius.all( Radius.circular(30)),
           gradient: LinearGradient(
             colors: [Color.fromARGB(255, 255, 255, 255),Color.fromARGB(255, 255, 255, 255), Color.fromARGB(181, 255, 255, 255)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
+          border: Border(
+            top: BorderSide(color: Color.fromARGB(255, 0, 0, 0), width: 1.5),
+            bottom: BorderSide(color: Color.fromARGB(255, 0, 0, 0), width: 1.0),
+          ),
+       
         ),
         child: _isExpanded
             ? Padding(
@@ -2949,7 +2976,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                       'Genba Calc',
                       style: TextStyle(
                         color: Colors.black,
-                        fontSize: 22,
+                        fontSize: 30,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
                       ),
@@ -3006,7 +3033,6 @@ GestureDetector(
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(1000),
                          
                           ),
@@ -3037,10 +3063,10 @@ GestureDetector(
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(0)),
         gradient: LinearGradient(
-          colors: [const Color.fromARGB(255, 88, 88, 88), const Color.fromARGB(255, 51, 51, 51), const Color.fromARGB(255, 0, 0, 0).withOpacity(1)],
+          colors: [const Color.fromARGB(194, 255, 255, 255), const Color.fromARGB(255, 255, 255, 255), const Color.fromARGB(255, 226, 226, 226),const Color.fromARGB(255, 198, 198, 198)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          stops: const [0.0, 0.5, 1],
+          stops: const [0.0, 0.05, 0.5,1],
         ),
         
       ),
@@ -3065,7 +3091,7 @@ GestureDetector(
           final fontSize = (buttonH * 0.42).clamp(14.0, 32.0);
 
           const keyBg = Color(0x1AFFFFFF);
-          const opColor = Color.fromARGB(255, 255, 171, 14);
+          const opColor = Color.fromARGB(255, 161, 156, 138);
           const eqColor = Colors.orangeAccent;
 
           Widget calcKey(String label, {Color? bg, Color? fg}) {
@@ -3106,10 +3132,6 @@ GestureDetector(
                             decoration: BoxDecoration(
                               color: Colors.black.withOpacity(0.4),
                               borderRadius: BorderRadius.circular(1000),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.45),
-                                width: 0.8,
-                              ),
                           
                             ),
                             child: Stack(
@@ -3150,10 +3172,6 @@ GestureDetector(
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.4),
                             borderRadius: BorderRadius.circular(1000),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.45),
-                              width: 0.8,
-                            ),
                           ),
                           child: const Icon(Icons.history_rounded, color: Colors.white, size: 24),
                         ),
@@ -3170,7 +3188,7 @@ GestureDetector(
                               decoration: BoxDecoration(
                                 color: _hasResult
                                     ? Colors.blueAccent
-                                    : Colors.grey.withOpacity(0.3),
+                                    : Colors.grey.withOpacity(1),
                                 borderRadius: BorderRadius.circular(40),
                               ),
                               alignment: Alignment.center,
@@ -3199,10 +3217,10 @@ GestureDetector(
                   // ── 表示部 ──
                   SafeArea(
                     child: SizedBox(
-                      height: 80,
+                      height: 90,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           if (subtitle.isNotEmpty)
                             SingleChildScrollView(
@@ -3211,8 +3229,8 @@ GestureDetector(
                                 subtitle,
                                 style: TextStyle(
                                   height: 0.9,
-                                  color: Colors.white.withOpacity(0.45),
-                                  fontSize: 16,
+                                  color: Colors.black.withOpacity(0.45),
+                                  fontSize: 24,
                                 ),
                               ),
                             ),
@@ -3222,7 +3240,7 @@ GestureDetector(
                               maxLines: 1,
                               style: const TextStyle(
                                 height: 1,
-                                color: Colors.white,
+                                color: Colors.black,
                                 fontSize: 64,
                                 fontWeight: FontWeight.w200,
                               ),
@@ -3246,19 +3264,19 @@ GestureDetector(
                         childAspectRatio: ratio,
                         physics: const NeverScrollableScrollPhysics(),
                         children: [
-                          calcKey('C', bg: Colors.redAccent.withOpacity(0.18), fg: Colors.redAccent),
-                          calcKey('+/-'),
-                          calcKey('%'),
-                          calcKey('÷', bg: opColor.withOpacity(0.18), fg: const Color.fromARGB(255, 255, 255, 255)),
-                          calcKey('7'), calcKey('8'), calcKey('9'),
-                          calcKey('×', bg: opColor.withOpacity(0.18), fg: const Color.fromARGB(255, 255, 255, 255)),
-                          calcKey('4'), calcKey('5'), calcKey('6'),
-                          calcKey('-', bg: opColor.withOpacity(0.18), fg: const Color.fromARGB(255, 255, 255, 255)),
-                          calcKey('1'), calcKey('2'), calcKey('3'),
-                          calcKey('+', bg: opColor.withOpacity(0.18), fg: const Color.fromARGB(255, 255, 255, 255)),
-                          calcKey('⌫'),
-                          calcKey('0'),
-                          calcKey('.'),
+                          calcKey('C', bg: const Color.fromARGB(255, 251, 81, 65), fg: Colors.white),
+                          calcKey('+/-',bg:Colors.white,fg: Colors.black),
+                          calcKey('%',bg:Colors.white,fg: Colors.black),
+                          calcKey('÷', bg: opColor, fg: const Color.fromARGB(255, 0, 0, 0)),
+                          calcKey('7',bg:Colors.white,fg: Colors.black), calcKey('8',bg:Colors.white,fg: Colors.black), calcKey('9',bg:Colors.white,fg: Colors.black),
+                          calcKey('×', bg: opColor, fg: const Color.fromARGB(255, 0, 0, 0)),
+                          calcKey('4',bg:Colors.white,fg: Colors.black), calcKey('5',bg:Colors.white,fg: Colors.black), calcKey('6',bg:Colors.white,fg: Colors.black),
+                          calcKey('-', bg: opColor, fg: const Color.fromARGB(255, 0, 0, 0)),
+                          calcKey('1',bg:Colors.white,fg: Colors.black), calcKey('2',bg:Colors.white,fg: Colors.black), calcKey('3',bg:Colors.white,fg: Colors.black),
+                          calcKey('+', bg: opColor, fg: const Color.fromARGB(255, 0, 0, 0)),
+                          calcKey('⌫',bg:Colors.white,fg: Colors.black,),
+                          calcKey('0',bg:Colors.white,fg: Colors.black),
+                          calcKey('.',bg:Colors.white,fg: Colors.black),
                           calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.black),
                         ],
                       ),

@@ -16,6 +16,7 @@ import 'store_page.dart';
 import 'l10n/app_localizations.dart';
 
 void main() async {
+
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   HomeWidget.setAppGroupId('group.com.yama.genbacalc');
@@ -1788,7 +1789,8 @@ Example output for "3万円を5人で割り勘":
               slivers: [
                 SliverAppBar(
                   pinned: true,
-                  expandedHeight: (_isSelectMode || _isQrSelectMode) ? 0 : 200,
+
+                  expandedHeight: (_isSelectMode || _isQrSelectMode) ? 50 : 200,
                   backgroundColor: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.0),
                   //backgroundColor: const Color(0xFF0D0D14).withOpacity(0.9),
                   surfaceTintColor: Colors.transparent,
@@ -1861,7 +1863,7 @@ Example output for "3万円を5人で割り勘":
                 else
                   SliverPadding(
                     padding: EdgeInsets.fromLTRB(24, 8, 24,
-                        (MediaQuery.of(context).size.height * 0.55).clamp(460.0, 580.0) + 80),
+                      200),
                     sliver: SliverReorderableList(
                       itemCount: _configs.length,
                       onReorder: _reorderConfigs,
@@ -2257,6 +2259,7 @@ class _WidgetCardState extends State<_WidgetCard> {
             spreadRadius: 6,
             offset: const Offset(0, 0),
           ),
+          
         ],
         borderRadius: BorderRadius.circular(32),
         color: cardBgColor.withAlpha(240),
