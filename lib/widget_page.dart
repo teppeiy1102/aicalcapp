@@ -22,6 +22,7 @@ import 'calc_history.dart';
 import 'link_graph_page.dart';
 import 'revenuecat_service.dart';
 import 'store_page.dart';
+import 'l10n/app_localizations.dart';
 
 part 'calc_input_widgets.dart';
 part 'calculator_widget.dart';
@@ -207,6 +208,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
   }
 
   Future<void> _pickImage() async {
+    final l10n = AppLocalizations.of(context)!;
     final picker = ImagePicker();
     final remaining = _remainingUses;
     final source = await showModalBottomSheet<ImageSource>(
@@ -236,7 +238,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
                       const Icon(Icons.auto_awesome, color: Colors.purpleAccent, size: 16),
                       const SizedBox(width: 6),
                       Text(
-                        '残りAI使用回数: $remaining 回 (追加購入)',
+                        l10n.remainingUsesFormat(remaining),
                         style: const TextStyle(
                           color: Colors.purpleAccent,
                           fontSize: 13,
@@ -250,16 +252,16 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
             const Divider(color: Colors.white12, height: 1),
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Colors.white70),
-              title: const Text(
-                'カメラで撮影',
-                style: TextStyle(color: Colors.white),
+              title: Text(
+                l10n.takePhoto,
+                style: const TextStyle(color: Colors.white),
               ),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library, color: Colors.white70),
-              title: const Text(
-                'ギャラリーから選択',
+              title: Text(
+                l10n.chooseFromGallery,
                 style: TextStyle(color: Colors.white),
               ),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
@@ -278,6 +280,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -329,13 +332,13 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
                                 size: 13,
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                '残りAI使用回数: $_remainingUses 回 (追加購入)',
-                                style: const TextStyle(
-                                  color: Colors.purpleAccent,
-                                  fontSize: 12,
-                                ),
-                              ),
+                      Text(
+                        l10n.remainingUsesFormat(_remainingUses!),
+                        style: const TextStyle(
+                          color: Colors.purpleAccent,
+                          fontSize: 12,
+                        ),
+                      ),
                             ],
                           ),
                         ),
@@ -368,7 +371,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
             maxLines: 3,
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              hintText: 'AIへの指示を入力…（例: 消費税の計算）',
+              hintText: l10n.aiPromptHint,
               hintStyle: const TextStyle(color: Colors.white24),
               filled: true,
               fillColor: Colors.white.withOpacity(0.06),
@@ -437,7 +440,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
                       imageBytes: _attachedImage,
                     ));
                   },
-                  child: const Text('生成', style: TextStyle(fontSize: 16)),
+                  child: Text(l10n.aiGenerate, style: const TextStyle(fontSize: 16)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1132,14 +1135,14 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                               borderRadius: BorderRadius.circular(40),
                             ),
                             alignment: Alignment.center,
-                            child: const Row(
+                            child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.add, color: Colors.white, size: 16),
-                                SizedBox(width: 6),
+                                const Icon(Icons.add, color: Colors.white, size: 16),
+                                const SizedBox(width: 6),
                                 Text(
-                                  'この計算を追加',
-                                  style: TextStyle(
+                                  AppLocalizations.of(context)!.calcAddThis,
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 13,
@@ -2073,6 +2076,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
   }
 
   Widget _buildBottomBar() {
+    final l10n = AppLocalizations.of(context)!;
     final isViewMode = _config.data['viewMode'] as bool? ?? false;
     final isTableMode = _config.data['tableMode'] as bool? ?? false;
     final bgColorValue = _config.data['bgColor'] as int?;
@@ -2087,15 +2091,15 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
     final Color modeColor;
     if (isTableMode) {
       modeIcon = Icons.table_chart_rounded;
-      modeLabel = '表モード';
+      modeLabel = l10n.tableMode;
       modeColor = const Color(0xFF4CAF50);
     } else if (isViewMode) {
       modeIcon = Icons.visibility_rounded;
-      modeLabel = '閲覧モード';
+      modeLabel = l10n.viewMode;
       modeColor = const Color(0xFF5E81FF);
     } else {
       modeIcon = Icons.edit_note_rounded;
-      modeLabel = '編集モード';
+      modeLabel = l10n.editMode;
       modeColor = isDarkBar ? Colors.white38 : Colors.black45;
     }
 
@@ -2141,7 +2145,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                 children: [
                   _ToolbarButton(
                     icon: Icons.auto_awesome_rounded,
-                    label: 'AI生成',
+                    label: l10n.toolbarAiGenerate,
                     color: isDarkBar ? Colors.white38 : Colors.black45,
                     isLoading: _isAiGenerating,
                     onTap: () {
@@ -2178,7 +2182,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   ),
                   _ToolbarButton(
                     icon: Icons.calculate_rounded,
-                    label: '電卓',
+                    label: l10n.toolbarCalculator,
                     color: isDarkBar ? Colors.white38 : Colors.black45,
                     onTap: _openCalcSheet,
                   ),
@@ -2537,8 +2541,8 @@ Future<({String instruction, bool isModify, Uint8List? imageBytes})?> showHomeAi
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => const _AiPromptSheet(
-      title: 'AIで計算式を生成',
+    builder: (ctx) => _AiPromptSheet(
+      title: AppLocalizations.of(context)!.aiGenerateCalc,
       initialText: '',
       showModeSwitcher: false,
     ),
@@ -3192,14 +3196,14 @@ GestureDetector(
                                 borderRadius: BorderRadius.circular(40),
                               ),
                               alignment: Alignment.center,
-                              child: const Row(
+                              child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.add, color: Colors.white, size: 16),
-                                  SizedBox(width: 6),
+                                  const Icon(Icons.add, color: Colors.white, size: 16),
+                                  const SizedBox(width: 6),
                                   Text(
-                                    'この計算を追加',
-                                    style: TextStyle(
+                                    AppLocalizations.of(context)!.calcAddThis,
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
@@ -4401,21 +4405,22 @@ class _MergedBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final IconData modeIcon;
     final Color modeColor;
     final String modeLabel;
     if (globalMode == 2) {
       modeIcon = Icons.table_chart_rounded;
       modeColor = const Color(0xFF4CAF50);
-      modeLabel = '表モード';
+      modeLabel = l10n.tableMode;
     } else if (globalMode == 1) {
       modeIcon = Icons.visibility_rounded;
       modeColor = const Color(0xFF5E81FF);
-      modeLabel = '閲覧';
+      modeLabel = l10n.viewModeShort;
     } else {
       modeIcon = Icons.edit_note_rounded;
       modeColor = const Color(0xFFBF5FFF);
-      modeLabel = '編集';
+      modeLabel = l10n.editModeShort;
     }
 
     final navBar = Container(
@@ -4506,7 +4511,7 @@ class _MergedBottomNavBar extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'シートへ移動',
+                            l10n.navigateToSheet,
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.8),
                               fontSize: 13,
@@ -4556,7 +4561,7 @@ class _MergedBottomNavBar extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '電卓',
+                        l10n.toolbarCalculator,
                         style: TextStyle(
                           color: calcOpen
                               ? const Color(0xFF5E81FF)

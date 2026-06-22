@@ -1196,6 +1196,12 @@ abstract class AppLocalizations {
   /// **'Paste'**
   String get paste;
 
+  /// No description provided for @pasteCopiedCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Copied Calculation'**
+  String get pasteCopiedCalc;
+
   /// No description provided for @moveUp.
   ///
   /// In en, this message translates to:
@@ -1213,6 +1219,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Expose'**
   String get expose;
+
+  /// No description provided for @exposeToSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Expose to other sheets'**
+  String get exposeToSheet;
+
+  /// No description provided for @unexposeFromSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from other sheets'**
+  String get unexposeFromSheet;
 
   /// No description provided for @linkSettings.
   ///
@@ -1868,6 +1886,36 @@ abstract class AppLocalizations {
   /// **'False'**
   String get falseLabel;
 
+  /// No description provided for @opGreaterThan.
+  ///
+  /// In en, this message translates to:
+  /// **'> (Greater than)'**
+  String get opGreaterThan;
+
+  /// No description provided for @opGreaterEqual.
+  ///
+  /// In en, this message translates to:
+  /// **'≥ (Greater or equal)'**
+  String get opGreaterEqual;
+
+  /// No description provided for @opLessThan.
+  ///
+  /// In en, this message translates to:
+  /// **'< (Less than)'**
+  String get opLessThan;
+
+  /// No description provided for @opLessEqual.
+  ///
+  /// In en, this message translates to:
+  /// **'≤ (Less or equal)'**
+  String get opLessEqual;
+
+  /// No description provided for @opEqual.
+  ///
+  /// In en, this message translates to:
+  /// **'= (Equal)'**
+  String get opEqual;
+
   /// No description provided for @opNotEqual.
   ///
   /// In en, this message translates to:
@@ -2417,7 +2465,7 @@ abstract class AppLocalizations {
   /// No description provided for @modeSelect.
   ///
   /// In en, this message translates to:
-  /// **'Select display mode'**
+  /// **'Select Display Mode'**
   String get modeSelect;
 
   /// No description provided for @editModeDesc.
@@ -2429,19 +2477,19 @@ abstract class AppLocalizations {
   /// No description provided for @viewModeDesc.
   ///
   /// In en, this message translates to:
-  /// **'Show constants, memos and results'**
+  /// **'View constants, memos, and calculation results'**
   String get viewModeDesc;
 
   /// No description provided for @tableModeDesc.
   ///
   /// In en, this message translates to:
-  /// **'Edit values in spreadsheet format'**
+  /// **'Display and edit values in sheet format'**
   String get tableModeDesc;
 
   /// No description provided for @aiGenerateCalc.
   ///
   /// In en, this message translates to:
-  /// **'Generate calculation with AI'**
+  /// **'Generate formula with AI'**
   String get aiGenerateCalc;
 
   /// No description provided for @noContent.
@@ -2471,7 +2519,7 @@ abstract class AppLocalizations {
   /// No description provided for @previousResult.
   ///
   /// In en, this message translates to:
-  /// **'Previous result (answer)'**
+  /// **'Previous balance (answer)'**
   String get previousResult;
 
   /// No description provided for @logicExpression.
@@ -2483,13 +2531,13 @@ abstract class AppLocalizations {
   /// No description provided for @logicFormat.
   ///
   /// In en, this message translates to:
-  /// **'{name} (Logic)'**
+  /// **'{name} (logic)'**
   String logicFormat(Object name);
 
   /// No description provided for @constantFormat.
   ///
   /// In en, this message translates to:
-  /// **'{name} (Constant)'**
+  /// **'{name} (constant)'**
   String constantFormat(Object name);
 
   /// No description provided for @sheetTitleUnknown.
@@ -2507,7 +2555,7 @@ abstract class AppLocalizations {
   /// No description provided for @labelNoFormula.
   ///
   /// In en, this message translates to:
-  /// **'No formula'**
+  /// **'No formula set'**
   String get labelNoFormula;
 
   /// No description provided for @cameraPermissionRequired.
@@ -2519,31 +2567,31 @@ abstract class AppLocalizations {
   /// No description provided for @galleryPermissionRequired.
   ///
   /// In en, this message translates to:
-  /// **'Photo access permission is required.'**
+  /// **'Photo library permission is required.'**
   String get galleryPermissionRequired;
 
   /// No description provided for @openSettings.
   ///
   /// In en, this message translates to:
-  /// **'Open settings'**
+  /// **'Open Settings'**
   String get openSettings;
 
   /// No description provided for @imagePickFailed.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load image: {error}'**
+  /// **'Failed to pick image: {error}'**
   String imagePickFailed(Object error);
 
   /// No description provided for @enterCountInstruction.
   ///
   /// In en, this message translates to:
-  /// **'Enter what to count.'**
+  /// **'Please enter what to count.'**
   String get enterCountInstruction;
 
   /// No description provided for @countReadFailed.
   ///
   /// In en, this message translates to:
-  /// **'Could not read numbers. Try a different instruction.'**
+  /// **'Could not read the number. Try a different instruction.'**
   String get countReadFailed;
 
   /// No description provided for @errorOccurred.
@@ -2573,19 +2621,19 @@ abstract class AppLocalizations {
   /// No description provided for @reflectToCalc.
   ///
   /// In en, this message translates to:
-  /// **'Apply to calculator'**
+  /// **'Apply to Calculator'**
   String get reflectToCalc;
 
   /// No description provided for @changePhoto.
   ///
   /// In en, this message translates to:
-  /// **'Change photo'**
+  /// **'Change Photo'**
   String get changePhoto;
 
   /// No description provided for @countInstruction.
   ///
   /// In en, this message translates to:
-  /// **'Enter what to count and AI will analyze the image.'**
+  /// **'Enter what to count, and AI will analyze the image.'**
   String get countInstruction;
 
   /// No description provided for @countHint.
@@ -2609,7 +2657,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteHistoryConfirm.
   ///
   /// In en, this message translates to:
-  /// **'Delete {count} history entries?'**
+  /// **'Delete the selected {count} history entries?'**
   String deleteHistoryConfirm(Object count);
 
   /// No description provided for @historyToday.
@@ -2633,7 +2681,7 @@ abstract class AppLocalizations {
   /// No description provided for @fullClearConfirm.
   ///
   /// In en, this message translates to:
-  /// **'Delete all history entries?'**
+  /// **'Delete all history?'**
   String get fullClearConfirm;
 
   /// No description provided for @itemsSelected.
@@ -2657,13 +2705,13 @@ abstract class AppLocalizations {
   /// No description provided for @memoCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} memos'**
+  /// **'{count} items'**
   String memoCount(Object count);
 
   /// No description provided for @exposedCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} exposed'**
+  /// **'{count} items'**
   String exposedCount(Object count);
 
   /// No description provided for @selectAtLeast.
@@ -2683,6 +2731,1665 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please select at least 1'**
   String get noItemsInSelectionMode;
+
+  /// No description provided for @aiFormulaGeneration.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Formula Generation'**
+  String get aiFormulaGeneration;
+
+  /// No description provided for @aiCountTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Count'**
+  String get aiCountTitle;
+
+  /// No description provided for @takePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Photo'**
+  String get takePhoto;
+
+  /// No description provided for @chooseFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from Gallery'**
+  String get chooseFromGallery;
+
+  /// No description provided for @analyzing.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing...'**
+  String get analyzing;
+
+  /// No description provided for @reflect.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get reflect;
+
+  /// No description provided for @changePicture.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Picture'**
+  String get changePicture;
+
+  /// No description provided for @countByAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Count with AI'**
+  String get countByAi;
+
+  /// No description provided for @selectImageDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an image. AI will analyze the image and count the specified objects.'**
+  String get selectImageDesc;
+
+  /// No description provided for @cameraLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get cameraLabel;
+
+  /// No description provided for @galleryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get galleryLabel;
+
+  /// No description provided for @markerToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle Markers'**
+  String get markerToggle;
+
+  /// No description provided for @reflectToCalcShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get reflectToCalcShort;
+
+  /// No description provided for @analyzingImage.
+  ///
+  /// In en, this message translates to:
+  /// **'AI is analyzing the image...'**
+  String get analyzingImage;
+
+  /// No description provided for @countTargetInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter what to count, and AI will analyze the image.'**
+  String get countTargetInstruction;
+
+  /// No description provided for @countHintText.
+  ///
+  /// In en, this message translates to:
+  /// **'What to count? (e.g., people, bolts, boxes)'**
+  String get countHintText;
+
+  /// No description provided for @remainingUsesText.
+  ///
+  /// In en, this message translates to:
+  /// **'Remaining AI uses: {count}'**
+  String remainingUsesText(Object count);
+
+  /// No description provided for @purchaseMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase More'**
+  String get purchaseMore;
+
+  /// No description provided for @copySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get copySuccess;
+
+  /// No description provided for @csvCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'CSV copied to clipboard'**
+  String get csvCopied;
+
+  /// No description provided for @noDataToCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'No data to copy'**
+  String get noDataToCopy;
+
+  /// No description provided for @noDataToShare.
+  ///
+  /// In en, this message translates to:
+  /// **'No data to share'**
+  String get noDataToShare;
+
+  /// No description provided for @encodeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to encode data'**
+  String get encodeFailed;
+
+  /// No description provided for @sheetLinkSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheet Link Settings'**
+  String get sheetLinkSettings;
+
+  /// No description provided for @linkSettingOfRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Link settings for {name}'**
+  String linkSettingOfRow(Object name);
+
+  /// No description provided for @linkFromCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'Link from calc'**
+  String get linkFromCalc;
+
+  /// No description provided for @linkToCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to calc'**
+  String get linkToCalc;
+
+  /// No description provided for @linkToResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to result'**
+  String get linkToResult;
+
+  /// No description provided for @linkToInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to input'**
+  String get linkToInput;
+
+  /// No description provided for @linkToOperand.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to operand'**
+  String get linkToOperand;
+
+  /// No description provided for @saveCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Calculation'**
+  String get saveCalc;
+
+  /// No description provided for @enterValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter value'**
+  String get enterValue;
+
+  /// No description provided for @editMemoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Memo'**
+  String get editMemoTitle;
+
+  /// No description provided for @memoEditSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get memoEditSave;
+
+  /// No description provided for @insertToMemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert to Memo'**
+  String get insertToMemo;
+
+  /// No description provided for @aiPurchaseDescShort.
+  ///
+  /// In en, this message translates to:
+  /// **'AI requires purchase'**
+  String get aiPurchaseDescShort;
+
+  /// No description provided for @aiPurchaseDescLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Please purchase from the store to use AI features.'**
+  String get aiPurchaseDescLong;
+
+  /// No description provided for @graphHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to move · Pinch/Scroll to zoom · Double tap to fit · Tap sheet to expand'**
+  String get graphHint;
+
+  /// No description provided for @graphShowAllNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'All {count} Nodes'**
+  String graphShowAllNodes(Object count);
+
+  /// No description provided for @graphShowLinkedNodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked {count} Nodes'**
+  String graphShowLinkedNodes(Object count);
+
+  /// No description provided for @graphCalcCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculations'**
+  String get graphCalcCount;
+
+  /// No description provided for @graphLogicCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Logic'**
+  String get graphLogicCount;
+
+  /// No description provided for @graphEdgeCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Connections'**
+  String get graphEdgeCount;
+
+  /// No description provided for @graphFitting.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit to Screen'**
+  String get graphFitting;
+
+  /// No description provided for @graphShowingAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing All Nodes'**
+  String get graphShowingAll;
+
+  /// No description provided for @graphShowingLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing Linked Only'**
+  String get graphShowingLinked;
+
+  /// No description provided for @formulaCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'Formula'**
+  String get formulaCalc;
+
+  /// No description provided for @formulaLogic.
+  ///
+  /// In en, this message translates to:
+  /// **'Logic'**
+  String get formulaLogic;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @sheetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheet: {name}'**
+  String sheetLabel(Object name);
+
+  /// No description provided for @saveWithStored.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculate with stored'**
+  String get saveWithStored;
+
+  /// No description provided for @saveLabelStored.
+  ///
+  /// In en, this message translates to:
+  /// **'With stored'**
+  String get saveLabelStored;
+
+  /// No description provided for @evalTrue.
+  ///
+  /// In en, this message translates to:
+  /// **'True'**
+  String get evalTrue;
+
+  /// No description provided for @evalFalse.
+  ///
+  /// In en, this message translates to:
+  /// **'False'**
+  String get evalFalse;
+
+  /// No description provided for @evaluateWithStored.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaluate with stored'**
+  String get evaluateWithStored;
+
+  /// No description provided for @logicConditionsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Conditions ({count})'**
+  String logicConditionsCount(Object count);
+
+  /// No description provided for @otherItemsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more...'**
+  String otherItemsCount(Object count);
+
+  /// No description provided for @scanQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR Code'**
+  String get scanQrCode;
+
+  /// No description provided for @qrScanFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to read QR code'**
+  String get qrScanFailed;
+
+  /// No description provided for @saveImageToGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as image'**
+  String get saveImageToGallery;
+
+  /// No description provided for @saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving...'**
+  String get saving;
+
+  /// No description provided for @saveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code saved to photos'**
+  String get saveSuccess;
+
+  /// No description provided for @saveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Save failed: {error}'**
+  String saveFailed(Object error);
+
+  /// No description provided for @galleryAccessDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo library access denied'**
+  String get galleryAccessDenied;
+
+  /// No description provided for @qRImportFailedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Failed'**
+  String get qRImportFailedTitle;
+
+  /// No description provided for @qrDataMergeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to merge QR data. Please scan again from the beginning.'**
+  String get qrDataMergeFailed;
+
+  /// No description provided for @cutConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Cut'**
+  String get cutConfirm;
+
+  /// No description provided for @pasteData.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste data'**
+  String get pasteData;
+
+  /// No description provided for @copiedName.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied \"{name}\"'**
+  String copiedName(Object name);
+
+  /// No description provided for @searchConstants.
+  ///
+  /// In en, this message translates to:
+  /// **'Search constants'**
+  String get searchConstants;
+
+  /// No description provided for @graphAllNodesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'All {count} Nodes'**
+  String graphAllNodesCount(Object count);
+
+  /// No description provided for @graphLinkedNodesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked {count} Nodes'**
+  String graphLinkedNodesCount(Object count);
+
+  /// No description provided for @graphTooltipShowAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing All Nodes'**
+  String get graphTooltipShowAll;
+
+  /// No description provided for @graphTooltipShowLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing Linked Only'**
+  String get graphTooltipShowLinked;
+
+  /// No description provided for @graphTooltipFit.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit to Screen'**
+  String get graphTooltipFit;
+
+  /// No description provided for @graphLegendCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'Calc: {count}'**
+  String graphLegendCalc(Object count);
+
+  /// No description provided for @graphLegendLogic.
+  ///
+  /// In en, this message translates to:
+  /// **'Logic: {count}'**
+  String graphLegendLogic(Object count);
+
+  /// No description provided for @graphLegendEdges.
+  ///
+  /// In en, this message translates to:
+  /// **'Edges: {count}'**
+  String graphLegendEdges(Object count);
+
+  /// No description provided for @graphNodeCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'Calc'**
+  String get graphNodeCalc;
+
+  /// No description provided for @graphNodeLogic.
+  ///
+  /// In en, this message translates to:
+  /// **'Logic'**
+  String get graphNodeLogic;
+
+  /// No description provided for @graphEditLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get graphEditLink;
+
+  /// No description provided for @graphSheetName.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheet: {name}'**
+  String graphSheetName(Object name);
+
+  /// No description provided for @graphConditionExpressions.
+  ///
+  /// In en, this message translates to:
+  /// **'Conditions ({count} conditions)'**
+  String graphConditionExpressions(Object count);
+
+  /// No description provided for @graphMoreItems.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more...'**
+  String graphMoreItems(Object count);
+
+  /// No description provided for @graphEvaluatesTrue.
+  ///
+  /// In en, this message translates to:
+  /// **'True'**
+  String get graphEvaluatesTrue;
+
+  /// No description provided for @graphEvaluatesFalse.
+  ///
+  /// In en, this message translates to:
+  /// **'False'**
+  String get graphEvaluatesFalse;
+
+  /// No description provided for @graphEvaluateStored.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaluate with stored'**
+  String get graphEvaluateStored;
+
+  /// No description provided for @graphSaveValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculate with stored'**
+  String get graphSaveValue;
+
+  /// No description provided for @graphSaveEvaluate.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaluate with stored'**
+  String get graphSaveEvaluate;
+
+  /// No description provided for @graphEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No graph data'**
+  String get graphEmptyTitle;
+
+  /// No description provided for @graphEmptyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Create calculations and set links to generate a graph.'**
+  String get graphEmptyDesc;
+
+  /// No description provided for @confirmDeleteCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this calculation?'**
+  String get confirmDeleteCalc;
+
+  /// No description provided for @confirmDeleteRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this row?'**
+  String get confirmDeleteRow;
+
+  /// No description provided for @confirmDeleteSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected {count} items?'**
+  String confirmDeleteSelected(Object count);
+
+  /// No description provided for @addCalcRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Calculation Row'**
+  String get addCalcRow;
+
+  /// No description provided for @calcRowName.
+  ///
+  /// In en, this message translates to:
+  /// **'Row Name'**
+  String get calcRowName;
+
+  /// No description provided for @calcRowNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., Tax calculation'**
+  String get calcRowNameHint;
+
+  /// No description provided for @calcRowType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get calcRowType;
+
+  /// No description provided for @calcRowValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get calcRowValue;
+
+  /// No description provided for @calcRowFormula.
+  ///
+  /// In en, this message translates to:
+  /// **'Formula'**
+  String get calcRowFormula;
+
+  /// No description provided for @editCalcRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Calculation Row'**
+  String get editCalcRow;
+
+  /// No description provided for @deleteCalcRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Calculation Row'**
+  String get deleteCalcRow;
+
+  /// No description provided for @insertCalcRowAbove.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert Above'**
+  String get insertCalcRowAbove;
+
+  /// No description provided for @insertCalcRowBelow.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert Below'**
+  String get insertCalcRowBelow;
+
+  /// No description provided for @moveCalcRowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move Up'**
+  String get moveCalcRowUp;
+
+  /// No description provided for @moveCalcRowDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move Down'**
+  String get moveCalcRowDown;
+
+  /// No description provided for @duplicateCalcRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get duplicateCalcRow;
+
+  /// No description provided for @calcRowSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculation Settings'**
+  String get calcRowSettings;
+
+  /// No description provided for @changeOperation.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Operator'**
+  String get changeOperation;
+
+  /// No description provided for @selectOperation.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Operator'**
+  String get selectOperation;
+
+  /// No description provided for @addOperation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Operator'**
+  String get addOperation;
+
+  /// No description provided for @removeOperation.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Operator'**
+  String get removeOperation;
+
+  /// No description provided for @termSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Term Settings'**
+  String get termSettings;
+
+  /// No description provided for @calcTerm.
+  ///
+  /// In en, this message translates to:
+  /// **'Term {n}'**
+  String calcTerm(Object n);
+
+  /// No description provided for @calcOperator.
+  ///
+  /// In en, this message translates to:
+  /// **'Operator'**
+  String get calcOperator;
+
+  /// No description provided for @calcOperand.
+  ///
+  /// In en, this message translates to:
+  /// **'Operand'**
+  String get calcOperand;
+
+  /// No description provided for @calcOthers.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Terms'**
+  String get calcOthers;
+
+  /// No description provided for @calcTermsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} terms'**
+  String calcTermsCount(Object count);
+
+  /// No description provided for @calcResultPrecision.
+  ///
+  /// In en, this message translates to:
+  /// **'Result Precision'**
+  String get calcResultPrecision;
+
+  /// No description provided for @showResultOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Result Only'**
+  String get showResultOnly;
+
+  /// No description provided for @showFormulaResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Formula & Result'**
+  String get showFormulaResult;
+
+  /// No description provided for @selectSheetFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a sheet first'**
+  String get selectSheetFirst;
+
+  /// No description provided for @selectSourceFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a link source first'**
+  String get selectSourceFirst;
+
+  /// No description provided for @noSourceForLink.
+  ///
+  /// In en, this message translates to:
+  /// **'No available sources for linking'**
+  String get noSourceForLink;
+
+  /// No description provided for @linkExists.
+  ///
+  /// In en, this message translates to:
+  /// **'Link set'**
+  String get linkExists;
+
+  /// No description provided for @linkNotExists.
+  ///
+  /// In en, this message translates to:
+  /// **'No link'**
+  String get linkNotExists;
+
+  /// No description provided for @clearAllLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All Links'**
+  String get clearAllLinks;
+
+  /// No description provided for @linkCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} links'**
+  String linkCount(Object count);
+
+  /// No description provided for @linkingTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked to: {dest}'**
+  String linkingTo(Object dest);
+
+  /// No description provided for @sourceFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Source: {src}'**
+  String sourceFrom(Object src);
+
+  /// No description provided for @linkConfirmReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset all link settings?'**
+  String get linkConfirmReset;
+
+  /// No description provided for @linkConfirmOverwrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Overwrite existing links?'**
+  String get linkConfirmOverwrite;
+
+  /// No description provided for @linkSettingsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Link settings saved'**
+  String get linkSettingsSaved;
+
+  /// No description provided for @linkSettingsCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Link settings cleared'**
+  String get linkSettingsCleared;
+
+  /// No description provided for @logicEvaluatesTrue.
+  ///
+  /// In en, this message translates to:
+  /// **'Logic evaluates to TRUE'**
+  String get logicEvaluatesTrue;
+
+  /// No description provided for @logicEvaluatesFalse.
+  ///
+  /// In en, this message translates to:
+  /// **'Logic evaluates to FALSE'**
+  String get logicEvaluatesFalse;
+
+  /// No description provided for @confirmDeleteLogic.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this logic expression?'**
+  String get confirmDeleteLogic;
+
+  /// No description provided for @confirmDeleteMemo.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this memo?'**
+  String get confirmDeleteMemo;
+
+  /// No description provided for @confirmDeleteConstant.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this constant?'**
+  String get confirmDeleteConstant;
+
+  /// No description provided for @noConstantsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No constants yet'**
+  String get noConstantsYet;
+
+  /// No description provided for @addConstantToSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Add constant to sheet'**
+  String get addConstantToSheet;
+
+  /// No description provided for @editSheetConstant.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Sheet Constant'**
+  String get editSheetConstant;
+
+  /// No description provided for @constantGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Group name'**
+  String get constantGroupLabel;
+
+  /// No description provided for @constantGroupLabelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., Materials, Expenses'**
+  String get constantGroupLabelHint;
+
+  /// No description provided for @selectConstantGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Select group'**
+  String get selectConstantGroup;
+
+  /// No description provided for @filterConstants.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter constants'**
+  String get filterConstants;
+
+  /// No description provided for @clearFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filter'**
+  String get clearFilter;
+
+  /// No description provided for @allConstants.
+  ///
+  /// In en, this message translates to:
+  /// **'All Constants'**
+  String get allConstants;
+
+  /// No description provided for @recentConstants.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Constants'**
+  String get recentConstants;
+
+  /// No description provided for @favoriteConstants.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorite Constants'**
+  String get favoriteConstants;
+
+  /// No description provided for @customConstants.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Constants'**
+  String get customConstants;
+
+  /// No description provided for @systemConstants.
+  ///
+  /// In en, this message translates to:
+  /// **'System Constants'**
+  String get systemConstants;
+
+  /// No description provided for @addToFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Favorites'**
+  String get addToFavorites;
+
+  /// No description provided for @removeFromFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from Favorites'**
+  String get removeFromFavorites;
+
+  /// No description provided for @constantsReordered.
+  ///
+  /// In en, this message translates to:
+  /// **'Constants reordered'**
+  String get constantsReordered;
+
+  /// No description provided for @confirmReorderConstants.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset constant order?'**
+  String get confirmReorderConstants;
+
+  /// No description provided for @constantValueUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Constant updated'**
+  String get constantValueUpdated;
+
+  /// No description provided for @memoSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Memo saved'**
+  String get memoSaved;
+
+  /// No description provided for @memoDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Memo deleted'**
+  String get memoDeleted;
+
+  /// No description provided for @confirmMemoDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this memo?'**
+  String get confirmMemoDelete;
+
+  /// No description provided for @noMemos.
+  ///
+  /// In en, this message translates to:
+  /// **'No memos yet'**
+  String get noMemos;
+
+  /// No description provided for @emptyMemoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to add memo'**
+  String get emptyMemoHint;
+
+  /// No description provided for @columnVisibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Column Display Settings'**
+  String get columnVisibility;
+
+  /// No description provided for @configureColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure Columns'**
+  String get configureColumns;
+
+  /// No description provided for @restoreDefaultColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Default Columns'**
+  String get restoreDefaultColumns;
+
+  /// No description provided for @confirmResetColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset column settings to default?'**
+  String get confirmResetColumns;
+
+  /// No description provided for @columnsReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Column settings reset'**
+  String get columnsReset;
+
+  /// No description provided for @tableViewMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Table View'**
+  String get tableViewMode;
+
+  /// No description provided for @switchToCalcView.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Calc View'**
+  String get switchToCalcView;
+
+  /// No description provided for @switchToTableView.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Table View'**
+  String get switchToTableView;
+
+  /// No description provided for @noDataAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No data available'**
+  String get noDataAvailable;
+
+  /// No description provided for @dataLoaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Data loaded'**
+  String get dataLoaded;
+
+  /// No description provided for @dataSaveError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving data'**
+  String get dataSaveError;
+
+  /// No description provided for @dataLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading data'**
+  String get dataLoadError;
+
+  /// No description provided for @operationSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation completed'**
+  String get operationSuccess;
+
+  /// No description provided for @operationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation failed'**
+  String get operationFailed;
+
+  /// No description provided for @networkError.
+  ///
+  /// In en, this message translates to:
+  /// **'Network error occurred. Please try again.'**
+  String get networkError;
+
+  /// No description provided for @unknownError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown error occurred'**
+  String get unknownError;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @confirmAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm action'**
+  String get confirmAction;
+
+  /// No description provided for @undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get undo;
+
+  /// No description provided for @redo.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get redo;
+
+  /// No description provided for @changesNotSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved changes will be lost. Discard?'**
+  String get changesNotSaved;
+
+  /// No description provided for @discard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discard;
+
+  /// No description provided for @keepEditing.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Editing'**
+  String get keepEditing;
+
+  /// No description provided for @hideName.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Name'**
+  String get hideName;
+
+  /// No description provided for @showName.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Name'**
+  String get showName;
+
+  /// No description provided for @hideAllNames.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide All Calculation Names'**
+  String get hideAllNames;
+
+  /// No description provided for @showAllNames.
+  ///
+  /// In en, this message translates to:
+  /// **'Show All Calculation Names'**
+  String get showAllNames;
+
+  /// No description provided for @displaySingleLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Display in a single line'**
+  String get displaySingleLine;
+
+  /// No description provided for @displayWrapped.
+  ///
+  /// In en, this message translates to:
+  /// **'Display wrapped'**
+  String get displayWrapped;
+
+  /// No description provided for @editWidgetNameColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Widget Name & Color'**
+  String get editWidgetNameColor;
+
+  /// No description provided for @duplicateSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate this sheet'**
+  String get duplicateSheet;
+
+  /// No description provided for @copyAsCsv.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy as CSV'**
+  String get copyAsCsv;
+
+  /// No description provided for @shareWithQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Share with QR Code'**
+  String get shareWithQrCode;
+
+  /// No description provided for @logicItemNewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Comparison / AND/OR condition evaluation'**
+  String get logicItemNewDesc;
+
+  /// No description provided for @sheetTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., Financial calculation'**
+  String get sheetTitleHint;
+
+  /// No description provided for @constantSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Constant Settings'**
+  String get constantSettings;
+
+  /// No description provided for @backgroundColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Background Color'**
+  String get backgroundColor;
+
+  /// No description provided for @widgetName.
+  ///
+  /// In en, this message translates to:
+  /// **'Widget Name'**
+  String get widgetName;
+
+  /// No description provided for @calculatorTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculator'**
+  String get calculatorTooltip;
+
+  /// No description provided for @unitForOtherTerm.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit for term {n}'**
+  String unitForOtherTerm(Object n);
+
+  /// No description provided for @add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get add;
+
+  /// No description provided for @addRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Row'**
+  String get addRow;
+
+  /// No description provided for @navigateToSheetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Sheet'**
+  String get navigateToSheetLabel;
+
+  /// No description provided for @navigateToSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Sheet'**
+  String get navigateToSheet;
+
+  /// No description provided for @allSheetsDisplayMode.
+  ///
+  /// In en, this message translates to:
+  /// **'All Sheets Display Mode'**
+  String get allSheetsDisplayMode;
+
+  /// No description provided for @applyToAllSheets.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply to all sheets'**
+  String get applyToAllSheets;
+
+  /// No description provided for @editModeShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get editModeShort;
+
+  /// No description provided for @viewModeShort.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get viewModeShort;
+
+  /// No description provided for @tableModeShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Table'**
+  String get tableModeShort;
+
+  /// No description provided for @linkGraphDescShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Visualize link relationships between sheets'**
+  String get linkGraphDescShort;
+
+  /// No description provided for @addToSheetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Sheet'**
+  String get addToSheetLabel;
+
+  /// No description provided for @selectSheetToAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Select sheet to add'**
+  String get selectSheetToAdd;
+
+  /// No description provided for @selectSheetToAddCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Select sheet to add ({count})'**
+  String selectSheetToAddCount(Object count);
+
+  /// No description provided for @itemCountFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items'**
+  String itemCountFormat(Object count);
+
+  /// No description provided for @mergedViewNameColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Merged View Name & Color'**
+  String get mergedViewNameColor;
+
+  /// No description provided for @viewName.
+  ///
+  /// In en, this message translates to:
+  /// **'View Name'**
+  String get viewName;
+
+  /// No description provided for @viewNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., Project calculation'**
+  String get viewNameHint;
+
+  /// No description provided for @backgroundColorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Background Color (App bar & background)'**
+  String get backgroundColorLabel;
+
+  /// No description provided for @noSheetsInMerged.
+  ///
+  /// In en, this message translates to:
+  /// **'No sheets'**
+  String get noSheetsInMerged;
+
+  /// No description provided for @aiLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ai'**
+  String get aiLabel;
+
+  /// No description provided for @addThisCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'Add This Calculation'**
+  String get addThisCalc;
+
+  /// No description provided for @calcNameDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Calc {n}'**
+  String calcNameDefault(Object n);
+
+  /// No description provided for @historyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculation History'**
+  String get historyTitle;
+
+  /// No description provided for @historyDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get historyDelete;
+
+  /// No description provided for @historyDeleteCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete ({count})'**
+  String historyDeleteCount(Object count);
+
+  /// No description provided for @historyAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get historyAdd;
+
+  /// No description provided for @historyAddCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} ({count})'**
+  String historyAddCount(Object count, Object label);
+
+  /// No description provided for @historyClearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get historyClearAll;
+
+  /// No description provided for @historyCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get historyCancel;
+
+  /// No description provided for @historyNoEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'No history yet'**
+  String get historyNoEntries;
+
+  /// No description provided for @historyDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count} history entries?'**
+  String historyDeleteConfirm(Object count);
+
+  /// No description provided for @historyDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete history'**
+  String get historyDeleteTitle;
+
+  /// No description provided for @historyClearAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get historyClearAllTitle;
+
+  /// No description provided for @historyClearAllConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all history entries?'**
+  String get historyClearAllConfirm;
+
+  /// No description provided for @historyDateFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'{month}/{day} {hour}:{minute}'**
+  String historyDateFormat(
+    Object day,
+    Object hour,
+    Object minute,
+    Object month,
+  );
+
+  /// No description provided for @historySelectCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String historySelectCount(Object count);
+
+  /// No description provided for @calcHistoryAddMultiple.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Sheet'**
+  String get calcHistoryAddMultiple;
+
+  /// No description provided for @calcHistoryAddMultipleCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} ({count})'**
+  String calcHistoryAddMultipleCount(Object count, Object label);
+
+  /// No description provided for @calcHistoryDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get calcHistoryDelete;
+
+  /// No description provided for @calcHistoryDeleteCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete ({count})'**
+  String calcHistoryDeleteCount(Object count);
+
+  /// No description provided for @calcHistoryClearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get calcHistoryClearAll;
+
+  /// No description provided for @calcHistoryCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get calcHistoryCancel;
+
+  /// No description provided for @calcHistoryNoEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'No history yet'**
+  String get calcHistoryNoEntries;
+
+  /// No description provided for @calcHistoryDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count} history entries?'**
+  String calcHistoryDeleteConfirm(Object count);
+
+  /// No description provided for @calcHistoryDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete history'**
+  String get calcHistoryDeleteTitle;
+
+  /// No description provided for @calcHistoryClearAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get calcHistoryClearAllTitle;
+
+  /// No description provided for @calcHistoryClearAllConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all history entries?'**
+  String get calcHistoryClearAllConfirm;
+
+  /// No description provided for @calcHistoryToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get calcHistoryToday;
+
+  /// No description provided for @calcHistoryYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get calcHistoryYesterday;
+
+  /// No description provided for @calcHistoryDateFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'{month}/{day} {hour}:{minute}'**
+  String calcHistoryDateFormat(
+    Object day,
+    Object hour,
+    Object minute,
+    Object month,
+  );
+
+  /// No description provided for @calcHistorySelectCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String calcHistorySelectCount(Object count);
+
+  /// No description provided for @calcHistoryAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get calcHistoryAdd;
+
+  /// No description provided for @calcHistoryAddCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} ({count})'**
+  String calcHistoryAddCount(Object count, Object label);
+
+  /// No description provided for @calcHistoryDeleteCountFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete ({count})'**
+  String calcHistoryDeleteCountFormat(Object count);
+
+  /// No description provided for @calcHistoryAddCountFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} ({count})'**
+  String calcHistoryAddCountFormat(Object count, Object label);
+
+  /// No description provided for @calcHistorySelectCountFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String calcHistorySelectCountFormat(Object count);
+
+  /// No description provided for @calcHistoryNoEntriesText.
+  ///
+  /// In en, this message translates to:
+  /// **'No history yet'**
+  String get calcHistoryNoEntriesText;
+
+  /// No description provided for @calcHistoryDeleteConfirmText.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count} history entries?'**
+  String calcHistoryDeleteConfirmText(Object count);
+
+  /// No description provided for @calcHistoryDeleteTitleText.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete history'**
+  String get calcHistoryDeleteTitleText;
+
+  /// No description provided for @calcHistoryClearAllTitleText.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get calcHistoryClearAllTitleText;
+
+  /// No description provided for @calcHistoryClearAllConfirmText.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all history entries?'**
+  String get calcHistoryClearAllConfirmText;
+
+  /// No description provided for @calcHistoryTodayText.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get calcHistoryTodayText;
+
+  /// No description provided for @calcHistoryYesterdayText.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get calcHistoryYesterdayText;
+
+  /// No description provided for @calcHistoryDateFormatText.
+  ///
+  /// In en, this message translates to:
+  /// **'{month}/{day} {hour}:{minute}'**
+  String calcHistoryDateFormatText(
+    Object day,
+    Object hour,
+    Object minute,
+    Object month,
+  );
+
+  /// No description provided for @calcHistorySelectCountText.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String calcHistorySelectCountText(Object count);
+
+  /// No description provided for @calcHistoryAddText.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get calcHistoryAddText;
+
+  /// No description provided for @calcHistoryAddCountText.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} ({count})'**
+  String calcHistoryAddCountText(Object count, Object label);
+
+  /// No description provided for @calcHistoryDeleteText.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get calcHistoryDeleteText;
+
+  /// No description provided for @calcHistoryDeleteCountText.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete ({count})'**
+  String calcHistoryDeleteCountText(Object count);
+
+  /// No description provided for @calcHistoryClearAllText.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear All'**
+  String get calcHistoryClearAllText;
+
+  /// No description provided for @calcHistoryCancelText.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get calcHistoryCancelText;
+
+  /// No description provided for @listObjectsFromImage.
+  ///
+  /// In en, this message translates to:
+  /// **'List objects from image to count'**
+  String get listObjectsFromImage;
 }
 
 class _AppLocalizationsDelegate

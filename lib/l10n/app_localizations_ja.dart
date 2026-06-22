@@ -611,6 +611,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get paste => '貼り付け';
 
   @override
+  String get pasteCopiedCalc => 'コピーした計算を追加';
+
+  @override
   String get moveUp => '上に移動';
 
   @override
@@ -618,6 +621,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get expose => '開放';
+
+  @override
+  String get exposeToSheet => '他のシートに開放する';
+
+  @override
+  String get unexposeFromSheet => '他シートへの開放を解除';
 
   @override
   String get linkSettings => '連動設定';
@@ -955,6 +964,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get falseLabel => '偽';
 
   @override
+  String get opGreaterThan => '> (より大きい)';
+
+  @override
+  String get opGreaterEqual => '≥ (以上)';
+
+  @override
+  String get opLessThan => '< (より小さい)';
+
+  @override
+  String get opLessEqual => '≤ (以下)';
+
+  @override
+  String get opEqual => '= (等しい)';
+
+  @override
   String get opNotEqual => '≠ (等しくない)';
 
   @override
@@ -1194,7 +1218,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get overwriteApply => '上書きして適用';
 
   @override
-  String get selectUnitFromCategory => '単位をカテゴリーから選択';
+  String get selectUnitFromCategory => 'カテゴリーから選択';
 
   @override
   String get customTextInputHint => '自由に文字を入力';
@@ -1391,4 +1415,934 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get noItemsInSelectionMode => '1件以上選択してください';
+
+  @override
+  String get aiFormulaGeneration => 'AI計算式生成';
+
+  @override
+  String get aiCountTitle => 'AIカウント';
+
+  @override
+  String get takePhoto => '写真を撮る';
+
+  @override
+  String get chooseFromGallery => 'ギャラリーから選択';
+
+  @override
+  String get analyzing => '解析中...';
+
+  @override
+  String get reflect => '反映';
+
+  @override
+  String get changePicture => '写真を変更';
+
+  @override
+  String get countByAi => 'AIでカウント';
+
+  @override
+  String get selectImageDesc => '画像を選択してください。AIが画像を解析して、指定した対象の数をカウントします。';
+
+  @override
+  String get cameraLabel => 'カメラ';
+
+  @override
+  String get galleryLabel => 'ギャラリー';
+
+  @override
+  String get markerToggle => 'マーカーの表示/非表示';
+
+  @override
+  String get reflectToCalcShort => '電卓に反映';
+
+  @override
+  String get analyzingImage => 'AIが画像を解析中...';
+
+  @override
+  String get countTargetInstruction => 'カウント対象を入力して、AIに画像を解析させましょう。';
+
+  @override
+  String get countHintText => '何を数えますか？（例：人、ボルト、箱）';
+
+  @override
+  String remainingUsesText(Object count) {
+    return '残りAI使用回数: $count';
+  }
+
+  @override
+  String get purchaseMore => '追加購入';
+
+  @override
+  String get copySuccess => 'コピーしました';
+
+  @override
+  String get csvCopied => 'CSVをクリップボードにコピーしました';
+
+  @override
+  String get noDataToCopy => 'コピーするデータがありません';
+
+  @override
+  String get noDataToShare => '共有するデータがありません';
+
+  @override
+  String get encodeFailed => 'データのエンコードに失敗しました';
+
+  @override
+  String get sheetLinkSettings => 'シート連動設定';
+
+  @override
+  String linkSettingOfRow(Object name) {
+    return '$name のリンク設定';
+  }
+
+  @override
+  String get linkFromCalc => '計算からリンク';
+
+  @override
+  String get linkToCalc => '計算へリンク';
+
+  @override
+  String get linkToResult => '答えへリンク';
+
+  @override
+  String get linkToInput => '項1へリンク';
+
+  @override
+  String get linkToOperand => '項2へリンク';
+
+  @override
+  String get saveCalc => '計算を追加';
+
+  @override
+  String get enterValue => '値を入力';
+
+  @override
+  String get editMemoTitle => 'メモを編集';
+
+  @override
+  String get memoEditSave => '保存';
+
+  @override
+  String get insertToMemo => 'メモに挿入';
+
+  @override
+  String get aiPurchaseDescShort => 'AI機能は購入が必要です';
+
+  @override
+  String get aiPurchaseDescLong => 'ストアで購入してAI機能をご利用ください。';
+
+  @override
+  String get graphHint =>
+      'ドラッグ移動  ·  ピンチ/スクロールズーム  ·  ダブルタップで全体表示  ·  シートタップで拡大';
+
+  @override
+  String graphShowAllNodes(Object count) {
+    return '全 $count ノード';
+  }
+
+  @override
+  String graphShowLinkedNodes(Object count) {
+    return 'リンク済み $count ノード';
+  }
+
+  @override
+  String get graphCalcCount => '計算';
+
+  @override
+  String get graphLogicCount => '論理式';
+
+  @override
+  String get graphEdgeCount => '接続';
+
+  @override
+  String get graphFitting => '画面にフィット';
+
+  @override
+  String get graphShowingAll => '全ノード表示中';
+
+  @override
+  String get graphShowingLinked => 'リンク済みのみ表示中';
+
+  @override
+  String get formulaCalc => '計算式';
+
+  @override
+  String get formulaLogic => '論理式';
+
+  @override
+  String get edit => '編集';
+
+  @override
+  String sheetLabel(Object name) {
+    return 'シート: $name';
+  }
+
+  @override
+  String get saveWithStored => '保存値で計算';
+
+  @override
+  String get saveLabelStored => '保存値で';
+
+  @override
+  String get evalTrue => '真';
+
+  @override
+  String get evalFalse => '偽';
+
+  @override
+  String get evaluateWithStored => '保存値で評価';
+
+  @override
+  String logicConditionsCount(Object count) {
+    return '条件式 ($count)';
+  }
+
+  @override
+  String otherItemsCount(Object count) {
+    return '他 $count 件…';
+  }
+
+  @override
+  String get scanQrCode => 'QRコードをスキャン';
+
+  @override
+  String get qrScanFailed => 'QRコードの読み取りに失敗しました';
+
+  @override
+  String get saveImageToGallery => '画像として保存';
+
+  @override
+  String get saving => '保存中...';
+
+  @override
+  String get saveSuccess => 'QRコードを写真に保存しました';
+
+  @override
+  String saveFailed(Object error) {
+    return '保存に失敗しました: $error';
+  }
+
+  @override
+  String get galleryAccessDenied => '写真ライブラリへのアクセスが拒否されました';
+
+  @override
+  String get qRImportFailedTitle => 'インポート失敗';
+
+  @override
+  String get qrDataMergeFailed => 'QRデータの結合に失敗しました。最初からスキャンし直してください';
+
+  @override
+  String get cutConfirm => '切り取り';
+
+  @override
+  String get pasteData => 'データを貼り付け';
+
+  @override
+  String copiedName(Object name) {
+    return '「$name」をコピー';
+  }
+
+  @override
+  String get searchConstants => '定数を検索';
+
+  @override
+  String graphAllNodesCount(Object count) {
+    return '全 $count ノード';
+  }
+
+  @override
+  String graphLinkedNodesCount(Object count) {
+    return 'リンク済み $count ノード';
+  }
+
+  @override
+  String get graphTooltipShowAll => '全ノード表示中';
+
+  @override
+  String get graphTooltipShowLinked => 'リンク済みのみ表示中';
+
+  @override
+  String get graphTooltipFit => '画面にフィット';
+
+  @override
+  String graphLegendCalc(Object count) {
+    return '計算: $count';
+  }
+
+  @override
+  String graphLegendLogic(Object count) {
+    return '論理式: $count';
+  }
+
+  @override
+  String graphLegendEdges(Object count) {
+    return '接続: $count';
+  }
+
+  @override
+  String get graphNodeCalc => '計算';
+
+  @override
+  String get graphNodeLogic => '論理式';
+
+  @override
+  String get graphEditLink => '編集';
+
+  @override
+  String graphSheetName(Object name) {
+    return 'シート: $name';
+  }
+
+  @override
+  String graphConditionExpressions(Object count) {
+    return '条件式 ($count 条件)';
+  }
+
+  @override
+  String graphMoreItems(Object count) {
+    return '他 $count 件…';
+  }
+
+  @override
+  String get graphEvaluatesTrue => '真';
+
+  @override
+  String get graphEvaluatesFalse => '偽';
+
+  @override
+  String get graphEvaluateStored => '保存値で評価';
+
+  @override
+  String get graphSaveValue => '保存値で計算';
+
+  @override
+  String get graphSaveEvaluate => '保存値で評価';
+
+  @override
+  String get graphEmptyTitle => 'グラフデータがありません';
+
+  @override
+  String get graphEmptyDesc => '計算を作成してリンクを設定すると、グラフが生成されます。';
+
+  @override
+  String get confirmDeleteCalc => 'この計算を削除しますか？';
+
+  @override
+  String get confirmDeleteRow => 'この行を削除しますか？';
+
+  @override
+  String confirmDeleteSelected(Object count) {
+    return '選択した$count件を削除しますか？';
+  }
+
+  @override
+  String get addCalcRow => '計算行を追加';
+
+  @override
+  String get calcRowName => '行の名前';
+
+  @override
+  String get calcRowNameHint => '例: 消費税計算';
+
+  @override
+  String get calcRowType => '種別';
+
+  @override
+  String get calcRowValue => '値';
+
+  @override
+  String get calcRowFormula => '計算式';
+
+  @override
+  String get editCalcRow => '計算行を編集';
+
+  @override
+  String get deleteCalcRow => '計算行を削除';
+
+  @override
+  String get insertCalcRowAbove => '上に挿入';
+
+  @override
+  String get insertCalcRowBelow => '下に挿入';
+
+  @override
+  String get moveCalcRowUp => '上に移動';
+
+  @override
+  String get moveCalcRowDown => '下に移動';
+
+  @override
+  String get duplicateCalcRow => '複製';
+
+  @override
+  String get calcRowSettings => '計算の設定';
+
+  @override
+  String get changeOperation => '演算子を変更';
+
+  @override
+  String get selectOperation => '演算子を選択';
+
+  @override
+  String get addOperation => '演算子を追加';
+
+  @override
+  String get removeOperation => '演算子を削除';
+
+  @override
+  String get termSettings => '項の設定';
+
+  @override
+  String calcTerm(Object n) {
+    return '項 $n';
+  }
+
+  @override
+  String get calcOperator => '演算子';
+
+  @override
+  String get calcOperand => '被演算子';
+
+  @override
+  String get calcOthers => '追加項';
+
+  @override
+  String calcTermsCount(Object count) {
+    return '$count項';
+  }
+
+  @override
+  String get calcResultPrecision => '答えの精度';
+
+  @override
+  String get showResultOnly => '答えのみ表示';
+
+  @override
+  String get showFormulaResult => '式と結果を表示';
+
+  @override
+  String get selectSheetFirst => '先にシートを選択してください';
+
+  @override
+  String get selectSourceFirst => 'リンク元を選択してください';
+
+  @override
+  String get noSourceForLink => 'リンクに利用可能なソースがありません';
+
+  @override
+  String get linkExists => 'リンク設定あり';
+
+  @override
+  String get linkNotExists => 'リンクなし';
+
+  @override
+  String get clearAllLinks => '全リンク解除';
+
+  @override
+  String linkCount(Object count) {
+    return '$countリンク';
+  }
+
+  @override
+  String linkingTo(Object dest) {
+    return 'リンク先: $dest';
+  }
+
+  @override
+  String sourceFrom(Object src) {
+    return 'ソース: $src';
+  }
+
+  @override
+  String get linkConfirmReset => 'すべてのリンク設定をリセットしますか？';
+
+  @override
+  String get linkConfirmOverwrite => '既存のリンクを上書きしますか？';
+
+  @override
+  String get linkSettingsSaved => 'リンク設定を保存しました';
+
+  @override
+  String get linkSettingsCleared => 'リンク設定を解除しました';
+
+  @override
+  String get logicEvaluatesTrue => '論理式の結果は TRUE です';
+
+  @override
+  String get logicEvaluatesFalse => '論理式の結果は FALSE です';
+
+  @override
+  String get confirmDeleteLogic => 'この論理式を削除しますか？';
+
+  @override
+  String get confirmDeleteMemo => 'このメモを削除しますか？';
+
+  @override
+  String get confirmDeleteConstant => 'この定数を削除しますか？';
+
+  @override
+  String get noConstantsYet => 'まだ定数がありません';
+
+  @override
+  String get addConstantToSheet => 'シートに定数を追加';
+
+  @override
+  String get editSheetConstant => 'シート定数を編集';
+
+  @override
+  String get constantGroupLabel => 'グループ名';
+
+  @override
+  String get constantGroupLabelHint => '例: 材料費、経費';
+
+  @override
+  String get selectConstantGroup => 'グループを選択';
+
+  @override
+  String get filterConstants => '定数を絞り込み';
+
+  @override
+  String get clearFilter => '絞り込み解除';
+
+  @override
+  String get allConstants => 'すべての定数';
+
+  @override
+  String get recentConstants => '最近使った定数';
+
+  @override
+  String get favoriteConstants => 'お気に入り定数';
+
+  @override
+  String get customConstants => 'カスタム定数';
+
+  @override
+  String get systemConstants => 'システム定数';
+
+  @override
+  String get addToFavorites => 'お気に入りに追加';
+
+  @override
+  String get removeFromFavorites => 'お気に入りから削除';
+
+  @override
+  String get constantsReordered => '定数を並び替えました';
+
+  @override
+  String get confirmReorderConstants => '定数の順序をリセットしますか？';
+
+  @override
+  String get constantValueUpdated => '定数を更新しました';
+
+  @override
+  String get memoSaved => 'メモを保存しました';
+
+  @override
+  String get memoDeleted => 'メモを削除しました';
+
+  @override
+  String get confirmMemoDelete => 'このメモを削除しますか？';
+
+  @override
+  String get noMemos => 'まだメモがありません';
+
+  @override
+  String get emptyMemoHint => 'タップしてメモを追加';
+
+  @override
+  String get columnVisibility => '列の表示設定';
+
+  @override
+  String get configureColumns => '列を設定';
+
+  @override
+  String get restoreDefaultColumns => 'デフォルトの列に戻す';
+
+  @override
+  String get confirmResetColumns => '列設定をデフォルトに戻しますか？';
+
+  @override
+  String get columnsReset => '列設定をリセットしました';
+
+  @override
+  String get tableViewMode => '表表示';
+
+  @override
+  String get switchToCalcView => '計算ビューに切り替え';
+
+  @override
+  String get switchToTableView => '表ビューに切り替え';
+
+  @override
+  String get noDataAvailable => 'データがありません';
+
+  @override
+  String get dataLoaded => 'データを読み込みました';
+
+  @override
+  String get dataSaveError => 'データの保存中にエラーが発生しました';
+
+  @override
+  String get dataLoadError => 'データの読み込み中にエラーが発生しました';
+
+  @override
+  String get operationSuccess => '操作が完了しました';
+
+  @override
+  String get operationFailed => '操作に失敗しました';
+
+  @override
+  String get networkError => 'ネットワークエラーが発生しました。もう一度お試しください。';
+
+  @override
+  String get unknownError => '不明なエラーが発生しました';
+
+  @override
+  String get retry => '再試行';
+
+  @override
+  String get confirmAction => '操作の確認';
+
+  @override
+  String get undo => '元に戻す';
+
+  @override
+  String get redo => 'やり直す';
+
+  @override
+  String get changesNotSaved => '保存されていない変更は失われます。破棄しますか？';
+
+  @override
+  String get discard => '破棄';
+
+  @override
+  String get keepEditing => '編集を続ける';
+
+  @override
+  String get hideName => '名称を隠す';
+
+  @override
+  String get showName => '名称を出す';
+
+  @override
+  String get hideAllNames => 'すべての計算名を非表示';
+
+  @override
+  String get showAllNames => 'すべての計算名を表示';
+
+  @override
+  String get displaySingleLine => '一行で表示する';
+
+  @override
+  String get displayWrapped => '折り返して表示する';
+
+  @override
+  String get editWidgetNameColor => 'ウィジェット名・カラーを編集';
+
+  @override
+  String get duplicateSheet => 'このシートを複製する';
+
+  @override
+  String get copyAsCsv => 'CSV形式でコピーする';
+
+  @override
+  String get shareWithQrCode => 'QRコードで共有する';
+
+  @override
+  String get logicItemNewDesc => '比較・AND/OR条件の真偽判定';
+
+  @override
+  String get sheetTitleHint => '例: 財務計算';
+
+  @override
+  String get constantSettings => '定数の設定';
+
+  @override
+  String get backgroundColor => '背景カラー';
+
+  @override
+  String get widgetName => 'ウィジェット名';
+
+  @override
+  String get calculatorTooltip => '電卓';
+
+  @override
+  String unitForOtherTerm(Object n) {
+    return '項$nの単位';
+  }
+
+  @override
+  String get add => '追加';
+
+  @override
+  String get addRow => '行追加';
+
+  @override
+  String get navigateToSheetLabel => 'シートへ移動';
+
+  @override
+  String get navigateToSheet => 'シートへ移動';
+
+  @override
+  String get allSheetsDisplayMode => '全シート表示モード';
+
+  @override
+  String get applyToAllSheets => '全シートに適用';
+
+  @override
+  String get editModeShort => '編集';
+
+  @override
+  String get viewModeShort => '表示';
+
+  @override
+  String get tableModeShort => '表';
+
+  @override
+  String get linkGraphDescShort => 'シート間のリンク関係をグラフで可視化';
+
+  @override
+  String get addToSheetLabel => 'シートに追加';
+
+  @override
+  String get selectSheetToAdd => '追加するシートを選択';
+
+  @override
+  String selectSheetToAddCount(Object count) {
+    return '追加するシートを選択 ($count)';
+  }
+
+  @override
+  String itemCountFormat(Object count) {
+    return '$count件';
+  }
+
+  @override
+  String get mergedViewNameColor => '結合ビューの名前・カラー';
+
+  @override
+  String get viewName => 'ビュー名';
+
+  @override
+  String get viewNameHint => '例: プロジェクト計算';
+
+  @override
+  String get backgroundColorLabel => '背景カラー（アプリバー・背景）';
+
+  @override
+  String get noSheetsInMerged => 'シートがありません';
+
+  @override
+  String get aiLabel => 'ai';
+
+  @override
+  String get addThisCalc => 'この計算を追加';
+
+  @override
+  String calcNameDefault(Object n) {
+    return '計算 $n';
+  }
+
+  @override
+  String get historyTitle => '計算履歴';
+
+  @override
+  String get historyDelete => '削除';
+
+  @override
+  String historyDeleteCount(Object count) {
+    return '削除 ($count)';
+  }
+
+  @override
+  String get historyAdd => '追加';
+
+  @override
+  String historyAddCount(Object count, Object label) {
+    return '$label ($count)';
+  }
+
+  @override
+  String get historyClearAll => '全削除';
+
+  @override
+  String get historyCancel => 'キャンセル';
+
+  @override
+  String get historyNoEntries => 'まだ履歴がありません';
+
+  @override
+  String historyDeleteConfirm(Object count) {
+    return '$count件の履歴を削除しますか？';
+  }
+
+  @override
+  String get historyDeleteTitle => '履歴を削除';
+
+  @override
+  String get historyClearAllTitle => '全削除';
+
+  @override
+  String get historyClearAllConfirm => 'すべての履歴を削除しますか？';
+
+  @override
+  String historyDateFormat(
+    Object day,
+    Object hour,
+    Object minute,
+    Object month,
+  ) {
+    return '$month/$day $hour:$minute';
+  }
+
+  @override
+  String historySelectCount(Object count) {
+    return '$count件選択';
+  }
+
+  @override
+  String get calcHistoryAddMultiple => 'シートに追加';
+
+  @override
+  String calcHistoryAddMultipleCount(Object count, Object label) {
+    return '$label ($count)';
+  }
+
+  @override
+  String get calcHistoryDelete => '削除';
+
+  @override
+  String calcHistoryDeleteCount(Object count) {
+    return '削除 ($count)';
+  }
+
+  @override
+  String get calcHistoryClearAll => '全削除';
+
+  @override
+  String get calcHistoryCancel => 'キャンセル';
+
+  @override
+  String get calcHistoryNoEntries => 'まだ履歴がありません';
+
+  @override
+  String calcHistoryDeleteConfirm(Object count) {
+    return '$count件の履歴を削除しますか？';
+  }
+
+  @override
+  String get calcHistoryDeleteTitle => '履歴を削除';
+
+  @override
+  String get calcHistoryClearAllTitle => '全削除';
+
+  @override
+  String get calcHistoryClearAllConfirm => 'すべての履歴を削除しますか？';
+
+  @override
+  String get calcHistoryToday => '今日';
+
+  @override
+  String get calcHistoryYesterday => '昨日';
+
+  @override
+  String calcHistoryDateFormat(
+    Object day,
+    Object hour,
+    Object minute,
+    Object month,
+  ) {
+    return '$month/$day $hour:$minute';
+  }
+
+  @override
+  String calcHistorySelectCount(Object count) {
+    return '$count件選択';
+  }
+
+  @override
+  String get calcHistoryAdd => '追加';
+
+  @override
+  String calcHistoryAddCount(Object count, Object label) {
+    return '$label ($count)';
+  }
+
+  @override
+  String calcHistoryDeleteCountFormat(Object count) {
+    return '削除 ($count)';
+  }
+
+  @override
+  String calcHistoryAddCountFormat(Object count, Object label) {
+    return '$label ($count)';
+  }
+
+  @override
+  String calcHistorySelectCountFormat(Object count) {
+    return '$count件選択';
+  }
+
+  @override
+  String get calcHistoryNoEntriesText => 'まだ履歴がありません';
+
+  @override
+  String calcHistoryDeleteConfirmText(Object count) {
+    return '$count件の履歴を削除しますか？';
+  }
+
+  @override
+  String get calcHistoryDeleteTitleText => '履歴を削除';
+
+  @override
+  String get calcHistoryClearAllTitleText => '全削除';
+
+  @override
+  String get calcHistoryClearAllConfirmText => 'すべての履歴を削除しますか？';
+
+  @override
+  String get calcHistoryTodayText => '今日';
+
+  @override
+  String get calcHistoryYesterdayText => '昨日';
+
+  @override
+  String calcHistoryDateFormatText(
+    Object day,
+    Object hour,
+    Object minute,
+    Object month,
+  ) {
+    return '$month/$day $hour:$minute';
+  }
+
+  @override
+  String calcHistorySelectCountText(Object count) {
+    return '$count件選択';
+  }
+
+  @override
+  String get calcHistoryAddText => '追加';
+
+  @override
+  String calcHistoryAddCountText(Object count, Object label) {
+    return '$label ($count)';
+  }
+
+  @override
+  String get calcHistoryDeleteText => '削除';
+
+  @override
+  String calcHistoryDeleteCountText(Object count) {
+    return '削除 ($count)';
+  }
+
+  @override
+  String get calcHistoryClearAllText => '全削除';
+
+  @override
+  String get calcHistoryCancelText => 'キャンセル';
+
+  @override
+  String get listObjectsFromImage => '画像からカウントするものをリストアップ';
 }

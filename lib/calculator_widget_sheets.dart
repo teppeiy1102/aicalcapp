@@ -33,6 +33,7 @@ class _ColumnLabelEditSheetState extends State<_ColumnLabelEditSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: EdgeInsets.only(
         left: 24,
@@ -46,10 +47,10 @@ class _ColumnLabelEditSheetState extends State<_ColumnLabelEditSheet> {
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  '列名の編集',
-                  style: TextStyle(
+                  l10n.editColumnName,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -70,7 +71,7 @@ class _ColumnLabelEditSheetState extends State<_ColumnLabelEditSheet> {
             autofocus: true,
             style: const TextStyle(color: Colors.white, fontSize: 20),
             decoration: InputDecoration(
-              hintText: '列名',
+              hintText: l10n.columnName,
               hintStyle: const TextStyle(color: Colors.white24),
               filled: true,
               fillColor: Colors.white.withOpacity(0.06),
@@ -109,7 +110,7 @@ class _ColumnLabelEditSheetState extends State<_ColumnLabelEditSheet> {
                 }).toList();
                 Navigator.pop(context, newColConfig);
               },
-              child: const Text('保存', style: TextStyle(fontSize: 16)),
+              child: Text(l10n.save, style: const TextStyle(fontSize: 16)),
             ),
           ),
         ],
@@ -166,6 +167,7 @@ class _ColumnSettingsSheetState extends State<_ColumnSettingsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return DraggableScrollableSheet(
       initialChildSize: 0.55,
       minChildSize: 0.4,
@@ -177,10 +179,10 @@ class _ColumnSettingsSheetState extends State<_ColumnSettingsSheet> {
             padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    '列の設定',
-                    style: TextStyle(
+                    l10n.columnSettings,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -189,9 +191,9 @@ class _ColumnSettingsSheetState extends State<_ColumnSettingsSheet> {
                 ),
                 TextButton(
                   onPressed: _save,
-                  child: const Text(
-                    '保存',
-                    style: TextStyle(
+                  child: Text(
+                    l10n.save,
+                    style: const TextStyle(
                       color: Color(0xFF5E81FF),
                       fontWeight: FontWeight.bold,
                     ),
@@ -242,7 +244,7 @@ class _ColumnSettingsSheetState extends State<_ColumnSettingsSheet> {
                             fontSize: 14,
                           ),
                           decoration: InputDecoration(
-                            hintText: '列名',
+                            hintText: l10n.columnName,
                             hintStyle: const TextStyle(color: Colors.white24),
                             isDense: true,
                             contentPadding: const EdgeInsets.symmetric(
@@ -296,12 +298,13 @@ class _ColumnVisibilityDialogState extends State<_ColumnVisibilityDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
       backgroundColor: Colors.black,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Text(
-        '列の表示設定',
-        style: TextStyle(
+      title: Text(
+        l10n.columnDisplaySettings,
+        style: const TextStyle(
           color: Colors.white,
           fontFamily: 'ZenOldMincho',
           fontSize: 16,
@@ -344,16 +347,16 @@ class _ColumnVisibilityDialogState extends State<_ColumnVisibilityDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+          child: Text(l10n.cancel, style: const TextStyle(color: Colors.white54)),
         ),
         TextButton(
           onPressed: () {
             Navigator.pop(context);
             widget.onSave(_localCols);
           },
-          child: const Text(
-            '保存',
-            style: TextStyle(
+          child: Text(
+            l10n.save,
+            style: const TextStyle(
               color: Color(0xFF5E81FF),
               fontWeight: FontWeight.bold,
             ),
@@ -403,6 +406,7 @@ class _LogicRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final name = item['name'] as String? ?? '';
     final exprStr = _CalculatorWidgetState._buildLogicExprString(item, resolver);
     final isTrue = _CalculatorWidgetState._evalLogicItem(item, resolver);
@@ -485,7 +489,7 @@ class _LogicRow extends StatelessWidget {
                 ),
               ),
               child: Text(
-                isTrue ? '真' : '偽',
+                isTrue ? l10n.trueLabel : l10n.falseLabel,
                 style: TextStyle(
                   color: isTrue
                       ? (isDark ? Colors.greenAccent : Colors.green.shade700)
@@ -535,16 +539,16 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
   late List<Map<String, dynamic>> _conditions;
   late List<String> _chainOps;
 
-  static const List<Map<String, String>> _ops = [
-    {'value': '>', 'label': '> (より大きい)'},
-    {'value': '>=', 'label': '≥ (以上)'},
-    {'value': '<', 'label': '< (より小さい)'},
-    {'value': '<=', 'label': '≤ (以下)'},
-    {'value': '==', 'label': '= (等しい)'},
-    {'value': '!=', 'label': '≠ (等しくない)'},
-    {'value': 'between', 'label': '範囲内 (a ≤ x ≤ b)'},
-    {'value': 'not_between', 'label': '範囲外 (x < a または x > b)'},
-    {'value': 'divisible', 'label': '倍数判定 (x が n の倍数)'},
+  List<Map<String, String>> _ops(AppLocalizations l10n) => [
+    {'value': '>', 'label': l10n.opGreaterThan},
+    {'value': '>=', 'label': l10n.opGreaterEqual},
+    {'value': '<', 'label': l10n.opLessThan},
+    {'value': '<=', 'label': l10n.opLessEqual},
+    {'value': '==', 'label': l10n.opEqual},
+    {'value': '!=', 'label': l10n.opNotEqual},
+    {'value': 'between', 'label': l10n.opBetween},
+    {'value': 'not_between', 'label': l10n.opNotBetween},
+    {'value': 'divisible', 'label': l10n.opDivisible},
   ];
 
   @override
@@ -615,6 +619,7 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
   }
 
   Widget _buildConditionEditor(int idx) {
+    final l10n = AppLocalizations.of(context)!;
     final cond = _conditions[idx];
     final bool isBetween =
         cond['op'] == 'between' || cond['op'] == 'not_between';
@@ -636,7 +641,7 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
             Row(
               children: [
                 Text(
-                  '条件 ${idx + 1}',
+                  l10n.conditionN(idx + 1),
                   style: const TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 const Spacer(),
@@ -652,9 +657,9 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
               ],
             ),
             const SizedBox(height: 8),
-            const Text(
-              '左辺 (値)',
-              style: TextStyle(color: Colors.white38, fontSize: 11),
+            Text(
+              l10n.leftSide,
+              style: const TextStyle(color: Colors.white38, fontSize: 11),
             ),
             const SizedBox(height: 4),
             _NumLabelField(
@@ -686,9 +691,9 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
               }),
             ),
             const SizedBox(height: 8),
-            const Text(
-              '演算子',
-              style: TextStyle(color: Colors.white38, fontSize: 11),
+            Text(
+              l10n.operatorLabel,
+              style: const TextStyle(color: Colors.white38, fontSize: 11),
             ),
             const SizedBox(height: 4),
             DropdownButtonFormField<String>(
@@ -709,7 +714,7 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
                   borderSide: const BorderSide(color: Colors.white24),
                 ),
               ),
-              items: _ops
+              items: _ops(l10n)
                   .map(
                     (o) => DropdownMenuItem(
                       value: o['value'],
@@ -728,7 +733,7 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
             const SizedBox(height: 8),
             if (!isDivisible) ...[
               Text(
-                isBetween ? '下限値 (a)' : '右辺 (値)',
+                isBetween ? l10n.lowerLimit : l10n.rightSide,
                 style: const TextStyle(color: Colors.white38, fontSize: 11),
               ),
               const SizedBox(height: 4),
@@ -762,9 +767,9 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
               ),
               if (isBetween) ...[
                 const SizedBox(height: 8),
-                const Text(
-                  '上限値 (b)',
-                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                Text(
+                  l10n.upperLimit,
+                  style: const TextStyle(color: Colors.white38, fontSize: 11),
                 ),
                 const SizedBox(height: 4),
                 _NumLabelField(
@@ -797,9 +802,9 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
                 ),
               ],
             ] else ...[
-              const Text(
-                '除数 (n)',
-                style: TextStyle(color: Colors.white38, fontSize: 11),
+              Text(
+                l10n.divisor,
+                style: const TextStyle(color: Colors.white38, fontSize: 11),
               ),
               const SizedBox(height: 4),
               _NumLabelField(
@@ -839,6 +844,7 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final preview = _buildResult();
     final isTrue = _CalculatorWidgetState._evalLogicItem(preview, widget.resolver);
     final exprStr = _CalculatorWidgetState._buildLogicExprString(preview, widget.resolver);
@@ -848,14 +854,14 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
       titlePadding: const EdgeInsets.fromLTRB(20, 20, 12, 0),
       contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.rule_rounded, color: Colors.deepPurpleAccent, size: 20),
-          SizedBox(width: 8),
+          const Icon(Icons.rule_rounded, color: Colors.deepPurpleAccent, size: 20),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '論理式を編集',
-              style: TextStyle(color: Colors.white, fontSize: 16),
+              l10n.editLogic,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
             ),
           ),
         ],
@@ -868,16 +874,16 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 4),
-              const Text(
-                '名前 (省略可)',
-                style: TextStyle(color: Colors.white38, fontSize: 11),
+              Text(
+                l10n.nameOptional,
+                style: const TextStyle(color: Colors.white38, fontSize: 11),
               ),
               const SizedBox(height: 4),
               TextField(
                 controller: _nameCtrl,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  hintText: '例: 正常範囲チェック',
+                  hintText: l10n.logicNameHint,
                   hintStyle: const TextStyle(color: Colors.white24),
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(
@@ -919,10 +925,10 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
                                 child: ChoiceChip(
                                   label: Text(
                                     op == 'AND'
-                                        ? 'かつ (AND)'
+                                        ? l10n.logicChainAnd
                                         : op == 'OR'
-                                            ? 'または (OR)'
-                                            : 'どちらか一方 (XOR)',
+                                            ? l10n.logicChainOr
+                                            : l10n.logicChainXor,
                                     style: TextStyle(
                                       color: _chainOps[idx - 1] == op
                                           ? Colors.white
@@ -958,9 +964,9 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
                   size: 16,
                   color: Color(0xFF5E81FF),
                 ),
-                label: const Text(
-                  '条件を追加',
-                  style: TextStyle(color: Color(0xFF5E81FF), fontSize: 13),
+                label: Text(
+                  l10n.addCondition,
+                  style: const TextStyle(color: Color(0xFF5E81FF), fontSize: 13),
                 ),
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.zero,
@@ -1008,7 +1014,7 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
                         ),
                       ),
                       child: Text(
-                        isTrue ? '真' : '偽',
+                        isTrue ? l10n.trueLabel : l10n.falseLabel,
                         style: TextStyle(
                           color: isTrue ? Colors.greenAccent : Colors.redAccent,
                           fontWeight: FontWeight.bold,
@@ -1028,13 +1034,13 @@ class _LogicItemEditDialogState extends State<_LogicItemEditDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+          child: Text(l10n.cancel, style: const TextStyle(color: Colors.white54)),
         ),
         TextButton(
           onPressed: () => Navigator.pop(context, _buildResult()),
-          child: const Text(
-            '保存',
-            style: TextStyle(
+          child: Text(
+            l10n.save,
+            style: const TextStyle(
               color: Color(0xFF5E81FF),
               fontWeight: FontWeight.bold,
             ),
@@ -1102,6 +1108,7 @@ class _NumLabelFieldState extends State<_NumLabelField> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       children: [
         if (widget.isLink)
@@ -1121,7 +1128,7 @@ class _NumLabelFieldState extends State<_NumLabelField> {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      widget.linkLabel ?? 'リンク元',
+                      widget.linkLabel ?? l10n.linkSource,
                       style: const TextStyle(
                           color: Colors.blueAccent, fontSize: 13),
                       overflow: TextOverflow.ellipsis,
@@ -1142,7 +1149,7 @@ class _NumLabelFieldState extends State<_NumLabelField> {
               ),
               style: const TextStyle(color: Colors.white, fontSize: 13),
               decoration: InputDecoration(
-                hintText: '数値',
+                hintText: l10n.valueLabel,
                 hintStyle: const TextStyle(color: Colors.white24, fontSize: 12),
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
@@ -1171,7 +1178,7 @@ class _NumLabelFieldState extends State<_NumLabelField> {
             controller: _labelCtrl,
             style: const TextStyle(color: Colors.white70, fontSize: 13),
             decoration: InputDecoration(
-              hintText: 'ラベル (省略可)',
+              hintText: l10n.labelOptional,
               hintStyle: const TextStyle(color: Colors.white24, fontSize: 12),
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(

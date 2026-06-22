@@ -1341,7 +1341,10 @@ class _CalculatorRow extends StatelessWidget {
         side: BorderSide(color: Colors.white10, width: 1),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setSheetState) => Column(
+        builder: (context, setSheetState) {
+
+          final l10n = AppLocalizations.of(context)!;
+          return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Flexible(
@@ -1496,8 +1499,8 @@ class _CalculatorRow extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Row(
                             children: [
-                              const Text(
-                                'オプション',
+                              Text(
+                                l10n.optionsLabel,
                                 style: TextStyle(
                                   color: Colors.white54,
                                   fontSize: 12,
@@ -2632,7 +2635,9 @@ class _CalculatorRow extends StatelessWidget {
               ),
             ),
           ],
-        ),
+
+        );
+        }
       ),
     );
 
@@ -2729,7 +2734,9 @@ class _CalculatorRow extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setSheetState) => Column(
+        builder: (context, setSheetState) {
+          final l10n = AppLocalizations.of(context)!;
+          return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Flexible(
@@ -2883,8 +2890,8 @@ class _CalculatorRow extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Row(
                             children: [
-                              const Text(
-                                'オプション',
+                              Text(
+                                l10n.optionsLabel,
                                 style: TextStyle(
                                   color: Colors.white54,
                                   fontSize: 12,
@@ -4018,7 +4025,8 @@ class _CalculatorRow extends StatelessWidget {
               ),
             ),
           ],
-        ),
+        );
+        }
       ),
     );
 
@@ -4167,7 +4175,9 @@ class _CalculatorRow extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setSheetState) => Column(
+        builder: (context, setSheetState) {
+          final l10n = AppLocalizations.of(context)!;
+          return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Flexible(
@@ -4321,8 +4331,8 @@ class _CalculatorRow extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 8),
                           child: Row(
                             children: [
-                              const Text(
-                                'オプション',
+                              Text(
+                                l10n.optionsLabel,
                                 style: TextStyle(
                                   color: Colors.white54,
                                   fontSize: 12,
@@ -5456,7 +5466,8 @@ class _CalculatorRow extends StatelessWidget {
               ),
             ),
           ],
-        ),
+        );
+        }
       ),
     );
 
@@ -6178,6 +6189,7 @@ class _CalculatorRow extends StatelessWidget {
       (brackets ?? []).any((b) => (b as Map)['end'] == idx);
 
   Widget _buildToolButtons(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -6187,7 +6199,7 @@ class _CalculatorRow extends StatelessWidget {
             color: Colors.blueAccent.withOpacity(0.6),
             size: 20,
           ),
-          tooltip: '項を追加',
+          tooltip: l10n.addTerm,
           onPressed: onAdd,
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
@@ -6219,141 +6231,141 @@ class _CalculatorRow extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    nameVisible ? '名称を隠す' : '名称を出す',
+                    nameVisible ? l10n.hideName : l10n.showName,
                     style: const TextStyle(color: Colors.white, fontSize: 13),
                   ),
                 ],
               ),
             ),
             if (onMoveUp != null)
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'move_up',
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.arrow_upward_rounded,
                       color: Colors.white70,
                       size: 18,
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Text(
-                      '上に移動',
-                      style: TextStyle(color: Colors.white, fontSize: 13),
+                      l10n.moveUp,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
                     ),
                   ],
                 ),
               ),
             if (onMoveDown != null)
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'move_down',
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.arrow_downward_rounded,
                       color: Colors.white70,
                       size: 18,
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Text(
-                      '下に移動',
-                      style: TextStyle(color: Colors.white, fontSize: 13),
+                      l10n.moveDown,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
                     ),
                   ],
                 ),
               ),
             const PopupMenuDivider(height: 1),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'insert_below',
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.playlist_add_rounded,
                     color: Colors.white70,
                     size: 18,
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Text(
-                    '下に計算を追加',
-                    style: TextStyle(color: Colors.white, fontSize: 13),
+                    l10n.insertCalcBelow,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
                   ),
                 ],
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'insert_memo_below',
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.sticky_note_2_outlined,
                     color: Colors.amber,
                     size: 18,
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Text(
-                    'メモを追加',
-                    style: TextStyle(color: Colors.white, fontSize: 13),
+                    l10n.insertMemoBelow,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
                   ),
                 ],
               ),
             ),
             const PopupMenuDivider(height: 1),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'copy',
               child: Row(
                 children: [
-                  Icon(Icons.copy_rounded, color: Colors.blueAccent, size: 18),
-                  SizedBox(width: 12),
+                  const Icon(Icons.copy_rounded, color: Colors.blueAccent, size: 18),
+                  const SizedBox(width: 12),
                   Text(
-                    'コピー',
-                    style: TextStyle(color: Colors.white, fontSize: 13),
+                    l10n.copy,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
                   ),
                 ],
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'cut',
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.content_cut_rounded,
                     color: Colors.orangeAccent,
                     size: 18,
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Text(
-                    '移動（切り取り）',
-                    style: TextStyle(color: Colors.white, fontSize: 13),
+                    l10n.cut,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
                   ),
                 ],
               ),
             ),
             if (hasClipboard)
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'paste',
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.content_paste_rounded,
                       color: Colors.greenAccent,
                       size: 18,
                     ),
-                    SizedBox(width: 12),
+                    const SizedBox(width: 12),
                     Text(
-                      'コピーした計算を追加',
-                      style: TextStyle(color: Colors.white, fontSize: 13),
+                      l10n.pasteCopiedCalc,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
                     ),
                   ],
                 ),
               ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'brackets',
               child: Row(
                 children: [
-                  Icon(Icons.code_rounded, color: Colors.blueAccent, size: 18),
-                  SizedBox(width: 12),
+                  const Icon(Icons.code_rounded, color: Colors.blueAccent, size: 18),
+                  const SizedBox(width: 12),
                   Text(
-                    '優先順位 ( )',
-                    style: TextStyle(color: Colors.white, fontSize: 13),
+                    l10n.brackets,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
                   ),
                 ],
               ),
@@ -6370,7 +6382,7 @@ class _CalculatorRow extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    exposed ? '他シートへの開放を解除' : '他のシートに開放する',
+                    exposed ? l10n.unexposeFromSheet : l10n.exposeToSheet,
                     style: TextStyle(
                       color: exposed ? Colors.orangeAccent : Colors.greenAccent,
                       fontSize: 13,
@@ -6380,19 +6392,19 @@ class _CalculatorRow extends StatelessWidget {
               ),
             ),
             const PopupMenuDivider(height: 1),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'delete',
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.delete_outline_rounded,
                     color: Colors.redAccent,
                     size: 18,
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Text(
-                    '削除',
-                    style: TextStyle(color: Colors.redAccent, fontSize: 13),
+                    l10n.delete,
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 13),
                   ),
                 ],
               ),

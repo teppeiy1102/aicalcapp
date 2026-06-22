@@ -271,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
       id: '${DateTime.now().millisecondsSinceEpoch}',
       type: 'calculator',
       data: {
-        'title': '無題のシート',
+        'title': AppLocalizations.of(context)!.untitledSheet,
         'items': _sampleItems,
         'isExpanded': true,
         'bgColor': 0xFF1A1A2E,
@@ -318,7 +318,7 @@ class _HomeScreenState extends State<HomeScreen> {
       id: '${DateTime.now().millisecondsSinceEpoch}',
       type: 'calculator',
       data: {
-        'title': '無題のシート',
+        'title': AppLocalizations.of(context)!.untitledSheet,
         'items': items,
         'isExpanded': true,
         'bgColor': 0xFF1A1A2E,
@@ -2215,7 +2215,7 @@ class _WidgetCardState extends State<_WidgetCard> {
       try {
         final dt = DateTime.parse(_updatedAtStr).toLocal();
         _updatedLabel =
-            '更新 ${dt.year}/${dt.month.toString().padLeft(2, '0')}/${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+            'updateAt ${dt.year}/${dt.month.toString().padLeft(2, '0')}/${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
       } catch (_) {}
     }
 
@@ -2254,10 +2254,10 @@ class _WidgetCardState extends State<_WidgetCard> {
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.5),
-            blurRadius: 72,
-            spreadRadius: 6,
-            offset: const Offset(0, 0),
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 32,
+            spreadRadius: 3,
+            offset: const Offset(3, 3),
           ),
           
         ],
@@ -3009,12 +3009,12 @@ class _SettingsPageState extends State<_SettingsPage> {
   int _remainingUses = 0;
   bool _isBillingLoading = false;
 
-  static const _builtinConstants = [
-    {'label': 'π (円周率)', 'symbol': 'π', 'value': 3.14159265358979},
-    {'label': 'e (自然対数の底)', 'symbol': 'e', 'value': 2.71828182845905},
-    {'label': 'g (重力加速度)', 'symbol': 'g', 'value': 9.80665},
-    {'label': 'φ (黄金比)', 'symbol': 'φ', 'value': 1.61803398874989},
-    {'label': 'c (光速 m/s)', 'symbol': 'c', 'value': 299792458.0},
+  List<Map<String, dynamic>> _builtinConstants(BuildContext context) => [
+    {'label': AppLocalizations.of(context)!.piLabel, 'symbol': 'π', 'value': 3.14159265358979},
+    {'label': AppLocalizations.of(context)!.eLabel, 'symbol': 'e', 'value': 2.71828182845905},
+    {'label': AppLocalizations.of(context)!.gLabel, 'symbol': 'g', 'value': 9.80665},
+    {'label': AppLocalizations.of(context)!.phiLabel, 'symbol': 'φ', 'value': 1.61803398874989},
+    {'label': AppLocalizations.of(context)!.cLabel, 'symbol': 'c', 'value': 299792458.0},
   ];
 
   @override
@@ -3181,9 +3181,9 @@ class _SettingsPageState extends State<_SettingsPage> {
                   if (!isNew)
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, {'delete': true}),
-                      child: const Text(
-                        '削除',
-                        style: TextStyle(color: Colors.redAccent),
+                      child: Text(
+                        AppLocalizations.of(context)!.delete,
+                        style: const TextStyle(color: Colors.redAccent),
                       ),
                     ),
                   const Spacer(),
@@ -3229,9 +3229,9 @@ class _SettingsPageState extends State<_SettingsPage> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          '設定',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.settings,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w700,
             fontSize: 18,
@@ -3245,7 +3245,7 @@ class _SettingsPageState extends State<_SettingsPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
             child: Text(
-              '課金・購入',
+              AppLocalizations.of(context)!.settingsBilling,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.45),
                 fontSize: 12,
@@ -3284,8 +3284,8 @@ class _SettingsPageState extends State<_SettingsPage> {
                       size: 18,
                     ),
                   ),
-                  title: const Text(
-                    'プロ版',
+                  title: Text(
+                    AppLocalizations.of(context)!.proVersion,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -3293,7 +3293,7 @@ class _SettingsPageState extends State<_SettingsPage> {
                     ),
                   ),
                   subtitle: Text(
-                    _isPro ? 'すべての機能が利用可能です' : 'すべての機能を永久にアンロック（買い切り）',
+                    _isPro ? AppLocalizations.of(context)!.proAllFeaturesAvailable : AppLocalizations.of(context)!.proUnlockAll,
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.4),
                       fontSize: 12,
@@ -3320,9 +3320,9 @@ class _SettingsPageState extends State<_SettingsPage> {
                             ),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Text(
-                            '購入済み ✓',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context)!.proPurchased,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -3364,9 +3364,9 @@ class _SettingsPageState extends State<_SettingsPage> {
                                 ),
                               ],
                             ),
-                            child: const Text(
-                              '購入する →',
-                              style: TextStyle(
+                            child: Text(
+                              AppLocalizations.of(context)!.proBuy,
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -3399,8 +3399,8 @@ class _SettingsPageState extends State<_SettingsPage> {
                       size: 20,
                     ),
                   ),
-                  title: const Text(
-                    'AIクレジット',
+                  title: Text(
+                    AppLocalizations.of(context)!.aiCredits,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -3408,7 +3408,7 @@ class _SettingsPageState extends State<_SettingsPage> {
                     ),
                   ),
                   subtitle: Text(
-                    '残り $_remainingUses 回 ／ 何度でもチャージ可能',
+                    AppLocalizations.of(context)!.aiCreditsRemaining(_remainingUses),
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.4),
                       fontSize: 12,
@@ -3446,9 +3446,9 @@ class _SettingsPageState extends State<_SettingsPage> {
                           ),
                         ],
                       ),
-                      child: const Text(
-                        'チャージ →',
-                        style: TextStyle(
+                      child: Text(
+                        AppLocalizations.of(context)!.aiCreditsCharge,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
@@ -3464,7 +3464,7 @@ class _SettingsPageState extends State<_SettingsPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Text(
-              'AIクレジットは累積されます。有効期限はありません。',
+              AppLocalizations.of(context)!.aiCreditsNote,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.3),
                 fontSize: 11,
@@ -3476,7 +3476,7 @@ class _SettingsPageState extends State<_SettingsPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
             child: Text(
-              '操作設定',
+              AppLocalizations.of(context)!.settingsOperation,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.45),
                 fontSize: 12,
@@ -3686,10 +3686,10 @@ class _SettingsPageState extends State<_SettingsPage> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
-              children: _builtinConstants.asMap().entries.map((entry) {
+              children: _builtinConstants(context).asMap().entries.map((entry) {
                 final idx = entry.key;
                 final c = entry.value;
-                final isLast = idx == _builtinConstants.length - 1;
+                final isLast = idx == _builtinConstants(context).length - 1;
                 return Column(
                   children: [
                     ListTile(

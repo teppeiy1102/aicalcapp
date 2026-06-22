@@ -507,8 +507,8 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                               Icon(Icons.check, color: Colors.white, size: 16),
                               SizedBox(width: 6),
                               Text(
-                                'この値を入力',
-                                style: TextStyle(
+                                 'この値を入力',
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,

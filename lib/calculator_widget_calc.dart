@@ -396,14 +396,14 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
                             borderRadius: BorderRadius.circular(40),
                           ),
                           alignment: Alignment.center,
-                          child: const Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.add, color: Colors.white, size: 16),
-                              SizedBox(width: 6),
+                              const Icon(Icons.add, color: Colors.white, size: 16),
+                              const SizedBox(width: 6),
                               Text(
-                                'この計算を追加',
-                                style: TextStyle(
+                                AppLocalizations.of(context)!.calcAddThis,
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,

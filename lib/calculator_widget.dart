@@ -189,10 +189,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   void _addItem() {
+    final l10n = AppLocalizations.of(context)!;
     final newItems = List<Map<String, dynamic>>.from(_items);
     final newCalcIdx = newItems.length;
     newItems.add({
-      'name': '計算 ${newItems.length + 1}',
+      'name': l10n.defaultCalcName(newItems.length + 1),
       'input': 0.0,
       'op': '+',
       'operand': 0.0,
@@ -209,13 +210,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   void _addItemFromMap(Map<String, dynamic> item) {
+    final l10n = AppLocalizations.of(context)!;
     final newItems = List<Map<String, dynamic>>.from(_items);
     final newCalcIdx = newItems.length;
     final Map<String, dynamic> newItem = Map<String, dynamic>.from(item);
     if (newItem['name'] == null ||
-        (newItem['name'] as String).isEmpty ||
-        newItem['name'] == '計算') {
-      newItem['name'] = '計算 ${newItems.length + 1}';
+        (newItem['name'] as String).trim().isEmpty) {
+      newItem['name'] = l10n.defaultCalcName(newItems.length + 1);
     }
     newItems.add(newItem);
     final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
@@ -229,6 +230,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   void _addItemsFromMaps(List<Map<String, dynamic>> items) {
     if (items.isEmpty) return;
+    final l10n = AppLocalizations.of(context)!;
     final newItems = List<Map<String, dynamic>>.from(_items);
     final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
     for (final item in items) {
@@ -236,8 +238,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       final Map<String, dynamic> newItem = Map<String, dynamic>.from(item);
       if (newItem['name'] == null ||
           (newItem['name'] as String).isEmpty ||
-          newItem['name'] == '計算') {
-        newItem['name'] = '計算 ${newItems.length + 1}';
+          newItem['name'] == l10n.calcNameDefault(1).replaceAll('1', '').trim()) {
+        newItem['name'] = l10n.defaultCalcName(newItems.length + 1);
       }
       newItems.add(newItem);
       order.add({'type': 'calc', 'calcIdx': newCalcIdx});
@@ -250,10 +252,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   void _insertItemAfter(int calcIdx) {
+    final l10n = AppLocalizations.of(context)!;
     final newItems = List<Map<String, dynamic>>.from(_items);
     final newCalcIdx = newItems.length;
     newItems.add({
-      'name': '計算 ${newItems.length + 1}',
+      'name': l10n.defaultCalcName(newItems.length + 1),
       'input': 0.0,
       'op': '+',
       'operand': 0.0,
@@ -299,13 +302,14 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   void _insertMemoAfter(int calcIdx, BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     // PopupMenu の dismiss アニメーション（約300ms）完了後にダイアログを表示する
     Future.delayed(const Duration(milliseconds: 350), () {
       if (!mounted) return;
       showDialog<String?>(
         context: this.context,
         builder: (ctx) =>
-            _MemoEditDialog(initialText: '', title: 'メモを追加', saveLabel: '追加'),
+            _MemoEditDialog(initialText: '', title: l10n.addMemo, saveLabel: l10n.add),
       ).then((result) {
         if (result == null || !mounted) return;
         final newMemos = List<Map<String, dynamic>>.from(_memos);
@@ -352,9 +356,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   // ── 定数管理 ────────────────────────────────────────────────────────────────
   void _addConstant() {
+    final l10n = AppLocalizations.of(context)!;
     final consts = List<Map<String, dynamic>>.from(_constants);
     final newId = DateTime.now().millisecondsSinceEpoch.toString();
-    consts.add({'id': newId, 'name': '定数${consts.length + 1}', 'value': 0.0});
+    consts.add({'id': newId, 'name': l10n.defaultConstantName(consts.length + 1), 'value': 0.0});
     widget.onUpdate({...widget.config.data, 'constants': consts});
   }
 
@@ -374,12 +379,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   // ── スタンドアロンメモ管理 ──────────────────────────────────────────────────
   void _addStandaloneMemo() {
+    final l10n = AppLocalizations.of(context)!;
     Future.delayed(const Duration(milliseconds: 350), () {
       if (!mounted) return;
       showDialog<String?>(
         context: context,
         builder: (ctx) =>
-            _MemoEditDialog(initialText: '', title: 'メモを追加', saveLabel: '追加'),
+            _MemoEditDialog(initialText: '', title: l10n.addMemo, saveLabel: l10n.add),
       ).then((result) {
         if (result == null || !mounted) return;
         final newId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -1018,7 +1024,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   void _editTitle() async {
-    final currentTitle = widget.config.data['title'] as String? ?? '定型計算';
+    final l10n = AppLocalizations.of(context)!;
+    final currentTitle = widget.config.data['title'] as String? ?? l10n.sheetTitle;
     final currentColor = widget.config.data['bgColor'] as int?;
     final ctrl = TextEditingController(text: currentTitle);
     int selectedColor = currentColor ?? _kNoteColorPresets.first.value;
@@ -1046,10 +1053,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 children: [
                   Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'ウィジェット名・カラー',
-                          style: TextStyle(
+                          l10n.editWidgetNameColor,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -1065,24 +1072,24 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'ウィジェット名',
-                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  Text(
+                    l10n.widgetName,
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                   const SizedBox(height: 6),
                   TextField(
                     controller: ctrl,
                     autofocus: true,
                     style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
-                      hintText: '例: 財務計算',
-                      hintStyle: TextStyle(color: Colors.white24),
+                    decoration: InputDecoration(
+                      hintText: l10n.sheetTitleHint,
+                      hintStyle: const TextStyle(color: Colors.white24),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    '背景カラー',
-                    style: TextStyle(color: Colors.white54, fontSize: 12),
+                  Text(
+                    l10n.backgroundColor,
+                    style: const TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                   const SizedBox(height: 10),
                   SingleChildScrollView(
@@ -1308,6 +1315,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   void _editConstant(int idx) async {
+    final l10n = AppLocalizations.of(context)!;
     final consts = _constants;
     if (idx < 0 || idx >= consts.length) return;
     final c = consts[idx];
@@ -1521,7 +1529,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                           Icons.calculate_outlined,
                           color: Colors.black,
                         ),
-                        tooltip: '電卓',
+                        tooltip: l10n.calculatorTooltip,
                         onPressed: () {
                           showModalBottomSheet(
                             context: context,
@@ -1561,9 +1569,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, {'delete': true}),
-                      child: const Text(
-                        '削除',
-                        style: TextStyle(color: Colors.redAccent),
+                      child: Text(
+                        l10n.delete,
+                        style: const TextStyle(color: Colors.redAccent),
                       ),
                     ),
                     const Spacer(),
@@ -1582,7 +1590,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                           'name': nameCtrl.text,
                           'value': valCtrl.text,
                         }),
-                        child: const Text('保存', style: TextStyle(fontSize: 16)),
+                        child: Text(l10n.save, style: const TextStyle(fontSize: 16)),
                       ),
                     ),
                   ],
@@ -1608,6 +1616,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
   }
 
   void _showActionSheet() {
+    final l10n = AppLocalizations.of(context)!;
     final items = _items;
     final allNamesVisible = items.every(
       (item) => item['nameVisible'] as bool? ?? true,
@@ -1629,7 +1638,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 Icons.push_pin_outlined,
                 color: Colors.amberAccent,
               ),
-              title: const Text('定数を追加', style: TextStyle(color: Colors.white)),
+              title: Text(l10n.addConstant, style: const TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(ctx);
                 _addConstant();
@@ -1640,7 +1649,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 Icons.sticky_note_2_outlined,
                 color: Colors.tealAccent,
               ),
-              title: const Text('メモを追加', style: TextStyle(color: Colors.white)),
+              title: Text(l10n.addMemo, style: const TextStyle(color: Colors.white)),
               onTap: () {
                 Navigator.pop(ctx);
                 _addStandaloneMemo();
@@ -1651,16 +1660,16 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 Icons.rule_rounded,
                 color: Colors.deepPurpleAccent,
               ),
-              title: const Row(
+              title: Row(
                 children: [
-                  Text('論理式を追加', style: TextStyle(color: Colors.white)),
-                  SizedBox(width: 8),
-                  ProBadge(),
+                  Text(l10n.addLogicItem, style: const TextStyle(color: Colors.white)),
+                  const SizedBox(width: 8),
+                  const ProBadge(),
                 ],
               ),
-              subtitle: const Text(
-                '比較・AND/OR条件の真偽判定',
-                style: TextStyle(color: Colors.white38, fontSize: 11),
+              subtitle: Text(
+                l10n.logicItemNewDesc,
+                style: const TextStyle(color: Colors.white38, fontSize: 11),
               ),
               onTap: () {
                 Navigator.pop(ctx);
@@ -1676,7 +1685,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 color: Colors.white70,
               ),
               title: Text(
-                allNamesVisible ? 'すべての計算名を非表示' : 'すべての計算名を表示',
+                allNamesVisible ? l10n.hideAllNames : l10n.showAllNames,
                 style: const TextStyle(color: Colors.white),
               ),
               onTap: () {
@@ -1693,7 +1702,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 color: wrapFormula ? Colors.blueAccent : Colors.white70,
               ),
               title: Text(
-                wrapFormula ? '一行で表示する' : '折り返して表示する',
+                wrapFormula ? l10n.displaySingleLine : l10n.displayWrapped,
                 style: const TextStyle(color: Colors.white),
               ),
               trailing: wrapFormula
@@ -1714,9 +1723,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             const Divider(color: Colors.white12, height: 1),
             ListTile(
               leading: const Icon(Icons.edit_outlined, color: Colors.white70),
-              title: const Text(
-                'ウィジェット名・カラーを編集',
-                style: TextStyle(color: Colors.white),
+              title: Text(
+                l10n.editWidgetNameColor,
+                style: const TextStyle(color: Colors.white),
               ),
               onTap: () {
                 Navigator.pop(ctx);
@@ -1725,9 +1734,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             ),
             ListTile(
               leading: const Icon(Icons.copy_outlined, color: Colors.white70),
-              title: const Text(
-                'このシートを複製する',
-                style: TextStyle(color: Colors.white),
+              title: Text(
+                l10n.duplicateSheet,
+                style: const TextStyle(color: Colors.white),
               ),
               onTap: () {
                 Navigator.pop(ctx);
@@ -1739,11 +1748,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 Icons.table_chart_outlined,
                 color: Colors.white70,
               ),
-              title: const Row(
+              title: Row(
                 children: [
-                  Text('CSV形式でコピーする', style: TextStyle(color: Colors.white)),
-                  SizedBox(width: 8),
-                  ProBadge(),
+                  Text(l10n.copyAsCsv, style: const TextStyle(color: Colors.white)),
+                  const SizedBox(width: 8),
+                  const ProBadge(),
                 ],
               ),
               onTap: () {
@@ -1753,11 +1762,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             ),
             ListTile(
               leading: const Icon(Icons.qr_code_rounded, color: Colors.white70),
-              title: const Row(
+              title: Row(
                 children: [
-                  Text('QRコードで共有する', style: TextStyle(color: Colors.white)),
-                  SizedBox(width: 8),
-                  ProBadge(),
+                  Text(l10n.shareWithQrCode, style: const TextStyle(color: Colors.white)),
+                  const SizedBox(width: 8),
+                  const ProBadge(),
                 ],
               ),
               onTap: () {
@@ -2752,6 +2761,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_displayMode == 'view') return _buildViewModeWidget();
     if (_displayMode == 'table') return _buildTableModeWidget();
     final items = _items;
@@ -3666,7 +3676,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                       size: 18,
                                     ),
                               label: Text(
-                                'AI生成',
+                                l10n.aiGenerate,
                                 style: TextStyle(
                                   color: Colors.purpleAccent.withOpacity(0.7),
                                   fontSize: 12,
@@ -3691,7 +3701,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                 size: 18,
                               ),
                               label: Text(
-                                '追加',
+                                l10n.add,
                                 style: TextStyle(
                                   color: isDark
                                       ? Colors.white54
@@ -3720,7 +3730,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                 size: 18,
                               ),
                               label: Text(
-                                '電卓',
+                                l10n.calculatorTooltip,
                                 style: TextStyle(
                                   color: _showCalc
                                       ? Colors.blueAccent
@@ -3768,8 +3778,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (ctx) => const _AiPromptSheet(
-            title: 'AIで計算式を生成',
+          builder: (ctx) => _AiPromptSheet(
+            title: AppLocalizations.of(context)!.aiGenerateCalc,
             initialText: '',
             showModeSwitcher: false,
           ),

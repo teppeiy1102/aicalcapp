@@ -855,7 +855,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Column(
+      title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(l10n.linkGraph,
@@ -866,8 +866,8 @@ class _LinkGraphPageState extends State<LinkGraphPage>
             if (!_loading)
               Text(
                 _showAll
-                    ? '全 ${_model.nodes.length} ノード'
-                    : 'リンク済み ${visible.length} ノード',
+                    ? l10n.graphShowAllNodes(_model.nodes.length)
+                    : l10n.graphShowLinkedNodes(visible.length),
                 style: const TextStyle(color: Color.fromARGB(151, 221, 254, 181), fontSize: 14),
               ),
           ],
@@ -925,7 +925,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
                                 ? const Color(0xFF7B7FFF)
                                 : Colors.white54,
                             elevation: 2,
-                            tooltip: _showAll ? '全ノード表示中' : 'リンク済みのみ表示中',
+                            tooltip: _showAll ? l10n.graphTooltipShowAll : l10n.graphTooltipShowLinked,
                             onPressed: () {
                               setState(() => _showAll = !_showAll);
                               WidgetsBinding.instance
@@ -942,7 +942,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
                             backgroundColor: const Color(0xFF1A1A2A),
                             foregroundColor: Colors.white54,
                             elevation: 2,
-                            tooltip: '画面にフィット',
+                            tooltip: l10n.graphTooltipFit,
                             onPressed: _fitToView,
                             child: const Icon(Icons.fit_screen, size: 18),
                           ),
@@ -976,10 +976,10 @@ class _LinkGraphPageState extends State<LinkGraphPage>
                               ? 0.0
                               : 0.55,
                           duration: const Duration(milliseconds: 800),
-                          child: const Center(
+                  child: Center(
                             child: Text(
-                              'ドラッグ移動  ·  ピンチ/スクロールズーム  ·  ダブルタップで全体表示  ·  シートタップで拡大',
-                              style: TextStyle(
+                              l10n.graphHint,
+                              style: const TextStyle(
                                   color: Colors.white38, fontSize: 11),
                             ),
                           ),

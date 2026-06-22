@@ -624,6 +624,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paste => 'Paste';
 
   @override
+  String get pasteCopiedCalc => 'Add Copied Calculation';
+
+  @override
   String get moveUp => 'Move Up';
 
   @override
@@ -631,6 +634,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get expose => 'Expose';
+
+  @override
+  String get exposeToSheet => 'Expose to other sheets';
+
+  @override
+  String get unexposeFromSheet => 'Remove from other sheets';
 
   @override
   String get linkSettings => 'Link Settings';
@@ -970,6 +979,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get falseLabel => 'False';
 
   @override
+  String get opGreaterThan => '> (Greater than)';
+
+  @override
+  String get opGreaterEqual => '≥ (Greater or equal)';
+
+  @override
+  String get opLessThan => '< (Less than)';
+
+  @override
+  String get opLessEqual => '≤ (Less or equal)';
+
+  @override
+  String get opEqual => '= (Equal)';
+
+  @override
   String get opNotEqual => '≠ (Not equal)';
 
   @override
@@ -1246,19 +1270,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toolbarAiGenerate => 'AI Generate';
 
   @override
-  String get modeSelect => 'Select display mode';
+  String get modeSelect => 'Select Display Mode';
 
   @override
   String get editModeDesc => 'Edit formulas';
 
   @override
-  String get viewModeDesc => 'Show constants, memos and results';
+  String get viewModeDesc => 'View constants, memos, and calculation results';
 
   @override
-  String get tableModeDesc => 'Edit values in spreadsheet format';
+  String get tableModeDesc => 'Display and edit values in sheet format';
 
   @override
-  String get aiGenerateCalc => 'Generate calculation with AI';
+  String get aiGenerateCalc => 'Generate formula with AI';
 
   @override
   String get noContent => 'No content';
@@ -1277,19 +1301,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get previousResult => 'Previous result (answer)';
+  String get previousResult => 'Previous balance (answer)';
 
   @override
   String get logicExpression => 'Logic expression';
 
   @override
   String logicFormat(Object name) {
-    return '$name (Logic)';
+    return '$name (logic)';
   }
 
   @override
   String constantFormat(Object name) {
-    return '$name (Constant)';
+    return '$name (constant)';
   }
 
   @override
@@ -1299,29 +1323,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelFormula => 'Formula';
 
   @override
-  String get labelNoFormula => 'No formula';
+  String get labelNoFormula => 'No formula set';
 
   @override
   String get cameraPermissionRequired => 'Camera permission is required.';
 
   @override
   String get galleryPermissionRequired =>
-      'Photo access permission is required.';
+      'Photo library permission is required.';
 
   @override
-  String get openSettings => 'Open settings';
+  String get openSettings => 'Open Settings';
 
   @override
   String imagePickFailed(Object error) {
-    return 'Failed to load image: $error';
+    return 'Failed to pick image: $error';
   }
 
   @override
-  String get enterCountInstruction => 'Enter what to count.';
+  String get enterCountInstruction => 'Please enter what to count.';
 
   @override
   String get countReadFailed =>
-      'Could not read numbers. Try a different instruction.';
+      'Could not read the number. Try a different instruction.';
 
   @override
   String errorOccurred(Object error) {
@@ -1340,14 +1364,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiImageAnalyzing => 'AI is analyzing the image...';
 
   @override
-  String get reflectToCalc => 'Apply to calculator';
+  String get reflectToCalc => 'Apply to Calculator';
 
   @override
-  String get changePhoto => 'Change photo';
+  String get changePhoto => 'Change Photo';
 
   @override
   String get countInstruction =>
-      'Enter what to count and AI will analyze the image.';
+      'Enter what to count, and AI will analyze the image.';
 
   @override
   String get countHint => 'What to count? (e.g., people, bolts, boxes)';
@@ -1360,7 +1384,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String deleteHistoryConfirm(Object count) {
-    return 'Delete $count history entries?';
+    return 'Delete the selected $count history entries?';
   }
 
   @override
@@ -1373,7 +1397,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fullClearTitle => 'Clear All';
 
   @override
-  String get fullClearConfirm => 'Delete all history entries?';
+  String get fullClearConfirm => 'Delete all history?';
 
   @override
   String itemsSelected(Object count) {
@@ -1390,12 +1414,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String memoCount(Object count) {
-    return '$count memos';
+    return '$count items';
   }
 
   @override
   String exposedCount(Object count) {
-    return '$count exposed';
+    return '$count items';
   }
 
   @override
@@ -1410,4 +1434,940 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noItemsInSelectionMode => 'Please select at least 1';
+
+  @override
+  String get aiFormulaGeneration => 'AI Formula Generation';
+
+  @override
+  String get aiCountTitle => 'AI Count';
+
+  @override
+  String get takePhoto => 'Take Photo';
+
+  @override
+  String get chooseFromGallery => 'Choose from Gallery';
+
+  @override
+  String get analyzing => 'Analyzing...';
+
+  @override
+  String get reflect => 'Apply';
+
+  @override
+  String get changePicture => 'Change Picture';
+
+  @override
+  String get countByAi => 'Count with AI';
+
+  @override
+  String get selectImageDesc =>
+      'Select an image. AI will analyze the image and count the specified objects.';
+
+  @override
+  String get cameraLabel => 'Camera';
+
+  @override
+  String get galleryLabel => 'Gallery';
+
+  @override
+  String get markerToggle => 'Toggle Markers';
+
+  @override
+  String get reflectToCalcShort => 'Apply';
+
+  @override
+  String get analyzingImage => 'AI is analyzing the image...';
+
+  @override
+  String get countTargetInstruction =>
+      'Enter what to count, and AI will analyze the image.';
+
+  @override
+  String get countHintText => 'What to count? (e.g., people, bolts, boxes)';
+
+  @override
+  String remainingUsesText(Object count) {
+    return 'Remaining AI uses: $count';
+  }
+
+  @override
+  String get purchaseMore => 'Purchase More';
+
+  @override
+  String get copySuccess => 'Copied';
+
+  @override
+  String get csvCopied => 'CSV copied to clipboard';
+
+  @override
+  String get noDataToCopy => 'No data to copy';
+
+  @override
+  String get noDataToShare => 'No data to share';
+
+  @override
+  String get encodeFailed => 'Failed to encode data';
+
+  @override
+  String get sheetLinkSettings => 'Sheet Link Settings';
+
+  @override
+  String linkSettingOfRow(Object name) {
+    return 'Link settings for $name';
+  }
+
+  @override
+  String get linkFromCalc => 'Link from calc';
+
+  @override
+  String get linkToCalc => 'Link to calc';
+
+  @override
+  String get linkToResult => 'Link to result';
+
+  @override
+  String get linkToInput => 'Link to input';
+
+  @override
+  String get linkToOperand => 'Link to operand';
+
+  @override
+  String get saveCalc => 'Add Calculation';
+
+  @override
+  String get enterValue => 'Enter value';
+
+  @override
+  String get editMemoTitle => 'Edit Memo';
+
+  @override
+  String get memoEditSave => 'Save';
+
+  @override
+  String get insertToMemo => 'Insert to Memo';
+
+  @override
+  String get aiPurchaseDescShort => 'AI requires purchase';
+
+  @override
+  String get aiPurchaseDescLong =>
+      'Please purchase from the store to use AI features.';
+
+  @override
+  String get graphHint =>
+      'Drag to move · Pinch/Scroll to zoom · Double tap to fit · Tap sheet to expand';
+
+  @override
+  String graphShowAllNodes(Object count) {
+    return 'All $count Nodes';
+  }
+
+  @override
+  String graphShowLinkedNodes(Object count) {
+    return 'Linked $count Nodes';
+  }
+
+  @override
+  String get graphCalcCount => 'Calculations';
+
+  @override
+  String get graphLogicCount => 'Logic';
+
+  @override
+  String get graphEdgeCount => 'Connections';
+
+  @override
+  String get graphFitting => 'Fit to Screen';
+
+  @override
+  String get graphShowingAll => 'Showing All Nodes';
+
+  @override
+  String get graphShowingLinked => 'Showing Linked Only';
+
+  @override
+  String get formulaCalc => 'Formula';
+
+  @override
+  String get formulaLogic => 'Logic';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String sheetLabel(Object name) {
+    return 'Sheet: $name';
+  }
+
+  @override
+  String get saveWithStored => 'Calculate with stored';
+
+  @override
+  String get saveLabelStored => 'With stored';
+
+  @override
+  String get evalTrue => 'True';
+
+  @override
+  String get evalFalse => 'False';
+
+  @override
+  String get evaluateWithStored => 'Evaluate with stored';
+
+  @override
+  String logicConditionsCount(Object count) {
+    return 'Conditions ($count)';
+  }
+
+  @override
+  String otherItemsCount(Object count) {
+    return '$count more...';
+  }
+
+  @override
+  String get scanQrCode => 'Scan QR Code';
+
+  @override
+  String get qrScanFailed => 'Failed to read QR code';
+
+  @override
+  String get saveImageToGallery => 'Save as image';
+
+  @override
+  String get saving => 'Saving...';
+
+  @override
+  String get saveSuccess => 'QR code saved to photos';
+
+  @override
+  String saveFailed(Object error) {
+    return 'Save failed: $error';
+  }
+
+  @override
+  String get galleryAccessDenied => 'Photo library access denied';
+
+  @override
+  String get qRImportFailedTitle => 'Import Failed';
+
+  @override
+  String get qrDataMergeFailed =>
+      'Failed to merge QR data. Please scan again from the beginning.';
+
+  @override
+  String get cutConfirm => 'Cut';
+
+  @override
+  String get pasteData => 'Paste data';
+
+  @override
+  String copiedName(Object name) {
+    return 'Copied \"$name\"';
+  }
+
+  @override
+  String get searchConstants => 'Search constants';
+
+  @override
+  String graphAllNodesCount(Object count) {
+    return 'All $count Nodes';
+  }
+
+  @override
+  String graphLinkedNodesCount(Object count) {
+    return 'Linked $count Nodes';
+  }
+
+  @override
+  String get graphTooltipShowAll => 'Showing All Nodes';
+
+  @override
+  String get graphTooltipShowLinked => 'Showing Linked Only';
+
+  @override
+  String get graphTooltipFit => 'Fit to Screen';
+
+  @override
+  String graphLegendCalc(Object count) {
+    return 'Calc: $count';
+  }
+
+  @override
+  String graphLegendLogic(Object count) {
+    return 'Logic: $count';
+  }
+
+  @override
+  String graphLegendEdges(Object count) {
+    return 'Edges: $count';
+  }
+
+  @override
+  String get graphNodeCalc => 'Calc';
+
+  @override
+  String get graphNodeLogic => 'Logic';
+
+  @override
+  String get graphEditLink => 'Edit';
+
+  @override
+  String graphSheetName(Object name) {
+    return 'Sheet: $name';
+  }
+
+  @override
+  String graphConditionExpressions(Object count) {
+    return 'Conditions ($count conditions)';
+  }
+
+  @override
+  String graphMoreItems(Object count) {
+    return '$count more...';
+  }
+
+  @override
+  String get graphEvaluatesTrue => 'True';
+
+  @override
+  String get graphEvaluatesFalse => 'False';
+
+  @override
+  String get graphEvaluateStored => 'Evaluate with stored';
+
+  @override
+  String get graphSaveValue => 'Calculate with stored';
+
+  @override
+  String get graphSaveEvaluate => 'Evaluate with stored';
+
+  @override
+  String get graphEmptyTitle => 'No graph data';
+
+  @override
+  String get graphEmptyDesc =>
+      'Create calculations and set links to generate a graph.';
+
+  @override
+  String get confirmDeleteCalc => 'Delete this calculation?';
+
+  @override
+  String get confirmDeleteRow => 'Delete this row?';
+
+  @override
+  String confirmDeleteSelected(Object count) {
+    return 'Delete selected $count items?';
+  }
+
+  @override
+  String get addCalcRow => 'Add Calculation Row';
+
+  @override
+  String get calcRowName => 'Row Name';
+
+  @override
+  String get calcRowNameHint => 'e.g., Tax calculation';
+
+  @override
+  String get calcRowType => 'Type';
+
+  @override
+  String get calcRowValue => 'Value';
+
+  @override
+  String get calcRowFormula => 'Formula';
+
+  @override
+  String get editCalcRow => 'Edit Calculation Row';
+
+  @override
+  String get deleteCalcRow => 'Delete Calculation Row';
+
+  @override
+  String get insertCalcRowAbove => 'Insert Above';
+
+  @override
+  String get insertCalcRowBelow => 'Insert Below';
+
+  @override
+  String get moveCalcRowUp => 'Move Up';
+
+  @override
+  String get moveCalcRowDown => 'Move Down';
+
+  @override
+  String get duplicateCalcRow => 'Duplicate';
+
+  @override
+  String get calcRowSettings => 'Calculation Settings';
+
+  @override
+  String get changeOperation => 'Change Operator';
+
+  @override
+  String get selectOperation => 'Select Operator';
+
+  @override
+  String get addOperation => 'Add Operator';
+
+  @override
+  String get removeOperation => 'Remove Operator';
+
+  @override
+  String get termSettings => 'Term Settings';
+
+  @override
+  String calcTerm(Object n) {
+    return 'Term $n';
+  }
+
+  @override
+  String get calcOperator => 'Operator';
+
+  @override
+  String get calcOperand => 'Operand';
+
+  @override
+  String get calcOthers => 'Additional Terms';
+
+  @override
+  String calcTermsCount(Object count) {
+    return '$count terms';
+  }
+
+  @override
+  String get calcResultPrecision => 'Result Precision';
+
+  @override
+  String get showResultOnly => 'Show Result Only';
+
+  @override
+  String get showFormulaResult => 'Show Formula & Result';
+
+  @override
+  String get selectSheetFirst => 'Select a sheet first';
+
+  @override
+  String get selectSourceFirst => 'Select a link source first';
+
+  @override
+  String get noSourceForLink => 'No available sources for linking';
+
+  @override
+  String get linkExists => 'Link set';
+
+  @override
+  String get linkNotExists => 'No link';
+
+  @override
+  String get clearAllLinks => 'Clear All Links';
+
+  @override
+  String linkCount(Object count) {
+    return '$count links';
+  }
+
+  @override
+  String linkingTo(Object dest) {
+    return 'Linked to: $dest';
+  }
+
+  @override
+  String sourceFrom(Object src) {
+    return 'Source: $src';
+  }
+
+  @override
+  String get linkConfirmReset => 'Reset all link settings?';
+
+  @override
+  String get linkConfirmOverwrite => 'Overwrite existing links?';
+
+  @override
+  String get linkSettingsSaved => 'Link settings saved';
+
+  @override
+  String get linkSettingsCleared => 'Link settings cleared';
+
+  @override
+  String get logicEvaluatesTrue => 'Logic evaluates to TRUE';
+
+  @override
+  String get logicEvaluatesFalse => 'Logic evaluates to FALSE';
+
+  @override
+  String get confirmDeleteLogic => 'Delete this logic expression?';
+
+  @override
+  String get confirmDeleteMemo => 'Delete this memo?';
+
+  @override
+  String get confirmDeleteConstant => 'Delete this constant?';
+
+  @override
+  String get noConstantsYet => 'No constants yet';
+
+  @override
+  String get addConstantToSheet => 'Add constant to sheet';
+
+  @override
+  String get editSheetConstant => 'Edit Sheet Constant';
+
+  @override
+  String get constantGroupLabel => 'Group name';
+
+  @override
+  String get constantGroupLabelHint => 'e.g., Materials, Expenses';
+
+  @override
+  String get selectConstantGroup => 'Select group';
+
+  @override
+  String get filterConstants => 'Filter constants';
+
+  @override
+  String get clearFilter => 'Clear filter';
+
+  @override
+  String get allConstants => 'All Constants';
+
+  @override
+  String get recentConstants => 'Recent Constants';
+
+  @override
+  String get favoriteConstants => 'Favorite Constants';
+
+  @override
+  String get customConstants => 'Custom Constants';
+
+  @override
+  String get systemConstants => 'System Constants';
+
+  @override
+  String get addToFavorites => 'Add to Favorites';
+
+  @override
+  String get removeFromFavorites => 'Remove from Favorites';
+
+  @override
+  String get constantsReordered => 'Constants reordered';
+
+  @override
+  String get confirmReorderConstants => 'Reset constant order?';
+
+  @override
+  String get constantValueUpdated => 'Constant updated';
+
+  @override
+  String get memoSaved => 'Memo saved';
+
+  @override
+  String get memoDeleted => 'Memo deleted';
+
+  @override
+  String get confirmMemoDelete => 'Delete this memo?';
+
+  @override
+  String get noMemos => 'No memos yet';
+
+  @override
+  String get emptyMemoHint => 'Tap to add memo';
+
+  @override
+  String get columnVisibility => 'Column Display Settings';
+
+  @override
+  String get configureColumns => 'Configure Columns';
+
+  @override
+  String get restoreDefaultColumns => 'Restore Default Columns';
+
+  @override
+  String get confirmResetColumns => 'Reset column settings to default?';
+
+  @override
+  String get columnsReset => 'Column settings reset';
+
+  @override
+  String get tableViewMode => 'Table View';
+
+  @override
+  String get switchToCalcView => 'Switch to Calc View';
+
+  @override
+  String get switchToTableView => 'Switch to Table View';
+
+  @override
+  String get noDataAvailable => 'No data available';
+
+  @override
+  String get dataLoaded => 'Data loaded';
+
+  @override
+  String get dataSaveError => 'Error saving data';
+
+  @override
+  String get dataLoadError => 'Error loading data';
+
+  @override
+  String get operationSuccess => 'Operation completed';
+
+  @override
+  String get operationFailed => 'Operation failed';
+
+  @override
+  String get networkError => 'Network error occurred. Please try again.';
+
+  @override
+  String get unknownError => 'Unknown error occurred';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get confirmAction => 'Confirm action';
+
+  @override
+  String get undo => 'Undo';
+
+  @override
+  String get redo => 'Redo';
+
+  @override
+  String get changesNotSaved => 'Unsaved changes will be lost. Discard?';
+
+  @override
+  String get discard => 'Discard';
+
+  @override
+  String get keepEditing => 'Keep Editing';
+
+  @override
+  String get hideName => 'Hide Name';
+
+  @override
+  String get showName => 'Show Name';
+
+  @override
+  String get hideAllNames => 'Hide All Calculation Names';
+
+  @override
+  String get showAllNames => 'Show All Calculation Names';
+
+  @override
+  String get displaySingleLine => 'Display in a single line';
+
+  @override
+  String get displayWrapped => 'Display wrapped';
+
+  @override
+  String get editWidgetNameColor => 'Edit Widget Name & Color';
+
+  @override
+  String get duplicateSheet => 'Duplicate this sheet';
+
+  @override
+  String get copyAsCsv => 'Copy as CSV';
+
+  @override
+  String get shareWithQrCode => 'Share with QR Code';
+
+  @override
+  String get logicItemNewDesc => 'Comparison / AND/OR condition evaluation';
+
+  @override
+  String get sheetTitleHint => 'e.g., Financial calculation';
+
+  @override
+  String get constantSettings => 'Constant Settings';
+
+  @override
+  String get backgroundColor => 'Background Color';
+
+  @override
+  String get widgetName => 'Widget Name';
+
+  @override
+  String get calculatorTooltip => 'Calculator';
+
+  @override
+  String unitForOtherTerm(Object n) {
+    return 'Unit for term $n';
+  }
+
+  @override
+  String get add => 'Add';
+
+  @override
+  String get addRow => 'Add Row';
+
+  @override
+  String get navigateToSheetLabel => 'Go to Sheet';
+
+  @override
+  String get navigateToSheet => 'Go to Sheet';
+
+  @override
+  String get allSheetsDisplayMode => 'All Sheets Display Mode';
+
+  @override
+  String get applyToAllSheets => 'Apply to all sheets';
+
+  @override
+  String get editModeShort => 'Edit';
+
+  @override
+  String get viewModeShort => 'View';
+
+  @override
+  String get tableModeShort => 'Table';
+
+  @override
+  String get linkGraphDescShort =>
+      'Visualize link relationships between sheets';
+
+  @override
+  String get addToSheetLabel => 'Add to Sheet';
+
+  @override
+  String get selectSheetToAdd => 'Select sheet to add';
+
+  @override
+  String selectSheetToAddCount(Object count) {
+    return 'Select sheet to add ($count)';
+  }
+
+  @override
+  String itemCountFormat(Object count) {
+    return '$count items';
+  }
+
+  @override
+  String get mergedViewNameColor => 'Merged View Name & Color';
+
+  @override
+  String get viewName => 'View Name';
+
+  @override
+  String get viewNameHint => 'e.g., Project calculation';
+
+  @override
+  String get backgroundColorLabel => 'Background Color (App bar & background)';
+
+  @override
+  String get noSheetsInMerged => 'No sheets';
+
+  @override
+  String get aiLabel => 'ai';
+
+  @override
+  String get addThisCalc => 'Add This Calculation';
+
+  @override
+  String calcNameDefault(Object n) {
+    return 'Calc $n';
+  }
+
+  @override
+  String get historyTitle => 'Calculation History';
+
+  @override
+  String get historyDelete => 'Delete';
+
+  @override
+  String historyDeleteCount(Object count) {
+    return 'Delete ($count)';
+  }
+
+  @override
+  String get historyAdd => 'Add';
+
+  @override
+  String historyAddCount(Object count, Object label) {
+    return '$label ($count)';
+  }
+
+  @override
+  String get historyClearAll => 'Clear All';
+
+  @override
+  String get historyCancel => 'Cancel';
+
+  @override
+  String get historyNoEntries => 'No history yet';
+
+  @override
+  String historyDeleteConfirm(Object count) {
+    return 'Delete $count history entries?';
+  }
+
+  @override
+  String get historyDeleteTitle => 'Delete history';
+
+  @override
+  String get historyClearAllTitle => 'Clear All';
+
+  @override
+  String get historyClearAllConfirm => 'Delete all history entries?';
+
+  @override
+  String historyDateFormat(
+    Object day,
+    Object hour,
+    Object minute,
+    Object month,
+  ) {
+    return '$month/$day $hour:$minute';
+  }
+
+  @override
+  String historySelectCount(Object count) {
+    return '$count selected';
+  }
+
+  @override
+  String get calcHistoryAddMultiple => 'Add to Sheet';
+
+  @override
+  String calcHistoryAddMultipleCount(Object count, Object label) {
+    return '$label ($count)';
+  }
+
+  @override
+  String get calcHistoryDelete => 'Delete';
+
+  @override
+  String calcHistoryDeleteCount(Object count) {
+    return 'Delete ($count)';
+  }
+
+  @override
+  String get calcHistoryClearAll => 'Clear All';
+
+  @override
+  String get calcHistoryCancel => 'Cancel';
+
+  @override
+  String get calcHistoryNoEntries => 'No history yet';
+
+  @override
+  String calcHistoryDeleteConfirm(Object count) {
+    return 'Delete $count history entries?';
+  }
+
+  @override
+  String get calcHistoryDeleteTitle => 'Delete history';
+
+  @override
+  String get calcHistoryClearAllTitle => 'Clear All';
+
+  @override
+  String get calcHistoryClearAllConfirm => 'Delete all history entries?';
+
+  @override
+  String get calcHistoryToday => 'Today';
+
+  @override
+  String get calcHistoryYesterday => 'Yesterday';
+
+  @override
+  String calcHistoryDateFormat(
+    Object day,
+    Object hour,
+    Object minute,
+    Object month,
+  ) {
+    return '$month/$day $hour:$minute';
+  }
+
+  @override
+  String calcHistorySelectCount(Object count) {
+    return '$count selected';
+  }
+
+  @override
+  String get calcHistoryAdd => 'Add';
+
+  @override
+  String calcHistoryAddCount(Object count, Object label) {
+    return '$label ($count)';
+  }
+
+  @override
+  String calcHistoryDeleteCountFormat(Object count) {
+    return 'Delete ($count)';
+  }
+
+  @override
+  String calcHistoryAddCountFormat(Object count, Object label) {
+    return '$label ($count)';
+  }
+
+  @override
+  String calcHistorySelectCountFormat(Object count) {
+    return '$count selected';
+  }
+
+  @override
+  String get calcHistoryNoEntriesText => 'No history yet';
+
+  @override
+  String calcHistoryDeleteConfirmText(Object count) {
+    return 'Delete $count history entries?';
+  }
+
+  @override
+  String get calcHistoryDeleteTitleText => 'Delete history';
+
+  @override
+  String get calcHistoryClearAllTitleText => 'Clear All';
+
+  @override
+  String get calcHistoryClearAllConfirmText => 'Delete all history entries?';
+
+  @override
+  String get calcHistoryTodayText => 'Today';
+
+  @override
+  String get calcHistoryYesterdayText => 'Yesterday';
+
+  @override
+  String calcHistoryDateFormatText(
+    Object day,
+    Object hour,
+    Object minute,
+    Object month,
+  ) {
+    return '$month/$day $hour:$minute';
+  }
+
+  @override
+  String calcHistorySelectCountText(Object count) {
+    return '$count selected';
+  }
+
+  @override
+  String get calcHistoryAddText => 'Add';
+
+  @override
+  String calcHistoryAddCountText(Object count, Object label) {
+    return '$label ($count)';
+  }
+
+  @override
+  String get calcHistoryDeleteText => 'Delete';
+
+  @override
+  String calcHistoryDeleteCountText(Object count) {
+    return 'Delete ($count)';
+  }
+
+  @override
+  String get calcHistoryClearAllText => 'Clear All';
+
+  @override
+  String get calcHistoryCancelText => 'Cancel';
+
+  @override
+  String get listObjectsFromImage => 'List objects from image to count';
 }

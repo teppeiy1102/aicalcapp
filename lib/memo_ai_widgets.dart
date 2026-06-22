@@ -49,9 +49,14 @@ class _StandaloneMemoRow extends StatelessWidget {
   });
 
   void _showEditDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog<String?>(
       context: context,
-      builder: (ctx) => _MemoEditDialog(initialText: text),
+      builder: (ctx) => _MemoEditDialog(
+        initialText: text,
+        title: l10n.editMemoTitle,
+        saveLabel: l10n.memoEditSave,
+      ),
     ).then((result) {
       if (result == null) return;
       onUpdate(result);
@@ -92,7 +97,7 @@ class _StandaloneMemoRow extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                empty ? 'メモ（タップして編集）' : text,
+                empty ? AppLocalizations.of(context)!.memoEmptyHint : text,
                 style: TextStyle(
                   color: empty
                       ? (isDark ? Colors.white24 : Colors.black26)
@@ -137,9 +142,14 @@ class _MemoRowWidget extends StatelessWidget {
   });
 
   void _showEditDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog<String?>(
       context: context,
-      builder: (ctx) => _MemoEditDialog(initialText: text),
+      builder: (ctx) => _MemoEditDialog(
+        initialText: text,
+        title: l10n.editMemoTitle,
+        saveLabel: l10n.memoEditSave,
+      ),
     ).then((result) {
       if (result == null) return;
       onUpdate(result);
@@ -179,7 +189,7 @@ class _MemoRowWidget extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                empty ? 'メモ（タップして編集）' : text,
+                empty ? AppLocalizations.of(context)!.memoEmptyHint : text,
                 style: TextStyle(
                   color: empty
                       ? (isDark ? Colors.white24 : Colors.black26)
@@ -266,10 +276,13 @@ class _AiCountPageState extends State<_AiCountPage> {
           SnackBar(
             content: Text(
               source == ImageSource.camera
-                  ? 'カメラのアクセス許可が必要です。'
-                  : '写真へのアクセス許可が必要です。',
+                  ? AppLocalizations.of(context)!.cameraPermissionRequired
+                  : AppLocalizations.of(context)!.galleryPermissionRequired,
             ),
-            action: SnackBarAction(label: '設定を開く', onPressed: openAppSettings),
+            action: SnackBarAction(
+              label: AppLocalizations.of(context)!.openSettings,
+              onPressed: openAppSettings,
+            ),
             duration: const Duration(seconds: 4),
           ),
         );
@@ -297,7 +310,7 @@ class _AiCountPageState extends State<_AiCountPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('画像の取得に失敗しました: $e')));
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.imagePickFailed(e))));
       }
     }
   }
@@ -308,7 +321,7 @@ class _AiCountPageState extends State<_AiCountPage> {
     if (instruction.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('何を数えるか入力してください。')));
+      ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.enterCountInstruction)));
       return;
     }
     if (_imageBytes == null) return;
@@ -320,18 +333,18 @@ class _AiCountPageState extends State<_AiCountPage> {
           context: context,
           builder: (ctx) => AlertDialog(
             backgroundColor: const Color(0xFF1E1E2E),
-            title: const Text(
-              'AI機能は購入が必要です',
-              style: TextStyle(color: Colors.white, fontSize: 16),
+            title: Text(
+              AppLocalizations.of(context)!.aiPurchaseRequired,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
             ),
-            content: const Text(
-              'AI機能を使用するには、AI利用回数のチャージが必要です。ストアページで購入してください。',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+            content: Text(
+              AppLocalizations.of(context)!.aiPurchaseRequiredDesc,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+                child: Text(AppLocalizations.of(context)!.cancel, style: const TextStyle(color: Colors.white54)),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -345,7 +358,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                     MaterialPageRoute(builder: (_) => const StorePage()),
                   );
                 },
-                child: const Text('ストアへ'),
+                child: Text(AppLocalizations.of(context)!.goToStore),
               ),
             ],
           ),
@@ -364,8 +377,8 @@ class _AiCountPageState extends State<_AiCountPage> {
       setState(() => _lastResult = result);
       if (result == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('数字を読み取れませんでした。別の指示を試してください。'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.countReadFailed),
             backgroundColor: Colors.deepOrange,
           ),
         );
@@ -374,7 +387,7 @@ class _AiCountPageState extends State<_AiCountPage> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('エラー: $e')));
+        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.errorOccurred(e.toString()))));
       }
     } finally {
       if (mounted) setState(() => _isCounting = false);
@@ -397,18 +410,18 @@ class _AiCountPageState extends State<_AiCountPage> {
           context: context,
           builder: (ctx) => AlertDialog(
             backgroundColor: const Color(0xFF1E1E2E),
-            title: const Text(
-              'AI機能は購入が必要です',
-              style: TextStyle(color: Colors.white, fontSize: 16),
+            title: Text(
+              AppLocalizations.of(context)!.aiPurchaseRequired,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
             ),
-            content: const Text(
-              'AI機能を使用するには、AI利用回数のチャージが必要です。ストアページで購入してください。',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+            content: Text(
+              AppLocalizations.of(context)!.aiPurchaseRequiredDesc,
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('キャンセル', style: TextStyle(color: Colors.white54)),
+                child: Text(AppLocalizations.of(context)!.cancel, style: const TextStyle(color: Colors.white54)),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -422,7 +435,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                     MaterialPageRoute(builder: (_) => const StorePage()),
                   );
                 },
-                child: const Text('ストアへ'),
+                child: Text(AppLocalizations.of(context)!.goToStore),
               ),
             ],
           ),
@@ -459,9 +472,9 @@ class _AiCountPageState extends State<_AiCountPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('カウントする対象を選択', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(AppLocalizations.of(context)!.selectObjectToCount, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
               ),
               Flexible(
                 child: ListView.builder(
@@ -495,7 +508,7 @@ class _AiCountPageState extends State<_AiCountPage> {
       if (mounted) {
         setState(() => _isCounting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('エラー: $e')),
+          SnackBar(content: Text(AppLocalizations.of(context)!.errorOccurred(e.toString()))),
         );
       }
     }
@@ -536,7 +549,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '残りAI使用回数: $_remainingUses 回 (追加購入)',
+                        AppLocalizations.of(context)!.remainingUsesFormat(_remainingUses!),
                         style: const TextStyle(
                           color: Colors.tealAccent,
                           fontSize: 13,
@@ -550,9 +563,9 @@ class _AiCountPageState extends State<_AiCountPage> {
             const Divider(color: Colors.white12, height: 1),
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Colors.tealAccent),
-              title: const Text(
-                'カメラで撮影',
-                style: TextStyle(color: Colors.white),
+              title: Text(
+                AppLocalizations.of(context)!.takePhoto,
+                style: const TextStyle(color: Colors.white),
               ),
               onTap: () {
                 Navigator.pop(ctx);
@@ -564,9 +577,9 @@ class _AiCountPageState extends State<_AiCountPage> {
                 Icons.photo_library,
                 color: Colors.tealAccent,
               ),
-              title: const Text(
-                'ギャラリーから選択',
-                style: TextStyle(color: Colors.white),
+              title: Text(
+                AppLocalizations.of(context)!.chooseFromGallery,
+                style: const TextStyle(color: Colors.white),
               ),
               onTap: () {
                 Navigator.pop(ctx);
@@ -588,15 +601,15 @@ class _AiCountPageState extends State<_AiCountPage> {
         backgroundColor: const Color(0xFF0D0D1A),
         foregroundColor: Colors.white,
         titleSpacing: 0,
-        title: const Row(
+        title: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.auto_awesome_rounded,
               color: Colors.tealAccent,
               size: 18,
             ),
-            SizedBox(width: 8),
-            Text('AIカウント', style: TextStyle(color: Colors.white, fontSize: 16)),
+            const SizedBox(width: 8),
+            Text(AppLocalizations.of(context)!.aiCountTitle, style: const TextStyle(color: Colors.white, fontSize: 16)),
           ],
         ),
         actions: [if (_lastResult != null) ...[]],
@@ -660,7 +673,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '残りAI使用回数: $_remainingUses 回 (追加購入)',
+                        AppLocalizations.of(context)!.remainingUsesFormat(_remainingUses!),
                         style: const TextStyle(
                           color: Colors.tealAccent,
                           fontSize: 13,
@@ -673,9 +686,9 @@ class _AiCountPageState extends State<_AiCountPage> {
               ),
             Padding(
               padding: const EdgeInsets.all(30.0),
-              child: const Text(
-                '画像を選択してください。AIが画像を解析して、指定した対象の数をカウントします。',
-                style: TextStyle(color: Colors.white70, fontSize: 15),
+              child: Text(
+                AppLocalizations.of(context)!.selectImageDesc,
+                style: const TextStyle(color: Colors.white70, fontSize: 15),
               ),
             ),
             const SizedBox(height: 20),
@@ -684,13 +697,13 @@ class _AiCountPageState extends State<_AiCountPage> {
               children: [
                 _buildSourceButton(
                   icon: Icons.camera_alt,
-                  label: 'カメラ',
+                  label: AppLocalizations.of(context)!.cameraLabel,
                   onTap: () => _pickImage(ImageSource.camera),
                 ),
                 const SizedBox(width: 20),
                 _buildSourceButton(
                   icon: Icons.photo_library,
-                  label: 'ギャラリー',
+                  label: AppLocalizations.of(context)!.galleryLabel,
                   onTap: () => _pickImage(ImageSource.gallery),
                 ),
               ],
@@ -788,7 +801,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                 color: Colors.white,
               ),
               onPressed: () => setState(() => _showMarkers = !_showMarkers),
-              tooltip: 'マーカーの表示/非表示',
+              tooltip: AppLocalizations.of(context)!.markerToggle,
             ),
           ),
 
@@ -830,7 +843,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                         ),
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     TextButton.icon(
                       onPressed: () =>
                           Navigator.pop(context, _lastResult!.count),
@@ -850,7 +863,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                         size: 18,
                       ),
                       label: Text(
-                        '電卓に反映',
+                        AppLocalizations.of(context)!.reflectToCalc,
                         style: const TextStyle(
                           color: Colors.teal,
                           fontWeight: FontWeight.bold,
@@ -867,15 +880,15 @@ class _AiCountPageState extends State<_AiCountPage> {
         if (_isCounting)
           Container(
             color: Colors.black54,
-            child: const Center(
+            child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(color: Colors.tealAccent),
-                  SizedBox(height: 16),
+                  const CircularProgressIndicator(color: Colors.tealAccent),
+                  const SizedBox(height: 16),
                   Text(
-                    'AIが画像を解析中...',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                    AppLocalizations.of(context)!.aiImageAnalyzing,
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ),
@@ -896,15 +909,15 @@ class _AiCountPageState extends State<_AiCountPage> {
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.refresh, color: Colors.red, size: 14),
-                  SizedBox(width: 4),
+                  const Icon(Icons.refresh, color: Colors.red, size: 14),
+                  const SizedBox(width: 4),
                   Text(
-                    '写真を変更',
-                    style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+                    AppLocalizations.of(context)!.changePhoto,
+                    style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -936,7 +949,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'カウント対象を入力して、AIに画像を解析させましょう。',
+                    AppLocalizations.of(context)!.countTargetInstruction,
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.35),
                       fontSize: 11,
@@ -956,7 +969,7 @@ class _AiCountPageState extends State<_AiCountPage> {
                     textInputAction: TextInputAction.done,
                     onSubmitted: isBusy ? null : (_) => _runLlmCount(),
                     decoration: InputDecoration(
-                      hintText: '何を数えますか？（例：人、ボルト、箱）',
+                      hintText: AppLocalizations.of(context)!.countHintText,
                       hintStyle: const TextStyle(color: Colors.white38),
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.07),
@@ -1026,8 +1039,8 @@ class _AiCountPageState extends State<_AiCountPage> {
                   elevation: 0,
                 ),
                 icon: const Icon(Icons.list_alt, size: 20),
-                label: const Text(
-                  '画像からカウントするものをリストアップ',
+                label: Text(
+                  AppLocalizations.of(context)!.listObjectsFromImage,
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -1046,8 +1059,8 @@ class _MemoEditDialog extends StatefulWidget {
   final String saveLabel;
   const _MemoEditDialog({
     required this.initialText,
-    this.title = 'メモを編集',
-    this.saveLabel = '保存',
+    this.title = 'editMemoTitle',
+    this.saveLabel = 'save',
   });
 
   @override
@@ -1330,7 +1343,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
           CalcHistoryManager.instance.clearAll();
           Navigator.pop(ctx);
         },
-        addMultipleLabel: 'メモに挿入',
+        addMultipleLabel: AppLocalizations.of(context)!.insertToMemo,
         onAddMultiple: (selectedEntries) {
           Navigator.pop(ctx);
           final sb = StringBuffer();
@@ -1508,7 +1521,7 @@ gradient: const LinearGradient(
                               child: Text(
                                 _calcHasResult && _calcExprStr.isNotEmpty
                                     ? _calcExprStr
-                                    : 'メモに挿入',
+                                    : AppLocalizations.of(context)!.insertToMemo,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -1665,7 +1678,7 @@ gradient: const LinearGradient(
                   minLines: 2,
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                   decoration: InputDecoration(
-                    hintText: 'メモを入力...',
+                    hintText: AppLocalizations.of(context)!.memoPlaceholder,
                     hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
                     filled: true,
                     fillColor: Colors.white.withOpacity(0.06),
@@ -1698,8 +1711,8 @@ gradient: const LinearGradient(
                     children: [
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(null),
-                        child: const Text(
-                          'キャンセル',
+                        child: Text(
+                          AppLocalizations.of(context)!.cancel,
                           style: TextStyle(color: Colors.white54),
                         ),
                       ),
