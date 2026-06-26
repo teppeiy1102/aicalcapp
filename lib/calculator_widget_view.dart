@@ -28,7 +28,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
               ),
               const SizedBox(width: 5),
               Text(
-                '定数',
+                AppLocalizations.of(context)!.constant,
                 style: TextStyle(
                   color: Colors.amber,
                   fontSize: 11,
@@ -106,7 +106,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
     final constants = _constants;
     final standaloneItems = _standaloneItems;
     final displayOrder = _effectiveDisplayOrder;
-    final title = widget.config.data['title'] as String? ?? '定型計算';
+    final title = widget.config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
     final bgColorValue = widget.config.data['bgColor'] as int?;
     final isDark = bgColorValue != null
         ? _kNoteColorPresets
@@ -430,7 +430,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
             if (items.isEmpty && standaloneItems.isEmpty && _logicItems.isEmpty)
               Center(
                 child: Text(
-                  '内容がありません',
+                  AppLocalizations.of(context)!.noContent,
                   style: TextStyle(
                     color: isDark ? Colors.white12 : Colors.black12,
                     fontFamily: 'ZenOldMincho',
@@ -602,7 +602,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                                 ),
                               ),
                               child: Text(
-                                isTrue ? '真' : '偽',
+                                isTrue ? AppLocalizations.of(context)!.trueLabel : AppLocalizations.of(context)!.falseLabel,
                                 style: TextStyle(
                                   color: isTrue
                                       ? (isDark

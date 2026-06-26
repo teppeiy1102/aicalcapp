@@ -1612,7 +1612,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get evalFalse => 'False';
 
   @override
-  String get evaluateWithStored => 'Evaluate with stored';
+  String get evaluateWithStored => 'Evaluate with stored values';
 
   @override
   String logicConditionsCount(Object count) {
@@ -2529,4 +2529,205 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get transformPowLabel => 'x^n Power';
+
+  @override
+  String get viewModeLabel => 'View Mode';
+
+  @override
+  String get viewModeSubtitle =>
+      'View constants, memos, and calculation results';
+
+  @override
+  String get tableModeSubtitle => 'Display and edit values in sheet format';
+
+  @override
+  String get linkGraphSubtitle => 'Visualize link relationships between sheets';
+
+  @override
+  String get applyToAllSheetsSubtitle => 'Apply to all sheets';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get noColumnsToDisplay => 'No columns to display';
+
+  @override
+  String connectCount(Object count) {
+    return '$count connections';
+  }
+
+  @override
+  String sheetN(Object n) {
+    return 'Sheet $n';
+  }
+
+  @override
+  String calcN(Object n) {
+    return 'Calc $n';
+  }
+
+  @override
+  String logicN(Object n) {
+    return 'Logic $n';
+  }
+
+  @override
+  String conditionNLhs(Object n) {
+    return 'Condition $n left';
+  }
+
+  @override
+  String conditionNRhs(Object n) {
+    return 'Condition $n right';
+  }
+
+  @override
+  String get bothLabel => 'Both';
+
+  @override
+  String get linkValue => 'Link value';
+
+  @override
+  String get fixedValue => 'Fixed value';
+
+  @override
+  String get resultLabel => 'Result:';
+
+  @override
+  String get inputLabel => 'Input';
+
+  @override
+  String calcCountLabel(Object count) {
+    return '$count calcs';
+  }
+
+  @override
+  String logicCountLabel(Object count) {
+    return '$count logics';
+  }
+
+  @override
+  String itemsOfCalc(Object count) {
+    return '$count calculations';
+  }
+
+  @override
+  String sheetsMergedCount(Object count) {
+    return '$count sheets are merged';
+  }
+
+  @override
+  String get createCalcSheet => 'Please create a calculation sheet';
+
+  @override
+  String get linkGraphEmptyHint =>
+      'Link values in calculation sheets\nto display a graph here';
+
+  @override
+  String get notLinked => 'Not linked';
+
+  @override
+  String get bracketRange => 'Bracket range specification';
+
+  @override
+  String get startItem => 'Start item';
+
+  @override
+  String get endItem => 'End item';
+
+  @override
+  String get currentSelection => 'Current selection';
+
+  @override
+  String get allSheetsDisplayModeLabel => 'All Sheets Display Mode';
+
+  @override
+  String get backgroundColorLabel2 => 'Background Color (App bar & background)';
+
+  @override
+  String get scanAllQr => 'Scan all QR codes in order';
+
+  @override
+  String get scanOnOtherDevice => 'Scan on another device to import sheets';
+
+  @override
+  String linkedQrPage(Object page, Object total) {
+    return 'Linked QR: $page/$total';
+  }
+
+  @override
+  String get qrShareLabel => 'Share with QR Code';
+
+  @override
+  String qrSharePageLabel(Object page, Object total) {
+    return 'Share with QR Code ($page/$total)';
+  }
+
+  @override
+  String calcDataCount(Object count) {
+    return '$count calculations';
+  }
+
+  @override
+  String sheetNumberLabel(Object current, Object total) {
+    return 'Sheet $current / $total';
+  }
+
+  @override
+  String get tapToExpand => 'Tap to expand more';
+
+  @override
+  String get clipboardLabel => 'Clipboard';
+
+  @override
+  String get previousArrow => '← Back';
+
+  @override
+  String get savedValueCalc => 'Calculate with stored values';
+
+  @override
+  String get savedValueEval => 'Evaluate with stored values';
+
+  @override
+  String get imageAnalysisError => 'Image analysis failed';
+
+  @override
+  String importedSheetWithCount(Object result) {
+    return 'Imported \"$result\"';
+  }
+
+  @override
+  String duplicationSuccess(Object title) {
+    return 'Duplicated \"$title\"';
+  }
+
+  @override
+  String itemCountCalc(Object count) {
+    return '$count calculations';
+  }
+
+  @override
+  String get listObjectsFromImageDesc => 'List objects from image to count';
+
+  @override
+  String get objectNotFound => 'Object not found';
+
+  @override
+  String get calcWithStored => 'Calculate with stored values';
+
+  @override
+  String get csvHeaderNameFormula => 'Name,Formula,Result';
+
+  @override
+  String get csvHeaderNameResult => 'Name,Expression,Result';
+
+  @override
+  String get csvHeaderNameValue => 'Name,Value';
+
+  @override
+  String get csvSectionLogic => '--- Logic ---';
+
+  @override
+  String get csvSectionConstant => '--- Constants ---';
 }

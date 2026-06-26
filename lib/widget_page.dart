@@ -1405,7 +1405,7 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                       TextButton(
                         onPressed: () => close(false),
                         child: Text(
-                          'キャンセル',
+                          AppLocalizations.of(context)!.cancel,
                           style: TextStyle(
                             color: isDark ? Colors.white54 : Colors.black54,
                           ),
@@ -1435,9 +1435,9 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
     if (_selectedIndices.isEmpty) return;
     final count = _selectedIndices.length;
     final confirmed = await _showConfirmation(
-      title: '履歴を削除',
+      title: AppLocalizations.of(context)!.historyDeleteTitle,
       content: '選択した$count件の履歴を削除しますか？',
-      confirmLabel: '削除',
+      confirmLabel: AppLocalizations.of(context)!.delete,
     );
     if (confirmed != true || !mounted) return;
     final sorted = _selectedIndices.toList()..sort((a, b) => b.compareTo(a));
@@ -1454,9 +1454,9 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
 
   Future<void> _confirmAndClearAll() async {
     final confirmed = await _showConfirmation(
-      title: '全削除',
+      title: AppLocalizations.of(context)!.historyClearAll,
       content: 'すべての履歴を削除しますか？',
-      confirmLabel: '削除',
+      confirmLabel: AppLocalizations.of(context)!.delete,
     );
     if (confirmed != true || !mounted) return;
     widget.onClear();
@@ -1499,7 +1499,7 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
-                      'キャンセル',
+                      AppLocalizations.of(context)!.cancel,
                       style: TextStyle(color: subColor, fontSize: 13),
                     ),
                   ),
@@ -1508,7 +1508,7 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                   ]
                 else
                   ...[Text(
-                    '計算履歴',
+                    AppLocalizations.of(context)!.historyTitle,
                     style: TextStyle(
                       color: fgColor,
                       fontSize: 17,
@@ -1535,8 +1535,8 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text(
-                      '全削除',
+                    child: Text(
+                    AppLocalizations.of(context)!.historyClearAll,
                       style: TextStyle(color: Colors.redAccent, fontSize: 13),
                     ),
                   ),
@@ -1550,8 +1550,8 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: const Text(
-                        '追加',
+                      child: Text(
+                    AppLocalizations.of(context)!.historyAdd,
                         style: TextStyle(color: Colors.blueAccent, fontSize: 14),
                       ),
                     ),
@@ -1563,8 +1563,8 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text(
-                      '削除',
+                    child: Text(
+                    AppLocalizations.of(context)!.delete,
                       style: TextStyle(color: Colors.redAccent, fontSize: 14),
                     ),
                   ),
@@ -1577,7 +1577,7 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 48),
               child: Text(
-                'まだ履歴がありません',
+                AppLocalizations.of(context)!.historyNoEntries,
                 style: TextStyle(color: subColor, fontSize: 14),
               ),
             )
@@ -1719,7 +1719,7 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                         icon: const Icon(Icons.delete_rounded, size: 18),
                         label: Text(
                           _selectedIndices.isEmpty
-                              ? '削除'
+                              ? AppLocalizations.of(context)!.delete
                               : '削除 (${_selectedIndices.length}件)',
                           style: const TextStyle(
                             fontSize: 15,
@@ -1945,7 +1945,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final title = _config.data['title'] as String? ?? '定型計算';
+    final title = _config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
     final bgColorValue = _config.data['bgColor'] as int?;
     final scaffoldBgColor = bgColorValue != null
         ? Color(bgColorValue)
@@ -1996,7 +1996,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   context,
                   () => _calcKey.currentState?._showSheetLinkSettingsDialog(),
                 ),
-                tooltip: '値をリンク',
+                tooltip: AppLocalizations.of(context)!.tooltipLinkValues,
               ),
             
             ],
@@ -2004,7 +2004,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
           IconButton(
             icon: const Icon(Icons.more_horiz_rounded, size: 24),
             onPressed: () => _calcKey.currentState?._showActionSheet(),
-            tooltip: 'メニュー',
+            tooltip: AppLocalizations.of(context)!.tooltipMenu,
           ),
           const SizedBox(width: 8),
         ],
@@ -2215,9 +2215,9 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  const Expanded(
+                   Expanded(
                     child: Text(
-                      '表示モードを選択',
+                      AppLocalizations.of(context)!.modeSelect,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -2295,8 +2295,8 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   size: 22,
                 ),
               ),
-              title: const Text(
-                '閲覧モード',
+              title: Text(
+                    AppLocalizations.of(context)!.viewModeLabel,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -2384,8 +2384,8 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              subtitle: const Text(
-                'シート間のリンク関係をグラフで可視化します',
+              subtitle: Text(
+                    AppLocalizations.of(context)!.linkGraphSubtitle,
                 style: TextStyle(color: Colors.white38, fontSize: 12),
               ),
 
@@ -3376,7 +3376,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
   @override
   void initState() {
     super.initState();
-    _title = widget.mergedConfig.data['title'] as String? ?? '結合ビュー';
+    _title = widget.mergedConfig.data['title'] as String? ?? AppLocalizations.of(context)!.mergedView;
     _bgColor = widget.mergedConfig.data['bgColor'] as int? ?? 0xFF0D0D14;
     _sheetIds = (widget.mergedConfig.data['sheetIds'] as List<dynamic>? ?? [])
         .map((e) => e as String)
@@ -3529,9 +3529,9 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    const Expanded(
+                     Expanded(
                       child: Text(
-                        '追加するシートを選択',
+                        AppLocalizations.of(context)!.selectSheetToAdd,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -3556,7 +3556,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                     try {
                       sheet = _localSheets.firstWhere((s) => s.id == id);
                     } catch (_) {}
-                    final title = sheet?.data['title'] as String? ?? '定型計算';
+                    final title = sheet?.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
                     final itemCount =
                         (sheet?.data['items'] as List?)?.length ?? 0;
                     return ListTile(
@@ -3672,7 +3672,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                       sheet = _localSheets.firstWhere((s) => s.id == id);
                     } catch (_) {}
                     final title =
-                        sheet?.data['title'] as String? ?? '定型計算';
+                        sheet?.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
                     final itemCount =
                         (sheet?.data['items'] as List?)?.length ?? 0;
                     return ListTile(
@@ -3765,9 +3765,9 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    const Expanded(
+                     Expanded(
                       child: Text(
-                        'シートへ移動',
+                        AppLocalizations.of(context)!.navigateToSheet,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -3793,7 +3793,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                     try {
                       sheet = _localSheets.firstWhere((s) => s.id == id);
                     } catch (_) {}
-                    final title = sheet?.data['title'] as String? ?? '定型計算';
+                    final title = sheet?.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
                     return ListTile(
                       leading: Container(
                         width: 36,
@@ -3943,9 +3943,9 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  const Expanded(
+                   Expanded(
                     child: Text(
-                      '全シートの表示モード',
+                      AppLocalizations.of(context)!.allSheetsDisplayModeLabel,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -3975,8 +3975,8 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              subtitle: const Text(
-                '全シートに適用',
+              subtitle: Text(
+                    AppLocalizations.of(context)!.applyToAllSheets,
                 style: TextStyle(color: Colors.white38, fontSize: 11),
               ),
               trailing: _globalMode == 0
@@ -3997,15 +3997,15 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                     ? const Color(0xFF5E81FF)
                     : Colors.white54,
               ),
-              title: const Text(
-                '閲覧モード',
+              title: Text(
+                    AppLocalizations.of(context)!.viewModeLabel,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              subtitle: const Text(
-                '全シートに適用',
+              subtitle: Text(
+                    AppLocalizations.of(context)!.applyToAllSheets,
                 style: TextStyle(color: Colors.white38, fontSize: 11),
               ),
               trailing: _globalMode == 1
@@ -4033,8 +4033,8 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              subtitle: const Text(
-                '全シートに適用',
+              subtitle: Text(
+                    AppLocalizations.of(context)!.applyToAllSheets,
                 style: TextStyle(color: Colors.white38, fontSize: 11),
               ),
               trailing: _globalMode == 2
@@ -4098,9 +4098,9 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                     children: [
                       Row(
                         children: [
-                          const Expanded(
+                           Expanded(
                             child: Text(
-                              '結合ビュー名・カラー',
+                              AppLocalizations.of(context)!.mergedViewNameColor,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -4120,8 +4120,8 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      const Text(
-                        'ビュー名',
+                      Text(
+                    AppLocalizations.of(context)!.viewName,
                         style: TextStyle(color: Colors.white54, fontSize: 12),
                       ),
                       const SizedBox(height: 6),
@@ -4135,8 +4135,8 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
-                        '背景カラー（アプバー・背景）',
+                      Text(
+                    AppLocalizations.of(context)!.backgroundColorLabel,
                         style: TextStyle(color: Colors.white54, fontSize: 12),
                       ),
                       const SizedBox(height: 10),
@@ -4276,7 +4276,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
       body: _sheetIds.isEmpty
           ? Center(
               child: Text(
-                'シートがありません',
+                AppLocalizations.of(context)!.noSheetsInMerged,
                 style: TextStyle(
                   color: mergedIsDark ? Colors.white38 : Colors.black38,
                 ),
@@ -4757,9 +4757,9 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  const Expanded(
+                   Expanded(
                     child: Text(
-                      '表示モードを選択',
+                      AppLocalizations.of(context)!.modeSelect,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -4809,8 +4809,8 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                 Icons.visibility_rounded,
                 color: isViewMode ? const Color(0xFF5E81FF) : Colors.white54,
               ),
-              title: const Text(
-                '閲覧モード',
+              title: Text(
+                    AppLocalizations.of(context)!.viewModeLabel,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -4879,8 +4879,8 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              subtitle: const Text(
-                'シート間のリンク関係をグラフで可視化します',
+              subtitle: Text(
+                    AppLocalizations.of(context)!.linkGraphSubtitle,
                 style: TextStyle(color: Colors.white38, fontSize: 12),
               ),
               onTap: () {
@@ -4928,7 +4928,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
       modeColor = const Color(0xFF4CAF50);
     } else if (isViewMode) {
       modeIcon = Icons.visibility_rounded;
-      modeLabel = '閲覧モード';
+      modeLabel = AppLocalizations.of(context)!.viewModeLabel;
       modeColor = const Color(0xFF5E81FF);
     } else {
       modeIcon = Icons.edit_note_rounded;
@@ -5007,7 +5007,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                 ),
                 _ToolbarButton(
                   icon: Icons.add_rounded,
-                  label: '行追加',
+                  label: AppLocalizations.of(context)!.addRow,
                   color: isDarkBar ? Colors.white54 : Colors.black54,
                   showLabel: false,
                   onTap: () => _calcKey.currentState?._addItem(),
@@ -5031,7 +5031,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
     final borderColor = isDark
         ? Colors.white.withOpacity(0.06)
         : Colors.black.withOpacity(0.12);
-    final title = _config.data['title'] as String? ?? '定型計算';
+    final title = _config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
 
     return Container(
       decoration: BoxDecoration(
@@ -5083,7 +5083,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                           context,
                           () => _calcKey.currentState?._showSheetLinkSettingsDialog(),
                         ),
-                        tooltip: '値をリンク',
+                        tooltip: AppLocalizations.of(context)!.tooltipLinkValues,
                         padding: const EdgeInsets.all(8),
                         constraints: const BoxConstraints(),
                       ),
@@ -5099,7 +5099,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                       size: 20,
                     ),
                     onPressed: () => _calcKey.currentState?._showActionSheet(),
-                    tooltip: 'オプション',
+                    tooltip: AppLocalizations.of(context)!.optionsLabel,
                     padding: const EdgeInsets.all(8),
                     constraints: const BoxConstraints(),
                   ),
@@ -5185,7 +5185,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
             ),
             const SizedBox(height: 8),
             Text(
-              'タップしてさらに展開',
+              AppLocalizations.of(context)!.tapToExpand,
               style: TextStyle(
                 color: isDark
                     ? const Color(0xFF5E81FF)
@@ -5291,8 +5291,8 @@ class ClipboardBottomBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'クリップボード',
+                Text(
+                    AppLocalizations.of(context)!.clipboardLabel,
                   style: TextStyle(
                     color: Colors.blueAccent,
                     fontSize: 10,
@@ -5356,8 +5356,8 @@ class _QrShareDialogState extends State<_QrShareDialog> {
       if (!await Gal.requestAccess()) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('写真ライブラリへのアクセスが拒否されました'),
+            SnackBar(
+          content: Text(AppLocalizations.of(context)!.galleryAccessDenied),
               backgroundColor: Color(0xFF2A2A3A),
             ),
           );
@@ -5397,8 +5397,8 @@ class _QrShareDialogState extends State<_QrShareDialog> {
       await Gal.putImageBytes(byteData.buffer.asUint8List());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('QRコードを写真に保存しました'),
+          SnackBar(
+          content: Text(AppLocalizations.of(context)!.saveSuccess),
             backgroundColor: Color(0xFF1A3A2A),
           ),
         );
@@ -5548,10 +5548,10 @@ class _QrShareDialogState extends State<_QrShareDialog> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Padding(
+                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
-                    '全てのQRコードを順番にスキャンしてください',
+                    AppLocalizations.of(context)!.scanAllQr,
                     style: TextStyle(color: Colors.white38, fontSize: 11),
                     textAlign: TextAlign.center,
                   ),
@@ -5577,7 +5577,7 @@ class _QrShareDialogState extends State<_QrShareDialog> {
                               ? () => setState(() => _currentPage--)
                               : null,
                           child: Text(
-                            '← 前へ',
+                            AppLocalizations.of(context)!.previousArrow,
                             style: TextStyle(
                               color: _currentPage > 0
                                   ? Colors.white70
@@ -5602,7 +5602,7 @@ class _QrShareDialogState extends State<_QrShareDialog> {
                               ? () => setState(() => _currentPage++)
                               : null,
                           child: Text(
-                            '次へ →',
+                            AppLocalizations.of(context)!.nextArrow,
                             style: TextStyle(
                               color: _currentPage < total - 1
                                   ? Colors.tealAccent
@@ -5615,10 +5615,10 @@ class _QrShareDialogState extends State<_QrShareDialog> {
                   ),
                 ),
               ] else ...[
-                const Padding(
+                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
-                    '別の端末でスキャンしてシートを取り込めます',
+                    AppLocalizations.of(context)!.scanOnOtherDevice,
                     style: TextStyle(color: Colors.white38, fontSize: 11),
                     textAlign: TextAlign.center,
                   ),
@@ -5652,7 +5652,7 @@ class _QrShareDialogState extends State<_QrShareDialog> {
                             ),
                           )
                         : const Icon(Icons.save_alt_rounded, size: 18),
-                    label: Text(_saving ? '保存中...' : '画像として保存'),
+                    label: Text(_saving ? AppLocalizations.of(context)!.saving : AppLocalizations.of(context)!.saveImageToGallery),
                   ),
                 ),
               ),
@@ -5670,8 +5670,8 @@ class _QrShareDialogState extends State<_QrShareDialog> {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      '閉じる',
+                    child: Text(
+                    AppLocalizations.of(context)!.close,
                       style: TextStyle(color: Colors.white54),
                     ),
                   ),
@@ -5737,8 +5737,8 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
       if (!await Gal.requestAccess()) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('写真ライブラリへのアクセスが拒否されました'),
+            SnackBar(
+          content: Text(AppLocalizations.of(context)!.galleryAccessDenied),
               backgroundColor: Color(0xFF2A2A3A),
             ),
           );
@@ -5775,8 +5775,8 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
       await Gal.putImageBytes(byteData.buffer.asUint8List());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('QRコードを写真に保存しました'),
+          SnackBar(
+          content: Text(AppLocalizations.of(context)!.saveSuccess),
             backgroundColor: Color(0xFF1A3A2A),
           ),
         );
@@ -5949,8 +5949,8 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
                                 size: 18,
                               ),
                             const SizedBox(width: 6),
-                            const Text(
-                              '画像として保存',
+                            Text(
+                    AppLocalizations.of(context)!.saveImageToGallery,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -5971,8 +5971,8 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
                         vertical: 12,
                       ),
                     ),
-                    child: const Text(
-                      '閉じる',
+                    child: Text(
+                    AppLocalizations.of(context)!.close,
                       style: TextStyle(color: Colors.white54),
                     ),
                   ),

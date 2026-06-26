@@ -2503,4 +2503,203 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get transformPowLabel => 'x^n 指数';
+
+  @override
+  String get viewModeLabel => '閲覧モード';
+
+  @override
+  String get viewModeSubtitle => '定数・メモ・計算結果を表示します';
+
+  @override
+  String get tableModeSubtitle => '値のみをシート形式で表示・編集できます';
+
+  @override
+  String get linkGraphSubtitle => 'シート間のリンク関係をグラフで可視化します';
+
+  @override
+  String get applyToAllSheetsSubtitle => '全シートに適用';
+
+  @override
+  String get close => '閉じる';
+
+  @override
+  String get noColumnsToDisplay => '表示する列がありません';
+
+  @override
+  String connectCount(Object count) {
+    return '接続 $count 本';
+  }
+
+  @override
+  String sheetN(Object n) {
+    return 'シート$n';
+  }
+
+  @override
+  String calcN(Object n) {
+    return '計算$n';
+  }
+
+  @override
+  String logicN(Object n) {
+    return '論理式$n';
+  }
+
+  @override
+  String conditionNLhs(Object n) {
+    return '条件$n左辺';
+  }
+
+  @override
+  String conditionNRhs(Object n) {
+    return '条件$n右辺';
+  }
+
+  @override
+  String get bothLabel => '両方';
+
+  @override
+  String get linkValue => 'リンク値';
+
+  @override
+  String get fixedValue => '固定値';
+
+  @override
+  String get resultLabel => '結果:';
+
+  @override
+  String get inputLabel => '入力';
+
+  @override
+  String calcCountLabel(Object count) {
+    return '$count計算';
+  }
+
+  @override
+  String logicCountLabel(Object count) {
+    return '$count論理式';
+  }
+
+  @override
+  String itemsOfCalc(Object count) {
+    return '$count件の計算';
+  }
+
+  @override
+  String sheetsMergedCount(Object count) {
+    return '$countつのシートが結合されています';
+  }
+
+  @override
+  String get createCalcSheet => '計算シートを作成してください';
+
+  @override
+  String get linkGraphEmptyHint => '計算シート内で値をリンク設定すると\nここにグラフが表示されます';
+
+  @override
+  String get notLinked => 'リンクされていません';
+
+  @override
+  String get bracketRange => '優先計算（ ）の範囲指定';
+
+  @override
+  String get startItem => '開始項目';
+
+  @override
+  String get endItem => '終了項目';
+
+  @override
+  String get currentSelection => '現在の指定';
+
+  @override
+  String get allSheetsDisplayModeLabel => '全シートの表示モード';
+
+  @override
+  String get backgroundColorLabel2 => '背景カラー（アプバー・背景）';
+
+  @override
+  String get scanAllQr => '全てのQRコードを順番にスキャンしてください';
+
+  @override
+  String get scanOnOtherDevice => '別の端末でスキャンしてシートを取り込めます';
+
+  @override
+  String linkedQrPage(Object page, Object total) {
+    return '連結QR: $page/$total枚目';
+  }
+
+  @override
+  String get qrShareLabel => 'QRコードで共有';
+
+  @override
+  String qrSharePageLabel(Object page, Object total) {
+    return 'QRコードで共有 ($page/$total)';
+  }
+
+  @override
+  String calcDataCount(Object count) {
+    return '$count件の計算データ';
+  }
+
+  @override
+  String sheetNumberLabel(Object current, Object total) {
+    return 'シート $current / $total';
+  }
+
+  @override
+  String get tapToExpand => 'タップしてさらに展開';
+
+  @override
+  String get clipboardLabel => 'クリップボード';
+
+  @override
+  String get previousArrow => '← 前へ';
+
+  @override
+  String get savedValueCalc => '保存値で計算';
+
+  @override
+  String get savedValueEval => '保存値で評価';
+
+  @override
+  String get imageAnalysisError => '画像の解析に失敗しました';
+
+  @override
+  String importedSheetWithCount(Object result) {
+    return '「$result」を取り込みました';
+  }
+
+  @override
+  String duplicationSuccess(Object title) {
+    return '「$title」を複製しました';
+  }
+
+  @override
+  String itemCountCalc(Object count) {
+    return '$count件の計算';
+  }
+
+  @override
+  String get listObjectsFromImageDesc => '画像からカウントするものをリストアップ';
+
+  @override
+  String get objectNotFound => '対象が見つかりませんでした';
+
+  @override
+  String get calcWithStored => '保存値で計算';
+
+  @override
+  String get csvHeaderNameFormula => '名前,計算式,結果';
+
+  @override
+  String get csvHeaderNameResult => '名前,式,結果';
+
+  @override
+  String get csvHeaderNameValue => '名前,値';
+
+  @override
+  String get csvSectionLogic => '--- 論理式 ---';
+
+  @override
+  String get csvSectionConstant => '--- 定数 ---';
 }

@@ -432,13 +432,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           initial: null,
           onPickLinkSource: () => _showLinkSourcePicker(excludeRowIdx: null),
           getSourceRowName: (source) {
-            if (source == null) return 'リンク';
+            if (source == null) return AppLocalizations.of(context)!.calcLink;
             if (source['type'] == 'constant') {
               final ci = source['constIdx'] as int? ?? 0;
               final consts = _constants;
               final name = (ci >= 0 && ci < consts.length)
-                  ? consts[ci]['name'] as String? ?? '定数'
-                  : '定数';
+                  ? consts[ci]['name'] as String? ?? AppLocalizations.of(context)!.constant
+                  : AppLocalizations.of(context)!.constant;
               final value = (ci >= 0 && ci < consts.length)
                   ? (consts[ci]['value'] as num? ?? 0.0).toDouble()
                   : 0.0;
@@ -448,7 +448,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               return '$name: $valStr';
             }
             if (source['type'] == 'globalConstant') {
-              final name = source['constName'] as String? ?? '定数';
+              final name = source['constName'] as String? ?? AppLocalizations.of(context)!.constant;
               final idx = source['constIdx'] as int? ?? 0;
               final consts = widget.globalConstants;
               final value = (idx >= 0 && idx < consts.length)
@@ -470,19 +470,19 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             final srcItems = (srcConfig.data['items'] as List? ?? [])
                 .map((e) => Map<String, dynamic>.from(e as Map))
                 .toList();
-            if (rowIdx < 0 || rowIdx >= srcItems.length) return 'リンク';
+            if (rowIdx < 0 || rowIdx >= srcItems.length) return AppLocalizations.of(context)!.calcLink;
             final item = srcItems[rowIdx];
-            final rowName = item['name'] as String? ?? '計算 ${rowIdx + 1}';
+            final rowName = item['name'] as String? ?? AppLocalizations.of(context)!.defaultCalcName(rowIdx + 1);
             String targetLabel;
             if (target == 'input') {
-              targetLabel = '項1';
+              targetLabel = AppLocalizations.of(context)!.calcTerm1;
             } else if (target == 'operand') {
-              targetLabel = '項2';
+              targetLabel = AppLocalizations.of(context)!.calcTerm2;
             } else if (target.startsWith('other_')) {
               final oi = int.tryParse(target.split('_')[1]) ?? 0;
               targetLabel = '項${oi + 3}';
             } else {
-              targetLabel = '答え';
+              targetLabel = AppLocalizations.of(context)!.calcAnswer;
             }
             final v = _resolveExternalValue(effectiveId, rowIdx, target);
             final precision = item['precision'] as int? ?? 2;
@@ -858,7 +858,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('「${copy['name'] ?? '計算'}」をコピーしました'),
+          content: Text(AppLocalizations.of(context)!.copiedItem(copy['name'] ?? AppLocalizations.of(context)!.normalCalc)),
           backgroundColor: const Color.fromARGB(255, 70, 196, 255),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -879,7 +879,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('「${copy['name'] ?? '計算'}」を切り取りました'),
+          content: Text(AppLocalizations.of(context)!.cutItem(copy['name'] ?? AppLocalizations.of(context)!.normalCalc)),
           backgroundColor: const Color.fromARGB(255, 206, 255, 70),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -1183,7 +1183,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                         'title': ctrl.text,
                         'bgColor': selectedColor,
                       }),
-                      child: const Text('保存', style: TextStyle(fontSize: 16)),
+                      child: Text(AppLocalizations.of(context)!.save, style: TextStyle(fontSize: 16)),
                     ),
                   ),
                 ],
@@ -1230,7 +1230,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               ),
               const SizedBox(width: 6),
               Text(
-                '定数',
+                AppLocalizations.of(context)!.constant,
                 style: TextStyle(
                   color: Colors.amberAccent,
                   fontSize: 12,
@@ -1365,9 +1365,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               children: [
                 Row(
                   children: [
-                    const Expanded(
+                     Expanded(
                       child: Text(
-                        '定数の設定',
+                        AppLocalizations.of(context)!.constantSettings,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -1384,22 +1384,22 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  '名前',
+                Text(
+                    AppLocalizations.of(context)!.constantName,
                   style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: nameCtrl,
                   style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    hintText: '例: 税率',
+                  decoration:  InputDecoration(
+                    hintText: AppLocalizations.of(context)!.constantNameHint,
                     hintStyle: TextStyle(color: Colors.white24),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  '値',
+                Text(
+                    AppLocalizations.of(context)!.constantValue,
                   style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 const SizedBox(height: 6),
@@ -2258,8 +2258,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final items = _items;
     if (items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('コピーするデータがありません'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.noDataToCopy),
           backgroundColor: Color(0xFF2A2A3A),
         ),
       );
@@ -2269,8 +2269,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final csvText = _buildCsvString(items);
     Clipboard.setData(ClipboardData(text: csvText));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('CSVをクリップボードにコピーしました'),
+      SnackBar(
+          content: Text(AppLocalizations.of(context)!.csvCopied),
         backgroundColor: Color(0xFF2A2A3A),
       ),
     );
@@ -2294,7 +2294,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       return v.toStringAsFixed(precision);
     }
 
-    final title = widget.config.data['title'] as String? ?? '定型計算';
+    final title = widget.config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
     final buf = StringBuffer();
     buf.writeln(escapeCsv(title));
     buf.writeln('名前,計算式,結果');
@@ -2376,8 +2376,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final items = _items;
     if (items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('共有するデータがありません'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.noDataToShare),
           backgroundColor: Color(0xFF2A2A3A),
         ),
       );
@@ -2392,7 +2392,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     }
 
     final resolvedRows = _computeResolvedRows(items, _constants);
-    final title = widget.config.data['title'] as String? ?? '定型計算';
+    final title = widget.config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
 
     final qrItems = List.generate(items.length, (i) {
       final item = items[i];
@@ -2541,8 +2541,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('データのエンコードに失敗しました'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.encodeFailed),
           backgroundColor: Color(0xFF2A2A3A),
         ),
       );
@@ -3479,7 +3479,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                   excludeRowIdx: null,
                                                 ),
                                             getSourceRowName: (source) {
-                                              if (source == null) return 'リンク';
+                                              if (source == null) return AppLocalizations.of(context)!.calcLink;
                                               if (source['type'] ==
                                                   'constant') {
                                                 final ci =
@@ -3490,8 +3490,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                         ci < consts.length)
                                                     ? consts[ci]['name']
                                                             as String? ??
-                                                        '定数'
-                                                    : '定数';
+                                                        AppLocalizations.of(context)!.constant
+                                                    : AppLocalizations.of(context)!.constant;
                                                 final value = (ci >= 0 &&
                                                         ci < consts.length)
                                                     ? (consts[ci]['value']
@@ -3515,7 +3515,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                 final name =
                                                     source['constName']
                                                         as String? ??
-                                                    '定数';
+                                                    AppLocalizations.of(context)!.constant;
                                                 final idx =
                                                     source['constIdx'] as int? ??
                                                     0;
@@ -3568,16 +3568,16 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                       .toList();
                                               if (rowIdx < 0 ||
                                                   rowIdx >= srcItems.length)
-                                                return 'リンク';
+                                                return AppLocalizations.of(context)!.calcLink;
                                               final item = srcItems[rowIdx];
                                               final rowName =
                                                   item['name'] as String? ??
                                                   '計算 ${rowIdx + 1}';
                                               String targetLabel;
                                               if (target == 'input') {
-                                                targetLabel = '項1';
+                                                targetLabel = AppLocalizations.of(context)!.calcTerm1;
                                               } else if (target == 'operand') {
-                                                targetLabel = '項2';
+                                                targetLabel = AppLocalizations.of(context)!.calcTerm2;
                                               } else if (target.startsWith(
                                                 'other_',
                                               )) {
@@ -3588,7 +3588,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                     0;
                                                 targetLabel = '項${oi + 3}';
                                               } else {
-                                                targetLabel = '答え';
+                                                targetLabel = AppLocalizations.of(context)!.calcAnswer;
                                               }
                                               final v = _resolveExternalValue(
                                                 effectiveId,
@@ -3763,8 +3763,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     // ローカルモデルは初期化必須。OpenRouter は常に利用可能。
     if (ai.currentModel == AiModel.local && !ai.isInitialized) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ローカルAIが初期化されていません。'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.aiLocalNotReady),
           backgroundColor: Color(0xFF2A2A3A),
         ),
       );
@@ -3797,8 +3797,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           context: context,
           builder: (ctx) => AlertDialog(
             backgroundColor: const Color(0xFF1E1E2E),
-            title: const Text(
-              'AI機能は購入が必要です',
+            title: Text(
+                    AppLocalizations.of(context)!.aiPurchaseRequired,
               style: TextStyle(color: Colors.white, fontSize: 16),
             ),
             content: const Text(
@@ -3808,8 +3808,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text(
-                  'キャンセル',
+                child: Text(
+                    AppLocalizations.of(context)!.cancel,
                   style: TextStyle(color: Colors.white54),
                 ),
               ),
@@ -3825,7 +3825,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                     MaterialPageRoute(builder: (_) => const StorePage()),
                   );
                 },
-                child: const Text('ストアへ'),
+                child: Text(AppLocalizations.of(context)!.goToStore),
               ),
             ],
           ),
@@ -3837,8 +3837,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final instruction = result.instruction;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('計算式を生成中...'),
+      SnackBar(
+          content: Text(AppLocalizations.of(context)!.generatingFormula),
         duration: Duration(seconds: 2),
       ),
     );
@@ -3949,8 +3949,8 @@ Example output:
     if (isLocal && !ai.isInitialized) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('ローカルAIが初期化されていません。'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.aiLocalNotReady),
           backgroundColor: Color(0xFF2A2A3A),
           duration: Duration(seconds: 3),
         ),
@@ -4090,16 +4090,16 @@ Example output:
         builder: (context, setDialogState) {
           return AlertDialog(
             backgroundColor: Colors.black,
-            title: const Text(
-              '優先計算（ ）の範囲指定',
+            title: Text(
+                    AppLocalizations.of(context)!.bracketRange,
               style: TextStyle(color: Colors.white, fontSize: 16),
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '開始項目',
+                Text(
+                    AppLocalizations.of(context)!.startItem,
                   style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 DropdownButton<int>(
@@ -4122,8 +4122,8 @@ Example output:
                   }),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  '終了項目',
+                Text(
+                    AppLocalizations.of(context)!.endItem,
                   style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 DropdownButton<int>(
@@ -4144,8 +4144,8 @@ Example output:
                 ),
                 if (localBrackets.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  const Text(
-                    '現在の指定',
+                  Text(
+                    AppLocalizations.of(context)!.currentSelection,
                     style: TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                   const Divider(color: Colors.white24),
@@ -4200,7 +4200,7 @@ Example output:
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('キャンセル'),
+                child: Text(AppLocalizations.of(context)!.cancel),
               ),
               TextButton(
                 onPressed: () {
@@ -4224,8 +4224,8 @@ Example output:
                   });
                   Navigator.pop(ctx);
                 },
-                child: const Text(
-                  '追加',
+                child: Text(
+                    AppLocalizations.of(context)!.historyAdd,
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),

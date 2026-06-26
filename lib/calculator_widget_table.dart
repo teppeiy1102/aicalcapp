@@ -3,7 +3,7 @@ part of 'widget_page.dart';
 extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
   Widget _buildTableModeWidget() {
     final items = _items;
-    final title = widget.config.data['title'] as String? ?? '定型計算';
+    final title = widget.config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
     final bgColorValue = widget.config.data['bgColor'] as int?;
     final isDark = bgColorValue != null
         ? _kNoteColorPresets
@@ -285,10 +285,10 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
     };
 
     String defaultLabel(String key) {
-      if (key == 'name') return '名前';
-      if (key == 'input') return '項1';
-      if (key == 'operand') return '項2';
-      if (key == 'result') return '答え';
+      if (key == 'name') return AppLocalizations.of(context)!.constantName;
+      if (key == 'input') return AppLocalizations.of(context)!.calcTerm1;
+      if (key == 'operand') return AppLocalizations.of(context)!.calcTerm2;
+      if (key == 'result') return AppLocalizations.of(context)!.calcAnswer;
       final i = int.tryParse(key.split('_')[1]) ?? 0;
       return '項${i + 3}';
     }
@@ -462,7 +462,7 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
           if (visibleColumns.isEmpty || items.isEmpty)
             Center(
               child: Text(
-                items.isEmpty ? '計算式がありません' : '表示する列がありません',
+                items.isEmpty ? '計算式がありません' : AppLocalizations.of(context)!.noColumnsToDisplay,
                 style: TextStyle(
                   color: isDark ? Colors.white24 : Colors.black26,
                   fontFamily: 'ZenOldMincho',
@@ -580,7 +580,7 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                                 ? () => _showTableItemEditSheet(
                                     rowIdx,
                                     'result',
-                                    '答え',
+                                    AppLocalizations.of(context)!.calcAnswer,
                                   )
                                 : (editable
                                       ? () => _showTableItemEditSheet(
@@ -647,7 +647,7 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
               Padding(
                 padding: const EdgeInsets.only(left: 8, top: 4, bottom: 2),
                 child: Text(
-                  '論理式',
+                  AppLocalizations.of(context)!.formulaLogic,
                   style: TextStyle(
                     color: isDark ? Colors.white38 : Colors.black38,
                     fontSize: 11,
@@ -672,7 +672,7 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                         resolver: resolveForLogicDisplay,
                         onPickLinkSource: () => _showLinkSourcePicker(excludeRowIdx: null),
                         getSourceRowName: (source) {
-                          if (source == null) return 'リンク';
+                          if (source == null) return AppLocalizations.of(context)!.calcLink;
                           final sheetId = source['sheetId'] as String?;
                           final rowIdx = source['rowIdx'] as int? ?? 0;
                           final target = source['target'] as String? ?? 'result';
@@ -684,19 +684,19 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                           final srcItems = (srcConfig.data['items'] as List? ?? [])
                               .map((e) => Map<String, dynamic>.from(e as Map))
                               .toList();
-                          if (rowIdx < 0 || rowIdx >= srcItems.length) return 'リンク';
+                          if (rowIdx < 0 || rowIdx >= srcItems.length) return AppLocalizations.of(context)!.calcLink;
                           final item = srcItems[rowIdx];
-                          final rowName = item['name'] as String? ?? '計算 ${rowIdx + 1}';
+                          final rowName = item['name'] as String? ?? AppLocalizations.of(context)!.defaultCalcName(rowIdx + 1);
                           String targetLabel;
                           if (target == 'input') {
-                            targetLabel = '項1';
+                            targetLabel = AppLocalizations.of(context)!.calcTerm1;
                           } else if (target == 'operand') {
-                            targetLabel = '項2';
+                            targetLabel = AppLocalizations.of(context)!.calcTerm2;
                           } else if (target.startsWith('other_')) {
                             final oi = int.tryParse(target.split('_')[1]) ?? 0;
                             targetLabel = '項${oi + 3}';
                           } else {
-                            targetLabel = '答え';
+                            targetLabel = AppLocalizations.of(context)!.calcAnswer;
                           }
                           final v = _resolveExternalValue(effectiveId, rowIdx, target);
                           final precision = item['precision'] as int? ?? 2;
@@ -772,7 +772,7 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                             ),
                           ),
                           child: Text(
-                            isTrue ? '真' : '偽',
+                            isTrue ? AppLocalizations.of(context)!.trueLabel : AppLocalizations.of(context)!.falseLabel,
                             style: TextStyle(
                               color: isTrue
                                   ? (isDark

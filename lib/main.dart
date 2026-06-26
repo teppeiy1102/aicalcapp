@@ -245,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
           id: '${DateTime.now().millisecondsSinceEpoch}',
           type: src.type,
           data: Map<String, dynamic>.from(src.data)
-            ..['title'] = '${src.data['title'] ?? '定型計算'} (コピー)'
+            ..['title'] = '${src.data['title'] ?? AppLocalizations.of(context)!.standardCalc} (コピー)'
             ..['createdAt'] = now
             ..['updatedAt'] = now,
         ),
@@ -634,7 +634,7 @@ Example output for "3万円を5人で割り勘":
                 id: '${DateTime.now().millisecondsSinceEpoch}',
                 type: src.type,
                 data: Map<String, dynamic>.from(src.data)
-                  ..['title'] = '${src.data['title'] ?? '定型計算'} (コピー)'
+                  ..['title'] = '${src.data['title'] ?? AppLocalizations.of(context)!.standardCalc} (コピー)'
                   ..['createdAt'] = _dupNow
                   ..['updatedAt'] = _dupNow,
               );
@@ -643,7 +643,7 @@ Example output for "3万円を5人で割り勘":
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    '「${src.data['title'] ?? '定型計算'}」を複製しました',
+                    '「${src.data['title'] ?? AppLocalizations.of(context)!.standardCalc}」を複製しました',
                     style: const TextStyle(color: Colors.white),
                   ),
                   backgroundColor: Colors.black,
@@ -1046,8 +1046,8 @@ Example output for "3万円を5人で割り勘":
     }
     if (targetConfigs.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('共有できるシートがありません'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.noSharableSheets),
           backgroundColor: Color(0xFF2A2A3A),
         ),
       );
@@ -1055,7 +1055,7 @@ Example output for "3万円を5人で割り勘":
     }
 
     final sheets = targetConfigs.map((config) {
-      final title = config.data['title'] as String? ?? '定型計算';
+      final title = config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
       final items = config.data['items'] as List<dynamic>? ?? [];
       final qrDataList = _buildQrDataForConfig(config);
       return (title: title, itemCount: items.length, qrDataList: qrDataList);
@@ -1250,7 +1250,7 @@ Example output for "3万円を5人で割り勘":
         Map.fromEntries(
             src.entries.where((e) => e.value != null && e.value != false));
 
-    final title = config.data['title'] as String? ?? '定型計算';
+    final title = config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
     final rawItems = config.data['items'] as List<dynamic>? ?? [];
 
     final qrItems = rawItems.map<Map<String, dynamic>>((e) {
@@ -1506,7 +1506,7 @@ Example output for "3万円を5人で割り勘":
     final sorted = _selectedForMerge.toList()..sort();
     final selectedConfigs = sorted.map((i) => _configs[i]).toList();
     final titles = selectedConfigs
-        .map((c) => c.data['title'] as String? ?? '定型計算')
+        .map((c) => c.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc)
         .join(' + ');
     final sheetIds = selectedConfigs.map((c) => c.id).toList();
     final _mergeNowStr = DateTime.now().toIso8601String();
@@ -1567,7 +1567,7 @@ Example output for "3万円を5人で割り勘":
         return null;
       }
 
-      final title = decoded['t'] as String? ?? '取り込んだシート';
+      final title = decoded['t'] as String? ?? AppLocalizations.of(context)!.importedSheetDefault;
       final qrItems = decoded['items'] as List<dynamic>;
 
       final items = qrItems.map<Map<String, dynamic>>((e) {
@@ -1803,7 +1803,7 @@ Example output for "3万円を5人で割り勘":
                               padding: const EdgeInsets.only(right: 10),
                               child: Text(
                                 _selectedForMerge.length < 2
-                                    ? '2件以上選択してください'
+                                    ? AppLocalizations.of(context)!.select2OrMore
                                     : '${_selectedForMerge.length}件選択中',
                                 style: TextStyle(
                                   color: _selectedForMerge.length >= 2
@@ -1823,7 +1823,7 @@ Example output for "3万円を5人で割り勘":
                               padding: const EdgeInsets.only(right: 4),
                               child: Text(
                                 _selectedForQrShare.isEmpty
-                                    ? '共有するシートを選択してください'
+                                    ? AppLocalizations.of(context)!.selectSheetsToShare
                                     : '${_selectedForQrShare.length}件選択中',
                                 style: TextStyle(
                                   color: _selectedForQrShare.isNotEmpty
@@ -1844,7 +1844,7 @@ Example output for "3万円を5人で割り勘":
                               size: 26,
                             ),
                             onPressed: _showMainMenu,
-                            tooltip: 'メニュー',
+                            tooltip: AppLocalizations.of(context)!.tooltipMenu,
                           ),
                           const SizedBox(width: 8),
                         ],
@@ -2028,7 +2028,7 @@ class _HomeLogoTitleState extends State<_HomeLogoTitle> {
           children: [
             ShaderMask(
               shaderCallback: (bounds) => const LinearGradient(
-                colors: [Color.fromARGB(255, 143, 143, 143), Color.fromARGB(255, 114, 114, 114), Color.fromARGB(255, 225, 225, 225)],
+                colors: [Color.fromARGB(255, 0, 0, 0), Color.fromARGB(255, 10, 10, 10), Color.fromARGB(255, 39, 39, 39)],
                 //colors: [Color(0xFF5E81FF), Color(0xFFB08FFF), Color(0xFF82C8FF)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -2605,7 +2605,7 @@ class _WidgetCardState extends State<_WidgetCard> {
             widget.onReorderSheets?.call(oldIndex, newIndex),
         itemBuilder: (ctx, idx) {
           final s = sheets[idx];
-          final sTitle = s.data['title'] as String? ?? '定型計算';
+          final sTitle = s.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
           final sColorVal = s.data['bgColor'] as int?;
           final sColor = sColorVal != null
               ? Color(sColorVal)
@@ -2861,8 +2861,8 @@ class _MergeActionBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              'キャンセル',
+            child: Text(
+                    AppLocalizations.of(context)!.cancel,
               style: TextStyle(color: Colors.white54, fontSize: 14),
             ),
           ),
@@ -2950,8 +2950,8 @@ class _QrShareActionBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              'キャンセル',
+            child: Text(
+                    AppLocalizations.of(context)!.cancel,
               style: TextStyle(color: Colors.white54, fontSize: 14),
             ),
           ),
@@ -3203,7 +3203,7 @@ class _SettingsPageState extends State<_SettingsPage> {
                         'name': nameCtrl.text.trim(),
                         'value': valCtrl.text.trim(),
                       }),
-                      child: const Text('保存', style: TextStyle(fontSize: 16)),
+                      child: Text(AppLocalizations.of(context)!.save, style: const TextStyle(fontSize: 16)),
                     ),
                   ),
                 ],
@@ -3496,12 +3496,12 @@ class _SettingsPageState extends State<_SettingsPage> {
                 horizontal: 20,
                 vertical: 4,
               ),
-              title: const Text(
-                'ボタン振動',
+              title: Text(
+                AppLocalizations.of(context)!.settingsVibrate,
                 style: TextStyle(color: Colors.white, fontSize: 14),
               ),
               subtitle: Text(
-                '電卓ボタンをタップしたときにバイブレーションでフィードバック',
+                AppLocalizations.of(context)!.settingsVibrateDesc,
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.4),
                   fontSize: 12,
@@ -3537,7 +3537,7 @@ class _SettingsPageState extends State<_SettingsPage> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
                   child: Text(
-                    'ユーザー定義定数',
+                    AppLocalizations.of(context)!.userConstants,
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.45),
                       fontSize: 12,
@@ -3554,9 +3554,9 @@ class _SettingsPageState extends State<_SettingsPage> {
                   size: 16,
                   color: Color(0xFF5E81FF),
                 ),
-                label: const Text(
-                  '追加',
-                  style: TextStyle(color: Color(0xFF5E81FF), fontSize: 13),
+                label: Text(
+                  AppLocalizations.of(context)!.userConstantsAdd,
+                  style: const TextStyle(color: Color(0xFF5E81FF), fontSize: 13),
                 ),
               ),
             ],
@@ -3569,8 +3569,8 @@ class _SettingsPageState extends State<_SettingsPage> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Center(
-                child: Text(
-                  'まだ定数がありません\n右上の「追加」から追加できます',
+                  child: Text(
+                    AppLocalizations.of(context)!.userConstantsEmpty,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.3),
@@ -3658,8 +3658,8 @@ class _SettingsPageState extends State<_SettingsPage> {
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              'ユーザー定義定数は全シートの定数追加プリセットに表示されます',
+              child: Text(
+              AppLocalizations.of(context)!.userConstantsDesc,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.3),
                 fontSize: 11,
@@ -3672,7 +3672,7 @@ class _SettingsPageState extends State<_SettingsPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
             child: Text(
-              '組み込み定数',
+              AppLocalizations.of(context)!.builtinConstants,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.45),
                 fontSize: 12,
@@ -3873,8 +3873,8 @@ class _QrScannerPageState extends State<_QrScannerPage>
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('画像の解析に失敗しました'),
+          SnackBar(
+          content: Text(AppLocalizations.of(context)!.imageAnalysisFailed),
             backgroundColor: Color(0xFF2A2A3A),
           ),
         );
@@ -3925,21 +3925,21 @@ class _QrScannerPageState extends State<_QrScannerPage>
             context: context,
             builder: (ctx) => AlertDialog(
               backgroundColor: const Color(0xFF1A2A1A),
-              title: const Text('取り込み完了', style: TextStyle(color: Colors.white)),
-              content: Text('「$result」を取り込みました', style: const TextStyle(color: Colors.white70)),
+              title: Text(AppLocalizations.of(context)!.importComplete, style: const TextStyle(color: Colors.white)),
+              content: Text(AppLocalizations.of(context)!.importedSheet(result), style: const TextStyle(color: Colors.white70)),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('OK', style: TextStyle(color: Color(0xFF5E81FF))),
+                  child: Text(AppLocalizations.of(context)!.ok, style: const TextStyle(color: Color(0xFF5E81FF))),
                 ),
               ],
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('有効なシートQRコードではありません'),
-            backgroundColor: Color(0xFF2A2A3A),
-            duration: Duration(seconds: 2),
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(AppLocalizations.of(context)!.invalidQrCode),
+            backgroundColor: const Color(0xFF2A2A3A),
+            duration: const Duration(seconds: 2),
           ));
         }
       }
@@ -3989,7 +3989,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
         final itemsDecoded = json.decode(assembledItemsJson);
         final assembledMap = <String, dynamic>{
           'v': 1,
-          't': _multiTitle ?? '取り込んだシート',
+          't': _multiTitle ?? AppLocalizations.of(context)!.importedSheetDefault,
           'items': itemsDecoded,
         };
         if (_multiMemos != null && _multiMemos!.isNotEmpty) {
@@ -4042,8 +4042,8 @@ class _QrScannerPageState extends State<_QrScannerPage>
               ),
             );
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('有効なシートQRコードではありません'),
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(AppLocalizations.of(context)!.invalidQrCode),
               backgroundColor: Color(0xFF2A2A3A),
               duration: Duration(seconds: 2),
             ));
@@ -4075,8 +4075,8 @@ class _QrScannerPageState extends State<_QrScannerPage>
           _multiLogics = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('QRデータの結合に失敗しました。最初からスキャンし直してください'),
+          SnackBar(
+          content: Text(AppLocalizations.of(context)!.qrDataMergeFailed),
             backgroundColor: Color(0xFF2A2A3A),
           ),
         );
@@ -4479,7 +4479,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
                         ),
                         onPressed: _exitImageMode,
                         icon: const Icon(Icons.camera_alt_rounded, size: 18),
-                        label: const Text('カメラに戻る'),
+                        label: Text(AppLocalizations.of(context)!.backToCamera),
                       ),
                     ),
                     const SizedBox(width: 12),

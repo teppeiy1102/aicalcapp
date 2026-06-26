@@ -3059,7 +3059,7 @@ abstract class AppLocalizations {
   /// No description provided for @evaluateWithStored.
   ///
   /// In en, this message translates to:
-  /// **'Evaluate with stored'**
+  /// **'Evaluate with stored values'**
   String get evaluateWithStored;
 
   /// No description provided for @logicConditionsCount.
@@ -4672,6 +4672,336 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'x^n Power'**
   String get transformPowLabel;
+
+  /// No description provided for @viewModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View Mode'**
+  String get viewModeLabel;
+
+  /// No description provided for @viewModeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'View constants, memos, and calculation results'**
+  String get viewModeSubtitle;
+
+  /// No description provided for @tableModeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Display and edit values in sheet format'**
+  String get tableModeSubtitle;
+
+  /// No description provided for @linkGraphSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Visualize link relationships between sheets'**
+  String get linkGraphSubtitle;
+
+  /// No description provided for @applyToAllSheetsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply to all sheets'**
+  String get applyToAllSheetsSubtitle;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @noColumnsToDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'No columns to display'**
+  String get noColumnsToDisplay;
+
+  /// No description provided for @connectCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} connections'**
+  String connectCount(Object count);
+
+  /// No description provided for @sheetN.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheet {n}'**
+  String sheetN(Object n);
+
+  /// No description provided for @calcN.
+  ///
+  /// In en, this message translates to:
+  /// **'Calc {n}'**
+  String calcN(Object n);
+
+  /// No description provided for @logicN.
+  ///
+  /// In en, this message translates to:
+  /// **'Logic {n}'**
+  String logicN(Object n);
+
+  /// No description provided for @conditionNLhs.
+  ///
+  /// In en, this message translates to:
+  /// **'Condition {n} left'**
+  String conditionNLhs(Object n);
+
+  /// No description provided for @conditionNRhs.
+  ///
+  /// In en, this message translates to:
+  /// **'Condition {n} right'**
+  String conditionNRhs(Object n);
+
+  /// No description provided for @bothLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get bothLabel;
+
+  /// No description provided for @linkValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Link value'**
+  String get linkValue;
+
+  /// No description provided for @fixedValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed value'**
+  String get fixedValue;
+
+  /// No description provided for @resultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Result:'**
+  String get resultLabel;
+
+  /// No description provided for @inputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Input'**
+  String get inputLabel;
+
+  /// No description provided for @calcCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} calcs'**
+  String calcCountLabel(Object count);
+
+  /// No description provided for @logicCountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} logics'**
+  String logicCountLabel(Object count);
+
+  /// No description provided for @itemsOfCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} calculations'**
+  String itemsOfCalc(Object count);
+
+  /// No description provided for @sheetsMergedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sheets are merged'**
+  String sheetsMergedCount(Object count);
+
+  /// No description provided for @createCalcSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Please create a calculation sheet'**
+  String get createCalcSheet;
+
+  /// No description provided for @linkGraphEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Link values in calculation sheets\nto display a graph here'**
+  String get linkGraphEmptyHint;
+
+  /// No description provided for @notLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not linked'**
+  String get notLinked;
+
+  /// No description provided for @bracketRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Bracket range specification'**
+  String get bracketRange;
+
+  /// No description provided for @startItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Start item'**
+  String get startItem;
+
+  /// No description provided for @endItem.
+  ///
+  /// In en, this message translates to:
+  /// **'End item'**
+  String get endItem;
+
+  /// No description provided for @currentSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Current selection'**
+  String get currentSelection;
+
+  /// No description provided for @allSheetsDisplayModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'All Sheets Display Mode'**
+  String get allSheetsDisplayModeLabel;
+
+  /// No description provided for @backgroundColorLabel2.
+  ///
+  /// In en, this message translates to:
+  /// **'Background Color (App bar & background)'**
+  String get backgroundColorLabel2;
+
+  /// No description provided for @scanAllQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan all QR codes in order'**
+  String get scanAllQr;
+
+  /// No description provided for @scanOnOtherDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan on another device to import sheets'**
+  String get scanOnOtherDevice;
+
+  /// No description provided for @linkedQrPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked QR: {page}/{total}'**
+  String linkedQrPage(Object page, Object total);
+
+  /// No description provided for @qrShareLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Share with QR Code'**
+  String get qrShareLabel;
+
+  /// No description provided for @qrSharePageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Share with QR Code ({page}/{total})'**
+  String qrSharePageLabel(Object page, Object total);
+
+  /// No description provided for @calcDataCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} calculations'**
+  String calcDataCount(Object count);
+
+  /// No description provided for @sheetNumberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheet {current} / {total}'**
+  String sheetNumberLabel(Object current, Object total);
+
+  /// No description provided for @tapToExpand.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to expand more'**
+  String get tapToExpand;
+
+  /// No description provided for @clipboardLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Clipboard'**
+  String get clipboardLabel;
+
+  /// No description provided for @previousArrow.
+  ///
+  /// In en, this message translates to:
+  /// **'← Back'**
+  String get previousArrow;
+
+  /// No description provided for @savedValueCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculate with stored values'**
+  String get savedValueCalc;
+
+  /// No description provided for @savedValueEval.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaluate with stored values'**
+  String get savedValueEval;
+
+  /// No description provided for @imageAnalysisError.
+  ///
+  /// In en, this message translates to:
+  /// **'Image analysis failed'**
+  String get imageAnalysisError;
+
+  /// No description provided for @importedSheetWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported \"{result}\"'**
+  String importedSheetWithCount(Object result);
+
+  /// No description provided for @duplicationSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicated \"{title}\"'**
+  String duplicationSuccess(Object title);
+
+  /// No description provided for @itemCountCalc.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} calculations'**
+  String itemCountCalc(Object count);
+
+  /// No description provided for @listObjectsFromImageDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'List objects from image to count'**
+  String get listObjectsFromImageDesc;
+
+  /// No description provided for @objectNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Object not found'**
+  String get objectNotFound;
+
+  /// No description provided for @calcWithStored.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculate with stored values'**
+  String get calcWithStored;
+
+  /// No description provided for @csvHeaderNameFormula.
+  ///
+  /// In en, this message translates to:
+  /// **'Name,Formula,Result'**
+  String get csvHeaderNameFormula;
+
+  /// No description provided for @csvHeaderNameResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Name,Expression,Result'**
+  String get csvHeaderNameResult;
+
+  /// No description provided for @csvHeaderNameValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Name,Value'**
+  String get csvHeaderNameValue;
+
+  /// No description provided for @csvSectionLogic.
+  ///
+  /// In en, this message translates to:
+  /// **'--- Logic ---'**
+  String get csvSectionLogic;
+
+  /// No description provided for @csvSectionConstant.
+  ///
+  /// In en, this message translates to:
+  /// **'--- Constants ---'**
+  String get csvSectionConstant;
 }
 
 class _AppLocalizationsDelegate

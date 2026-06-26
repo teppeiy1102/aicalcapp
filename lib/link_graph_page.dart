@@ -465,9 +465,9 @@ class _LinkGraphPageState extends State<LinkGraphPage>
         final item = items[i];
         final dest = '${sid}_c$i';
         addEdge(item['inputLink'] == true,
-            item['inputLinkSource'] as Map?, dest, '項1', sid);
+            item['inputLinkSource'] as Map?, dest, AppLocalizations.of(context)!.calcTerm1, sid);
         addEdge(item['operandLink'] == true,
-            item['operandLinkSource'] as Map?, dest, '項2', sid);
+            item['operandLinkSource'] as Map?, dest, AppLocalizations.of(context)!.calcTerm2, sid);
         final others = (item['others'] as List? ?? [])
             .map((e) => Map<String, dynamic>.from(e as Map))
             .toList();
@@ -502,7 +502,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
       final c = Map<String, dynamic>.from(raw as Map);
       if ((c['type'] as String?) != 'merged') continue;
       final d = Map<String, dynamic>.from(c['data'] as Map? ?? {});
-      final title = d['title'] as String? ?? '結合ビュー';
+      final title = d['title'] as String? ?? AppLocalizations.of(context)!.mergedView;
       final ids = (d['sheetIds'] as List? ?? []).map((e) => e as String);
       for (final id in ids) {
         mergedMap.putIfAbsent(id, () => []).add(title);
@@ -1405,8 +1405,8 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             showAll
-                ? '計算シートを作成してください'
-                : '計算シート内で値をリンク設定すると\nここにグラフが表示されます',
+                ? AppLocalizations.of(context)!.createCalcSheet
+                : AppLocalizations.of(context)!.linkGraphEmptyHint,
             textAlign: TextAlign.center,
             style: const TextStyle(color: Color(0xFF3A3A5A), fontSize: 13),
           ),
@@ -1415,7 +1415,7 @@ class _EmptyState extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onShowAll,
               icon: const Icon(Icons.scatter_plot_outlined, size: 16),
-              label: const Text('全ノードを表示'),
+              label: Text(AppLocalizations.of(context)!.showAllNodes),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFF7B7FFF),
                 side: const BorderSide(color: Color(0xFF3A4080)),
@@ -1462,12 +1462,12 @@ class _LegendWidget extends StatelessWidget {
           children: [
             _LegRow(
                 color: const Color(0xFF7B7FFF),
-                label: '計算式',
+                label: AppLocalizations.of(context)!.formulaCalc,
                 count: calcCount),
             const SizedBox(height: 6),
             _LegRow(
                 color: const Color(0xFFFFAA33),
-                label: '論理式',
+                label: AppLocalizations.of(context)!.formulaLogic,
                 count: logicCount),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 3),
@@ -1500,7 +1500,7 @@ class _LegendWidget extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    const Text('配置計算中…',
+                    Text(AppLocalizations.of(context)!.layoutCalculating,
                         style: TextStyle(
                             color: Color(0xFF4A4A6A), fontSize: 9.5)),
                   ],
@@ -1620,7 +1620,7 @@ class _DetailCard extends StatelessWidget {
                   decoration: BoxDecoration(
                       color: accent.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(6)),
-                  child: Text(node.isLogic ? '論理式' : '計算式',
+                  child: Text(node.isLogic ? AppLocalizations.of(context)!.formulaLogic : AppLocalizations.of(context)!.formulaCalc,
                       style: TextStyle(
                           color: accent,
                           fontSize: 11,
@@ -1643,10 +1643,10 @@ class _DetailCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                      
-                      child: const Row(
+                      child:  Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('編集',
+                          Text(AppLocalizations.of(context)!.edit,
                               style: TextStyle(
                                   color: Color(0xFF7B7FFF),
                                   fontSize: 12,
@@ -1668,7 +1668,7 @@ class _DetailCard extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
-            child: Text('シート: ${node.sheetName}',
+            child: Text(AppLocalizations.of(context)!.graphSheetName(node.sheetName),
                 style: const TextStyle(
                     color: Color(0xFF3A3A5A), fontSize: 11)),
           ),
@@ -1725,7 +1725,7 @@ class _DetailCard extends StatelessWidget {
                         resolveLabel: _resolveLabel,
                         fmtNum: _fmtNum),
                   if (incoming.isEmpty && outgoing.isEmpty)
-                    const Text('接続なし',
+                    Text(AppLocalizations.of(context)!.noConnections,
                         style: TextStyle(
                             color: Color(0xFF3A3A5A), fontSize: 13)),
                 ],
@@ -2113,9 +2113,9 @@ class _CalcFormulaView extends StatelessWidget {
               );
             }),
             if (hasLinks)
-              const Padding(
+               Padding(
                 padding: EdgeInsets.only(left: 6),
-                child: Text('(保存値で計算)',
+                child: Text(AppLocalizations.of(context)!.savedValueCalc,
                     style: TextStyle(color: Colors.white38, fontSize: 9.5)),
               ),
           ]),
@@ -2131,7 +2131,7 @@ class _CalcFormulaView extends StatelessWidget {
             const SizedBox(width: 8),
           ],
           if ((incomingEdges?.isNotEmpty == true) && (outgoingEdges?.isNotEmpty == true))
-            _LinkedLegend(linked: true, label: '両方', color: _bothColor),
+            _LinkedLegend(linked: true, label: AppLocalizations.of(context)!.bothLabel, color: _bothColor),
           if (incomingEdges == null && outgoingEdges == null) ...[
             _LinkedLegend(linked: true),
             const SizedBox(width: 12),
@@ -2281,7 +2281,7 @@ class _LogicFormulaView extends StatelessWidget {
         ...rows,
         const SizedBox(height: 6),
         Row(children: [
-          _small('結果:', color: Colors.white54),
+          _small(AppLocalizations.of(context)!.resultLabel, color: Colors.white54),
           const SizedBox(width: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -2292,22 +2292,22 @@ class _LogicFormulaView extends StatelessWidget {
                   color: isTrue ? const Color(0xFF2A7A4A) : const Color(0xFF7A2A2A),
                   width: 1),
             ),
-            child: Text(isTrue ? '真' : '偽',
+            child: Text(isTrue ? AppLocalizations.of(context)!.trueLabel : AppLocalizations.of(context)!.falseLabel,
                 style: TextStyle(
                     color: isTrue ? const Color(0xFF5EFFBB) : const Color(0xFFFF7070),
                     fontSize: 13,
                     fontWeight: FontWeight.w700)),
           ),
           if (hasLinks)
-            const Padding(
+             Padding(
               padding: EdgeInsets.only(left: 6),
-              child: Text('(保存値で評価)',
+              child: Text(AppLocalizations.of(context)!.savedValueEval,
                   style: TextStyle(color: Colors.white38, fontSize: 9.5)),
             ),
         ]),
         const SizedBox(height: 5),
         Row(children: [
-          _LinkedLegend(linked: true, label: 'リンク値', color: _lhsColor),
+          _LinkedLegend(linked: true, label: AppLocalizations.of(context)!.linkValue, color: _lhsColor),
           const SizedBox(width: 12),
           _LinkedLegend(linked: false),
         ]),
@@ -2379,7 +2379,7 @@ class _LinkedLegend extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         Text(
-          linked ? (label ?? 'リンク') : '固定値',
+          linked ? (label ?? AppLocalizations.of(context)!.calcLink) : AppLocalizations.of(context)!.fixedValue,
           style: const TextStyle(color: Color(0xFF3A3A5A), fontSize: 9.5),
         ),
       ],
@@ -2441,9 +2441,9 @@ class _ConSection extends StatelessWidget {
   }
 
   /// エッジラベルから対象項インデックスを返す（0=項1/入力, 2=項2, 4=項3…）
-  static int _labelToTermIdx(String label) {
+  int _labelToTermIdx(String label, BuildContext context) {
     // 「入力」は後方互換のため残す
-    if (label == '入力') return 0;
+    if (label == AppLocalizations.of(context)!.inputLabel) return 0;
     final m = RegExp(r'項(\d+)').firstMatch(label);
     if (m != null) {
       final n = int.parse(m.group(1)!);
@@ -2456,9 +2456,9 @@ class _ConSection extends StatelessWidget {
 
 
   /// エッジラベル（複合ラベル '項1, 項2' も可）に ti が含まれるか
-  static bool _isEdgeTarget(String label, int ti) {
+  bool _isEdgeTarget(String label, int ti, BuildContext context) {
     for (final part in label.split(RegExp(r'[,、]\s*'))) {
-      if (_labelToTermIdx(part.trim()) == ti) return true;
+      if (_labelToTermIdx(part.trim(), context) == ti) return true;
     }
     return false;
   }
@@ -2596,7 +2596,7 @@ class _ConSection extends StatelessWidget {
                             Builder(builder: (_) {
                               // 参照先セクション: このノードのデータを受け取る項をハイライト
                               final isHighlighted =
-                                  !isIncoming && _isEdgeTarget(e.label, ti);
+                                  !isIncoming && _isEdgeTarget(e.label, ti, context);
                               // 参照元セクション: ソースノード自身のリンク項を緑で示す
                               // （isHighlighted が true の場合は accentColor を優先）
                               final isLinked = !isHighlighted &&

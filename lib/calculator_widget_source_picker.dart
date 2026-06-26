@@ -142,7 +142,7 @@ extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
                   children: [
                     buildFieldChip(
                       'input',
-                      '項1',
+                      AppLocalizations.of(context)!.calcTerm1,
                       sheetId,
                       idx,
                       item['unit1'] as String? ?? '',
@@ -150,7 +150,7 @@ extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
                     Text(op, style: opStyle),
                     buildFieldChip(
                       'operand',
-                      '項2',
+                      AppLocalizations.of(context)!.calcTerm2,
                       sheetId,
                       idx,
                       item['unit2'] as String? ?? '',
@@ -175,7 +175,7 @@ extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
                     ),
                     buildFieldChip(
                       'result',
-                      '答え',
+                      AppLocalizations.of(context)!.calcAnswer,
                       sheetId,
                       idx,
                       item['unitResult'] as String? ?? '',
@@ -223,7 +223,7 @@ extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
                       .entries
                       .where((e) => isMerged || e.value['exposed'] == true)
                       .toList();
-                  final title = sheet.data['title'] as String? ?? '名称未設定シート';
+                  final title = sheet.data['title'] as String? ?? AppLocalizations.of(context)!.sheetTitleUnknown;
 
                   return ExpansionTile(
                     title: Text(
@@ -236,7 +236,7 @@ extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
                       final idx = e.key;
                       final item = e.value;
                       final rowName =
-                          item['name'] as String? ?? '計算 ${idx + 1}';
+                          item['name'] as String? ?? AppLocalizations.of(context)!.defaultCalcName(idx + 1);
                       final op = item['op'] as String? ?? '+';
                       final others = (item['others'] as List? ?? [])
                           .map((o) => Map<String, dynamic>.from(o as Map))
@@ -305,7 +305,7 @@ extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
                 itemBuilder: (context, idx) {
                   if (idx == excludeRowIdx) return const SizedBox.shrink();
                   final item = items[idx];
-                  final rowName = item['name'] as String? ?? '計算 ${idx + 1}';
+                  final rowName = item['name'] as String? ?? AppLocalizations.of(context)!.defaultCalcName(idx + 1);
                   final op = item['op'] as String? ?? '+';
                   final others = (item['others'] as List? ?? [])
                       .map((o) => Map<String, dynamic>.from(o as Map))
@@ -534,7 +534,7 @@ extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
                             GestureDetector(
                               onTap: () => setState(() => currentTab = 3),
                               child: Text(
-                                '定数',
+                                AppLocalizations.of(context)!.constant,
                                 style: TextStyle(
                                   color: currentTab == 3
                                       ? Colors.blueAccent
@@ -564,8 +564,8 @@ extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
                         children: [
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),
-                            child: const Text(
-                              'キャンセル',
+                            child: Text(
+                    AppLocalizations.of(context)!.cancel,
                               style: TextStyle(color: Colors.white54),
                             ),
                           ),

@@ -114,12 +114,12 @@ class _CalculatorRow extends StatelessWidget {
   });
 
   /// termLabels 優先、なければデフォルト
-  String _termLabel(String key) {
+  String _termLabel(String key, BuildContext context) {
     final custom = termLabels?[key];
     if (custom != null && custom.isNotEmpty) return custom;
-    if (key == 'input') return '項1';
-    if (key == 'operand') return '項2';
-    if (key == 'result') return '答え';
+    if (key == 'input') return AppLocalizations.of(context)!.calcTerm1;
+    if (key == 'operand') return AppLocalizations.of(context)!.calcTerm2;
+    if (key == 'result') return AppLocalizations.of(context)!.calcAnswer;
     if (key.startsWith('other_')) {
       final i = int.tryParse(key.split('_')[1]) ?? 0;
       return '項${i + 3}';
@@ -837,14 +837,14 @@ class _CalculatorRow extends StatelessWidget {
   }
 
   /// リンク元チップのラベル（式名 / 項目: 値）
-  String _getLinkChipLabel(Map<String, dynamic>? source, int precision) {
-    final label = _getSourceLabel(source);
+  String _getLinkChipLabel(Map<String, dynamic>? source, int precision, BuildContext context) {
+    final label = _getSourceLabel(source, context);
     final v = _resolveLinkVal(source);
     if (v == null) return label;
     return '$label: ${_fmtLinkVal(v, precision)}';
   }
 
-  String _getSourceLabel(Map<String, dynamic>? source) {
+  String _getSourceLabel(Map<String, dynamic>? source, BuildContext context) {
     if (source == null) return '直前の残高（答え）';
     if (source['type'] == 'logic') {
       final logicId = source['logicId'] as String?;
@@ -852,58 +852,58 @@ class _CalculatorRow extends StatelessWidget {
         final logic = _findLogicItem(logicId);
         if (logic != null) {
           final name = logic['name'] as String? ?? '';
-          return name.isNotEmpty ? '$name（論理式）' : '論理式';
+          return name.isNotEmpty ? '$name（論理式）' : AppLocalizations.of(context)!.formulaLogic;
         }
       }
-      return '論理式';
+      return AppLocalizations.of(context)!.formulaLogic;
     }
     if (source['type'] == 'constant') {
       final ci = source['constIdx'] as int? ?? 0;
       final name = ci < constants.length
-          ? constants[ci]['name'] as String? ?? '定数'
-          : '定数';
+          ? constants[ci]['name'] as String? ?? AppLocalizations.of(context)!.constant
+          : AppLocalizations.of(context)!.constant;
       return '$name（定数）';
     }
     final rowIdx = source['rowIdx'] as int? ?? 0;
     final target = source['target'] as String? ?? 'result';
 
     final rowName = (rowIdx < allItems.length)
-        ? (allItems[rowIdx] as Map)['name'] as String? ?? '計算 ${rowIdx + 1}'
+        ? (allItems[rowIdx] as Map)['name'] as String? ?? AppLocalizations.of(context)!.defaultCalcName(rowIdx + 1)
         : '計算 ${rowIdx + 1}';
 
     String fieldLabel = '';
     if (target == 'result') {
-      fieldLabel = _termLabel('result');
+      fieldLabel = _termLabel('result', context);
     } else if (target == 'input') {
-      fieldLabel = _termLabel('input');
+      fieldLabel = _termLabel('input', context);
     } else if (target == 'operand') {
-      fieldLabel = _termLabel('operand');
+      fieldLabel = _termLabel('operand', context);
     } else if (target.startsWith('other_')) {
       final idx = int.tryParse(target.split('_')[1]) ?? 0;
-      fieldLabel = _termLabel('other_$idx');
+      fieldLabel = _termLabel('other_$idx', context);
     }
 
     return '$rowName の $fieldLabel';
   }
 
   /// リンク元の計算行名のみを返す（値ボックス上部ラベル用）
-  String _getSourceRowName(Map<String, dynamic>? source) {
+  String _getSourceRowName(Map<String, dynamic>? source, BuildContext context) {
     if (source != null && source['type'] == 'logic') {
       final logicId = source['logicId'] as String?;
       if (logicId != null) {
         final logic = _findLogicItem(logicId);
         if (logic != null) {
           final name = logic['name'] as String? ?? '';
-          return name.isNotEmpty ? name : '論理式';
+          return name.isNotEmpty ? name : AppLocalizations.of(context)!.formulaLogic;
         }
       }
-      return '論理式';
+      return AppLocalizations.of(context)!.formulaLogic;
     }
     if (source != null && source['type'] == 'constant') {
       final ci = source['constIdx'] as int? ?? 0;
       return ci < constants.length
-          ? constants[ci]['name'] as String? ?? '定数'
-          : '定数';
+          ? constants[ci]['name'] as String? ?? AppLocalizations.of(context)!.constant
+          : AppLocalizations.of(context)!.constant;
     }
     if (source == null) {
       if (allItems.isEmpty) return '';
@@ -912,10 +912,10 @@ class _CalculatorRow extends StatelessWidget {
     }
     final rowIdx = source['rowIdx'] as int? ?? 0;
     if (rowIdx < 0 || rowIdx >= allItems.length) return '';
-    return (allItems[rowIdx] as Map)['name'] as String? ?? '計算 ${rowIdx + 1}';
+    return (allItems[rowIdx] as Map)['name'] as String? ?? AppLocalizations.of(context)!.defaultCalcName(rowIdx + 1);
   }
 
-  String _getLogicLabel(dynamic logicId) {
+  String _getLogicLabel(dynamic logicId, BuildContext context) {
     if (logicId == null) return '';
     final logic = _findLogicItem(logicId);
     if (logic == null) return '不明な論理式';
@@ -945,30 +945,30 @@ class _CalculatorRow extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.black,
-        title: const Text(
-          'リンク設定があります',
+        title: Text(
+                    AppLocalizations.of(context)!.linkSettingsWarning,
           style: TextStyle(color: Colors.white, fontSize: 16),
         ),
-        content: const Text(
-          '他の行にリンク中の設定があります。どのように適用しますか？',
+        content: Text(
+                    AppLocalizations.of(context)!.linkSettingsWarningDesc,
           style: TextStyle(color: Colors.white70, fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('キャンセル'),
+            child: Text(AppLocalizations.of(context)!.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, 'skipLinked'),
-            child: const Text(
-              'リンクする値以外を適用',
+            child: Text(
+                    AppLocalizations.of(context)!.skipLinkedApply,
               style: TextStyle(color: Colors.blueAccent),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, 'overwrite'),
-            child: const Text(
-              '上書きして適用',
+            child: Text(
+                    AppLocalizations.of(context)!.overwriteApply,
               style: TextStyle(color: Colors.orangeAccent),
             ),
           ),
@@ -1368,7 +1368,7 @@ class _CalculatorRow extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              l10n.valueSettings(_termLabel('input')),
+                              l10n.valueSettings(_termLabel('input', context)),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -1601,10 +1601,10 @@ l10n.applyToAllWithLinks,
                                           tempLinkSource != null &&
                                                   tempLinkSource!['type'] ==
                                                       'logic'
-                                              ? l10n.logicLinkPrefix(_getLogicLabel(tempLinkSource!['logicId']))
+                                              ? l10n.logicLinkPrefix(_getLogicLabel(tempLinkSource!['logicId'], context))
                                               : (tempLink
-                                                    ? l10n.linkSourcePrefix(_getSourceLabel(tempLinkSource))
-                                                    : l10n.previousLinkPrefix(_getSourceLabel(tempLinkSource))),
+                                                    ? l10n.linkSourcePrefix(_getSourceLabel(tempLinkSource, context))
+                                                    : l10n.previousLinkPrefix(_getSourceLabel(tempLinkSource, context))),
                                           style: TextStyle(
                                             color:
                                                 tempLinkSource != null &&
@@ -1714,7 +1714,7 @@ l10n.trueValue,
                                                                   child: Text(
                                                                     _getLinkChipLabel(
                                                                       tempTrueLinkSource,
-                                                                      2,
+                                                                      2, context
                                                                     ),
                                                                     maxLines: 2,
                                                                     style: const TextStyle(
@@ -1890,7 +1890,7 @@ l10n.falseValue,
                                                                   child: Text(
                                                                     _getLinkChipLabel(
                                                                       tempFalseLinkSource,
-                                                                      2,
+                                                                      2, context
                                                                     ),
                                                                     maxLines: 2,
                                                                     style: const TextStyle(
@@ -2482,7 +2482,7 @@ l10n.transformSection,
                                 tempPowExp,
                               );
                               String fmtPreview(double x) {
-                                if (x.isInfinite || x.isNaN) return 'エラー';
+                                if (x.isInfinite || x.isNaN) return AppLocalizations.of(context)!.errorResult;
                                 if (x == x.truncateToDouble() && x.abs() < 1e12)
                                   return x.toInt().toString();
                                 final intD = x.abs() >= 1
@@ -2581,7 +2581,7 @@ l10n.transformSection,
                           Icons.calculate_outlined,
                           color: Colors.black,
                         ),
-                        tooltip: '電卓',
+                        tooltip: AppLocalizations.of(context)!.calculatorTooltip,
                         onPressed: () => _showMiniCalcSheet(context, (v) {
                           setSheetState(() {
                             if (v == v.truncateToDouble() && v.abs() < 1e15) {
@@ -2632,7 +2632,7 @@ l10n.deleteTerm,
                         'applyToAll': tempApplyToAll,
                         'delete': false,
                       }),
-                      child: const Text('保存', style: TextStyle(fontSize: 16)),
+                      child: Text(AppLocalizations.of(context)!.save, style: TextStyle(fontSize: 16)),
                     ),
                   ),
                 ],
@@ -2760,7 +2760,7 @@ l10n.deleteTerm,
                         children: [
                           Expanded(
                             child: Text(
-                              l10n.valueSettings(_termLabel('operand')),
+                              l10n.valueSettings(_termLabel('operand', context)),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -2992,10 +2992,10 @@ l10n.applyToAllWithLinks,
                                           tempLinkSource != null &&
                                                   tempLinkSource!['type'] ==
                                                       'logic'
-                                              ? l10n.logicLinkPrefix(_getLogicLabel(tempLinkSource!['logicId']))
+                                              ? l10n.logicLinkPrefix(_getLogicLabel(tempLinkSource!['logicId'], context))
                                               : (tempLink
-                                                    ? l10n.linkSourcePrefix(_getSourceLabel(tempLinkSource))
-                                                    : l10n.previousLinkPrefix(_getSourceLabel(tempLinkSource))),
+                                                    ? l10n.linkSourcePrefix(_getSourceLabel(tempLinkSource, context))
+                                                    : l10n.previousLinkPrefix(_getSourceLabel(tempLinkSource, context))),
                                           style: TextStyle(
                                             color:
                                                 tempLinkSource != null &&
@@ -3105,7 +3105,7 @@ l10n.trueValue,
                                                                   child: Text(
                                                                     _getLinkChipLabel(
                                                                       tempTrueLinkSource,
-                                                                      2,
+                                                                      2, context
                                                                     ),
                                                                     style: const TextStyle(
                                                                       color: Colors
@@ -3280,7 +3280,7 @@ l10n.falseValue,
                                                                   child: Text(
                                                                     _getLinkChipLabel(
                                                                       tempFalseLinkSource,
-                                                                      2,
+                                                                      2, context
                                                                     ),
                                                                     style: const TextStyle(
                                                                       color: Colors
@@ -3871,7 +3871,7 @@ l10n.transformSection,
                                 tempPowExp,
                               );
                               String fmtPreview(double x) {
-                                if (x.isInfinite || x.isNaN) return 'エラー';
+                                if (x.isInfinite || x.isNaN) return AppLocalizations.of(context)!.errorResult;
                                 if (x == x.truncateToDouble() && x.abs() < 1e12)
                                   return x.toInt().toString();
                                 final intD = x.abs() >= 1
@@ -3971,7 +3971,7 @@ l10n.transformSection,
                           Icons.calculate_outlined,
                           color: Colors.black,
                         ),
-                        tooltip: '電卓',
+                        tooltip: AppLocalizations.of(context)!.calculatorTooltip,
                         onPressed: () => _showMiniCalcSheet(context, (v) {
                           setSheetState(() {
                             if (v == v.truncateToDouble() && v.abs() < 1e15) {
@@ -4022,7 +4022,7 @@ l10n.deleteTerm,
                         'applyToAll': tempApplyToAll,
                         'delete': false,
                       }),
-                      child: const Text('保存', style: TextStyle(fontSize: 16)),
+                      child: Text(AppLocalizations.of(context)!.save, style: TextStyle(fontSize: 16)),
                     ),
                   ),
                 ],
@@ -4201,7 +4201,7 @@ l10n.deleteTerm,
                         children: [
                           Expanded(
                             child: Text(
-                              l10n.valueSettings(_termLabel('other_$idx')),
+                              l10n.valueSettings(_termLabel('other_$idx', context)),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -4433,10 +4433,10 @@ l10n.applyToAllWithLinks,
                                           tempLinkSource != null &&
                                                   tempLinkSource!['type'] ==
                                                       'logic'
-                                              ? l10n.logicLinkPrefix(_getLogicLabel(tempLinkSource!['logicId']))
+                                              ? l10n.logicLinkPrefix(_getLogicLabel(tempLinkSource!['logicId'], context))
                                               : (tempLink
-                                                    ? l10n.linkSourcePrefix(_getSourceLabel(tempLinkSource))
-                                                    : l10n.previousLinkPrefix(_getSourceLabel(tempLinkSource))),
+                                                    ? l10n.linkSourcePrefix(_getSourceLabel(tempLinkSource, context))
+                                                    : l10n.previousLinkPrefix(_getSourceLabel(tempLinkSource, context))),
                                           style: TextStyle(
                                             color:
                                                 tempLinkSource != null &&
@@ -4546,7 +4546,7 @@ l10n.trueValue,
                                                                   child: Text(
                                                                     _getLinkChipLabel(
                                                                       tempTrueLinkSource,
-                                                                      2,
+                                                                      2, context
                                                                     ),
                                                                     style: const TextStyle(
                                                                       color: Colors
@@ -4721,7 +4721,7 @@ l10n.falseValue,
                                                                   child: Text(
                                                                     _getLinkChipLabel(
                                                                       tempFalseLinkSource,
-                                                                      2,
+                                                                      2, context
                                                                     ),
                                                                     style: const TextStyle(
                                                                       color: Colors
@@ -5312,7 +5312,7 @@ l10n.transformSection,
                                 tempPowExp,
                               );
                               String fmtPreview(double x) {
-                                if (x.isInfinite || x.isNaN) return 'エラー';
+                                if (x.isInfinite || x.isNaN) return AppLocalizations.of(context)!.errorResult;
                                 if (x == x.truncateToDouble() && x.abs() < 1e12)
                                   return x.toInt().toString();
                                 final intD = x.abs() >= 1
@@ -5413,7 +5413,7 @@ l10n.transformSection,
                           color: Colors.black,
                           size: 30,
                         ),
-                        tooltip: '電卓',
+                        tooltip: AppLocalizations.of(context)!.calculatorTooltip,
                         onPressed: () => _showMiniCalcSheet(context, (v) {
                           setSheetState(() {
                             if (v == v.truncateToDouble() && v.abs() < 1e15) {
@@ -5463,7 +5463,7 @@ l10n.deleteTerm,
                         'delete': false,
                         'applyToAll': tempApplyToAll,
                       }),
-                      child: const Text('保存', style: TextStyle(fontSize: 16)),
+                      child: Text(AppLocalizations.of(context)!.save, style: TextStyle(fontSize: 16)),
                     ),
                   ),
                 ],
@@ -5602,17 +5602,17 @@ l10n.deleteTerm,
     final formulaParts = <_FormulaLine>[];
     formulaParts.add(
       _FormulaLine(
-        label: _termLabel('input'),
+        label: _termLabel('input', context),
         value: termStr(resolvedInput, inputTransform, inputPowExp, precision),
         unit: unit1,
         op: null,
         isLink: inputLink,
-        linkLabel: inputLink ? _getSourceRowName(inputLinkSource) : '',
+        linkLabel: inputLink ? _getSourceRowName(inputLinkSource, context) : '',
       ),
     );
     formulaParts.add(
       _FormulaLine(
-        label: _termLabel('operand'),
+        label: _termLabel('operand', context),
         value: termStr(
           resolvedOperand,
           operandTransform,
@@ -5622,7 +5622,7 @@ l10n.deleteTerm,
         unit: unit2,
         op: op,
         isLink: operandLink,
-        linkLabel: operandLink ? _getSourceRowName(operandLinkSource) : '',
+        linkLabel: operandLink ? _getSourceRowName(operandLinkSource, context) : '',
       ),
     );
     for (int i = 0; i < others.length; i++) {
@@ -5637,12 +5637,12 @@ l10n.deleteTerm,
       final oUnit = o['unit'] as String? ?? '';
       formulaParts.add(
         _FormulaLine(
-          label: _termLabel('other_$i'),
+          label: _termLabel('other_$i', context),
           value: termStr(resolvedOVal, oTransform, oPowExp, precision),
           unit: oUnit,
           op: oOp,
           isLink: oLink,
-          linkLabel: oLink ? _getSourceRowName(oSource) : '',
+          linkLabel: oLink ? _getSourceRowName(oSource, context) : '',
         ),
       );
     }
@@ -5929,7 +5929,7 @@ l10n.deleteTerm,
                               Expanded(
                                 flex: 3,
                                 child: Text(
-                                  '答え',
+                                  AppLocalizations.of(context)!.calcAnswer,
                                   style: const TextStyle(
                                     color: Colors.white54,
                                     fontSize: 12,
@@ -6527,7 +6527,7 @@ l10n.deleteTerm,
                       isLink: inputLink,
                       linkSource: inputLinkSource,
                       linkLabel: inputLink
-                          ? _getSourceRowName(inputLinkSource)
+                          ? _getSourceRowName(inputLinkSource, context)
                           : null,
                       onTap: () => _editInput(context),
                     ),
@@ -6585,7 +6585,7 @@ l10n.deleteTerm,
                       isLink: operandLink,
                       linkSource: operandLinkSource,
                       linkLabel: operandLink
-                          ? _getSourceRowName(operandLinkSource)
+                          ? _getSourceRowName(operandLinkSource, context)
                           : null,
                       onTap: () => _editOperand(context),
                     ),
@@ -6661,8 +6661,7 @@ l10n.deleteTerm,
                             other['valLinkSource'] as Map<String, dynamic>?,
                         linkLabel: (other['valLink'] as bool? ?? false)
                             ? _getSourceRowName(
-                                other['valLinkSource'] as Map<String, dynamic>?,
-                              )
+                                other['valLinkSource'] as Map<String, dynamic>?, context)
                             : null,
                         onTap: () => _editOtherVal(context, idx),
                       ),
@@ -6733,7 +6732,7 @@ l10n.deleteTerm,
                     isLink: inputLink,
                     linkSource: inputLinkSource,
                     linkLabel: inputLink
-                        ? _getSourceRowName(inputLinkSource)
+                        ? _getSourceRowName(inputLinkSource, context)
                         : null,
                     onTap: () => _editInput(context),
                   ),
@@ -6788,7 +6787,7 @@ l10n.deleteTerm,
                     isLink: operandLink,
                     linkSource: operandLinkSource,
                     linkLabel: operandLink
-                        ? _getSourceRowName(operandLinkSource)
+                        ? _getSourceRowName(operandLinkSource, context)
                         : null,
                     onTap: () => _editOperand(context),
                   ),
@@ -6862,8 +6861,7 @@ l10n.deleteTerm,
                           linkLabel: (other['valLink'] as bool? ?? false)
                               ? _getSourceRowName(
                                   other['valLinkSource']
-                                      as Map<String, dynamic>?,
-                                )
+                                      as Map<String, dynamic>?, context)
                               : null,
                           onTap: () => _editOtherVal(context, idx),
                         ),
