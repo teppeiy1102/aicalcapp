@@ -3944,6 +3944,72 @@ abstract class AppLocalizations {
   /// **'Unit for term {n}'**
   String unitForOtherTerm(Object n);
 
+  /// No description provided for @unitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get unitLabel;
+
+  /// No description provided for @numericValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Numeric Value'**
+  String get numericValue;
+
+  /// No description provided for @valueSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'{term} Settings'**
+  String valueSettings(Object term);
+
+  /// No description provided for @linkLogic.
+  ///
+  /// In en, this message translates to:
+  /// **'Link Logic'**
+  String get linkLogic;
+
+  /// No description provided for @linkLogicShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Logic Link'**
+  String get linkLogicShort;
+
+  /// No description provided for @transformExprPrefix_none.
+  ///
+  /// In en, this message translates to:
+  /// **''**
+  String get transformExprPrefix_none;
+
+  /// No description provided for @transformExprPrefix_sqrt.
+  ///
+  /// In en, this message translates to:
+  /// **'√'**
+  String get transformExprPrefix_sqrt;
+
+  /// No description provided for @transformExprPrefix_pow.
+  ///
+  /// In en, this message translates to:
+  /// **'({n})^'**
+  String transformExprPrefix_pow(Object n);
+
+  /// No description provided for @transformExprLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{expr} = {result}'**
+  String transformExprLabel(Object expr, Object result);
+
+  /// No description provided for @errorResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get errorResult;
+
+  /// No description provided for @applyToAllWithLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply number to all other rows'**
+  String get applyToAllWithLinks;
+
   /// No description provided for @add.
   ///
   /// In en, this message translates to:
@@ -4390,6 +4456,222 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'List objects from image to count'**
   String get listObjectsFromImage;
+
+  /// No description provided for @linkSourcePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Link: {label}'**
+  String linkSourcePrefix(Object label);
+
+  /// No description provided for @previousLinkPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous link: {label}'**
+  String previousLinkPrefix(Object label);
+
+  /// No description provided for @logicLinkPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Logic link: {label}'**
+  String logicLinkPrefix(Object label);
+
+  /// No description provided for @rowOfLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} of {field}'**
+  String rowOfLabel(Object field, Object name);
+
+  /// No description provided for @nameUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled'**
+  String get nameUntitled;
+
+  /// No description provided for @numberLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Number'**
+  String get numberLabel;
+
+  /// No description provided for @unitFreeInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Type any text'**
+  String get unitFreeInput;
+
+  /// No description provided for @unitSelectSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Select from used units'**
+  String get unitSelectSuggestion;
+
+  /// No description provided for @powExpLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Exponent (n):'**
+  String get powExpLabel;
+
+  /// No description provided for @powRootLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Root (n):'**
+  String get powRootLabel;
+
+  /// No description provided for @linkActiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked'**
+  String get linkActiveLabel;
+
+  /// No description provided for @logicLinkActiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Logic linked'**
+  String get logicLinkActiveLabel;
+
+  /// No description provided for @removeTerm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove term'**
+  String get removeTerm;
+
+  /// No description provided for @linkSettingsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Link settings'**
+  String get linkSettingsSection;
+
+  /// No description provided for @linkSourceBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Make link source'**
+  String get linkSourceBtn;
+
+  /// No description provided for @linkTargetBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Make link target'**
+  String get linkTargetBtn;
+
+  /// No description provided for @logicAssociation.
+  ///
+  /// In en, this message translates to:
+  /// **'Logic linking'**
+  String get logicAssociation;
+
+  /// No description provided for @noLogicItemSet.
+  ///
+  /// In en, this message translates to:
+  /// **'No logic items set. Click the button above to add.'**
+  String get noLogicItemSet;
+
+  /// No description provided for @selectLogicItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Select logic item'**
+  String get selectLogicItem;
+
+  /// No description provided for @linkFromConstant.
+  ///
+  /// In en, this message translates to:
+  /// **'Link from constant'**
+  String get linkFromConstant;
+
+  /// No description provided for @transformOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Transform (optional)'**
+  String get transformOption;
+
+  /// No description provided for @precisionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Decimal places'**
+  String get precisionLabel;
+
+  /// No description provided for @resultUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer unit'**
+  String get resultUnit;
+
+  /// No description provided for @unit1OfLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit of {name}'**
+  String unit1OfLabel(Object name);
+
+  /// No description provided for @resultSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Result settings'**
+  String get resultSettingsTitle;
+
+  /// No description provided for @linkSourceSelectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a link source value, then tap destination values to set links.\nMultiple destinations can be set.'**
+  String get linkSourceSelectHint;
+
+  /// No description provided for @selectField.
+  ///
+  /// In en, this message translates to:
+  /// **'Select field'**
+  String get selectField;
+
+  /// No description provided for @nextArrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Next →'**
+  String get nextArrow;
+
+  /// No description provided for @reselect.
+  ///
+  /// In en, this message translates to:
+  /// **'Reselect'**
+  String get reselect;
+
+  /// No description provided for @linkDest.
+  ///
+  /// In en, this message translates to:
+  /// **'Link destination'**
+  String get linkDest;
+
+  /// No description provided for @multipleSelectable.
+  ///
+  /// In en, this message translates to:
+  /// **'(Multiple selection allowed)'**
+  String get multipleSelectable;
+
+  /// No description provided for @selectLinkSourceFormula.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a source formula'**
+  String get selectLinkSourceFormula;
+
+  /// No description provided for @noOtherFormulas.
+  ///
+  /// In en, this message translates to:
+  /// **'No other formulas available'**
+  String get noOtherFormulas;
+
+  /// No description provided for @setLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Set Link'**
+  String get setLink;
+
+  /// No description provided for @selectUnitFromCategoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select unit from category'**
+  String get selectUnitFromCategoryTitle;
+
+  /// No description provided for @transformPowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'x^n Power'**
+  String get transformPowLabel;
 }
 
 class _AppLocalizationsDelegate

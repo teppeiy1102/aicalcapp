@@ -23,6 +23,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
     int? initialDestCalcIdx,
     String? initialDestField,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     final items = _items;
     if (items.isEmpty) return;
 
@@ -107,12 +108,12 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
       return [
         {
           'key': 'input',
-          'label': '項1',
+          'label': l10n.calcTerm1,
           'op': item['operator'] as String? ?? '+',
         },
         {
           'key': 'operand',
-          'label': '項2',
+          'label': l10n.calcTerm2,
           'op': others.isNotEmpty
               ? ((others[0] as Map)['operator'] as String? ?? '+')
               : null,
@@ -121,13 +122,13 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
           others.length,
           (i) => {
             'key': 'other_$i',
-            'label': '項${i + 3}',
+            'label': l10n.calcTermOther(i + 3),
             'op': (i + 1 < others.length)
                 ? ((others[i + 1] as Map)['operator'] as String? ?? '+')
                 : null,
           },
         ),
-        {'key': 'result', 'label': '答え'},
+        {'key': 'result', 'label': l10n.calcAnswer},
       ];
     }
 
@@ -145,12 +146,12 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
       return [
         {
           'key': 'input',
-          'label': '項1',
+          'label': l10n.calcTerm1,
           'op': sItem['operator'] as String? ?? '+',
         },
         {
           'key': 'operand',
-          'label': '項2',
+          'label': l10n.calcTerm2,
           'op': others.isNotEmpty
               ? ((others[0] as Map)['operator'] as String? ?? '+')
               : null,
@@ -159,13 +160,13 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
           others.length,
           (i) => {
             'key': 'other_$i',
-            'label': '項${i + 3}',
+            'label': l10n.calcTermOther(i + 3),
             'op': (i + 1 < others.length)
                 ? ((others[i + 1] as Map)['operator'] as String? ?? '+')
                 : null,
           },
         ),
-        {'key': 'result', 'label': '答え'},
+        {'key': 'result', 'label': l10n.calcAnswer},
       ];
     }
 
@@ -227,10 +228,10 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                         padding: const EdgeInsets.fromLTRB(24, 30, 16, 0),
                         child: Row(
                           children: [
-                            const Expanded(
+                            Expanded(
                               child: Text(
-                                'リンク元の値を選択後、リンク先の値をタップして設定してください。\n複数のリンク先を設定することもできます。',
-                                style: TextStyle(
+                                l10n.linkSourceSelectHint,
+                                style: const TextStyle(
                                   color: Colors.white70,
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,
@@ -247,10 +248,10 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.center,
               
-                          children: const [
+                          children: [
                             Text(
-                              'リンク元',
-                              style: TextStyle(
+                              l10n.linkSource.toUpperCase(),
+                              style: const TextStyle(
                                 color: Color.fromARGB(255, 38, 95, 218),
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -283,21 +284,21 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                             final tabs = <Map<String, dynamic>>[
                               {
                                 'idx': 0,
-                                'label': 'このシート',
+                                'label': l10n.thisSheet,
                                 'icon': Icons.upload_rounded,
                                 'color': Colors.blueAccent,
                               },
                               if (exposedSheets.isNotEmpty)
                                 {
                                   'idx': 1,
-                                  'label': '開放された式',
+                                  'label': l10n.exposedFormulas,
                                   'icon': Icons.public_rounded,
                                   'color': Colors.greenAccent,
                                 },
                               if (mergedSheets.isNotEmpty)
                                 {
                                   'idx': 2,
-                                  'label': '結合シート',
+                                  'label': l10n.mergedSheet,
                                   'icon': Icons.link_rounded,
                                   'color': const Color(0xFF26C6DA),
                                 },
@@ -627,16 +628,16 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                                 ),
                                                 if (selectedSrcCalcIdx != null &&
                                                     selectedSrcSheetId == null) ...[
-                                                  const Padding(
-                                                    padding: EdgeInsets.fromLTRB(
+                                                  Padding(
+                                                    padding: const EdgeInsets.fromLTRB(
                                                       12,
                                                       0,
                                                       12,
                                                       4,
                                                     ),
                                                     child: Text(
-                                                      '項目を選択',
-                                                      style: TextStyle(
+                                                      l10n.selectField,
+                                                      style: const TextStyle(
                                                         color: Colors.white54,
                                                         fontSize: 12,
                                                       ),
@@ -998,17 +999,17 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                                         Divider(
                                                           color: Colors.white12,
                                                         ),
-                                                        const Padding(
+                                                        Padding(
                                                           padding:
-                                                              EdgeInsets.fromLTRB(
+                                                              const EdgeInsets.fromLTRB(
                                                                 12,
                                                                 0,
                                                                 12,
                                                                 4,
                                                               ),
                                                           child: Text(
-                                                            '項目を選択',
-                                                            style: TextStyle(
+                                                            l10n.selectField,
+                                                            style: const TextStyle(
                                                               color: Colors.white54,
                                                               fontSize: 12,
                                                             ),
@@ -1382,17 +1383,17 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                                         Divider(
                                                           color: Colors.white12,
                                                         ),
-                                                        const Padding(
+                                                        Padding(
                                                           padding:
-                                                              EdgeInsets.fromLTRB(
+                                                              const EdgeInsets.fromLTRB(
                                                                 12,
                                                                 0,
                                                                 12,
                                                                 4,
                                                               ),
                                                           child: Text(
-                                                            '項目を選択',
-                                                            style: TextStyle(
+                                                            l10n.selectField,
+                                                            style: const TextStyle(
                                                               color: Colors.white54,
                                                               fontSize: 12,
                                                             ),
@@ -1618,9 +1619,9 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                   ),
                                   foregroundColor: Colors.white54,
                                 ),
-                                child: const Text(
-                                  'キャンセル',
-                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                child: Text(
+                                  l10n.cancel,
+                                  style: const TextStyle(fontWeight: FontWeight.w500),
                                 ),
                               ),
                               ElevatedButton(
@@ -1642,9 +1643,9 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                   ),
                                   elevation: 0,
                                 ),
-                                child: const Text(
-                                  '次へ →',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                child: Text(
+                                  l10n.nextArrow,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
@@ -1684,13 +1685,13 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                     : '計算 ${selectedSrcCalcIdx! + 1}';
                               }
                               srcFieldLabel = selectedSrcField == 'result'
-                                  ? '答え'
+                                  ? l10n.calcAnswer
                                   : selectedSrcField == 'input'
-                                  ? '項1'
+                                  ? l10n.calcTerm1
                                   : selectedSrcField == 'operand'
-                                  ? '項2'
+                                  ? l10n.calcTerm2
                                   : selectedSrcField.startsWith('other_')
-                                  ? '項${(int.tryParse(selectedSrcField.split('_')[1]) ?? 0) + 3}'
+                                  ? l10n.calcTermOther((int.tryParse(selectedSrcField.split('_')[1]) ?? 0) + 3)
                                   : selectedSrcField;
                               final srcValStr = fieldValueStr(
                                 selectedSrcCalcIdx!,
@@ -1747,9 +1748,9 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                         tapTargetSize:
                                             MaterialTapTargetSize.shrinkWrap,
                                       ),
-                                      child: const Text(
-                                        '再選択',
-                                        style: TextStyle(fontSize: 16),
+                                      child: Text(
+                                        l10n.reselect,
+                                        style: const TextStyle(fontSize: 16),
                                       ),
                                     ),
                                   ],
@@ -1773,18 +1774,18 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                           
-                            const Text(
-                              'リンク先',
-                              style: TextStyle(
+                            Text(
+                              l10n.linkDest,
+                              style: const TextStyle(
                                 color: Color(0xFF26C6DA),
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             const SizedBox(width: 6),
-                            const Text(
-                              '（複数選択可）',
-                              style: TextStyle(color: Colors.white54, fontSize: 11),
+                            Text(
+                              l10n.multipleSelectable,
+                              style: const TextStyle(color: Colors.white54, fontSize: 11),
                             ),
                           ],
                         ),
@@ -1824,7 +1825,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                         borderRadius: BorderRadius.circular(40),
                                       ),
                                       child: Text(
-                                        'このシート',
+                                        l10n.thisSheet,
                                         style: TextStyle(
                                           color: destSheetId == null
                                               ? const Color(0xFF26C6DA)
@@ -1905,10 +1906,10 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: selectedSrcCalcIdx == null
-                              ? const Center(
+                              ? Center(
                                   child: Text(
-                                    'リンク元の計算式を選択してください',
-                                    style: TextStyle(
+                                    l10n.selectLinkSourceFormula,
+                                    style: const TextStyle(
                                       color: Colors.white38,
                                       fontSize: 12,
                                     ),
@@ -1960,10 +1961,10 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                     if (destSheetId == null &&
                                         destItems.length <= 1 &&
                                         selectedSrcSheetId == null) {
-                                      return const Center(
+                                      return Center(
                                         child: Text(
-                                          '他の計算式がありません',
-                                          style: TextStyle(
+                                          l10n.noOtherFormulas,
+                                          style: const TextStyle(
                                             color: Colors.white38,
                                             fontSize: 12,
                                           ),
@@ -2016,7 +2017,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                         final destFields = <Map<String, dynamic>>[
                                           {
                                             'key': 'input',
-                                            'label': '項1',
+                                            'label': l10n.calcTerm1,
                                             'val':
                                                 destResolved['input'] as double? ??
                                                 (item['input'] as num? ?? 0.0)
@@ -2026,7 +2027,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                           },
                                           {
                                             'key': 'operand',
-                                            'label': '項2',
+                                            'label': l10n.calcTerm2,
                                             'val':
                                                 destResolved['operand']
                                                     as double? ??
@@ -2043,7 +2044,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                             itemOthers.length,
                                             (j) => {
                                               'key': 'other_$j',
-                                              'label': '項${j + 3}',
+                                              'label': l10n.calcTermOther(j + 3),
                                               'val': j < resolvedOthers.length
                                                   ? ((resolvedOthers[j]
                                                                 as Map)['val']
@@ -2193,15 +2194,15 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                                           'result';
                                                       final eTgtLabel =
                                                           eTgt == 'result'
-                                                          ? '答え'
+                                                          ? l10n.calcAnswer
                                                           : eTgt == 'input'
-                                                          ? '項1'
+                                                          ? l10n.calcTerm1
                                                           : eTgt == 'operand'
-                                                          ? '項2'
+                                                          ? l10n.calcTerm2
                                                           : eTgt.startsWith(
                                                               'other_',
                                                             )
-                                                          ? '項${(int.tryParse(eTgt.split('_')[1]) ?? 0) + 3}'
+                                                          ? l10n.calcTermOther((int.tryParse(eTgt.split('_')[1]) ?? 0) + 3)
                                                           : eTgt;
                                                       if (eSid != null) {
                                                         final eCfg = widget
@@ -2336,18 +2337,18 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                                       srcFieldLabel =
                                                           selectedSrcField ==
                                                               'result'
-                                                          ? '答え'
+                                                          ? l10n.calcAnswer
                                                           : selectedSrcField ==
                                                                 'input'
-                                                          ? '項1'
+                                                          ? l10n.calcTerm1
                                                           : selectedSrcField ==
                                                                 'operand'
-                                                          ? '項2'
+                                                          ? l10n.calcTerm2
                                                           : selectedSrcField
                                                                 .startsWith(
                                                                   'other_',
                                                                 )
-                                                          ? '項${(int.tryParse(selectedSrcField.split('_')[1]) ?? 0) + 3}'
+                                                          ? l10n.calcTermOther((int.tryParse(selectedSrcField.split('_')[1]) ?? 0) + 3)
                                                           : selectedSrcField;
                                                       srcValDisplay = fieldValueStr(
                                                         selectedSrcCalcIdx!,
@@ -2582,9 +2583,9 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                                       mainAxisSize:
                                                           MainAxisSize.min,
                                                       children: [
-                                                        const Text(
-                                                          '答え',
-                                                          style: TextStyle(
+                                                        Text(
+                                                          l10n.calcAnswer,
+                                                          style: const TextStyle(
                                                             color: Colors.white38,
                                                             fontSize: 11,
                                                           ),
@@ -2638,9 +2639,9 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                 ),
                                 foregroundColor: Colors.white54,
                               ),
-                              child: const Text(
-                                'キャンセル',
-                                style: TextStyle(fontWeight: FontWeight.w500),
+                              child: Text(
+                                l10n.cancel,
+                                style: const TextStyle(fontWeight: FontWeight.w500),
                               ),
                             ),
                             Spacer(),
@@ -2768,9 +2769,9 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                 ),
                                 elevation: 0,
                               ),
-                              child: const Text(
-                                'リンクを設定',
-                                style: TextStyle(fontWeight: FontWeight.bold),
+                              child: Text(
+                                l10n.setLink,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],

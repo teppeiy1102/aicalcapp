@@ -2072,7 +2072,46 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get add => '追加';
+  String get unitLabel => '単位';
+
+  @override
+  String get numericValue => '数値';
+
+  @override
+  String valueSettings(Object term) {
+    return '$termの設定';
+  }
+
+  @override
+  String get linkLogic => '論理式の紐付け';
+
+  @override
+  String get linkLogicShort => '論理式リンク';
+
+  @override
+  String get transformExprPrefix_none => '';
+
+  @override
+  String get transformExprPrefix_sqrt => '√';
+
+  @override
+  String transformExprPrefix_pow(Object n) {
+    return '($n)^';
+  }
+
+  @override
+  String transformExprLabel(Object expr, Object result) {
+    return '$expr = $result';
+  }
+
+  @override
+  String get errorResult => 'エラー';
+
+  @override
+  String get applyToAllWithLinks => '数値を他の全ての行に適用';
+
+  @override
+  String get add => 'Add';
 
   @override
   String get addRow => '行追加';
@@ -2345,4 +2384,123 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get listObjectsFromImage => '画像からカウントするものをリストアップ';
+
+  @override
+  String linkSourcePrefix(Object label) {
+    return 'リンク元: $label';
+  }
+
+  @override
+  String previousLinkPrefix(Object label) {
+    return '元リンク: $label';
+  }
+
+  @override
+  String logicLinkPrefix(Object label) {
+    return '論理式リンク: $label';
+  }
+
+  @override
+  String rowOfLabel(Object field, Object name) {
+    return '$name の $field';
+  }
+
+  @override
+  String get nameUntitled => '名称未設定';
+
+  @override
+  String get numberLabel => '数値';
+
+  @override
+  String get unitFreeInput => '自由に文字を入力';
+
+  @override
+  String get unitSelectSuggestion => '使用中の単位を選択';
+
+  @override
+  String get powExpLabel => '何乗するか（n）：';
+
+  @override
+  String get powRootLabel => '何乗根か（n）：';
+
+  @override
+  String get linkActiveLabel => 'リンク中';
+
+  @override
+  String get logicLinkActiveLabel => '論理式リンク中';
+
+  @override
+  String get removeTerm => '項を削除';
+
+  @override
+  String get linkSettingsSection => 'リンクの設定';
+
+  @override
+  String get linkSourceBtn => 'リンク元にする';
+
+  @override
+  String get linkTargetBtn => 'リンク先にする';
+
+  @override
+  String get logicAssociation => '論理式の紐付け';
+
+  @override
+  String get noLogicItemSet => '設定済みの論理式はありません。上のボタンから追加してください。';
+
+  @override
+  String get selectLogicItem => '論理式を選択';
+
+  @override
+  String get linkFromConstant => '定数からリンク';
+
+  @override
+  String get transformOption => '変換（オプション）';
+
+  @override
+  String get precisionLabel => '小数点以下の桁数';
+
+  @override
+  String get resultUnit => '答えの単位';
+
+  @override
+  String unit1OfLabel(Object name) {
+    return '$nameの単位';
+  }
+
+  @override
+  String get resultSettingsTitle => '答えの設定';
+
+  @override
+  String get linkSourceSelectHint =>
+      'リンク元の値を選択後、リンク先の値をタップして設定してください。\n複数のリンク先を設定することもできます。';
+
+  @override
+  String get selectField => '項目を選択';
+
+  @override
+  String get nextArrow => '次へ →';
+
+  @override
+  String get reselect => '再選択';
+
+  @override
+  String get linkDest => 'リンク先';
+
+  @override
+  String get multipleSelectable => '（複数選択可）';
+
+  @override
+  String get selectLinkSourceFormula => 'リンク元の計算式を選択してください';
+
+  @override
+  String get noOtherFormulas => '他の計算式がありません';
+
+  @override
+  String get setLink => 'リンクを設定';
+
+  @override
+  String get selectUnitFromCategoryTitle => '単位をカテゴリーから選択';
+
+  @override
+  String get transformPowLabel => 'x^n 指数';
 }

@@ -674,7 +674,6 @@ class _CalculatorRow extends StatelessWidget {
     StateSetter setDialogState, {
     List<String> suggestedUnits = const [],
   }) {
-    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -687,7 +686,7 @@ class _CalculatorRow extends StatelessWidget {
                 setDialogState(() => ctrl.text = u);
               }),
               icon: const Icon(Icons.category_outlined, size: 14),
-              label: Text(l10n.selectUnitFromCategory, style: const TextStyle(fontSize: 11)),
+              label: const Text('カテゴリーから選択', style: TextStyle(fontSize: 11)),
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 minimumSize: Size.zero,
@@ -703,9 +702,9 @@ class _CalculatorRow extends StatelessWidget {
               child: TextField(
                 controller: ctrl,
                 style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: l10n.customTextInputHint,
-                  hintStyle: const TextStyle(color: Colors.white24),
+                decoration: const InputDecoration(
+                  hintText: '自由に文字を入力',
+                  hintStyle: TextStyle(color: Colors.white24),
                 ),
               ),
             ),
@@ -978,7 +977,6 @@ class _CalculatorRow extends StatelessWidget {
   }
 
   void _showGenreUnitPicker(BuildContext context, Function(String) onSelected) {
-    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.black,
@@ -989,11 +987,11 @@ class _CalculatorRow extends StatelessWidget {
         length: unitCategories.length,
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
               child: Text(
-                l10n.selectUnitFromCategoryTitle,
-                style: const TextStyle(
+                '単位をカテゴリーから選択',
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -1368,7 +1366,7 @@ class _CalculatorRow extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              l10n.valueSettings(_termLabel('input')),
+                              '${_termLabel('input')}の設定',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -1388,8 +1386,8 @@ class _CalculatorRow extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      Text(
-l10n.numericValue,
+                      const Text(
+                        '数値',
                         style: TextStyle(color: Colors.white54, fontSize: 12),
                       ),
                       const SizedBox(height: 8),
@@ -1462,8 +1460,8 @@ l10n.numericValue,
                                             tempLinkSource != null &&
                                                     tempLinkSource!['type'] ==
                                                         'logic'
-                                                ? l10n.logicLinking
-                                                : l10n.linking,
+                                                ? '論理式リンク中'
+                                                : 'リンク中',
                                             style: TextStyle(
                                               color:
                                                   tempLinkSource != null &&
@@ -1486,7 +1484,7 @@ l10n.numericValue,
                       const SizedBox(height: 16),
                       _buildUnitSection(
                         context,
-                        l10n.unitLabel,
+                        '単位',
                         unitCtrl,
                         setSheetState,
                         suggestedUnits: suggestedUnits,
@@ -1528,8 +1526,8 @@ l10n.numericValue,
                         const SizedBox(height: 8),
                         // _editInputLinkSection
                         CheckboxListTile(
-                          title: Text(
-l10n.applyToAllWithLinks,
+                          title: const Text(
+                            '数値を他の全ての行に適用',
                             style: TextStyle(
                               color: Colors.white70,
                               fontSize: 13,
@@ -1601,10 +1599,10 @@ l10n.applyToAllWithLinks,
                                           tempLinkSource != null &&
                                                   tempLinkSource!['type'] ==
                                                       'logic'
-                                              ? l10n.logicLinkPrefix(_getLogicLabel(tempLinkSource!['logicId']))
+                                              ? '論理式リンク: ${_getLogicLabel(tempLinkSource!['logicId'])}'
                                               : (tempLink
-                                                    ? l10n.linkSourcePrefix(_getSourceLabel(tempLinkSource))
-                                                    : l10n.previousLinkPrefix(_getSourceLabel(tempLinkSource))),
+                                                    ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
+                                                    : '元リンク: ${_getSourceLabel(tempLinkSource)}'),
                                           style: TextStyle(
                                             color:
                                                 tempLinkSource != null &&
@@ -1624,8 +1622,8 @@ l10n.applyToAllWithLinks,
                                             tempLink = false;
                                             tempLinkSource = null;
                                           }),
-                                          child: Text(
-l10n.unlink,
+                                          child: const Text(
+                                            '解除',
                                             style: TextStyle(
                                               color: Colors.white70,
                                               fontSize: 12,
@@ -1637,8 +1635,8 @@ l10n.unlink,
                                           onTap: () => setSheetState(
                                             () => tempLink = true,
                                           ),
-                                          child: Text(
-l10n.restoreLink,
+                                          child: const Text(
+                                            'リンクに戻す',
                                             style: TextStyle(
                                               color: Colors.blueAccent,
                                               fontSize: 12,
@@ -1662,8 +1660,8 @@ l10n.restoreLink,
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-l10n.trueValue,
+                                              const Text(
+                                                '真の場合の値',
                                                 style: TextStyle(
                                                   color: Colors.white54,
                                                   fontSize: 11,
@@ -1747,7 +1745,7 @@ l10n.trueValue,
                                                                       .white,
                                                                   fontSize: 13,
                                                                 ),
-                                                            decoration: InputDecoration(
+                                                            decoration: const InputDecoration(
                                                               hintText: '1.0',
                                                               isDense: true,
                                                               contentPadding:
@@ -1838,8 +1836,8 @@ l10n.trueValue,
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-l10n.falseValue,
+                                              const Text(
+                                                '偽の場合の値',
                                                 style: TextStyle(
                                                   color: Colors.white54,
                                                   fontSize: 11,
@@ -1923,7 +1921,7 @@ l10n.falseValue,
                                                                       .white,
                                                                   fontSize: 13,
                                                                 ),
-                                                            decoration: InputDecoration(
+                                                            decoration: const InputDecoration(
                                                               hintText: '0.0',
                                                               isDense: true,
                                                               contentPadding:
@@ -2031,8 +2029,8 @@ l10n.falseValue,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-l10n.linkSettingsHint,
+                                  const Text(
+                                    'リンクの設定',
                                     style: TextStyle(
                                       color: Colors.white70,
                                       fontSize: 12,
@@ -2047,11 +2045,11 @@ l10n.linkSettingsHint,
                                             Icons.upload_rounded,
                                             size: 16,
                                           ),
-                                          label: Row(
+                                          label: const Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                l10n.makeLinkSource,
+                                                'リンク元にする',
                                                 style: TextStyle(fontSize: 12),
                                               ),
                                               SizedBox(width: 4),
@@ -2088,11 +2086,11 @@ l10n.linkSettingsHint,
                                             Icons.download_rounded,
                                             size: 16,
                                           ),
-                                          label: Row(
+                                          label: const Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                l10n.makeLinkTarget,
+                                                'リンク先にする',
                                                 style: TextStyle(fontSize: 12),
                                               ),
                                               SizedBox(width: 4),
@@ -2138,8 +2136,8 @@ l10n.linkSettingsHint,
                                         size: 16,
                                       ),
                                       const SizedBox(width: 6),
-                                      Text(
-l10n.linkLogic,
+                                      const Text(
+                                        '論理式の紐付け',
                                         style: TextStyle(
                                           color: Colors.white70,
                                           fontSize: 12,
@@ -2152,8 +2150,8 @@ l10n.linkLogic,
                                           size: 14,
                                           color: Colors.purpleAccent,
                                         ),
-                                        label: Text(
-l10n.addLogic,
+                                        label: const Text(
+                                          '論理式を追加',
                                           style: TextStyle(
                                             color: Colors.purpleAccent,
                                             fontSize: 12,
@@ -2213,8 +2211,8 @@ l10n.addLogic,
                                   ),
                                   const SizedBox(height: 8),
                                   if (localLogicItems.isEmpty)
-                                    Text(
-l10n.noSettingLogicYet,
+                                    const Text(
+                                      '設定済みの論理式はありません。上のボタンから追加してください。',
                                       style: TextStyle(
                                         color: Colors.white38,
                                         fontSize: 11,
@@ -2223,15 +2221,15 @@ l10n.noSettingLogicYet,
                                   else
                                     DropdownButtonFormField<String>(
                                       dropdownColor: Colors.black,
-                                      hint: Text(
-l10n.selectLogic,
+                                      hint: const Text(
+                                        '論理式を選択',
                                         style: TextStyle(
                                           color: Colors.white38,
                                           fontSize: 12,
                                         ),
                                       ),
                                       isExpanded: true,
-                                      decoration: InputDecoration(
+                                      decoration: const InputDecoration(
                                         isDense: true,
                                         contentPadding: EdgeInsets.symmetric(
                                           vertical: 8,
@@ -2305,8 +2303,8 @@ l10n.selectLogic,
                           ),
                         if (constants.isNotEmpty) ...[
                           const SizedBox(height: 8),
-                          Text(
-l10n.constantLink,
+                          const Text(
+                            '定数からリンク',
                             style: TextStyle(
                               color: Colors.white54,
                               fontSize: 12,
@@ -2368,8 +2366,8 @@ l10n.constantLink,
                         ],
                         const Divider(color: Colors.white12),
                         const SizedBox(height: 4),
-                        Text(
-l10n.transformSection,
+                        const Text(
+                          '変換（オプション）',
                           style: TextStyle(color: Colors.white54, fontSize: 12),
                         ),
                         const SizedBox(height: 8),
@@ -2379,19 +2377,19 @@ l10n.transformSection,
                           child: Row(
                             children: [
                               for (final entry in <List<String?>>[
-                                [l10n.noTransform, null],
-                                [l10n.transformSqrt, 'sqrt'],
-                                [l10n.transformPowLabel, 'pow'],
-                                [l10n.transformNroot, 'nroot'],
-                                [l10n.transformAbs, 'abs'],
-                                [l10n.transformFloor, 'floor'],
-                                [l10n.transformCeil, 'ceil'],
-                                [l10n.transformRound, 'round'],
-                                [l10n.transformLog10, 'log10'],
-                                [l10n.transformReciprocal, 'reciprocal'],
-                                [l10n.transformSin, 'sin'],
-                                [l10n.transformCos, 'cos'],
-                                [l10n.transformTan, 'tan'],
+                                ['なし', null],
+                                ['√ 平方根', 'sqrt'],
+                                ['x^n 指数', 'pow'],
+                                ['n乗根', 'nroot'],
+                                ['|x| 絶対値', 'abs'],
+                                ['⌊x⌋ 切捨', 'floor'],
+                                ['⌈x⌉ 切上', 'ceil'],
+                                ['round 四捨五入', 'round'],
+                                ['log10 対数', 'log10'],
+                                ['1/x 逆数', 'reciprocal'],
+                                ['sin', 'sin'],
+                                ['cos', 'cos'],
+                                ['tan', 'tan'],
                               ])
                                 Padding(
                                   padding: const EdgeInsets.only(right: 8),
@@ -2428,8 +2426,8 @@ l10n.transformSection,
                             children: [
                               Text(
                                 tempTransform == 'pow'
-                                    ? l10n.powExponentQ
-                                    : l10n.nrootExponentQ,
+                                    ? '何乗するか（n）：'
+                                    : '何乗根か（n）：',
                                 style: const TextStyle(
                                   color: Colors.white54,
                                   fontSize: 12,
@@ -2446,7 +2444,7 @@ l10n.transformSection,
                                       ),
                                   inputFormatters: [_ThousandsFormatter()],
                                   style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
+                                  decoration: const InputDecoration(
                                     hintText: '2',
                                     hintStyle: TextStyle(color: Colors.white24),
                                     isDense: true,
@@ -2605,8 +2603,8 @@ l10n.transformSection,
                   if (others.isNotEmpty)
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, {'delete': true}),
-                      child: Text(
-l10n.deleteTerm,
+                      child: const Text(
+                        '項を削除',
                         style: TextStyle(color: Colors.redAccent),
                       ),
                     ),
@@ -2760,7 +2758,7 @@ l10n.deleteTerm,
                         children: [
                           Expanded(
                             child: Text(
-                              l10n.valueSettings(_termLabel('operand')),
+                              '${_termLabel('operand')}の設定',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -2780,8 +2778,8 @@ l10n.deleteTerm,
                         ],
                       ),
                       const SizedBox(height: 16),
-                      Text(
-l10n.numericValue,
+                      const Text(
+                        '数値',
                         style: TextStyle(color: Colors.white54, fontSize: 12),
                       ),
                       const SizedBox(height: 8),
@@ -2853,8 +2851,8 @@ l10n.numericValue,
                                             tempLinkSource != null &&
                                                     tempLinkSource!['type'] ==
                                                         'logic'
-                                                ? l10n.logicLinking
-                                                : l10n.linking,
+                                                ? '論理式リンク中'
+                                                : 'リンク中',
                                             style: TextStyle(
                                               color:
                                                   tempLinkSource != null &&
@@ -2877,7 +2875,7 @@ l10n.numericValue,
                       const SizedBox(height: 16),
                       _buildUnitSection(
                         context,
-                        l10n.unitLabel,
+                        '単位',
                         unitCtrl,
                         setSheetState,
                         suggestedUnits: suggestedUnits,
@@ -2919,8 +2917,8 @@ l10n.numericValue,
                         const SizedBox(height: 8),
                         // _editOperandLinkSection
                         CheckboxListTile(
-                          title: Text(
-l10n.applyToAllWithLinks,
+                          title: const Text(
+                            '数値を他の全ての行に適用',
                             style: TextStyle(
                               color: Colors.white70,
                               fontSize: 13,
@@ -2992,10 +2990,10 @@ l10n.applyToAllWithLinks,
                                           tempLinkSource != null &&
                                                   tempLinkSource!['type'] ==
                                                       'logic'
-                                              ? l10n.logicLinkPrefix(_getLogicLabel(tempLinkSource!['logicId']))
+                                              ? '論理式リンク: ${_getLogicLabel(tempLinkSource!['logicId'])}'
                                               : (tempLink
-                                                    ? l10n.linkSourcePrefix(_getSourceLabel(tempLinkSource))
-                                                    : l10n.previousLinkPrefix(_getSourceLabel(tempLinkSource))),
+                                                    ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
+                                                    : '元リンク: ${_getSourceLabel(tempLinkSource)}'),
                                           style: TextStyle(
                                             color:
                                                 tempLinkSource != null &&
@@ -3015,8 +3013,8 @@ l10n.applyToAllWithLinks,
                                             tempLink = false;
                                             tempLinkSource = null;
                                           }),
-                                          child: Text(
-l10n.unlink,
+                                          child: const Text(
+                                            '解除',
                                             style: TextStyle(
                                               color: Colors.white70,
                                               fontSize: 12,
@@ -3028,8 +3026,8 @@ l10n.unlink,
                                           onTap: () => setSheetState(
                                             () => tempLink = true,
                                           ),
-                                          child: Text(
-l10n.restoreLink,
+                                          child: const Text(
+                                            'リンクに戻す',
                                             style: TextStyle(
                                               color: Colors.blueAccent,
                                               fontSize: 12,
@@ -3053,8 +3051,8 @@ l10n.restoreLink,
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-l10n.trueValue,
+                                              const Text(
+                                                '真の場合の値',
                                                 style: TextStyle(
                                                   color: Colors.white54,
                                                   fontSize: 11,
@@ -3137,7 +3135,7 @@ l10n.trueValue,
                                                                       .white,
                                                                   fontSize: 13,
                                                                 ),
-                                                            decoration: InputDecoration(
+                                                            decoration: const InputDecoration(
                                                               hintText: '1.0',
                                                               isDense: true,
                                                               contentPadding:
@@ -3228,8 +3226,8 @@ l10n.trueValue,
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-l10n.falseValue,
+                                              const Text(
+                                                '偽の場合の値',
                                                 style: TextStyle(
                                                   color: Colors.white54,
                                                   fontSize: 11,
@@ -3312,7 +3310,7 @@ l10n.falseValue,
                                                                       .white,
                                                                   fontSize: 13,
                                                                 ),
-                                                            decoration: InputDecoration(
+                                                            decoration: const InputDecoration(
                                                               hintText: '0.0',
                                                               isDense: true,
                                                               contentPadding:
@@ -3420,8 +3418,8 @@ l10n.falseValue,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-l10n.linkSettingsHint,
+                                  const Text(
+                                    'リンクの設定',
                                     style: TextStyle(
                                       color: Colors.white70,
                                       fontSize: 12,
@@ -3436,11 +3434,11 @@ l10n.linkSettingsHint,
                                             Icons.upload_rounded,
                                             size: 16,
                                           ),
-                                          label: Row(
+                                          label: const Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                l10n.makeLinkSource,
+                                                'リンク元にする',
                                                 style: TextStyle(fontSize: 12),
                                               ),
                                               SizedBox(width: 4),
@@ -3477,11 +3475,11 @@ l10n.linkSettingsHint,
                                             Icons.download_rounded,
                                             size: 16,
                                           ),
-                                          label: Row(
+                                          label: const Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                l10n.makeLinkTarget,
+                                                'リンク先にする',
                                                 style: TextStyle(fontSize: 12),
                                               ),
                                               SizedBox(width: 4),
@@ -3527,8 +3525,8 @@ l10n.linkSettingsHint,
                                         size: 16,
                                       ),
                                       const SizedBox(width: 6),
-                                      Text(
-l10n.linkLogic,
+                                      const Text(
+                                        '論理式の紐付け',
                                         style: TextStyle(
                                           color: Colors.white70,
                                           fontSize: 12,
@@ -3541,8 +3539,8 @@ l10n.linkLogic,
                                           size: 14,
                                           color: Colors.purpleAccent,
                                         ),
-                                        label: Text(
-l10n.addLogic,
+                                        label: const Text(
+                                          '論理式を追加',
                                           style: TextStyle(
                                             color: Colors.purpleAccent,
                                             fontSize: 12,
@@ -3602,8 +3600,8 @@ l10n.addLogic,
                                   ),
                                   const SizedBox(height: 8),
                                   if (localLogicItems.isEmpty)
-                                    Text(
-l10n.noSettingLogicYet,
+                                    const Text(
+                                      '設定済みの論理式はありません。上のボタンから追加してください。',
                                       style: TextStyle(
                                         color: Colors.white38,
                                         fontSize: 11,
@@ -3612,15 +3610,15 @@ l10n.noSettingLogicYet,
                                   else
                                     DropdownButtonFormField<String>(
                                       dropdownColor: Colors.black,
-                                      hint: Text(
-l10n.selectLogic,
+                                      hint: const Text(
+                                        '論理式を選択',
                                         style: TextStyle(
                                           color: Colors.white38,
                                           fontSize: 12,
                                         ),
                                       ),
                                       isExpanded: true,
-                                      decoration: InputDecoration(
+                                      decoration: const InputDecoration(
                                         isDense: true,
                                         contentPadding: EdgeInsets.symmetric(
                                           vertical: 8,
@@ -3694,8 +3692,8 @@ l10n.selectLogic,
                           ),
                         if (constants.isNotEmpty) ...[
                           const SizedBox(height: 8),
-                          Text(
-l10n.constantLink,
+                          const Text(
+                            '定数からリンク',
                             style: TextStyle(
                               color: Colors.white54,
                               fontSize: 12,
@@ -3757,8 +3755,8 @@ l10n.constantLink,
                         ],
                         const Divider(color: Colors.white12),
                         const SizedBox(height: 4),
-                        Text(
-l10n.transformSection,
+                        const Text(
+                          '変換（オプション）',
                           style: TextStyle(color: Colors.white54, fontSize: 12),
                         ),
                         const SizedBox(height: 8),
@@ -3768,19 +3766,19 @@ l10n.transformSection,
                           child: Row(
                             children: [
                               for (final entry in <List<String?>>[
-                                [l10n.noTransform, null],
-                                [l10n.transformSqrt, 'sqrt'],
-                                [l10n.transformPowLabel, 'pow'],
-                                [l10n.transformNroot, 'nroot'],
-                                [l10n.transformAbs, 'abs'],
-                                [l10n.transformFloor, 'floor'],
-                                [l10n.transformCeil, 'ceil'],
-                                [l10n.transformRound, 'round'],
-                                [l10n.transformLog10, 'log10'],
-                                [l10n.transformReciprocal, 'reciprocal'],
-                                [l10n.transformSin, 'sin'],
-                                [l10n.transformCos, 'cos'],
-                                [l10n.transformTan, 'tan'],
+                                ['なし', null],
+                                ['√ 平方根', 'sqrt'],
+                                ['x^n 指数', 'pow'],
+                                ['n乗根', 'nroot'],
+                                ['|x| 絶対値', 'abs'],
+                                ['⌊x⌋ 切捨', 'floor'],
+                                ['⌈x⌉ 切上', 'ceil'],
+                                ['round 四捨五入', 'round'],
+                                ['log10 対数', 'log10'],
+                                ['1/x 逆数', 'reciprocal'],
+                                ['sin', 'sin'],
+                                ['cos', 'cos'],
+                                ['tan', 'tan'],
                               ])
                                 Padding(
                                   padding: const EdgeInsets.only(right: 8),
@@ -3817,8 +3815,8 @@ l10n.transformSection,
                             children: [
                               Text(
                                 tempTransform == 'pow'
-                                    ? l10n.powExponentQ
-                                    : l10n.nrootExponentQ,
+                                    ? '何乗するか（n）：'
+                                    : '何乗根か（n）：',
                                 style: const TextStyle(
                                   color: Colors.white54,
                                   fontSize: 12,
@@ -3835,7 +3833,7 @@ l10n.transformSection,
                                       ),
                                   inputFormatters: [_ThousandsFormatter()],
                                   style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
+                                  decoration: const InputDecoration(
                                     hintText: '2',
                                     hintStyle: TextStyle(color: Colors.white24),
                                     isDense: true,
@@ -3995,8 +3993,8 @@ l10n.transformSection,
                   if (others.isNotEmpty)
                     TextButton(
                       onPressed: () => Navigator.pop(ctx, {'delete': true}),
-                      child: Text(
-l10n.deleteTerm,
+                      child: const Text(
+                        '項を削除',
                         style: TextStyle(color: Colors.redAccent),
                       ),
                     ),
@@ -4201,7 +4199,7 @@ l10n.deleteTerm,
                         children: [
                           Expanded(
                             child: Text(
-                              l10n.valueSettings(_termLabel('other_$idx')),
+                              '${_termLabel('other_$idx')}の設定',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -4221,8 +4219,8 @@ l10n.deleteTerm,
                         ],
                       ),
                       const SizedBox(height: 16),
-                      Text(
-l10n.numericValue,
+                      const Text(
+                        '数値',
                         style: TextStyle(color: Colors.white54, fontSize: 12),
                       ),
                       const SizedBox(height: 8),
@@ -4294,8 +4292,8 @@ l10n.numericValue,
                                             tempLinkSource != null &&
                                                     tempLinkSource!['type'] ==
                                                         'logic'
-                                                ? l10n.logicLinking
-                                                : l10n.linking,
+                                                ? '論理式リンク中'
+                                                : 'リンク中',
                                             style: TextStyle(
                                               color:
                                                   tempLinkSource != null &&
@@ -4318,7 +4316,7 @@ l10n.numericValue,
                       const SizedBox(height: 16),
                       _buildUnitSection(
                         context,
-                        l10n.unitLabel,
+                        '単位',
                         unitCtrl,
                         setSheetState,
                         suggestedUnits: suggestedUnits,
@@ -4360,8 +4358,8 @@ l10n.numericValue,
                         const SizedBox(height: 4),
                         // _editOtherValLinkSection
                         CheckboxListTile(
-                          title: Text(
-l10n.applyToAllWithLinks,
+                          title: const Text(
+                            '数値を他の全ての行に適用',
                             style: TextStyle(
                               color: Colors.white70,
                               fontSize: 13,
@@ -4433,10 +4431,10 @@ l10n.applyToAllWithLinks,
                                           tempLinkSource != null &&
                                                   tempLinkSource!['type'] ==
                                                       'logic'
-                                              ? l10n.logicLinkPrefix(_getLogicLabel(tempLinkSource!['logicId']))
+                                              ? '論理式リンク: ${_getLogicLabel(tempLinkSource!['logicId'])}'
                                               : (tempLink
-                                                    ? l10n.linkSourcePrefix(_getSourceLabel(tempLinkSource))
-                                                    : l10n.previousLinkPrefix(_getSourceLabel(tempLinkSource))),
+                                                    ? 'リンク元: ${_getSourceLabel(tempLinkSource)}'
+                                                    : '元リンク: ${_getSourceLabel(tempLinkSource)}'),
                                           style: TextStyle(
                                             color:
                                                 tempLinkSource != null &&
@@ -4456,8 +4454,8 @@ l10n.applyToAllWithLinks,
                                             tempLink = false;
                                             tempLinkSource = null;
                                           }),
-                                          child: Text(
-l10n.unlink,
+                                          child: const Text(
+                                            '解除',
                                             style: TextStyle(
                                               color: Colors.white70,
                                               fontSize: 12,
@@ -4469,8 +4467,8 @@ l10n.unlink,
                                           onTap: () => setSheetState(
                                             () => tempLink = true,
                                           ),
-                                          child: Text(
-l10n.restoreLink,
+                                          child: const Text(
+                                            'リンクに戻す',
                                             style: TextStyle(
                                               color: Colors.blueAccent,
                                               fontSize: 12,
@@ -4494,8 +4492,8 @@ l10n.restoreLink,
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-l10n.trueValue,
+                                              const Text(
+                                                '真の場合の値',
                                                 style: TextStyle(
                                                   color: Colors.white54,
                                                   fontSize: 11,
@@ -4578,7 +4576,7 @@ l10n.trueValue,
                                                                       .white,
                                                                   fontSize: 13,
                                                                 ),
-                                                            decoration: InputDecoration(
+                                                            decoration: const InputDecoration(
                                                               hintText: '1.0',
                                                               isDense: true,
                                                               contentPadding:
@@ -4669,8 +4667,8 @@ l10n.trueValue,
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-l10n.falseValue,
+                                              const Text(
+                                                '偽の場合の値',
                                                 style: TextStyle(
                                                   color: Colors.white54,
                                                   fontSize: 11,
@@ -4753,7 +4751,7 @@ l10n.falseValue,
                                                                       .white,
                                                                   fontSize: 13,
                                                                 ),
-                                                            decoration: InputDecoration(
+                                                            decoration: const InputDecoration(
                                                               hintText: '0.0',
                                                               isDense: true,
                                                               contentPadding:
@@ -4861,8 +4859,8 @@ l10n.falseValue,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-l10n.linkSettingsHint,
+                                  const Text(
+                                    'リンクの設定',
                                     style: TextStyle(
                                       color: Colors.white70,
                                       fontSize: 12,
@@ -4877,11 +4875,11 @@ l10n.linkSettingsHint,
                                             Icons.upload_rounded,
                                             size: 16,
                                           ),
-                                          label: Row(
+                                          label: const Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                l10n.makeLinkSource,
+                                                'リンク元にする',
                                                 style: TextStyle(fontSize: 12),
                                               ),
                                               SizedBox(width: 4),
@@ -4918,11 +4916,11 @@ l10n.linkSettingsHint,
                                             Icons.download_rounded,
                                             size: 16,
                                           ),
-                                          label: Row(
+                                          label: const Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
-                                                l10n.makeLinkTarget,
+                                                'リンク先にする',
                                                 style: TextStyle(fontSize: 12),
                                               ),
                                               SizedBox(width: 4),
@@ -4968,8 +4966,8 @@ l10n.linkSettingsHint,
                                         size: 16,
                                       ),
                                       const SizedBox(width: 6),
-                                      Text(
-l10n.linkLogic,
+                                      const Text(
+                                        '論理式の紐付け',
                                         style: TextStyle(
                                           color: Colors.white70,
                                           fontSize: 12,
@@ -4982,8 +4980,8 @@ l10n.linkLogic,
                                           size: 14,
                                           color: Colors.purpleAccent,
                                         ),
-                                        label: Text(
-l10n.addLogic,
+                                        label: const Text(
+                                          '論理式を追加',
                                           style: TextStyle(
                                             color: Colors.purpleAccent,
                                             fontSize: 12,
@@ -5043,8 +5041,8 @@ l10n.addLogic,
                                   ),
                                   const SizedBox(height: 8),
                                   if (localLogicItems.isEmpty)
-                                    Text(
-l10n.noSettingLogicYet,
+                                    const Text(
+                                      '設定済みの論理式はありません。上のボタンから追加してください。',
                                       style: TextStyle(
                                         color: Colors.white38,
                                         fontSize: 11,
@@ -5053,15 +5051,15 @@ l10n.noSettingLogicYet,
                                   else
                                     DropdownButtonFormField<String>(
                                       dropdownColor: Colors.black,
-                                      hint: Text(
-l10n.selectLogic,
+                                      hint: const Text(
+                                        '論理式を選択',
                                         style: TextStyle(
                                           color: Colors.white38,
                                           fontSize: 12,
                                         ),
                                       ),
                                       isExpanded: true,
-                                      decoration: InputDecoration(
+                                      decoration: const InputDecoration(
                                         isDense: true,
                                         contentPadding: EdgeInsets.symmetric(
                                           vertical: 8,
@@ -5135,8 +5133,8 @@ l10n.selectLogic,
                           ),
                         if (constants.isNotEmpty) ...[
                           const SizedBox(height: 8),
-                          Text(
-l10n.constantLink,
+                          const Text(
+                            '定数からリンク',
                             style: TextStyle(
                               color: Colors.white54,
                               fontSize: 12,
@@ -5198,8 +5196,8 @@ l10n.constantLink,
                         ],
                         const Divider(color: Colors.white12),
                         const SizedBox(height: 4),
-                        Text(
-l10n.transformSection,
+                        const Text(
+                          '変換（オプション）',
                           style: TextStyle(color: Colors.white54, fontSize: 12),
                         ),
                         const SizedBox(height: 8),
@@ -5209,19 +5207,19 @@ l10n.transformSection,
                           child: Row(
                             children: [
                               for (final entry in <List<String?>>[
-                                [l10n.noTransform, null],
-                                [l10n.transformSqrt, 'sqrt'],
-                                [l10n.transformPowLabel, 'pow'],
-                                [l10n.transformNroot, 'nroot'],
-                                [l10n.transformAbs, 'abs'],
-                                [l10n.transformFloor, 'floor'],
-                                [l10n.transformCeil, 'ceil'],
-                                [l10n.transformRound, 'round'],
-                                [l10n.transformLog10, 'log10'],
-                                [l10n.transformReciprocal, 'reciprocal'],
-                                [l10n.transformSin, 'sin'],
-                                [l10n.transformCos, 'cos'],
-                                [l10n.transformTan, 'tan'],
+                                ['なし', null],
+                                ['√ 平方根', 'sqrt'],
+                                ['x^n 指数', 'pow'],
+                                ['n乗根', 'nroot'],
+                                ['|x| 絶対値', 'abs'],
+                                ['⌊x⌋ 切捨', 'floor'],
+                                ['⌈x⌉ 切上', 'ceil'],
+                                ['round 四捨五入', 'round'],
+                                ['log10 対数', 'log10'],
+                                ['1/x 逆数', 'reciprocal'],
+                                ['sin', 'sin'],
+                                ['cos', 'cos'],
+                                ['tan', 'tan'],
                               ])
                                 Padding(
                                   padding: const EdgeInsets.only(right: 8),
@@ -5258,8 +5256,8 @@ l10n.transformSection,
                             children: [
                               Text(
                                 tempTransform == 'pow'
-                                    ? l10n.powExponentQ
-                                    : l10n.nrootExponentQ,
+                                    ? '何乗するか（n）：'
+                                    : '何乗根か（n）：',
                                 style: const TextStyle(
                                   color: Colors.white54,
                                   fontSize: 12,
@@ -5276,7 +5274,7 @@ l10n.transformSection,
                                       ),
                                   inputFormatters: [_ThousandsFormatter()],
                                   style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
+                                  decoration: const InputDecoration(
                                     hintText: '2',
                                     hintStyle: TextStyle(color: Colors.white24),
                                     isDense: true,
@@ -5436,8 +5434,8 @@ l10n.transformSection,
                     ),
                   TextButton(
                     onPressed: () => Navigator.pop(ctx, {'delete': true}),
-                    child: Text(
-l10n.deleteTerm,
+                    child: const Text(
+                      '項を削除',
                       style: TextStyle(color: Colors.redAccent),
                     ),
                   ),

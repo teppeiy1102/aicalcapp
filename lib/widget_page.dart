@@ -2953,7 +2953,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
         height: handleH + 20,
         decoration: const BoxDecoration(
 
-      //    borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+         // borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
          // borderRadius: BorderRadius.all( Radius.circular(30)),
           gradient: LinearGradient(
             colors: [Color.fromARGB(255, 255, 255, 255),Color.fromARGB(255, 255, 255, 255), Color.fromARGB(181, 255, 255, 255)],
@@ -2961,9 +2961,10 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
             end: Alignment.bottomCenter,
           ),
           border: Border(
-            top: BorderSide(color: Color.fromARGB(255, 0, 0, 0), width: 1.5),
-            bottom: BorderSide(color: Color.fromARGB(255, 0, 0, 0), width: 1.0),
+            top: BorderSide(color: Color.fromARGB(255, 0, 0, 0), width: 3.5),
+            bottom: BorderSide(color: Color.fromARGB(255, 0, 0, 0), width: 3.0),
           ),
+         
        
         ),
         child: _isExpanded

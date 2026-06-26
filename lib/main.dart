@@ -110,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ],
         'isExpanded': true,
-        'bgColor': 0xFF1A1A2E,
+        'bgColor': 0xFFFFFFFF,
       },
     ),
   ];
@@ -274,7 +274,8 @@ class _HomeScreenState extends State<HomeScreen> {
         'title': AppLocalizations.of(context)!.untitledSheet,
         'items': _sampleItems,
         'isExpanded': true,
-        'bgColor': 0xFF1A1A2E,
+        //'bgColor': 0xFF1A1A2E,
+        'bgColor': 0xFFFFFFFF,
         'createdAt': _nowStr,
         'updatedAt': _nowStr,
       },
@@ -321,7 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'title': AppLocalizations.of(context)!.untitledSheet,
         'items': items,
         'isExpanded': true,
-        'bgColor': 0xFF1A1A2E,
+        'bgColor': 0xFFFFFFFF,
         'createdAt': _nowStr2,
         'updatedAt': _nowStr2,
       },
@@ -491,7 +492,7 @@ Example output for "3万円を5人で割り勘":
             'title': title,
             'items': items,
             'isExpanded': true,
-            'bgColor': 0xFF1A1A2E,
+            'bgColor': 0xFFFFFFFF,
             'createdAt': _aiNowStr,
             'updatedAt': _aiNowStr,
           },
@@ -525,7 +526,7 @@ Example output for "3万円を5人で割り勘":
 
   static List<Map<String, dynamic>> get _sampleItems => [
     {
-      'name': '新規計算',
+      'name': 'new Calc',
       'input': 0.0,
       'op': '+',
       'operand': 0.0,
@@ -1710,7 +1711,7 @@ Example output for "3万円を5人で割り勘":
           'title': title,
           'items': items,
           'isExpanded': true,
-          'bgColor': 0xFF1A1A2E,
+          'bgColor': 0xFFFFFFFF,
           'createdAt': _qrNowStr,
           'updatedAt': _qrNowStr,
           if (memos != null && memos.isNotEmpty) 'memos': memos,
@@ -2027,7 +2028,7 @@ class _HomeLogoTitleState extends State<_HomeLogoTitle> {
           children: [
             ShaderMask(
               shaderCallback: (bounds) => const LinearGradient(
-                colors: [Color.fromARGB(255, 7, 7, 7), Color.fromARGB(255, 40, 40, 40), Color.fromARGB(255, 68, 68, 68)],
+                colors: [Color.fromARGB(255, 143, 143, 143), Color.fromARGB(255, 114, 114, 114), Color.fromARGB(255, 225, 225, 225)],
                 //colors: [Color(0xFF5E81FF), Color(0xFFB08FFF), Color(0xFF82C8FF)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,

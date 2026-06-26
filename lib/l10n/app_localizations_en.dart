@@ -2096,6 +2096,45 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get unitLabel => 'Unit';
+
+  @override
+  String get numericValue => 'Numeric Value';
+
+  @override
+  String valueSettings(Object term) {
+    return '$term Settings';
+  }
+
+  @override
+  String get linkLogic => 'Link Logic';
+
+  @override
+  String get linkLogicShort => 'Logic Link';
+
+  @override
+  String get transformExprPrefix_none => '';
+
+  @override
+  String get transformExprPrefix_sqrt => '√';
+
+  @override
+  String transformExprPrefix_pow(Object n) {
+    return '($n)^';
+  }
+
+  @override
+  String transformExprLabel(Object expr, Object result) {
+    return '$expr = $result';
+  }
+
+  @override
+  String get errorResult => 'Error';
+
+  @override
+  String get applyToAllWithLinks => 'Apply number to all other rows';
+
+  @override
   String get add => 'Add';
 
   @override
@@ -2370,4 +2409,124 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get listObjectsFromImage => 'List objects from image to count';
+
+  @override
+  String linkSourcePrefix(Object label) {
+    return 'Link: $label';
+  }
+
+  @override
+  String previousLinkPrefix(Object label) {
+    return 'Previous link: $label';
+  }
+
+  @override
+  String logicLinkPrefix(Object label) {
+    return 'Logic link: $label';
+  }
+
+  @override
+  String rowOfLabel(Object field, Object name) {
+    return '$name of $field';
+  }
+
+  @override
+  String get nameUntitled => 'Untitled';
+
+  @override
+  String get numberLabel => 'Number';
+
+  @override
+  String get unitFreeInput => 'Type any text';
+
+  @override
+  String get unitSelectSuggestion => 'Select from used units';
+
+  @override
+  String get powExpLabel => 'Exponent (n):';
+
+  @override
+  String get powRootLabel => 'Root (n):';
+
+  @override
+  String get linkActiveLabel => 'Linked';
+
+  @override
+  String get logicLinkActiveLabel => 'Logic linked';
+
+  @override
+  String get removeTerm => 'Remove term';
+
+  @override
+  String get linkSettingsSection => 'Link settings';
+
+  @override
+  String get linkSourceBtn => 'Make link source';
+
+  @override
+  String get linkTargetBtn => 'Make link target';
+
+  @override
+  String get logicAssociation => 'Logic linking';
+
+  @override
+  String get noLogicItemSet =>
+      'No logic items set. Click the button above to add.';
+
+  @override
+  String get selectLogicItem => 'Select logic item';
+
+  @override
+  String get linkFromConstant => 'Link from constant';
+
+  @override
+  String get transformOption => 'Transform (optional)';
+
+  @override
+  String get precisionLabel => 'Decimal places';
+
+  @override
+  String get resultUnit => 'Answer unit';
+
+  @override
+  String unit1OfLabel(Object name) {
+    return 'Unit of $name';
+  }
+
+  @override
+  String get resultSettingsTitle => 'Result settings';
+
+  @override
+  String get linkSourceSelectHint =>
+      'Select a link source value, then tap destination values to set links.\nMultiple destinations can be set.';
+
+  @override
+  String get selectField => 'Select field';
+
+  @override
+  String get nextArrow => 'Next →';
+
+  @override
+  String get reselect => 'Reselect';
+
+  @override
+  String get linkDest => 'Link destination';
+
+  @override
+  String get multipleSelectable => '(Multiple selection allowed)';
+
+  @override
+  String get selectLinkSourceFormula => 'Please select a source formula';
+
+  @override
+  String get noOtherFormulas => 'No other formulas available';
+
+  @override
+  String get setLink => 'Set Link';
+
+  @override
+  String get selectUnitFromCategoryTitle => 'Select unit from category';
+
+  @override
+  String get transformPowLabel => 'x^n Power';
 }
