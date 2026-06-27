@@ -672,6 +672,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addLogicItem => 'Add Logic Item';
 
   @override
+  String get addImage => 'Add Image';
+
+  @override
+  String get editImage => 'Edit Image';
+
+  @override
+  String get changeImage => 'Change Image';
+
+  @override
+  String get deleteImage => 'Delete this image?';
+
+  @override
+  String get imageMask => 'Mask';
+
+  @override
+  String get maskCircle => 'Circle';
+
+  @override
+  String get maskRoundedRect => 'Rounded Rectangle';
+
+  @override
+  String get maskNone => 'None';
+
+  @override
   String get addSheetConstant => 'Add Sheet Constant';
 
   @override
@@ -1420,6 +1444,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String exposedCount(Object count) {
     return '$count items';
+  }
+
+  @override
+  String imageCount(Object count) {
+    return '$count images';
   }
 
   @override
@@ -2730,4 +2759,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get csvSectionConstant => '--- Constants ---';
+
+  @override
+  String get adjustImage => 'Adjust Image';
+
+  @override
+  String get cropEditorHint => 'Pinch to zoom, swipe to adjust position';
+
+  @override
+  String get apply => 'Apply';
+
+  @override
+  String get captionHint => 'Image caption (optional)';
+
+  @override
+  String get reset => 'Reset';
 }

@@ -236,6 +236,14 @@
   "displayOrder": "Display Order",
   "addStandaloneMemo": "Add Standalone Memo",
   "addLogicItem": "Add Logic Item",
+  "addImage": "Add Image",
+  "editImage": "Edit Image",
+  "changeImage": "Change Image",
+  "deleteImage": "Delete this image?",
+  "imageMask": "Mask",
+  "maskCircle": "Circle",
+  "maskRoundedRect": "Rounded Rectangle",
+  "maskNone": "None",
   "addSheetConstant": "Add Sheet Constant",
 
   "copyFormula": "Copy formula: {name}",
@@ -493,6 +501,7 @@
   "sheetCount": "{count} sheets",
   "memoCount": "{count} items",
   "exposedCount": "{count} items",
+  "imageCount": "{count} images",
   "selectAtLeast": "Select at least {count}",
   "selectedCountFormat": "{count} selected",
   "noItemsInSelectionMode": "Please select at least 1",
@@ -888,5 +897,10 @@
   "csvHeaderNameResult": "Name,Expression,Result",
   "csvHeaderNameValue": "Name,Value",
   "csvSectionLogic": "--- Logic ---",
-  "csvSectionConstant": "--- Constants ---"
+  "csvSectionConstant": "--- Constants ---",
+  "adjustImage": "Adjust Image",
+  "cropEditorHint": "Pinch to zoom, swipe to adjust position",
+  "apply": "Apply",
+  "captionHint": "Image caption (optional)",
+  "reset": "Reset"
 }

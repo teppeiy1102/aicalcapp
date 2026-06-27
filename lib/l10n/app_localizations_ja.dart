@@ -659,6 +659,30 @@ class AppLocalizationsJa extends AppLocalizations {
   String get addLogicItem => '論理式を追加';
 
   @override
+  String get addImage => '画像を追加';
+
+  @override
+  String get editImage => '画像を編集';
+
+  @override
+  String get changeImage => '画像を変更';
+
+  @override
+  String get deleteImage => 'この画像を削除しますか？';
+
+  @override
+  String get imageMask => 'マスク';
+
+  @override
+  String get maskCircle => '丸';
+
+  @override
+  String get maskRoundedRect => '角丸長方形';
+
+  @override
+  String get maskNone => 'なし';
+
+  @override
   String get addSheetConstant => 'シート定数を追加';
 
   @override
@@ -1401,6 +1425,11 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String exposedCount(Object count) {
     return '$count件';
+  }
+
+  @override
+  String imageCount(Object count) {
+    return '$count枚';
   }
 
   @override
@@ -2702,4 +2731,19 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get csvSectionConstant => '--- 定数 ---';
+
+  @override
+  String get adjustImage => '画像を調整';
+
+  @override
+  String get cropEditorHint => 'ピンチで拡大・スワイプで位置を調整';
+
+  @override
+  String get apply => '適用';
+
+  @override
+  String get captionHint => '画像のキャプション（任意）';
+
+  @override
+  String get reset => 'リセット';
 }

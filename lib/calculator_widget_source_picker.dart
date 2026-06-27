@@ -520,7 +520,7 @@ extension CalculatorWidgetSourcePicker on _CalculatorWidgetState {
                             GestureDetector(
                               onTap: () => setState(() => currentTab = 2),
                               child: Text(
-                                '結合シート',
+                                AppLocalizations.of(context)!.mergedSheet,
                                 style: TextStyle(
                                   color: currentTab == 2
                                       ? Colors.blueAccent

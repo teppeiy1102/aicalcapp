@@ -422,6 +422,146 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     });
   }
 
+  // ── 画像アイテム管理 ──────────────────────────────────────────────────────
+  List<Map<String, dynamic>> get _imageItems {
+    final raw = widget.config.data['imageItems'] as List<dynamic>? ?? [];
+    return raw.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  void _addImageItem() {
+    final l10n = AppLocalizations.of(context)!;
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      final picker = ImagePicker();
+      showModalBottomSheet<String?>(
+        context: context,
+        backgroundColor: Colors.black,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        builder: (ctx) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.white70),
+                title: Text(l10n.takePhoto, style: const TextStyle(color: Colors.white)),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final picked = await picker.pickImage(source: ImageSource.camera);
+                  if (picked != null && mounted) {
+                    final bytes = await picked.readAsBytes();
+                    _insertImageItem(bytes);
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.white70),
+                title: Text(l10n.chooseFromGallery, style: const TextStyle(color: Colors.white)),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final picked = await picker.pickImage(source: ImageSource.gallery);
+                  if (picked != null && mounted) {
+                    final bytes = await picked.readAsBytes();
+                    _insertImageItem(bytes);
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  void _insertImageItem(Uint8List bytes) {
+    final newId = DateTime.now().millisecondsSinceEpoch.toString();
+    final base64Str = base64Encode(bytes);
+    final newItems = List<Map<String, dynamic>>.from(_imageItems);
+    newItems.add({'id': newId, 'imageBytes': base64Str, 'cropScale': 1.0, 'cropOffsetX': 0.0, 'cropOffsetY': 0.0});
+    final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
+    order.add({'type': 'image', 'itemId': newId});
+    widget.onUpdate({
+      ...widget.config.data,
+      'imageItems': newItems,
+      'displayOrder': order,
+    });
+  }
+
+  void _updateImageItem(String id, {double? cropScale, double? cropOffsetX, double? cropOffsetY, String? caption, double? editorWidth, double? editorHeight}) {
+    final items = List<Map<String, dynamic>>.from(_imageItems);
+    final idx = items.indexWhere((e) => e['id'] == id);
+    if (idx < 0) return;
+    final updated = Map<String, dynamic>.from(items[idx]);
+    if (cropScale != null) updated['cropScale'] = cropScale;
+    if (cropOffsetX != null) updated['cropOffsetX'] = cropOffsetX;
+    if (cropOffsetY != null) updated['cropOffsetY'] = cropOffsetY;
+    if (caption != null) updated['caption'] = caption;
+    if (editorWidth != null) updated['editorWidth'] = editorWidth;
+    if (editorHeight != null) updated['editorHeight'] = editorHeight;
+    items[idx] = updated;
+    widget.onUpdate({...widget.config.data, 'imageItems': items});
+  }
+
+  void _replaceImageItem(String id, Uint8List bytes) {
+    final items = List<Map<String, dynamic>>.from(_imageItems);
+    final idx = items.indexWhere((e) => e['id'] == id);
+    if (idx < 0) return;
+    final base64Str = base64Encode(bytes);
+    items[idx] = {...items[idx], 'imageBytes': base64Str};
+    widget.onUpdate({...widget.config.data, 'imageItems': items});
+  }
+
+  void _deleteImageItem(String id) {
+    final items = List<Map<String, dynamic>>.from(_imageItems);
+    items.removeWhere((e) => e['id'] == id);
+    final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
+    order.removeWhere((e) => e['type'] == 'image' && e['itemId'] == id);
+    widget.onUpdate({
+      ...widget.config.data,
+      'imageItems': items,
+      'displayOrder': order,
+    });
+  }
+
+  void _showImageEditSheetForItem(String id) async {
+    final items = _imageItems;
+    final idx = items.indexWhere((e) => e['id'] == id);
+    if (idx < 0) return;
+    final currentScale = (items[idx]['cropScale'] as num? ?? 1.0).toDouble();
+    final currentOffsetX = (items[idx]['cropOffsetX'] as num? ?? 0.0).toDouble();
+    final currentOffsetY = (items[idx]['cropOffsetY'] as num? ?? 0.0).toDouble();
+    final currentCaption = items[idx]['caption'] as String? ?? '';
+    final base64Str = items[idx]['imageBytes'] as String? ?? '';
+    if (base64Str.isEmpty) return;
+    final imgBytes = base64Decode(base64Str);
+    if (!mounted) return;
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => _ImageCropEditor(
+          imageBytes: imgBytes,
+          initialScale: currentScale,
+          initialOffsetX: currentOffsetX,
+          initialOffsetY: currentOffsetY,
+          initialCaption: currentCaption,
+        ),
+      ),
+    );
+    if (result != null && mounted) {
+      _updateImageItem(
+        id,
+        cropScale: result['scale'] as double,
+        cropOffsetX: result['offsetX'] as double,
+        cropOffsetY: result['offsetY'] as double,
+        caption: result['caption'] as String? ?? '',
+        editorWidth: result['editorWidth'] as double?,
+        editorHeight: result['editorHeight'] as double?,
+      );
+    }
+  }
+
   // ── 論理式管理 ───────────────────────────────────────────────────────────
   void _addLogicItem() {
     Future.delayed(const Duration(milliseconds: 350), () {
@@ -1674,6 +1814,17 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               onTap: () {
                 Navigator.pop(ctx);
                 ProGuard.checkAndRun(context, _addLogicItem);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.image_outlined,
+                color: Colors.cyanAccent,
+              ),
+              title: Text(l10n.addImage, style: const TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _addImageItem();
               },
             ),
             const Divider(color: Colors.white12, height: 1),
@@ -3435,6 +3586,69 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                 ),
                                           ),
                                         ],
+                                      ),
+                                    );
+                                  } else if (entry['type'] == 'image') {
+                                    // 画像アイテム
+                                    final itemId =
+                                        entry['itemId'] as String? ?? '';
+                                    final imageItem = _imageItems.firstWhere(
+                                      (e) => e['id'] == itemId,
+                                      orElse: () => <String, dynamic>{},
+                                    );
+                                    if (imageItem.isEmpty) continue;
+                                    listItems.add(
+                                      _ImageItemRow(
+                                        key: ValueKey(
+                                          'image_${widget.config.id}_$itemId',
+                                        ),
+                                        imageBytes:
+                                            imageItem['imageBytes']
+                                                as String? ??
+                                            '',
+                                        cropScale:
+                                            (imageItem['cropScale'] as num? ??
+                                                    1.0)
+                                                .toDouble(),
+                                        cropOffsetX:
+                                            (imageItem['cropOffsetX'] as num? ??
+                                                    0.0)
+                                                .toDouble(),
+                                        cropOffsetY:
+                                            (imageItem['cropOffsetY'] as num? ??
+                                                    0.0)
+                                                .toDouble(),
+                                        caption:
+                                            imageItem['caption'] as String? ??
+                                            '',
+                                        editorWidth:
+                                            (imageItem['editorWidth'] as num?)
+                                                ?.toDouble(),
+                                        editorHeight:
+                                            (imageItem['editorHeight'] as num?)
+                                                ?.toDouble(),
+                                        isDark: isDark,
+                                        onTap: () =>
+                                            _showImageEditSheetForItem(itemId),
+                                        onDelete: () =>
+                                            _deleteImageItem(itemId),
+                                        dragHandle:
+                                            ReorderableDragStartListener(
+                                              index: di,
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.only(
+                                                      right: 4,
+                                                    ),
+                                                child: Icon(
+                                                  Icons.drag_indicator,
+                                                  color: isDark
+                                                      ? Colors.white24
+                                                      : Colors.black26,
+                                                  size: 18,
+                                                ),
+                                              ),
+                                            ),
                                       ),
                                     );
                                   } else if (entry['type'] == 'logic') {

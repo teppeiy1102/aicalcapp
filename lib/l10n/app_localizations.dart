@@ -1292,6 +1292,54 @@ abstract class AppLocalizations {
   /// **'Add Logic Item'**
   String get addLogicItem;
 
+  /// No description provided for @addImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Image'**
+  String get addImage;
+
+  /// No description provided for @editImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Image'**
+  String get editImage;
+
+  /// No description provided for @changeImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Image'**
+  String get changeImage;
+
+  /// No description provided for @deleteImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this image?'**
+  String get deleteImage;
+
+  /// No description provided for @imageMask.
+  ///
+  /// In en, this message translates to:
+  /// **'Mask'**
+  String get imageMask;
+
+  /// No description provided for @maskCircle.
+  ///
+  /// In en, this message translates to:
+  /// **'Circle'**
+  String get maskCircle;
+
+  /// No description provided for @maskRoundedRect.
+  ///
+  /// In en, this message translates to:
+  /// **'Rounded Rectangle'**
+  String get maskRoundedRect;
+
+  /// No description provided for @maskNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get maskNone;
+
   /// No description provided for @addSheetConstant.
   ///
   /// In en, this message translates to:
@@ -2713,6 +2761,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} items'**
   String exposedCount(Object count);
+
+  /// No description provided for @imageCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} images'**
+  String imageCount(Object count);
 
   /// No description provided for @selectAtLeast.
   ///
@@ -5002,6 +5056,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'--- Constants ---'**
   String get csvSectionConstant;
+
+  /// No description provided for @adjustImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust Image'**
+  String get adjustImage;
+
+  /// No description provided for @cropEditorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinch to zoom, swipe to adjust position'**
+  String get cropEditorHint;
+
+  /// No description provided for @apply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get apply;
+
+  /// No description provided for @captionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Image caption (optional)'**
+  String get captionHint;
+
+  /// No description provided for @reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get reset;
 }
 
 class _AppLocalizationsDelegate

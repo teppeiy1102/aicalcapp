@@ -2027,19 +2027,20 @@ class _HomeLogoTitleState extends State<_HomeLogoTitle> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ShaderMask(
-              shaderCallback: (bounds) => const LinearGradient(
-                colors: [Color.fromARGB(255, 0, 0, 0), Color.fromARGB(255, 10, 10, 10), Color.fromARGB(255, 39, 39, 39)],
-                //colors: [Color(0xFF5E81FF), Color(0xFFB08FFF), Color(0xFF82C8FF)],
+              shaderCallback: (bounds) => LinearGradient(
+                colors: _isPro
+                ? [Color.fromARGB(255, 236, 126, 126), Color.fromARGB(255, 182, 62, 252), Color.fromARGB(255, 55, 204, 234)]
+                : [Color.fromARGB(255, 53, 53, 53), Color.fromARGB(255, 0, 0, 0), Color.fromARGB(255, 79, 79, 79)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ).createShader(bounds),
               child: const Text(
-                'Genba Calc',
+                'GENBA CALC',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
+                  letterSpacing: 0.7,
                 ),
               ),
             ),
@@ -2177,11 +2178,13 @@ class _WidgetCardState extends State<_WidgetCard> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isMerged = widget.config.type == 'merged';
     final title =
-        widget.config.data['title'] as String? ?? (isMerged ? '結合ビュー' : '定型計算');
+        widget.config.data['title'] as String? ?? (isMerged ? l10n.mergedView : l10n.standardCalc);
     final items = widget.config.data['items'] as List<dynamic>? ?? [];
     final memos = widget.config.data['memos'] as List<dynamic>? ?? [];
+    final imageItems = widget.config.data['imageItems'] as List<dynamic>? ?? [];
     final exposedCount = items
         .where((it) => (it as Map)['exposed'] == true)
         .length;
@@ -2388,7 +2391,7 @@ class _WidgetCardState extends State<_WidgetCard> {
                                         ),
                                         const SizedBox(width: 6),
                                         Text(
-                                          '($sheetCount) 結合シート',
+                                          l10n.mergedSheetLabel(sheetCount),
                                           style: const TextStyle(
                                             color: Color.fromARGB(
                                               255,
@@ -2424,8 +2427,8 @@ class _WidgetCardState extends State<_WidgetCard> {
                                         const SizedBox(width: 6),
                                         Text(
                                           items.isEmpty
-                                              ? '計算式未設定'
-                                              : '${items.length}件',
+                                              ? l10n.noFormulaSet
+                                              : l10n.itemCount(items.length),
                                           style: TextStyle(
                                             color: accent.withOpacity(0.9),
                                             fontSize: 11,
@@ -2456,7 +2459,7 @@ class _WidgetCardState extends State<_WidgetCard> {
                                           ),
                                           const SizedBox(width: 6),
                                           Text(
-                                            '${memos.length}件',
+                                            l10n.memoCount(memos.length),
                                             style: const TextStyle(
                                               color: Colors.amber,
                                               fontSize: 11,
@@ -2490,9 +2493,43 @@ class _WidgetCardState extends State<_WidgetCard> {
                                           ),
                                           const SizedBox(width: 6),
                                           Text(
-                                            '$exposedCount件',
+                                            l10n.exposedCount(exposedCount),
                                             style: const TextStyle(
                                               color: Colors.teal,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                  if (imageItems.isNotEmpty) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.indigoAccent.withOpacity(
+                                          0.12,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.image_outlined,
+                                            size: 12,
+                                            color: Colors.indigoAccent,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            l10n.imageCount(imageItems.length),
+                                            style: const TextStyle(
+                                              color: Colors.indigoAccent,
                                               fontSize: 11,
                                               fontWeight: FontWeight.w700,
                                             ),
@@ -2595,6 +2632,7 @@ class _WidgetCardState extends State<_WidgetCard> {
 
   Widget _buildMergedExpanded(List<WidgetConfig> sheets, bool isDark) {
     if (sheets.isEmpty) return const SizedBox.shrink();
+    final l10n = AppLocalizations.of(context)!;
     return ClipRRect(
       child: ReorderableListView.builder(
         shrinkWrap: true,
@@ -2658,7 +2696,7 @@ class _WidgetCardState extends State<_WidgetCard> {
                           ),
                         ),
                         Text(
-                          '$sItemCount件',
+                          l10n.itemCount(sItemCount),
                           style: TextStyle(
                             color: isDark ? Colors.white38 : Colors.black38,
                             fontSize: 11,
@@ -2701,7 +2739,7 @@ class _WidgetCardState extends State<_WidgetCard> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'シートを追加',
+                          l10n.mergedAddSheet,
                           style: TextStyle(
                             color: isDark ? Colors.white70 : Colors.black54,
                             fontSize: 13,

@@ -2961,8 +2961,8 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
             end: Alignment.bottomCenter,
           ),
           border: Border(
-            top: BorderSide(color: Color.fromARGB(255, 0, 0, 0), width: 3.5),
-            bottom: BorderSide(color: Color.fromARGB(255, 0, 0, 0), width: 3.0),
+            top: BorderSide(color: Color.fromARGB(255, 0, 0, 0), width: 0.5),
+            bottom: BorderSide(color: Color.fromARGB(255, 0, 0, 0), width: 0.5),
           ),
          
        
@@ -2978,12 +2978,12 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Text(
-                      'Genba Calc',
+                      'GENBA CALC',
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.7,
                       ),
                     ),
                     const Spacer(),
@@ -3022,11 +3022,11 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                               ),
                             ):Expanded(
                               child: const Text(
-                                                    'Calculator',
+                                                    'CALCULATOR',
                                                     style: TextStyle(
                                                       color: Colors.black,
                                                       fontSize: 22,
-                                                      fontWeight: FontWeight.w600,
+                                                      fontWeight: FontWeight.w900,
                                                       letterSpacing: 0.5,
                                                     ),
                                                   ),

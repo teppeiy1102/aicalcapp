@@ -1818,3 +1818,380 @@ class _MarkerPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _MarkerPainter old) => old.points != points;
 }
+
+// ── 画像アイテム行ウィジェット（並び替え可能） ──
+class _ImageItemRow extends StatelessWidget {
+  final String imageBytes;
+  final double cropScale;
+  final double cropOffsetX;
+  final double cropOffsetY;
+  final bool isDark;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+  final Widget? dragHandle;
+  final String caption;
+  final double? editorWidth;
+  final double? editorHeight;
+
+  static const double _fixedHeight = 180.0;
+
+  const _ImageItemRow({
+    super.key,
+    required this.imageBytes,
+    this.cropScale = 1.0,
+    this.cropOffsetX = 0.0,
+    this.cropOffsetY = 0.0,
+    required this.isDark,
+    required this.onTap,
+    required this.onDelete,
+    this.dragHandle,
+    this.caption = '',
+    this.editorWidth,
+    this.editorHeight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = base64Decode(imageBytes);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.cyanAccent.withOpacity(0.06)
+              : Colors.cyan.withOpacity(0.07),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isDark
+                ? Colors.cyanAccent.withOpacity(0.22)
+                : Colors.cyan.withOpacity(0.3),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (dragHandle != null) ...[dragHandle!, const SizedBox(width: 4)],
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: SizedBox(
+                      height: _fixedHeight,
+                      width: double.infinity,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final w = constraints.maxWidth;
+                          final h = _fixedHeight;
+                          final s = cropScale;
+                          // Center the scaled image, then apply crop offset.
+                          // At offset (0,0): centered → left = -w*(s-1)/2
+                          // At offset (-1,0): show left → left = 0
+                          // At offset (1,0): show right → left = -w*(s-1)
+                          final left = -w * (s - 1.0) / 2.0 * (1.0 + cropOffsetX);
+                          final top = -h * (s - 1.0) / 2.0 * (1.0 + cropOffsetY);
+                          return ClipRect(
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Positioned(
+                                  left: left,
+                                  top: top,
+                                  width: w * s,
+                                  height: h * s,
+                                  child: Image.memory(
+                                    bytes,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      color: Colors.white10,
+                                      child: const Center(
+                                        child: Icon(Icons.broken_image, color: Colors.white38),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  if (caption.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      caption,
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.black54,
+                        fontSize: 12,
+                      ),
+                     // maxLines: 2,
+                     // overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: onDelete,
+              child: Icon(
+                Icons.close_rounded,
+                size: 14,
+                color: Colors.redAccent.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── 画像クリップ編集画面（フルスクリーン） ──
+class _ImageCropEditor extends StatefulWidget {
+  final Uint8List imageBytes;
+  final double initialScale;
+  final double initialOffsetX;
+  final double initialOffsetY;
+  final String initialCaption;
+
+  const _ImageCropEditor({
+    required this.imageBytes,
+    this.initialScale = 1.0,
+    this.initialOffsetX = 0.0,
+    this.initialOffsetY = 0.0,
+    this.initialCaption = '',
+  });
+
+  @override
+  State<_ImageCropEditor> createState() => _ImageCropEditorState();
+}
+
+class _ImageCropEditorState extends State<_ImageCropEditor> {
+  late double _scale;
+  late Offset _offset;
+  final TransformationController _transCtrl = TransformationController();
+  Size _containerSize = Size.zero;
+  late TextEditingController _captionCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _scale = widget.initialScale;
+    _offset = Offset(widget.initialOffsetX, widget.initialOffsetY);
+    _captionCtrl = TextEditingController(text: widget.initialCaption);
+  }
+
+  @override
+  void dispose() {
+    _captionCtrl.dispose();
+    _transCtrl.dispose();
+    super.dispose();
+  }
+
+  void _updateOffsetFromMatrix() {
+    final m = _transCtrl.value;
+    final s = m.getMaxScaleOnAxis();
+    final t = m.getTranslation();
+    if (s > 1.0 && _containerSize.width > 0 && _containerSize.height > 0) {
+      // At scale s, the content is s times larger than the container.
+      // Max pan in each direction = (s - 1) * containerSize / 2.
+      // InteractiveViewer pan right (t.x > 0) reveals left side,
+      // so negate to get alignment where -1 = show left, 1 = show right.
+      final maxPanX = _containerSize.width * (s - 1.0) / 2.0;
+      final maxPanY = _containerSize.height * (s - 1.0) / 2.0;
+      final dx = maxPanX > 0 ? (-t.x / maxPanX).clamp(-1.0, 1.0) : 0.0;
+      final dy = maxPanY > 0 ? (-t.y / maxPanY).clamp(-1.0, 1.0) : 0.0;
+      setState(() {
+        _scale = s;
+        _offset = Offset(dx, dy);
+      });
+    } else {
+      setState(() {
+        _scale = s;
+        _offset = Offset.zero;
+      });
+    }
+  }
+
+  void _onScaleEnd(ScaleEndDetails details) {
+    _updateOffsetFromMatrix();
+  }
+
+  void _resetTransform() {
+    _transCtrl.value = Matrix4.identity();
+    setState(() {
+      _scale = 1.0;
+      _offset = Offset.zero;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+        appBar: AppBar(
+        backgroundColor: const Color(0xFF0D0D1A),
+        foregroundColor: Colors.white,
+        title: Builder(
+          builder: (context) => Text(
+            AppLocalizations.of(context)!.adjustImage,
+            style: const TextStyle(fontSize: 16),
+          ),
+        ),
+        actions: [
+          Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.white70),
+              tooltip: AppLocalizations.of(context)!.reset,
+              onPressed: _resetTransform,
+            ),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // キャプション入力欄
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Builder(
+              builder: (context) => TextField(
+                controller: _captionCtrl,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                maxLines: 1,
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)!.captionHint,
+                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.06),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.cyanAccent),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      _containerSize = Size(constraints.maxWidth, 200);
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: constraints.maxWidth,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            border: Border.all(
+                              color: Colors.cyanAccent.withOpacity(0.5),
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: InteractiveViewer(
+                            transformationController: _transCtrl,
+                            minScale: 0.5,
+                            maxScale: 5.0,
+                            onInteractionEnd: _onScaleEnd,
+                            child: Image.memory(
+                              widget.imageBytes,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Positioned(
+                  bottom: 24,
+                  child: Builder(
+                    builder: (context) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context)!.cropEditorHint,
+                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Row(
+            children: [
+                Builder(
+                  builder: (context) => Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        AppLocalizations.of(context)!.cancel,
+                        style: const TextStyle(color: Colors.white54),
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 12),
+              Builder(
+                builder: (context) => Expanded(
+                  flex: 2,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF5E81FF),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () => Navigator.pop(context, {
+                      'scale': _scale,
+                      'offsetX': _offset.dx,
+                      'offsetY': _offset.dy,
+                      'caption': _captionCtrl.text,
+                      'editorWidth': _containerSize.width,
+                      'editorHeight': _containerSize.height,
+                    }),
+                    child: Text(
+                      AppLocalizations.of(context)!.apply,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

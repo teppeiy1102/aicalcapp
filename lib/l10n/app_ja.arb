@@ -236,6 +236,14 @@
   "displayOrder": "表示順序",
   "addStandaloneMemo": "独立メモを追加",
   "addLogicItem": "論理式を追加",
+  "addImage": "画像を追加",
+  "editImage": "画像を編集",
+  "changeImage": "画像を変更",
+  "deleteImage": "この画像を削除しますか？",
+  "imageMask": "マスク",
+  "maskCircle": "丸",
+  "maskRoundedRect": "角丸長方形",
+  "maskNone": "なし",
   "addSheetConstant": "シート定数を追加",
 
   "copyFormula": "{name} の計算式",
@@ -491,6 +499,7 @@
   "sheetCount": "{count}枚",
   "memoCount": "{count}件",
   "exposedCount": "{count}件",
+  "imageCount": "{count}枚",
   "selectAtLeast": "{count}件以上選択",
   "selectedCountFormat": "{count}件選択中",
   "noItemsInSelectionMode": "1件以上選択してください",
@@ -884,5 +893,10 @@
   "csvHeaderNameResult": "名前,式,結果",
   "csvHeaderNameValue": "名前,値",
   "csvSectionLogic": "--- 論理式 ---",
-  "csvSectionConstant": "--- 定数 ---"
+  "csvSectionConstant": "--- 定数 ---",
+  "adjustImage": "画像を調整",
+  "cropEditorHint": "ピンチで拡大・スワイプで位置を調整",
+  "apply": "適用",
+  "captionHint": "画像のキャプション（任意）",
+  "reset": "リセット"
 }

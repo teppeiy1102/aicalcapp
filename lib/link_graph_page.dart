@@ -310,13 +310,23 @@ class _LinkGraphPageState extends State<LinkGraphPage>
 
   late final Ticker _ticker;
 
+  bool _initialized = false;
+
   @override
   void initState() {
     super.initState();
     _ticker = createTicker((_) {
       if (!_model.settled) _model.tick();
     })..start();
-    _load();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initialized = true;
+      _load();
+    }
   }
 
   @override
