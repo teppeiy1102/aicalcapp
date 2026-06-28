@@ -262,6 +262,253 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
     });
   }
 
+  /// 演算子ポップアップメニュー
+  void _pickCalcOp(int opIndex, Offset globalPos) async {
+    const ops = ['+', '-', '×', '÷'];
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(globalPos, globalPos),
+      Offset.zero & overlay.size,
+    );
+    final String? selectedOp = await showMenu<String>(
+      context: context,
+      position: position,
+      color: const Color(0xFF2A2A32),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      items: ops
+          .map(
+            (o) => PopupMenuItem<String>(
+              value: o,
+              child: Center(
+                child: Text(
+                  o,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+    if (selectedOp != null) {
+      setState(() {
+        _calcTermOps[opIndex] = selectedOp;
+        // 再計算
+        double runningResult = _calcTermValues[0];
+        for (int i = 0; i + 1 < _calcTermValues.length; i++) {
+          runningResult = _evalCalcSimple(
+            runningResult,
+            _calcTermOps[i],
+            _calcTermValues[i + 1],
+          );
+        }
+        _calcDisplay = _fmtCalc(runningResult);
+        // 式文字列を再構築
+        final exprParts = <String>[];
+        for (int i = 0; i < _calcTermValues.length; i++) {
+          exprParts.add(_fmtCalc(_calcTermValues[i]));
+          if (i < _calcTermOps.length) exprParts.add(_calcTermOps[i]);
+        }
+        final exprDisplayParts = exprParts.map((p) {
+          final v = double.tryParse(p);
+          return v != null ? _addCommas(p) : p;
+        }).toList();
+        if (_calcHasResult) {
+          _calcExprStr =
+              '${exprDisplayParts.join(' ')} = ${_addCommas(_fmtCalc(runningResult))}';
+        }
+      });
+    }
+  }
+
+  /// 計算式の表示（編集モード風の値ボックス＋演算子表示）
+  Widget _buildCalcFormulaDisplay(bool isDark, double fontSize) {
+    final textColor = isDark ? Colors.white : Colors.black;
+    final valBg = isDark
+        ? Colors.white.withOpacity(0.06)
+        : Colors.black.withOpacity(0.05);
+    final valBorder = isDark
+        ? Colors.white.withOpacity(0.12)
+        : Colors.black.withOpacity(0.10);
+
+    if (_calcTermValues.isEmpty) return const SizedBox.shrink();
+
+    final widgets = <Widget>[];
+    for (int i = 0; i < _calcTermValues.length; i++) {
+      // 値ボックス（タップで編集）
+      final valStr = _fmtCalc(_calcTermValues[i]);
+      widgets.add(
+        GestureDetector(
+          onTap: () => _editCalcTermValue(i),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: valBg,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: valBorder, width: 1.0),
+            ),
+            child: Text(
+              _addCommas(valStr),
+              style: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black87,
+                fontSize: fontSize * 0.75,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      );
+      // 演算子（タップで変更）
+      if (i < _calcTermOps.length) {
+        final opIdx = i;
+        widgets.add(
+          GestureDetector(
+            onTapDown: (details) =>
+                _pickCalcOp(opIdx, details.globalPosition),
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.orangeAccent.withOpacity(0.08),
+                shape: BoxShape.circle,
+                border:
+                    Border.all(color: Colors.orangeAccent.withOpacity(0.2)),
+              ),
+              child: Text(
+                _calcTermOps[i],
+                style: TextStyle(
+                  color: Colors.orangeAccent,
+                  fontSize: fontSize * 0.75,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    // = 結果表示
+    if (_calcHasResult) {
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            '=',
+            style: TextStyle(
+              color: textColor.withOpacity(0.35),
+              fontSize: fontSize * 0.8,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: widgets,
+      ),
+    );
+  }
+
+  /// 電卓の計算式の値をアラートで編集
+  void _editCalcTermValue(int index) {
+    final currentVal = _calcTermValues[index];
+    final text = _fmtCalc(currentVal);
+    final ctrl = TextEditingController(text: text);
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ctrl.selection = TextSelection(baseOffset: 0, extentOffset: ctrl.text.length);
+        });
+        return AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          AppLocalizations.of(context)!.editValue,
+          style: const TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType:
+              const TextInputType.numberWithOptions(decimal: true, signed: true),
+          style: const TextStyle(color: Colors.black87, fontSize: 22, fontWeight: FontWeight.w500),
+          textAlign: TextAlign.center,
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)!.numberInputHint,
+            hintStyle: TextStyle(color: Colors.grey.shade400),
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              AppLocalizations.of(context)!.cancel,
+              style: TextStyle(color: Colors.grey.shade500),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              final newVal =
+                  double.tryParse(ctrl.text.replaceAll(',', '')) ?? currentVal;
+              // ignore: invalid_use_of_protected_member
+              setState(() {
+                _calcTermValues[index] = newVal;
+                // 再計算
+                double runningResult = _calcTermValues[0];
+                for (int i = 0; i + 1 < _calcTermValues.length; i++) {
+                  runningResult = _evalCalcSimple(
+                    runningResult,
+                    _calcTermOps[i],
+                    _calcTermValues[i + 1],
+                  );
+                }
+                _calcDisplay = _fmtCalc(runningResult);
+                // 式文字列を再構築
+                final exprParts = <String>[];
+                for (int i = 0; i < _calcTermValues.length; i++) {
+                  exprParts.add(_fmtCalc(_calcTermValues[i]));
+                  if (i < _calcTermOps.length) exprParts.add(_calcTermOps[i]);
+                }
+                final exprDisplayParts = exprParts.map((p) {
+                  final v = double.tryParse(p);
+                  return v != null ? _addCommas(p) : p;
+                }).toList();
+                if (_calcHasResult) {
+                  _calcExprStr =
+                      '${exprDisplayParts.join(' ')} = ${_addCommas(_fmtCalc(runningResult))}';
+                }
+              });
+              Navigator.pop(ctx);
+            },
+            child: Text(
+              AppLocalizations.of(context)!.save,
+              style: const TextStyle(
+                color: Color(0xFF5E81FF),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      );
+      },
+    );
+  }
+
   Widget _buildInlineCalc(bool isDark) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -292,17 +539,7 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
           );
         }
 
-        // 計算途中の式を全項から構築: "1 + 2 +" のように表示
-        String inProgressExpr = '';
-        if (_calcTermValues.isNotEmpty) {
-          final ipParts = <String>[];
-          for (int i = 0; i < _calcTermValues.length; i++) {
-            ipParts.add(_addCommas(_fmtCalc(_calcTermValues[i])));
-            if (i < _calcTermOps.length) ipParts.add(_calcTermOps[i]);
-          }
-          inProgressExpr = ipParts.join(' ');
-        }
-        final String subtitle = _calcHasResult ? _calcExprStr : inProgressExpr;
+        // 計算途中の式を全項から構築（_buildCalcFormulaDisplay で使用）
 
         Widget content = SafeArea(
           child: Column(
@@ -436,19 +673,10 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          if (subtitle.isNotEmpty)
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: SizedBox(
-                                child: Text(
-                                  subtitle,
-                                  style: TextStyle(
-                                    height: 0.9,
-                                    color: textColor.withOpacity(0.45),
-                                    fontSize: subtitleFontSize,
-                                  ),
-                                ),
-                              ),
+                          if (_calcTermValues.isNotEmpty)
+                            _buildCalcFormulaDisplay(
+                              isDark,
+                              subtitleFontSize,
                             ),
                           SizedBox(
                             child: FittedBox(

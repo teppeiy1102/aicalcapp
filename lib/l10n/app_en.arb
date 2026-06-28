@@ -902,5 +902,7 @@
   "cropEditorHint": "Pinch to zoom, swipe to adjust position",
   "apply": "Apply",
   "captionHint": "Image caption (optional)",
-  "reset": "Reset"
+  "reset": "Reset",
+  "editValue": "Edit Value",
+  "numberInputHint": "Enter number"
 }

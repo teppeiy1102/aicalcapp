@@ -128,6 +128,7 @@ class GemmaAi {
           responseType: ResponseType.json,
         ),
         data: jsonEncode({
+       //  'model': 'xiaomi/mimo-v2.5',
          'model': '~google/gemini-flash-latest',
       //    'model': '~anthropic/claude-fable-latest',
           'messages': [

@@ -898,5 +898,7 @@
   "cropEditorHint": "ピンチで拡大・スワイプで位置を調整",
   "apply": "適用",
   "captionHint": "画像のキャプション（任意）",
-  "reset": "リセット"
+  "reset": "リセット",
+  "editValue": "値を編集",
+  "numberInputHint": "数値を入力"
 }

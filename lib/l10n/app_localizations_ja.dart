@@ -2746,4 +2746,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get reset => 'リセット';
+
+  @override
+  String get editValue => '値を編集';
+
+  @override
+  String get numberInputHint => '数値を入力';
 }

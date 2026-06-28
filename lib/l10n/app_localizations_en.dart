@@ -2774,4 +2774,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reset => 'Reset';
+
+  @override
+  String get editValue => 'Edit Value';
+
+  @override
+  String get numberInputHint => 'Enter number';
 }

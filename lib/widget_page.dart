@@ -155,6 +155,7 @@ const List<_NoteColorPreset> _kNoteColorPresets = [
   _NoteColorPreset(0xFFFCE4EC, isDark: false), // ライトピンク
   _NoteColorPreset(0xFFF3E5F5, isDark: false), // ライトラベンダー
   // ── ダーク系 (10) ──
+  _NoteColorPreset(0xFF000000, isDark: true), // 黒
   _NoteColorPreset(0xFF1A1A2E, isDark: true),
   _NoteColorPreset(0xFF16213E, isDark: true),
   _NoteColorPreset(0xFF0F3460, isDark: true),
@@ -164,7 +165,6 @@ const List<_NoteColorPreset> _kNoteColorPresets = [
   _NoteColorPreset(0xFF2D4A22, isDark: true),
   _NoteColorPreset(0xFF4A1942, isDark: true),
   _NoteColorPreset(0xFF3D1C02, isDark: true),
-  _NoteColorPreset(0xFF000000, isDark: true), // 黒
 ];
 
 // ── AI プロンプト入力シート ────────────────────────────────────────────────────
@@ -506,12 +506,19 @@ class _CalcBottomSheet extends StatefulWidget {
   final Future<void> Function()? onRequestAiCount;
 
   /// 履歴シートをオーバーレイより上に表示するための委譲コールバック。
-  /// (onSelect, onClear) を受け取って呼び出し元で showModalBottomSheet する。
   final void Function(
     void Function(CalcHistoryEntry) onSelect,
     VoidCallback onClear,
   )?
   onRequestHistory;
+
+  /// 値編集ボトムシートの委譲コールバック
+  final void Function(double currentVal, void Function(double) onConfirm)?
+      onRequestEditValue;
+
+  /// 演算子選択ボトムシートの委譲コールバック
+  final void Function(String currentOp, void Function(String) onConfirm)?
+      onRequestPickOp;
 
   const _CalcBottomSheet({
     required this.existingItemCount,
@@ -523,6 +530,8 @@ class _CalcBottomSheet extends StatefulWidget {
     this.initialDisplay,
     this.onRequestAiCount,
     this.onRequestHistory,
+    this.onRequestEditValue,
+    this.onRequestPickOp,
     this.onAddItems,
   });
 
@@ -918,6 +927,85 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
     return _buildLayout(context);
   }
 
+  /// 演算子選択（計算シート電卓用）— 親へ委譲
+  void _pickCalcOp(int opIndex) {
+    if (widget.onRequestPickOp == null) return;
+    widget.onRequestPickOp!(_termOps[opIndex], (newOp) {
+      setState(() {
+        _termOps[opIndex] = newOp;
+        double r = _termValues[0];
+        for (int i = 0; i + 1 < _termValues.length; i++) {
+          r = _evalSimple(r, _termOps[i], _termValues[i + 1]);
+        }
+        _display = _fmt(r);
+        final ep = <String>[];
+        for (int i = 0; i < _termValues.length; i++) {
+          ep.add(_fmt(_termValues[i]));
+          if (i < _termOps.length) ep.add(_termOps[i]);
+        }
+        final dp = ep.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+        if (_hasResult) _exprStr = '${dp.join(' ')} = ${_addCommas(_fmt(r))}';
+      });
+    });
+  }
+
+  /// 電卓の値を編集（計算シート電卓用）— 親へ委譲
+  void _editCalcTermValue(int index) {
+    if (widget.onRequestEditValue == null) return;
+    widget.onRequestEditValue!(_termValues[index], (newVal) {
+      setState(() {
+        _termValues[index] = newVal;
+        double r = _termValues[0];
+        for (int i = 0; i + 1 < _termValues.length; i++) { r = _evalSimple(r, _termOps[i], _termValues[i + 1]); }
+        _display = _fmt(r);
+        final ep = <String>[];
+        for (int i = 0; i < _termValues.length; i++) { ep.add(_fmt(_termValues[i])); if (i < _termOps.length) ep.add(_termOps[i]); }
+        final dp = ep.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+        if (_hasResult) _exprStr = '${dp.join(' ')} = ${_addCommas(_fmt(r))}';
+      });
+    });
+  }
+
+  /// 計算式の表示（計算シート電卓用）
+  Widget _buildCalcFormulaDisplay() {
+    final isDark = widget.isDark;
+    final textColor = isDark ? Colors.white : Colors.black;
+    final valBg = isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05);
+    final valBorder = isDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.10);
+    if (_termValues.isEmpty) return const SizedBox.shrink();
+    final widgets = <Widget>[];
+    for (int i = 0; i < _termValues.length; i++) {
+      widgets.add(GestureDetector(
+        onTap: () => _editCalcTermValue(i),
+        child: Container(
+          margin: const EdgeInsets.only(right: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: valBg, borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: valBorder, width: 1.0),
+          ),
+          child: Text(_addCommas(_fmt(_termValues[i])), style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 16, fontWeight: FontWeight.w600)),
+        ),
+      ));
+      if (i < _termOps.length) {
+        final opIdx = i;
+        widgets.add(GestureDetector(
+          onTap: () => _pickCalcOp(opIdx),
+          child: Container(
+            margin: const EdgeInsets.only(right: 6),
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: Colors.orangeAccent.withOpacity(0.08), shape: BoxShape.circle, border: Border.all(color: Colors.orangeAccent.withOpacity(0.2))),
+            child: Text(_termOps[i], style: const TextStyle(color: Colors.orangeAccent, fontSize: 16, fontWeight: FontWeight.w800)),
+          ),
+        ));
+      }
+    }
+    if (_hasResult) {
+      widgets.add(Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: Text('=', style: TextStyle(color: textColor.withOpacity(0.35), fontSize: 16, fontWeight: FontWeight.w500))));
+    }
+    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(mainAxisSize: MainAxisSize.min, children: widgets));
+  }
+
   Widget _buildLayout(BuildContext context) {
     final isDark = widget.isDark;
     final textColor = isDark ? Colors.white : Colors.black;
@@ -927,16 +1015,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
     final opColor = isDark ? Colors.blueAccent : Colors.black;
     final eqColor = isDark ? Colors.orangeAccent : Colors.black;
 
-    String inProg = '';
-    if (_termValues.isNotEmpty) {
-      final parts = <String>[];
-      for (int i = 0; i < _termValues.length; i++) {
-        parts.add(_addCommas(_fmt(_termValues[i])));
-        if (i < _termOps.length) parts.add(_termOps[i]);
-      }
-      inProg = parts.join(' ');
-    }
-    final subtitle = _hasResult ? _exprStr : inProg;
+    // 式表示は _buildCalcFormulaDisplay で構築
 
     final screenH = MediaQuery.of(context).size.height;
     final screenW = MediaQuery.of(context).size.width;
@@ -949,7 +1028,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
 
     // 固定 UI 要素の高さ（グリッド外）
     const kFixedH =
-        242.0; // ハンドル12 + ヘッダー40 + gap4 + 追加ボタン40 + 表示部80 + gap6 + pad上8 + pad下16
+        282.0; // ハンドル12 + ヘッダー40 + gap4 + 追加ボタン40 + 表示部80 + gap6 + pad上8 + pad下16
     const kGridGapH = 24.0; // 4行間 × 6px
 
     final gridAvail = sheetH - kFixedH - kGridGapH - viewInsetsBottom;
@@ -1160,7 +1239,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                 // 表示部
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
-                  height: 80,
+                  constraints: const BoxConstraints(minHeight: 120),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -1168,20 +1247,10 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            if (subtitle.isNotEmpty)
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Text(
-                                  subtitle,
-                                  style: TextStyle(
-                                    height: 0.9,
-                                    color: textColor.withOpacity(0.45),
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
+                            if (_termValues.isNotEmpty)
+                              _buildCalcFormulaDisplay(),
                             FittedBox(
                               child: Text(
                                 _addCommas(_display),
@@ -1218,8 +1287,8 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                     children: [
                       calcKey(
                         'C',
-                        bg: Colors.redAccent.withOpacity(0.18),
-                        fg: Colors.redAccent,
+                        bg: const Color.fromARGB(255, 255, 90, 90),
+                        fg: Colors.white,
                       ),
                       calcKey('+/-', bg: keyBg),
                       calcKey('%', bg: keyBg),
@@ -1884,6 +1953,68 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
     }
   }
 
+  /// 値編集ボトムシートを表示
+  void _showEditValueSheet(double currentVal, void Function(double) onConfirm) {
+    final text = currentVal == currentVal.truncateToDouble() ? currentVal.toInt().toString() : currentVal.toString();
+    final ctrl = TextEditingController(text: text);
+    OverlayEntry? entry;
+    void close() { entry?.remove(); entry = null; }
+    entry = OverlayEntry(builder: (ctx) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ctrl.selection = TextSelection(baseOffset: 0, extentOffset: ctrl.text.length);
+      });
+      return Material(
+      color: Colors.transparent,
+      child: GestureDetector(onTap: close, behavior: HitTestBehavior.opaque, child: Stack(children: [
+        Container(color: Colors.black26),
+        Align(alignment: Alignment.bottomCenter, child: GestureDetector(onTap: () {}, child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: EdgeInsets.only(left: 24, right: 24, top: 24, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
+          decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Row(children: [const Icon(Icons.edit, color: Color(0xFF5E81FF), size: 20), const SizedBox(width: 8), Text(AppLocalizations.of(context)!.editValue, style: const TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w600)), const Spacer(), IconButton(icon: Icon(Icons.close, color: Colors.grey.shade400), onPressed: close, padding: EdgeInsets.zero, constraints: const BoxConstraints())]),
+            const SizedBox(height: 16),
+            TextField(controller: ctrl, autofocus: true, keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true), style: const TextStyle(color: Colors.black87, fontSize: 28, fontWeight: FontWeight.w500), textAlign: TextAlign.center, decoration: InputDecoration(hintText: AppLocalizations.of(context)!.numberInputHint, hintStyle: TextStyle(color: Colors.grey.shade400), filled: true, fillColor: Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none))),
+            const SizedBox(height: 20),
+            SizedBox(width: double.infinity, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF5E81FF), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), padding: const EdgeInsets.symmetric(vertical: 16)), onPressed: () { final v = double.tryParse(ctrl.text.replaceAll(',', '')) ?? currentVal; close(); onConfirm(v); }, child: Text(AppLocalizations.of(context)!.save, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)))),
+          ]),
+        ))),
+      ])),
+    );
+    });
+    if (_calcSheetOverlay != null) { Overlay.of(context).insert(entry!, above: _calcSheetOverlay!); } else { Overlay.of(context).insert(entry!); }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ctrl.selection = TextSelection(baseOffset: 0, extentOffset: ctrl.text.length);
+    });
+  }
+
+  /// 演算子選択ボトムシートを表示
+  void _showPickOpSheet(String currentOp, void Function(String) onConfirm) {
+    OverlayEntry? entry;
+    void close() { entry?.remove(); entry = null; }
+    entry = OverlayEntry(builder: (ctx) => Material(
+      color: Colors.transparent,
+      child: GestureDetector(onTap: close, behavior: HitTestBehavior.opaque, child: Stack(children: [
+        Container(color: Colors.black54),
+        Align(alignment: Alignment.bottomCenter, child: GestureDetector(onTap: () {}, child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          decoration: const BoxDecoration(color: Color(0xFF1E1E2A), borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Row(children: [const Icon(Icons.calculate, color: Colors.orangeAccent, size: 18), const SizedBox(width: 8), Text(AppLocalizations.of(context)!.selectOperation, style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)), const Spacer(), IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: close, padding: EdgeInsets.zero, constraints: const BoxConstraints())]),
+            const SizedBox(height: 16),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: ['+', '-', '×', '÷'].map((o) {
+              final sel = currentOp == o;
+              return GestureDetector(onTap: () { close(); onConfirm(o); }, child: Container(width: 64, height: 64, decoration: BoxDecoration(color: sel ? Colors.orangeAccent.withOpacity(0.3) : Colors.white.withOpacity(0.08), shape: BoxShape.circle, border: Border.all(color: sel ? Colors.orangeAccent : Colors.white.withOpacity(0.2), width: sel ? 2 : 1)), child: Center(child: Text(o, style: TextStyle(color: sel ? Colors.orangeAccent : Colors.white, fontSize: 28, fontWeight: FontWeight.bold)))));
+            }).toList()),
+            const SizedBox(height: 8),
+          ]),
+        ))),
+      ])),
+    ));
+    if (_calcSheetOverlay != null) { Overlay.of(context).insert(entry!, above: _calcSheetOverlay!); } else { Overlay.of(context).insert(entry!); }
+  }
+
   /// カメラボタン押下時: オーバーレイを閉じてから AIカウント画面へ遷移し、
   /// 結果を持って電卓を再オープンする。
   Future<void> _handleCalcAiCountRequest() async {
@@ -1933,6 +2064,8 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
         initialDisplay: pendingDisplay,
         onRequestAiCount: _handleCalcAiCountRequest,
         onRequestHistory: _showHistoryForCalc,
+        onRequestEditValue: _showEditValueSheet,
+        onRequestPickOp: _showPickOpSheet,
         onAddItem: (item) {
           state?._addItemFromMap(item);
         },
@@ -2431,6 +2564,14 @@ class _CalcDraggableSheetContent extends StatefulWidget {
   )?
   onRequestHistory;
 
+  /// 値編集ボトムシートの委譲コールバック
+  final void Function(double currentVal, void Function(double) onConfirm)?
+      onRequestEditValue;
+
+  /// 演算子選択ボトムシートの委譲コールバック
+  final void Function(String currentOp, void Function(String) onConfirm)?
+      onRequestPickOp;
+
   const _CalcDraggableSheetContent({
     required this.existingItemCount,
     required this.onAddItem,
@@ -2440,6 +2581,8 @@ class _CalcDraggableSheetContent extends StatefulWidget {
     this.initialDisplay,
     this.onRequestAiCount,
     this.onRequestHistory,
+    this.onRequestEditValue,
+    this.onRequestPickOp,
     this.onAddItems,
   });
 
@@ -2476,7 +2619,7 @@ class _CalcDraggableSheetContentState
           color: sheetColor,
           shadowColor: Colors.black.withOpacity(0.9),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          clipBehavior: Clip.antiAlias,
+          clipBehavior: Clip.none,
           child: Container(
             decoration: BoxDecoration(
               borderRadius: const BorderRadius.vertical(
@@ -2502,6 +2645,8 @@ class _CalcDraggableSheetContentState
               initialDisplay: widget.initialDisplay,
               onRequestAiCount: widget.onRequestAiCount,
               onRequestHistory: widget.onRequestHistory,
+              onRequestEditValue: widget.onRequestEditValue,
+              onRequestPickOp: widget.onRequestPickOp,
             ),
           ),
         );
@@ -3052,18 +3197,132 @@ GestureDetector(
     );
   }
 
-  Widget _buildCalcContent() {
-    String inProg = '';
-    if (_termValues.isNotEmpty) {
-      final parts = <String>[];
-      for (int i = 0; i < _termValues.length; i++) {
-        parts.add(_addCommas(_fmt(_termValues[i])));
-        if (i < _termOps.length) parts.add(_termOps[i]);
-      }
-      inProg = parts.join(' ');
+  /// 演算子ポップアップメニュー（ホーム電卓用）
+  void _pickCalcOp(int opIndex, Offset globalPos) async {
+    const ops = ['+', '-', '×', '÷'];
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(globalPos, globalPos),
+      Offset.zero & overlay.size,
+    );
+    final String? selectedOp = await showMenu<String>(
+      context: context,
+      position: position,
+      color: const Color(0xFF2A2A32),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      items: ops.map((o) => PopupMenuItem<String>(
+        value: o,
+        child: Center(child: Text(o, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold))),
+      )).toList(),
+    );
+    if (selectedOp != null) {
+      setState(() {
+        _termOps[opIndex] = selectedOp;
+        double r = _termValues[0];
+        for (int i = 0; i + 1 < _termValues.length; i++) {
+          r = _eval(r, _termOps[i], _termValues[i + 1]);
+        }
+        _display = _fmt(r);
+        final ep = <String>[];
+        for (int i = 0; i < _termValues.length; i++) {
+          ep.add(_fmt(_termValues[i]));
+          if (i < _termOps.length) ep.add(_termOps[i]);
+        }
+        final dp = ep.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+        if (_hasResult) _exprStr = '${dp.join(' ')} = ${_addCommas(_fmt(r))}';
+      });
     }
-    final subtitle = _hasResult ? _exprStr : inProg;
+  }
 
+  /// 電卓の値をアラートで編集（ホーム電卓用）
+  void _editCalcTermValue(int index) {
+    final currentVal = _termValues[index];
+    final text = _fmt(currentVal);
+    final ctrl = TextEditingController(text: text);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ctrl.selection = TextSelection(baseOffset: 0, extentOffset: ctrl.text.length);
+        });
+        return AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(AppLocalizations.of(context)!.editValue, style: const TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w600)),
+        content: TextField(
+          controller: ctrl, autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+          style: const TextStyle(color: Colors.black87, fontSize: 22, fontWeight: FontWeight.w500),
+          textAlign: TextAlign.center,
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)!.numberInputHint, hintStyle: TextStyle(color: Colors.grey.shade400),
+            filled: true, fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.of(context)!.cancel, style: TextStyle(color: Colors.grey.shade500))),
+          TextButton(
+            onPressed: () {
+              final newVal = double.tryParse(ctrl.text.replaceAll(',', '')) ?? currentVal;
+              setState(() {
+                _termValues[index] = newVal;
+                double r = _termValues[0];
+                for (int i = 0; i + 1 < _termValues.length; i++) { r = _eval(r, _termOps[i], _termValues[i + 1]); }
+                _display = _fmt(r);
+                final ep = <String>[];
+                for (int i = 0; i < _termValues.length; i++) { ep.add(_fmt(_termValues[i])); if (i < _termOps.length) ep.add(_termOps[i]); }
+                final dp = ep.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+                if (_hasResult) _exprStr = '${dp.join(' ')} = ${_addCommas(_fmt(r))}';
+              });
+              Navigator.pop(ctx);
+            },
+            child: Text(AppLocalizations.of(context)!.save, style: TextStyle(color: Color(0xFF5E81FF), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      );
+      },
+    );
+  }
+
+  /// 計算式の表示（ホーム電卓用）
+  Widget _buildCalcFormulaDisplay() {
+    if (_termValues.isEmpty) return const SizedBox.shrink();
+    final widgets = <Widget>[];
+    for (int i = 0; i < _termValues.length; i++) {
+      widgets.add(GestureDetector(
+        onTap: () => _editCalcTermValue(i),
+        child: Container(
+          margin: const EdgeInsets.only(right: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 255, 255, 255), borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.withOpacity(0.30), width: 1.0),
+          ),
+          child: Text(_addCommas(_fmt(_termValues[i])), style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w600)),
+        ),
+      ));
+      if (i < _termOps.length) {
+        final opIdx = i;
+        widgets.add(GestureDetector(
+          onTapDown: (d) => _pickCalcOp(opIdx, d.globalPosition),
+          child: Container(
+            margin: const EdgeInsets.only(right: 6),
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: Colors.orangeAccent.withOpacity(0.08), shape: BoxShape.circle, border: Border.all(color: Colors.orangeAccent.withOpacity(0.2))),
+            child: Text(_termOps[i], style: const TextStyle(color: Colors.orangeAccent, fontSize: 16, fontWeight: FontWeight.w800)),
+          ),
+        ));
+      }
+    }
+    if (_hasResult) {
+      widgets.add(const Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text('=', style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500))));
+    }
+    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(mainAxisSize: MainAxisSize.min, children: widgets));
+  }
+
+  Widget _buildCalcContent() {
     return Container(
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(0)),
@@ -3218,27 +3477,17 @@ GestureDetector(
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                 // const SizedBox(height: 8),
                   // ── 表示部 ──
                   SafeArea(
                     child: SizedBox(
-                      height: 90,
+                      height: 110,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
-                          if (subtitle.isNotEmpty)
-                            SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Text(
-                                subtitle,
-                                style: TextStyle(
-                                  height: 0.9,
-                                  color: Colors.black.withOpacity(0.45),
-                                  fontSize: 24,
-                                ),
-                              ),
-                            ),
+                          if (_termValues.isNotEmpty)
+                            _buildCalcFormulaDisplay(),
                           FittedBox(
                             child: Text(
                               _addCommas(_display),
@@ -4233,8 +4482,8 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                             'title': ctrl.text,
                             'bgColor': tempColor,
                           }),
-                          child: const Text(
-                            '保存',
+                          child:  Text(
+                            AppLocalizations.of(context)!.save,
                             style: TextStyle(fontSize: 16),
                           ),
                         ),

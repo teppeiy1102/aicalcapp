@@ -5086,6 +5086,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reset'**
   String get reset;
+
+  /// No description provided for @editValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Value'**
+  String get editValue;
+
+  /// No description provided for @numberInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter number'**
+  String get numberInputHint;
 }
 
 class _AppLocalizationsDelegate

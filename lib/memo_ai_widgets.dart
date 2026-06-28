@@ -1370,6 +1370,131 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
     );
   }
 
+  /// 演算子ポップアップメニュー（メモ電卓用）
+  void _pickCalcOp(int opIndex, Offset globalPos) async {
+    const ops = ['+', '-', '×', '÷'];
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(globalPos, globalPos),
+      Offset.zero & overlay.size,
+    );
+    final String? selectedOp = await showMenu<String>(
+      context: context,
+      position: position,
+      color: const Color(0xFF2A2A32),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      items: ops.map((o) => PopupMenuItem<String>(
+        value: o,
+        child: Center(child: Text(o, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold))),
+      )).toList(),
+    );
+    if (selectedOp != null) {
+      setState(() {
+        _calcTermOps[opIndex] = selectedOp;
+        double r = _calcTermValues[0];
+        for (int i = 0; i + 1 < _calcTermValues.length; i++) {
+          r = _evalCalcSimple(r, _calcTermOps[i], _calcTermValues[i + 1]);
+        }
+        _calcDisplay = _fmtCalc(r);
+        final ep = <String>[];
+        for (int i = 0; i < _calcTermValues.length; i++) {
+          ep.add(_fmtCalc(_calcTermValues[i]));
+          if (i < _calcTermOps.length) ep.add(_calcTermOps[i]);
+        }
+        final dp = ep.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+        if (_calcHasResult) _calcExprStr = '${dp.join(' ')} = ${_addCommas(_fmtCalc(r))}';
+      });
+    }
+  }
+
+  /// 電卓の値をアラートで編集（メモ電卓用）
+  void _editCalcTermValue(int index) {
+    final currentVal = _calcTermValues[index];
+    final text = _fmtCalc(currentVal);
+    final ctrl = TextEditingController(text: text);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ctrl.selection = TextSelection(baseOffset: 0, extentOffset: ctrl.text.length);
+        });
+        return AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(AppLocalizations.of(context)!.editValue, style: const TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w600)),
+        content: TextField(
+          controller: ctrl, autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+          style: const TextStyle(color: Colors.black87, fontSize: 22, fontWeight: FontWeight.w500),
+          textAlign: TextAlign.center,
+          decoration: InputDecoration(
+            hintText: AppLocalizations.of(context)!.numberInputHint, hintStyle: TextStyle(color: Colors.grey.shade400),
+            filled: true, fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.of(context)!.cancel, style: TextStyle(color: Colors.grey.shade500))),
+          TextButton(
+            onPressed: () {
+              final newVal = double.tryParse(ctrl.text.replaceAll(',', '')) ?? currentVal;
+              setState(() {
+                _calcTermValues[index] = newVal;
+                double r = _calcTermValues[0];
+                for (int i = 0; i + 1 < _calcTermValues.length; i++) { r = _evalCalcSimple(r, _calcTermOps[i], _calcTermValues[i + 1]); }
+                _calcDisplay = _fmtCalc(r);
+                final ep = <String>[];
+                for (int i = 0; i < _calcTermValues.length; i++) { ep.add(_fmtCalc(_calcTermValues[i])); if (i < _calcTermOps.length) ep.add(_calcTermOps[i]); }
+                final dp = ep.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+                if (_calcHasResult) _calcExprStr = '${dp.join(' ')} = ${_addCommas(_fmtCalc(r))}';
+              });
+              Navigator.pop(ctx);
+            },
+            child:  Text(AppLocalizations.of(context)!.save, style: TextStyle(color: Color(0xFF5E81FF), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      );
+      },
+    );
+  }
+
+  /// 計算式の表示（メモ電卓用）
+  Widget _buildCalcFormulaDisplay() {
+    if (_calcTermValues.isEmpty) return const SizedBox.shrink();
+    final widgets = <Widget>[];
+    for (int i = 0; i < _calcTermValues.length; i++) {
+      widgets.add(GestureDetector(
+        onTap: () => _editCalcTermValue(i),
+        child: Container(
+          margin: const EdgeInsets.only(right: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.06), borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.0),
+          ),
+          child: Text(_addCommas(_fmtCalc(_calcTermValues[i])), style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w600)),
+        ),
+      ));
+      if (i < _calcTermOps.length) {
+        final opIdx = i;
+        widgets.add(GestureDetector(
+          onTapDown: (d) => _pickCalcOp(opIdx, d.globalPosition),
+          child: Container(
+          margin: const EdgeInsets.only(right: 6),
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: Colors.orangeAccent.withOpacity(0.08), shape: BoxShape.circle, border: Border.all(color: Colors.orangeAccent.withOpacity(0.2))),
+            child: Text(_calcTermOps[i], style: const TextStyle(color: Colors.orangeAccent, fontSize: 16, fontWeight: FontWeight.w800)),
+          ),
+        ));
+      }
+    }
+    if (_calcHasResult) {
+      widgets.add(const Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text('=', style: TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w500))));
+    }
+    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(mainAxisSize: MainAxisSize.min, children: widgets));
+  }
+
   Widget _buildCalcPanel() {
     const textColor = Colors.white;
     final keyBg = Colors.white.withOpacity(0.1);
@@ -1377,7 +1502,6 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
     const eqColor = Colors.orangeAccent;
     const keyFontSize = 26.0;
     const displayFontSize = 64.0;
-    const subtitleFontSize = 16.0;
 
     Widget calcKey(String label, {Color? bg, Color? fg}) {
       final actualLabel = (label == 'C' || label == 'AC')
@@ -1391,17 +1515,6 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
         onTap: () => _onCalcKey(actualLabel),
       );
     }
-
-    String inProgressExpr = '';
-    if (_calcTermValues.isNotEmpty) {
-      final ipParts = <String>[];
-      for (int i = 0; i < _calcTermValues.length; i++) {
-        ipParts.add(_addCommas(_fmtCalc(_calcTermValues[i])));
-        if (i < _calcTermOps.length) ipParts.add(_calcTermOps[i]);
-      }
-      inProgressExpr = ipParts.join(' ');
-    }
-    final String subtitle = _calcHasResult ? _calcExprStr : inProgressExpr;
 
     return SingleChildScrollView(
       child: Container(
@@ -1425,19 +1538,14 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                     child: Container(
                       width: 44,
                       height: 44,
-                      decoration: BoxDecoration(
-gradient: const LinearGradient(
-                                colors: [Color.fromARGB(255, 255, 207, 165), Color.fromARGB(255, 163, 182, 252)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.45),
-                          width: 0.8,
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Stack(
+   decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 0.8,
+                      ),),
+                     child: Stack(
                         alignment: Alignment.center,
                         children: [
                           Positioned(
@@ -1446,7 +1554,7 @@ gradient: const LinearGradient(
 
                             child: const Icon(
                               Icons.camera_alt_outlined,
-                              color: Colors.black,
+                              color: Colors.white70,
                               size: 24,
                             ),
                           ),
@@ -1464,7 +1572,7 @@ gradient: const LinearGradient(
                                      child: Text(
                                       'ai',
                                       style: TextStyle(
-                                        color: Colors.black,
+                                        color: Colors.white70,
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -1519,9 +1627,7 @@ gradient: const LinearGradient(
                           children: [
                             Expanded(
                               child: Text(
-                                _calcHasResult && _calcExprStr.isNotEmpty
-                                    ? _calcExprStr
-                                    : AppLocalizations.of(context)!.insertToMemo,
+                                    AppLocalizations.of(context)!.insertToMemo,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -1542,10 +1648,12 @@ gradient: const LinearGradient(
 
             // 表示エリア
             Container(
+              margin: const EdgeInsets.only( top: 12),
               padding: const EdgeInsets.symmetric(horizontal: 2),
-              height: 82,
+              height: 100,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   // 数値・式表示エリア
                   Expanded(
@@ -1553,17 +1661,8 @@ gradient: const LinearGradient(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        if (subtitle.isNotEmpty)
-                          SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Text(
-                              subtitle,
-                              style: TextStyle(
-                                color: textColor.withOpacity(0.45),
-                                fontSize: subtitleFontSize,
-                              ),
-                            ),
-                          ),
+                        if (_calcTermValues.isNotEmpty)
+                          _buildCalcFormulaDisplay(),
                         FittedBox(
                           child: Text(
                             _addCommas(_calcDisplay),
