@@ -984,7 +984,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
             color: valBg, borderRadius: BorderRadius.circular(8),
             border: Border.all(color: valBorder, width: 1.0),
           ),
-          child: Text(_addCommas(_fmt(_termValues[i])), style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 16, fontWeight: FontWeight.w600)),
+          child: Text(_addCommas(_fmt(_termValues[i])), style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 20, fontWeight: FontWeight.w600)),
         ),
       ));
       if (i < _termOps.length) {
@@ -995,13 +995,13 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
             margin: const EdgeInsets.only(right: 6),
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(color: Colors.orangeAccent.withOpacity(0.08), shape: BoxShape.circle, border: Border.all(color: Colors.orangeAccent.withOpacity(0.2))),
-            child: Text(_termOps[i], style: const TextStyle(color: Colors.orangeAccent, fontSize: 16, fontWeight: FontWeight.w800)),
+            child: Text(_termOps[i], style: const TextStyle(color: Colors.orangeAccent, fontSize: 20, fontWeight: FontWeight.w800)),
           ),
         ));
       }
     }
     if (_hasResult) {
-      widgets.add(Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: Text('=', style: TextStyle(color: textColor.withOpacity(0.35), fontSize: 16, fontWeight: FontWeight.w500))));
+      widgets.add(Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: Text('=', style: TextStyle(color: textColor.withOpacity(0.35), fontSize: 20, fontWeight: FontWeight.w500))));
     }
     return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(mainAxisSize: MainAxisSize.min, children: widgets));
   }
@@ -2385,15 +2385,15 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   size: 22,
                 ),
               ),
-              title: const Text(
-                '編集モード',
+              title: Text(
+                AppLocalizations.of(context)!.editMode,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              subtitle: const Text(
-                '計算式を編集できます',
+              subtitle: Text(
+                AppLocalizations.of(context)!.editModeDesc,
                 style: TextStyle(color: Colors.white38, fontSize: 12),
               ),
               trailing: isEditMode
@@ -2471,15 +2471,15 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   size: 22,
                 ),
               ),
-              title: const Text(
-                '表モード',
+              title: Text(
+                AppLocalizations.of(context)!.tableMode,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              subtitle: const Text(
-                '値のみをシート形式で表示・編集できます',
+              subtitle: Text(
+                AppLocalizations.of(context)!.tableModeDesc,
                 style: TextStyle(color: Colors.white38, fontSize: 12),
               ),
               trailing: isTableMode
@@ -2510,8 +2510,8 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   size: 22,
                 ),
               ),
-              title: const Text(
-                'リンクグラフ',
+              title: Text(
+                AppLocalizations.of(context)!.linkGraph,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -3495,7 +3495,7 @@ GestureDetector(
                               style: const TextStyle(
                                 height: 1,
                                 color: Colors.black,
-                                fontSize: 64,
+                                fontSize: 34,
                                 fontWeight: FontWeight.w200,
                               ),
                               textAlign: TextAlign.right,
@@ -4217,8 +4217,8 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                 Icons.edit_note_rounded,
                 color: _globalMode == 0 ? Colors.white : Colors.white54,
               ),
-              title: const Text(
-                '編集モード',
+              title: Text(
+                AppLocalizations.of(context)!.editMode,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -4275,8 +4275,8 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                     ? const Color(0xFF4CAF50)
                     : Colors.white54,
               ),
-              title: const Text(
-                '表モード',
+              title: Text(
+                AppLocalizations.of(context)!.tableMode,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -5031,8 +5031,8 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                 Icons.edit_note_rounded,
                 color: isEditMode ? Colors.white : Colors.white54,
               ),
-              title: const Text(
-                '編集モード',
+              title: Text(
+                AppLocalizations.of(context)!.editMode,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -5085,8 +5085,8 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                 Icons.table_chart_rounded,
                 color: isTableMode ? const Color(0xFF4CAF50) : Colors.white54,
               ),
-              title: const Text(
-                '表モード',
+              title: Text(
+                AppLocalizations.of(context)!.tableMode,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -5121,8 +5121,8 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                   size: 22,
                 ),
               ),
-              title: const Text(
-                'リンクグラフ',
+              title: Text(
+                AppLocalizations.of(context)!.linkGraph,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -5173,7 +5173,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
     final Color modeColor;
     if (isTableMode) {
       modeIcon = Icons.table_chart_rounded;
-      modeLabel = '表モード';
+      modeLabel = AppLocalizations.of(context)!.tableMode;
       modeColor = const Color(0xFF4CAF50);
     } else if (isViewMode) {
       modeIcon = Icons.visibility_rounded;
@@ -5181,7 +5181,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
       modeColor = const Color(0xFF5E81FF);
     } else {
       modeIcon = Icons.edit_note_rounded;
-      modeLabel = '編集モード';
+      modeLabel = AppLocalizations.of(context)!.editMode;
       modeColor = isDarkBar ? Colors.white38 : Colors.black45;
     }
 

@@ -1335,6 +1335,7 @@ class _CalculatorRow extends StatelessWidget {
     final localLogicItems = List<Map<String, dynamic>>.from(
       logicItems.map((e) => Map<String, dynamic>.from(e as Map)),
     );
+    final valFocusNode = FocusNode();
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -1346,6 +1347,13 @@ class _CalculatorRow extends StatelessWidget {
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setSheetState) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            valFocusNode.requestFocus();
+            ctrl.selection = TextSelection(
+              baseOffset: 0,
+              extentOffset: ctrl.text.length,
+            );
+          });
 
           final l10n = AppLocalizations.of(context)!;
           return Column(
@@ -1398,6 +1406,7 @@ l10n.numericValue,
                           Expanded(
                             child: TextField(
                               controller: ctrl,
+                              focusNode: valFocusNode,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                     decimal: true,
@@ -2729,6 +2738,7 @@ l10n.deleteTerm,
     final localLogicItems = List<Map<String, dynamic>>.from(
       logicItems.map((e) => Map<String, dynamic>.from(e as Map)),
     );
+    final valFocusNode = FocusNode();
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -2739,6 +2749,14 @@ l10n.deleteTerm,
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setSheetState) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            valFocusNode.requestFocus();
+            ctrl.selection = TextSelection(
+              baseOffset: 0,
+              extentOffset: ctrl.text.length,
+            );
+          });
+
           final l10n = AppLocalizations.of(context)!;
           return Column(
           mainAxisSize: MainAxisSize.min,
@@ -2790,6 +2808,7 @@ l10n.numericValue,
                           Expanded(
                             child: TextField(
                               controller: ctrl,
+                              focusNode: valFocusNode,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                     decimal: true,
@@ -4170,6 +4189,7 @@ l10n.deleteTerm,
     final localLogicItems = List<Map<String, dynamic>>.from(
       logicItems.map((e) => Map<String, dynamic>.from(e as Map)),
     );
+    final valFocusNode = FocusNode();
 
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -4180,6 +4200,14 @@ l10n.deleteTerm,
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (context, setSheetState) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            valFocusNode.requestFocus();
+            ctrl.selection = TextSelection(
+              baseOffset: 0,
+              extentOffset: ctrl.text.length,
+            );
+          });
+
           final l10n = AppLocalizations.of(context)!;
           return Column(
           mainAxisSize: MainAxisSize.min,
@@ -4231,6 +4259,7 @@ l10n.numericValue,
                           Expanded(
                             child: TextField(
                               controller: ctrl,
+                              focusNode: valFocusNode,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                     decimal: true,
@@ -6522,7 +6551,9 @@ l10n.deleteTerm,
                           ? input.toStringAsFixed(
                               _getLinkedPrecision(inputLinkSource),
                             )
-                          : input.toString(),
+                          : (input == input.truncateToDouble() && input.abs() < 1e12)
+                              ? input.toInt().toString()
+                              : input.toString(),
                       unit: unit1,
                       isLink: inputLink,
                       linkSource: inputLinkSource,
@@ -6580,7 +6611,9 @@ l10n.deleteTerm,
                           ? operand.toStringAsFixed(
                               _getLinkedPrecision(operandLinkSource),
                             )
-                          : operand.toString(),
+                          : (operand == operand.truncateToDouble() && operand.abs() < 1e12)
+                              ? operand.toInt().toString()
+                              : operand.toString(),
                       unit: unit2,
                       isLink: operandLink,
                       linkSource: operandLinkSource,
@@ -6654,7 +6687,9 @@ l10n.deleteTerm,
                                       as Map<String, dynamic>?,
                                 ),
                               )
-                            : otherVal.toString(),
+                            : (otherVal == otherVal.truncateToDouble() && otherVal.abs() < 1e12)
+                                ? otherVal.toInt().toString()
+                                : otherVal.toString(),
                         unit: otherUnit,
                         isLink: other['valLink'] as bool? ?? false,
                         linkSource:
@@ -6727,7 +6762,9 @@ l10n.deleteTerm,
                         ? input.toStringAsFixed(
                             _getLinkedPrecision(inputLinkSource),
                           )
-                        : input.toString(),
+                        : (input == input.truncateToDouble() && input.abs() < 1e12)
+                            ? input.toInt().toString()
+                            : input.toString(),
                     unit: unit1,
                     isLink: inputLink,
                     linkSource: inputLinkSource,
@@ -6782,7 +6819,9 @@ l10n.deleteTerm,
                         ? operand.toStringAsFixed(
                             _getLinkedPrecision(operandLinkSource),
                           )
-                        : operand.toString(),
+                        : (operand == operand.truncateToDouble() && operand.abs() < 1e12)
+                            ? operand.toInt().toString()
+                            : operand.toString(),
                     unit: unit2,
                     isLink: operandLink,
                     linkSource: operandLinkSource,
@@ -6853,7 +6892,9 @@ l10n.deleteTerm,
                                         as Map<String, dynamic>?,
                                   ),
                                 )
-                              : otherVal.toString(),
+                              : (otherVal == otherVal.truncateToDouble() && otherVal.abs() < 1e12)
+                                  ? otherVal.toInt().toString()
+                                  : otherVal.toString(),
                           unit: otherUnit,
                           isLink: other['valLink'] as bool? ?? false,
                           linkSource:
