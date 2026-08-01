@@ -49,7 +49,7 @@ struct AiCalcWidgetEntryView: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: 2) {
             if family != .accessoryRectangular && family != .accessoryInline {
-                Text("GenbaCalc")
+                Text("NodeCalc")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -87,7 +87,7 @@ struct AiCalcWidget: Widget {
         StaticConfiguration(kind: kind, provider: CalcProvider()) { entry in
             AiCalcWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("GenbaCalc")
+        .configurationDisplayName("NodeCalc")
         .description("最近の計算結果を表示し、アプリを素早く起動できます")
         .supportedFamilies([
             .systemSmall,

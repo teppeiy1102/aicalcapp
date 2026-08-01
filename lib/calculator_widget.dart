@@ -48,6 +48,9 @@ class _CalculatorWidget extends StatefulWidget {
 }
 
 class _CalculatorWidgetState extends State<_CalculatorWidget> {
+  final calcFlashKey = GlobalKey<_CalcFlashOverlayState>();
+  void _triggerCalcFlash([String? expression]) => calcFlashKey.currentState?.trigger(expression: expression);
+
   bool get _isExpanded => widget.config.data['isExpanded'] as bool? ?? true;
 
   void _toggleExpanded() {

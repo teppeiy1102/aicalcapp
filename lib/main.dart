@@ -2035,7 +2035,7 @@ class _HomeLogoTitleState extends State<_HomeLogoTitle> {
                 end: Alignment.bottomRight,
               ).createShader(bounds),
               child: const Text(
-                'GENBA CALC',
+                'Node Calc',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 26,

@@ -3,6 +3,7 @@ library widget_page;
 import 'pro_guard.dart';
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:convert';
@@ -18,6 +19,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai_service.dart';
+import 'ai_count_history.dart';
 import 'calc_history.dart';
 import 'link_graph_page.dart';
 import 'revenuecat_service.dart';
@@ -540,6 +542,7 @@ class _CalcBottomSheet extends StatefulWidget {
 }
 
 class _CalcBottomSheetState extends State<_CalcBottomSheet> {
+  final _flashKey = GlobalKey<_CalcFlashOverlayState>();
   late String _display;
   double? _calcA;
   String _calcOp = '';
@@ -633,6 +636,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
         _display = _fmt((double.tryParse(_display) ?? 0) / 100);
       } else if (key == '=') {
         _isClearState = true;
+        String flashExpr = '';
         if (_calcA != null && _calcOp.isNotEmpty) {
           final List<double> allTerms;
           final List<String> effectiveOps;
@@ -664,6 +668,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
           }
           final displayParts = parts.map((p) => double.tryParse(p) != null ? _addCommas(p) : p).toList();
           _exprStr = '${displayParts.join(' ')} = ${_addCommas(_fmt(result))}';
+          flashExpr = _exprStr;
           _termValues = allTerms;
           _termOps = effectiveOps;
           _calcA = result;
@@ -671,11 +676,26 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
           _display = _fmt(result);
           _hasResult = true;
           _newEntry = true;
-          // 履歴に保存
           CalcHistoryManager.instance.addEntry(parts.join(' '), _fmt(result));
         } else {
-          if (_display != '0' || _calcA != null) _hasResult = true;
+          if (_display != '0' || _calcA != null) {
+            _hasResult = true;
+            if (_termValues.isNotEmpty && _termOps.isNotEmpty) {
+              final exprParts = <String>[];
+              for (int i = 0; i < _termValues.length; i++) {
+                exprParts.add(_fmt(_termValues[i]));
+                if (i < _termOps.length) exprParts.add(_termOps[i]);
+              }
+              CalcHistoryManager.instance.addEntry(exprParts.join(' '), _fmt(_calcA ?? 0));
+              final dp = exprParts.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+              flashExpr = '${dp.join(' ')} = ${_addCommas(_fmt(_calcA ?? 0))}';
+            } else if (_display != '0') {
+              CalcHistoryManager.instance.addEntry(_display, _display);
+              flashExpr = _addCommas(_display);
+            }
+          }
         }
+        _flashKey.currentState?.trigger(expression: flashExpr);
       } else if (['+', '-', '×', '÷'].contains(key)) {
         _isClearState = true;
         if (!_newEntry || _calcA == null) {
@@ -1130,7 +1150,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                           width: 50,
                           height: 50,
              decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.4),
+                            color: Colors.black.withOpacity(1),
                           borderRadius: BorderRadius.circular(1000),
                           border: Border.all(
                             color: Colors.white.withOpacity(0.45),
@@ -1183,7 +1203,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                         width: 50,
                         height: 50,
                         decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.4),
+                            color: Colors.black.withOpacity(1),
                           borderRadius: BorderRadius.circular(1000),
                           border: Border.all(
                             color: Colors.white.withOpacity(0.45),
@@ -1237,10 +1257,12 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                 ),
                 SizedBox(height: 8),
                 // 表示部
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
-                  constraints: const BoxConstraints(minHeight: 120),
-                  child: Row(
+                _CalcFlashOverlay(
+                  key: _flashKey,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+                    constraints: const BoxConstraints(minHeight: 120),
+                    child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       // 数値・式表示エリア
@@ -1268,6 +1290,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                         ),
                       ),
                     ],
+                  ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -2713,6 +2736,7 @@ class HomeCalcBottomPanel extends StatefulWidget {
 
 class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
     with SingleTickerProviderStateMixin {
+  final _flashKey = GlobalKey<_CalcFlashOverlayState>();
   static const double _kHandleHeight = 64.0;
   bool _isExpanded = true;
   bool _isAiCounting = false;
@@ -2836,6 +2860,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
         _display = _fmt((double.tryParse(_display) ?? 0) / 100);
       } else if (key == '=') {
         _isClearState = true;
+        String flashExpr = '';
         if (_calcA != null && _calcOp.isNotEmpty) {
           final List<double> allTerms;
           final List<String> effectiveOps;
@@ -2866,6 +2891,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
           }
           final displayParts = parts.map((p) => double.tryParse(p) != null ? _addCommas(p) : p).toList();
           _exprStr = '${displayParts.join(' ')} = ${_addCommas(_fmt(result))}';
+          flashExpr = _exprStr;
           _termValues = allTerms;
           _termOps = effectiveOps;
           _calcA = result;
@@ -2875,8 +2901,24 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
           _newEntry = true;
           CalcHistoryManager.instance.addEntry(parts.join(' '), _fmt(result));
         } else {
-          if (_display != '0' || _calcA != null) _hasResult = true;
+          if (_display != '0' || _calcA != null) {
+            _hasResult = true;
+            if (_termValues.isNotEmpty && _termOps.isNotEmpty) {
+              final exprParts = <String>[];
+              for (int i = 0; i < _termValues.length; i++) {
+                exprParts.add(_fmt(_termValues[i]));
+                if (i < _termOps.length) exprParts.add(_termOps[i]);
+              }
+              CalcHistoryManager.instance.addEntry(exprParts.join(' '), _fmt(_calcA ?? 0));
+              final dp = exprParts.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+              flashExpr = '${dp.join(' ')} = ${_addCommas(_fmt(_calcA ?? 0))}';
+            } else if (_display != '0') {
+              CalcHistoryManager.instance.addEntry(_display, _display);
+              flashExpr = _addCommas(_display);
+            }
+          }
         }
+        _flashKey.currentState?.trigger(expression: flashExpr);
       } else if (['+', '-', '×', '÷'].contains(key)) {
         _isClearState = true;
         if (!_newEntry || _calcA == null) {
@@ -3123,7 +3165,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Text(
-                      'GENBA CALC',
+                      'Node Calc',
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 30,
@@ -3394,7 +3436,7 @@ GestureDetector(
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.4),
+                              color: Colors.black.withOpacity(1),
                               borderRadius: BorderRadius.circular(1000),
                           
                             ),
@@ -3434,7 +3476,7 @@ GestureDetector(
                           width: 50,
                           height: 50,
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.4),
+                            color: Colors.black.withOpacity(1),
                             borderRadius: BorderRadius.circular(1000),
                           ),
                           child: const Icon(Icons.history_rounded, color: Colors.white, size: 24),
@@ -3479,29 +3521,32 @@ GestureDetector(
                   ),
                  // const SizedBox(height: 8),
                   // ── 表示部 ──
-                  SafeArea(
-                    child: SizedBox(
-                      height: 110,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          if (_termValues.isNotEmpty)
-                            _buildCalcFormulaDisplay(),
-                          FittedBox(
-                            child: Text(
-                              _addCommas(_display),
-                              maxLines: 1,
-                              style: const TextStyle(
-                                height: 1,
-                                color: Colors.black,
-                                fontSize: 34,
-                                fontWeight: FontWeight.w200,
+                  _CalcFlashOverlay(
+                    key: _flashKey,
+                    child: SafeArea(
+                      child: SizedBox(
+                        height: 110,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            if (_termValues.isNotEmpty)
+                              _buildCalcFormulaDisplay(),
+                            FittedBox(
+                              child: Text(
+                                _addCommas(_display),
+                                maxLines: 1,
+                                style: const TextStyle(
+                                  height: 1,
+                                  color: Colors.black,
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.w200,
+                                ),
+                                textAlign: TextAlign.right,
                               ),
-                              textAlign: TextAlign.right,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

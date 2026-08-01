@@ -28,7 +28,7 @@ android {
     }
 
     defaultConfig {
-        // Application ID for GenbaCalc
+        // Application ID for NodeCalc
         applicationId = "com.yama.genbacalc"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.

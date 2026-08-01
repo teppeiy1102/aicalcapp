@@ -12,7 +12,7 @@ class CalcQuickTile : TileService() {
         super.onStartListening()
         qsTile?.apply {
             state = Tile.STATE_ACTIVE
-            label = "GenbaCalc"
+            label = "NodeCalc"
             updateTile()
         }
     }

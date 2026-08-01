@@ -12,7 +12,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'AI Calc';
 
   @override
-  String get genbaCalc => 'Genba Calc';
+  String get genbaCalc => 'Node Calc';
 
   @override
   String get genbaCalcTagline => 'Next-gen calculator for the field';
@@ -2780,4 +2780,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get numberInputHint => 'Enter number';
+
+  @override
+  String get aiCountHistory => 'Count History';
+
+  @override
+  String get aiCountHistoryDetail => 'Count History Detail';
 }

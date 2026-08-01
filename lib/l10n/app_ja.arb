@@ -2,7 +2,7 @@
   "@@locale": "ja",
 
   "appTitle": "AI Calc",
-  "genbaCalc": "現場カリク",
+  "genbaCalc": "Node Calc",
   "genbaCalcTagline": "現場を支える、次世代の電卓",
   "proLabel": "Pro",
 
@@ -900,5 +900,7 @@
   "captionHint": "画像のキャプション（任意）",
   "reset": "リセット",
   "editValue": "値を編集",
-  "numberInputHint": "数値を入力"
+  "numberInputHint": "数値を入力",
+  "aiCountHistory": "カウント履歴",
+  "aiCountHistoryDetail": "カウント履歴詳細"
 }

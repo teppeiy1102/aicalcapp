@@ -238,20 +238,28 @@ class _AiCountPageState extends State<_AiCountPage> {
   double _imageHeight = 1.0;
   bool _isCounting = false;
   bool _showMarkers = true;
+  double _markerOpacity = 1.0;
   AiCountResult? _lastResult;
   final _labelCtrl = TextEditingController();
   final _picker = ImagePicker();
   int? _remainingUses;
+  List<AiCountHistoryEntry> _historyEntries = [];
 
   @override
   void initState() {
     super.initState();
     _loadRemainingUses();
+    _loadHistory();
   }
 
   Future<void> _loadRemainingUses() async {
     final uses = await RevenueCatService.getRemainingUses();
     if (mounted) setState(() => _remainingUses = uses);
+  }
+
+  Future<void> _loadHistory() async {
+    final entries = await AiCountHistoryManager.instance.loadAll();
+    if (mounted) setState(() => _historyEntries = entries);
   }
 
   @override
@@ -375,6 +383,16 @@ class _AiCountPageState extends State<_AiCountPage> {
       final result = await widget.onCount(_imageBytes!, instruction);
       if (!mounted) return;
       setState(() => _lastResult = result);
+      // カウント完了時に履歴に保存
+      if (result != null && _imageBytes != null) {
+        AiCountHistoryManager.instance.addEntry(
+          imageBytes: _imageBytes!,
+          instruction: instruction,
+          count: result.count,
+          points: result.points,
+        );
+        _loadHistory();
+      }
       if (result == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -517,76 +535,206 @@ class _AiCountPageState extends State<_AiCountPage> {
   void _showSourcePicker() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_remainingUses != null)
-              GestureDetector(
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const StorePage()),
-                  );
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 16,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.auto_awesome,
-                        color: Colors.tealAccent,
-                        size: 16,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF1A0A2E),
+              Color(0xFF16213E),
+              Color(0xFF0F3460),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ハンドルバー
+              Container(
+                margin: const EdgeInsets.only(top: 10),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              if (_remainingUses != null) ...[
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const StorePage()),
+                    );
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF7B2FBE).withOpacity(0.2),
+                          const Color(0xFF1E88E5).withOpacity(0.2),
+                        ],
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        AppLocalizations.of(context)!.remainingUsesFormat(_remainingUses!),
-                        style: const TextStyle(
-                          color: Colors.tealAccent,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF7B61FF).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome,
+                          color: Color(0xFFA78BFA),
+                          size: 14,
                         ),
+                        const SizedBox(width: 6),
+                        Text(
+                          AppLocalizations.of(context)!.remainingUsesFormat(_remainingUses!),
+                          style: const TextStyle(
+                            color: Color(0xFFC4B5FD),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              // カメラボタン
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage(ImageSource.camera);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF7B2FBE).withOpacity(0.35),
+                          const Color(0xFF5B21B6).withOpacity(0.25),
+                        ],
                       ),
-                    ],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFF7B2FBE).withOpacity(0.4),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF7B2FBE).withOpacity(0.15),
+                          blurRadius: 12,
+                          spreadRadius: -2,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt_rounded,
+                            color: Color(0xFFC4B5FD),
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Text(
+                          AppLocalizations.of(context)!.takePhoto,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            const Divider(color: Colors.white12, height: 1),
-            ListTile(
-              leading: const Icon(Icons.camera_alt, color: Colors.tealAccent),
-              title: Text(
-                AppLocalizations.of(context)!.takePhoto,
-                style: const TextStyle(color: Colors.white),
+              const SizedBox(height: 10),
+              // ギャラリーボタン
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage(ImageSource.gallery);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF1E88E5).withOpacity(0.35),
+                          const Color(0xFF0D47A1).withOpacity(0.25),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFF1E88E5).withOpacity(0.4),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF1E88E5).withOpacity(0.15),
+                          blurRadius: 12,
+                          spreadRadius: -2,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.photo_library_rounded,
+                            color: Color(0xFF93C5FD),
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Text(
+                          AppLocalizations.of(context)!.chooseFromGallery,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickImage(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.photo_library,
-                color: Colors.tealAccent,
-              ),
-              title: Text(
-                AppLocalizations.of(context)!.chooseFromGallery,
-                style: const TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                Navigator.pop(ctx);
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-          ],
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
@@ -596,20 +744,23 @@ class _AiCountPageState extends State<_AiCountPage> {
   Widget build(BuildContext context) {
     final isBusy = _isCounting;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0D1A),
+        backgroundColor:Colors.transparent,
         foregroundColor: Colors.white,
+        elevation: 0,
         titleSpacing: 0,
         title: Row(
           children: [
-            const Icon(
-              Icons.auto_awesome_rounded,
-              color: Colors.tealAccent,
-              size: 18,
+            Text(
+              AppLocalizations.of(context)!.aiCountTitle,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+              ),
             ),
-            const SizedBox(width: 8),
-            Text(AppLocalizations.of(context)!.aiCountTitle, style: const TextStyle(color: Colors.white, fontSize: 16)),
           ],
         ),
         actions: [if (_lastResult != null) ...[]],
@@ -617,7 +768,12 @@ class _AiCountPageState extends State<_AiCountPage> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF0D0D1A), Color.fromARGB(255, 38, 38, 38)],
+            colors: [
+              Color(0xFF1A0A2E),
+              Color(0xFF16213E),
+              Color(0xFF0F3460),
+              Color(0xFF0A1628),
+            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomRight,
           ),
@@ -637,76 +793,389 @@ class _AiCountPageState extends State<_AiCountPage> {
   }
 
   Widget _buildPickerArea() {
-    return Center(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (_remainingUses != null)
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const StorePage()),
-                  );
-                },
+    return Column(
+      children: [
+        // 上部: カメラ/ギャラリー選択エリア
+        Expanded(
+          child: Stack(
+            children: [
+              // Gemini風グラデーション背景
+              Positioned.fill(
                 child: Container(
-                  margin: const EdgeInsets.only(top: 24, bottom: 8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.teal.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: Colors.tealAccent.withOpacity(0.35),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xFF1A0A2E),
+                        Color(0xFF16213E),
+                        Color(0xFF0F3460),
+                        Color(0xFF0A1628),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                   ),
-                  child: Row(
+                ),
+              ),
+              // 装飾的なグラデーションオーブ（上部）
+              Positioned(
+                top: -80,
+                right: -60,
+                child: Container(
+                  width: 220,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF7B2FBE).withOpacity(0.35),
+                        const Color(0xFF7B2FBE).withOpacity(0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // 装飾的なグラデーションオーブ（中央下部）
+              Positioned(
+                top: 120,
+                left: -100,
+                child: Container(
+                  width: 280,
+                  height: 280,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF1E88E5).withOpacity(0.2),
+                        const Color(0xFF1E88E5).withOpacity(0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // 装飾的なグラデーションオーブ（右下）
+              Positioned(
+                bottom: 80,
+                right: -40,
+                child: Container(
+                  width: 180,
+                  height: 180,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF00BFA5).withOpacity(0.2),
+                        const Color(0xFF00BFA5).withOpacity(0.0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // コンテンツ
+              Center(
+                child: SingleChildScrollView(
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.auto_awesome,
-                        color: Colors.tealAccent,
-                        size: 15,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        AppLocalizations.of(context)!.remainingUsesFormat(_remainingUses!),
-                        style: const TextStyle(
-                          color: Colors.tealAccent,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
+                   
+                      const SizedBox(height: 8),
+                      // メインタイトル
+                      ShaderMask(
+                        shaderCallback: (bounds) => const LinearGradient(
+                          colors: [
+                            Color(0xFFE8DEF8),
+                            Color(0xFFC4B5FD),
+                            Color(0xFF93C5FD),
+                          ],
+                        ).createShader(bounds),
+                        child: FittedBox(
+                          child: Padding(
+                            padding: const EdgeInsets.all(30.0),
+                            child: Text(
+                              AppLocalizations.of(context)!.aiCountTitle,
+                              style: const TextStyle(
+                                fontSize: 70,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      // 説明テキスト
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        child: Text(
+                          AppLocalizations.of(context)!.selectImageDesc,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.55),
+                            fontSize: 15,
+                            height: 1.5,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ),
+                      //const SizedBox(height: 20),
+if (_remainingUses != null)
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const StorePage()),
+                            );
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(top: 32, bottom: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(0xFF7B2FBE).withOpacity(0.25),
+                                  const Color(0xFF1E88E5).withOpacity(0.25),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(28),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF7B2FBE).withOpacity(0.15),
+                                  blurRadius: 16,
+                                  spreadRadius: -2,
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.auto_awesome,
+                                  color: Color(0xFFA78BFA),
+                                  size: 15,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  AppLocalizations.of(context)!.remainingUsesFormat(_remainingUses!),
+                                  style: const TextStyle(
+                                    color: Color(0xFFC4B5FD),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      // ソース選択ボタン（Glassmorphism風）
+                      const SizedBox(height: 30),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildSourceButton(
+                            icon: Icons.camera_alt_rounded,
+                            label: AppLocalizations.of(context)!.cameraLabel,
+                            gradientColors: const [
+                              Color(0xFF7B2FBE),
+                              Color(0xFF5B21B6),
+                            ],
+                            glowColor: const Color(0xFF7B2FBE),
+                            onTap: () => _pickImage(ImageSource.camera),
+                          ),
+                          const SizedBox(width: 24),
+                          _buildSourceButton(
+                            icon: Icons.photo_library_rounded,
+                            label: AppLocalizations.of(context)!.galleryLabel,
+                            gradientColors: const [
+                              Color(0xFF1E88E5),
+                              Color(0xFF0D47A1),
+                            ],
+                            glowColor: const Color(0xFF1E88E5),
+                            onTap: () => _pickImage(ImageSource.gallery),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+   
                     ],
                   ),
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.all(30.0),
-              child: Text(
-                AppLocalizations.of(context)!.selectImageDesc,
-                style: const TextStyle(color: Colors.white70, fontSize: 15),
+            ],
+          ),
+        ),
+        // 下部: 履歴リスト
+        if (_historyEntries.isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF0A1628),
+                  Color(0xFF0F1D32),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
               ),
             ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisSize: MainAxisSize.min,
+            child: Row(
               children: [
-                _buildSourceButton(
-                  icon: Icons.camera_alt,
-                  label: AppLocalizations.of(context)!.cameraLabel,
-                  onTap: () => _pickImage(ImageSource.camera),
+                const Icon(Icons.history_rounded, color: Color(0xFFA78BFA), size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  AppLocalizations.of(context)!.aiCountHistory,
+                  style: const TextStyle(
+                    color: Color(0xFFA78BFA),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
                 ),
-                const SizedBox(width: 20),
-                _buildSourceButton(
-                  icon: Icons.photo_library,
-                  label: AppLocalizations.of(context)!.galleryLabel,
-                  onTap: () => _pickImage(ImageSource.gallery),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () async {
+                    await AiCountHistoryManager.instance.clearAll();
+                    _loadHistory();
+                  },
+                  child: Text(
+                    AppLocalizations.of(context)!.clearHistory,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.3),
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
               ],
+            ),
+          ),
+          Container(
+            height: 180,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFF0A1628),
+                  Color(0xFF0D1B2A),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: _historyEntries.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (ctx, i) {
+                final entry = _historyEntries[i];
+                return _buildHistoryItem(entry);
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildHistoryItem(AiCountHistoryEntry entry) {
+    final date = entry.dateTime;
+    final h = date.hour.toString().padLeft(2, '0');
+    final m = date.minute.toString().padLeft(2, '0');
+    final dateStr = '${date.month}/${date.day} $h:$m';
+    return GestureDetector(
+      onTap: () => _showHistoryDetail(entry),
+      child: Container(
+        width: 160,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF1A0A2E).withOpacity(0.8),
+              const Color(0xFF16213E).withOpacity(0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFF7B61FF).withOpacity(0.25),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF7B2FBE).withOpacity(0.1),
+              blurRadius: 12,
+              spreadRadius: -2,
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // サムネイル画像
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                child: Container(
+                  decoration: BoxDecoration(
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF7B2FBE).withOpacity(0.15),
+                        blurRadius: 8,
+                        spreadRadius: -2,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: _HistoryThumbnail(imagePath: entry.imagePath),
+                ),
+              ),
+            ),
+            // 情報バー
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    const Color(0xFF1A0A2E).withOpacity(0.9),
+                    const Color(0xFF0F3460).withOpacity(0.9),
+                  ],
+                ),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    '${entry.count}',
+                    style: const TextStyle(
+                      color: Color(0xFFC4B5FD),
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${entry.instruction}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF93C5FD),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    dateStr,
+                    style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -714,30 +1183,99 @@ class _AiCountPageState extends State<_AiCountPage> {
     );
   }
 
+  Future<void> _showHistoryDetail(AiCountHistoryEntry entry) async {
+    // 画像ファイルを読み込む
+    final file = await AiCountHistoryManager.instance.getImageFile(entry.imagePath);
+    if (file == null || !mounted) return;
+    final bytes = await file.readAsBytes();
+    if (!mounted) return;
+
+    // 画像のサイズを取得
+    final decodedImage = await decodeImageFromList(bytes);
+    if (!mounted) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _AiCountHistoryDetailPage(
+          imageBytes: bytes,
+          imageWidth: decodedImage.width.toDouble(),
+          imageHeight: decodedImage.height.toDouble(),
+          count: entry.count,
+          instruction: entry.instruction,
+          points: entry.points,
+          entryId: entry.id,
+        ),
+      ),
+    );
+    // 戻った後に履歴リストを更新（削除された場合に備える）
+    if (mounted) _loadHistory();
+  }
+
   Widget _buildSourceButton({
     required IconData icon,
     required String label,
+    required List<Color> gradientColors,
+    required Color glowColor,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 100,
-        width: 100,
+        height: 120,
+        width: 120,
         decoration: BoxDecoration(
-          color: Colors.teal.withOpacity(0.30),
-          border: Border.all(color: Colors.tealAccent.withOpacity(0.4)),
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(30),
+          gradient: LinearGradient(
+            colors: [
+              gradientColors[0].withOpacity(0.6),
+              gradientColors[1].withOpacity(0.4),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          border: Border.all(
+            color: gradientColors[0].withOpacity(0.5),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: glowColor.withOpacity(0.3),
+              blurRadius: 24,
+              spreadRadius: 4,
+            ),
+            BoxShadow(
+              color: glowColor.withOpacity(0.2),
+              blurRadius: 48,
+              spreadRadius: 8,
+            ),
+          ],
         ),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: Colors.tealAccent, size: 32),
-              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+              //    color: Colors.white.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: Colors.white.withOpacity(0.9),
+                  size: 40,
+                ),
+              ),
+             // const SizedBox(height: 10),
               Text(
                 label,
-                style: const TextStyle(color: Colors.tealAccent, fontSize: 13),
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.3,
+                ),
               ),
             ],
           ),
@@ -762,22 +1300,42 @@ class _AiCountPageState extends State<_AiCountPage> {
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: viewHeight),
                 child: Center(
-                  child: SizedBox(
-                    width: viewWidth,
-                    child: AspectRatio(
-                      aspectRatio: _imageWidth / _imageHeight,
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.memory(_imageBytes!, fit: BoxFit.fill),
-                          if (_showMarkers &&
-                              _lastResult != null &&
-                              _lastResult!.points.isNotEmpty)
-                            _MarkerOverlay(
-                              points: _lastResult!.points,
-                              imageBytes: _imageBytes!,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.8),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
                             ),
-                        ],
+                          ],
+                        ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: Container(
+ decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30),
+                        ),                       
+                        width: viewWidth,
+                        child: AspectRatio(
+                          aspectRatio: _imageWidth / _imageHeight,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.memory(_imageBytes!, fit: BoxFit.fill),
+                              if (_showMarkers &&
+                                  _lastResult != null &&
+                                  _lastResult!.points.isNotEmpty)
+                                _MarkerOverlay(
+                                  points: _lastResult!.points,
+                                  imageBytes: _imageBytes!,
+                                  opacity: _markerOpacity,
+                                ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -788,8 +1346,8 @@ class _AiCountPageState extends State<_AiCountPage> {
         ),
         if (_lastResult != null)
           Positioned(
-            top: 0,
-            right: 0,
+            bottom: 15,
+            right: 10,
             child: IconButton(
               style: IconButton.styleFrom(
                 backgroundColor: Colors.teal.withOpacity(0.8),
@@ -805,73 +1363,146 @@ class _AiCountPageState extends State<_AiCountPage> {
             ),
           ),
 
+        // マーカー透明度スライダー
+        if (_lastResult != null && _showMarkers)
+          Positioned(
+            bottom: 25,
+            left: 15,
+            right: 60,
+            child: Container(
+              width: 140,
+              padding: const EdgeInsets.only(left: 8, top: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.opacity,
+                    color: Colors.white.withOpacity(0.7),
+                    size: 14,
+                  ),
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderThemeData(
+                        trackHeight: 2,
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                        activeTrackColor: Colors.white70,
+                        inactiveTrackColor: Colors.white24,
+                        thumbColor: Colors.white,
+                        overlayColor: Colors.white24,
+                      ),
+                      child: Slider(
+                        value: _markerOpacity,
+                        min: 0.0,
+                        max: 1.0,
+                        onChanged: (v) => setState(() => _markerOpacity = v),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
         // カウント結果バッジ
         if (_lastResult != null && _showMarkers)
           Positioned(
-            top: 6,
+            top: 12,
             left: 0,
             right: 0,
             child: Center(
-              child: SizedBox(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-  padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.teal.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.5),
-                      blurRadius: 16,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // カウント数バッジ
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 14,
                     ),
-                  ],
-                ),
-
-
-                      child: Text(
-                        '${_lastResult!.count}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 46,
-                          fontWeight: FontWeight.bold,
-                          height: 1,
-                        ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF7B2FBE).withOpacity(0.7),
+                          const Color(0xFF1E88E5).withOpacity(0.7),
+                        ],
                       ),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF7B2FBE).withOpacity(0.4),
+                          blurRadius: 24,
+                          spreadRadius: -4,
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: () =>
-                          Navigator.pop(context, _lastResult!.count),
-                      style: TextButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                      ),
-                      icon: const Icon(
-                        Icons.check_circle,
-                        color: Colors.teal,
-                        size: 18,
-                      ),
-                      label: Text(
-                        AppLocalizations.of(context)!.reflectToCalc,
-                        style: const TextStyle(
-                          color: Colors.teal,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    child: Text(
+                      '${_lastResult!.count}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 46,
+                        fontWeight: FontWeight.bold,
+                        height: 1,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 12),
+                  // 電卓反映ボタン
+                  GestureDetector(
+                    onTap: () =>
+                        Navigator.pop(context, _lastResult!.count),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF00BFA5).withOpacity(0.85),
+                            const Color(0xFF0097A7).withOpacity(0.85),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00BFA5).withOpacity(0.3),
+                            blurRadius: 12,
+                            spreadRadius: -2,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.check_circle,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            AppLocalizations.of(context)!.reflectToCalc,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -897,29 +1528,46 @@ class _AiCountPageState extends State<_AiCountPage> {
 
         // 写真変更ボタン
         Positioned(
-          bottom: 18,
+          bottom: 80,
           right: 20,
           left: 20,
-          child: GestureDetector(
-            onTap: _isCounting ? null : _showSourcePicker,
-            child: Container(
-              constraints: const BoxConstraints(minWidth: 140),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.refresh, color: Colors.red, size: 14),
-                  const SizedBox(width: 4),
-                  Text(
-                    AppLocalizations.of(context)!.changePhoto,
-                    style: const TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+          child: Center(
+            child: GestureDetector(
+              onTap: _isCounting ? null : _showSourcePicker,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.12),
+                      Colors.white.withOpacity(0.06),
+                    ],
                   ),
-                ],
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.15),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.photo_camera_outlined,
+                      color: Colors.white.withOpacity(0.7),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      AppLocalizations.of(context)!.changePhoto,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -930,8 +1578,24 @@ class _AiCountPageState extends State<_AiCountPage> {
 
   Widget _buildInstructionBar(bool isBusy) {
     return Container(
-      color: const Color(0xFF0D0D1A),
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color.fromARGB(255, 0, 0, 0),
+            Color(0xFF16213E),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        border: Border(
+          top: BorderSide(
+            color: Color(0xFF7B61FF),
+            width: 0.5,
+            style: BorderStyle.solid,
+          ),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
       child: SafeArea(
         top: false,
         child: Column(
@@ -1068,6 +1732,7 @@ class _MemoEditDialog extends StatefulWidget {
 }
 
 class _MemoEditDialogState extends State<_MemoEditDialog> {
+  final _flashKey = GlobalKey<_CalcFlashOverlayState>();
   late final TextEditingController _ctrl;
   // ── 電卓ステート ──
   String _calcDisplay = '0';
@@ -1174,6 +1839,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
         _calcDisplay = _fmtCalc(v / 100);
       } else if (key == '=') {
         _isClearState = true;
+        String flashExpr = '';
         if (_calcA != null && _calcOp.isNotEmpty) {
           final List<double> allTerms;
           final List<String> effectiveOps;
@@ -1190,11 +1856,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
               allTerms.length >= 2) {
             result = allTerms[0];
             for (int i = 0; i < effectiveOps.length; i++) {
-              result = _evalCalcSimple(
-                result,
-                effectiveOps[i],
-                allTerms[i + 1],
-              );
+              result = _evalCalcSimple(result, effectiveOps[i], allTerms[i + 1]);
             }
           } else {
             result = allTerms.isNotEmpty ? allTerms.last : (_calcA ?? 0);
@@ -1206,6 +1868,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
           }
           final displayExprParts = exprParts.map((p) => double.tryParse(p) != null ? _addCommas(p) : p).toList();
           _calcExprStr = '${displayExprParts.join(' ')} = ${_addCommas(_fmtCalc(result))}';
+          flashExpr = _calcExprStr;
           _calcTermValues = allTerms;
           _calcTermOps = effectiveOps;
           _calcA = result;
@@ -1213,16 +1876,26 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
           _calcDisplay = _fmtCalc(result);
           _calcHasResult = true;
           _calcNewEntry = true;
-          // 履歴に保存
-          CalcHistoryManager.instance.addEntry(
-            exprParts.join(' '),
-            _fmtCalc(result),
-          );
+          CalcHistoryManager.instance.addEntry(exprParts.join(' '), _fmtCalc(result));
         } else {
           if (_calcDisplay != '0' || _calcA != null) {
             _calcHasResult = true;
+            if (_calcTermValues.isNotEmpty && _calcTermOps.isNotEmpty) {
+              final exprParts = <String>[];
+              for (int i = 0; i < _calcTermValues.length; i++) {
+                exprParts.add(_fmtCalc(_calcTermValues[i]));
+                if (i < _calcTermOps.length) exprParts.add(_calcTermOps[i]);
+              }
+              CalcHistoryManager.instance.addEntry(exprParts.join(' '), _fmtCalc(_calcA ?? 0));
+              final dp = exprParts.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+              flashExpr = '${dp.join(' ')} = ${_addCommas(_fmtCalc(_calcA ?? 0))}';
+            } else if (_calcDisplay != '0') {
+              CalcHistoryManager.instance.addEntry(_calcDisplay, _calcDisplay);
+              flashExpr = _addCommas(_calcDisplay);
+            }
           }
         }
+        _flashKey.currentState?.trigger(expression: flashExpr);
       } else if (['+', '-', '×', '÷'].contains(key)) {
         _isClearState = true;
         if (!_calcNewEntry || _calcA == null) {
@@ -1647,39 +2320,42 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
             ),
 
             // 表示エリア
-            Container(
-              margin: const EdgeInsets.only( top: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 2),
-              height: 100,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  // 数値・式表示エリア
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        if (_calcTermValues.isNotEmpty)
-                          _buildCalcFormulaDisplay(),
-                        FittedBox(
-                          child: Text(
-                            _addCommas(_calcDisplay),
-                            maxLines: 1,
-                            style: const TextStyle(
-                              color: textColor,
-                              fontSize: displayFontSize,
-                              fontWeight: FontWeight.w200,
-                              height: 0.8,
+            _CalcFlashOverlay(
+              key: _flashKey,
+              child: Container(
+                margin: const EdgeInsets.only( top: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                height: 100,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    // 数値・式表示エリア
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (_calcTermValues.isNotEmpty)
+                            _buildCalcFormulaDisplay(),
+                          FittedBox(
+                            child: Text(
+                              _addCommas(_calcDisplay),
+                              maxLines: 1,
+                              style: const TextStyle(
+                                color: textColor,
+                                fontSize: displayFontSize,
+                                fontWeight: FontWeight.w200,
+                                height: 0.8,
+                              ),
+                              textAlign: TextAlign.right,
                             ),
-                            textAlign: TextAlign.right,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -1847,8 +2523,13 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
 class _MarkerOverlay extends StatelessWidget {
   final List<List<double>> points;
   final Uint8List imageBytes;
+  final double opacity;
 
-  const _MarkerOverlay({required this.points, required this.imageBytes});
+  const _MarkerOverlay({
+    required this.points,
+    required this.imageBytes,
+    this.opacity = 1.0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1856,7 +2537,7 @@ class _MarkerOverlay extends StatelessWidget {
       builder: (context, constraints) {
         return CustomPaint(
           size: Size(constraints.maxWidth, constraints.maxHeight),
-          painter: _MarkerPainter(points),
+          painter: _MarkerPainter(points, opacity: opacity),
         );
       },
     );
@@ -1865,20 +2546,21 @@ class _MarkerOverlay extends StatelessWidget {
 
 class _MarkerPainter extends CustomPainter {
   final List<List<double>> points;
-  _MarkerPainter(this.points);
+  final double opacity;
+  _MarkerPainter(this.points, {this.opacity = 1.0});
 
   @override
   void paint(Canvas canvas, Size size) {
     final dotPaint = Paint()
-      ..color = Colors.redAccent
+      ..color = Colors.redAccent.withOpacity(opacity)
       ..style = PaintingStyle.fill;
     final borderPaint = Paint()
-      ..color = Colors.white
+      ..color = Colors.white.withOpacity(opacity)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.5;
 
     final shadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.0)
+      ..color = Colors.black.withOpacity(0.0 * opacity)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
 
     for (int i = 0; i < points.length; i++) {
@@ -1895,8 +2577,8 @@ class _MarkerPainter extends CustomPainter {
       // 番号描画 (Chain of Thought に対応)
       final textSpan = TextSpan(
         text: '${i + 1}',
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: Colors.white.withOpacity(opacity),
           fontSize: 8,
           letterSpacing: -0.8,
           fontWeight: FontWeight.w500,
@@ -1915,7 +2597,8 @@ class _MarkerPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _MarkerPainter old) => old.points != points;
+  bool shouldRepaint(covariant _MarkerPainter old) =>
+      old.points != points || old.opacity != opacity;
 }
 
 // ── 画像アイテム行ウィジェット（並び替え可能） ──
@@ -2041,6 +2724,394 @@ class _ImageItemRow extends StatelessWidget {
                 Icons.close_rounded,
                 size: 14,
                 color: Colors.redAccent.withOpacity(0.6),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── 履歴サムネイルウィジェット ──
+class _HistoryThumbnail extends StatelessWidget {
+  final String imagePath;
+  const _HistoryThumbnail({required this.imagePath});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<File?>(
+      future: AiCountHistoryManager.instance.getImageFile(imagePath),
+      builder: (ctx, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done && snapshot.data != null) {
+          return Image.file(
+            snapshot.data!,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              color: Colors.white10,
+              child: const Center(
+                child: Icon(Icons.broken_image, color: Colors.white38, size: 24),
+              ),
+            ),
+          );
+        }
+        return Container(
+          color: Colors.white10,
+          child: const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.tealAccent),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── AIカウント履歴詳細ページ ──
+class _AiCountHistoryDetailPage extends StatefulWidget {
+  final Uint8List imageBytes;
+  final double imageWidth;
+  final double imageHeight;
+  final int count;
+  final String instruction;
+  final List<List<double>> points;
+  final String? entryId;
+
+  const _AiCountHistoryDetailPage({
+    required this.imageBytes,
+    required this.imageWidth,
+    required this.imageHeight,
+    required this.count,
+    required this.instruction,
+    required this.points,
+    this.entryId,
+  });
+
+  @override
+  State<_AiCountHistoryDetailPage> createState() => _AiCountHistoryDetailPageState();
+}
+
+class _AiCountHistoryDetailPageState extends State<_AiCountHistoryDetailPage> {
+  double _markerOpacity = 1.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor:Colors.transparent,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Row(
+          children: [
+            Text(
+              AppLocalizations.of(context)!.aiCountHistoryDetail,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          if (widget.entryId != null)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Color(0xFFEF9A9A), size: 22),
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: const Color(0xFF1E1E2E),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    title: Text(
+                      AppLocalizations.of(context)!.deleteHistoryTitle,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                    content: Text(
+                      AppLocalizations.of(context)!.deleteHistoryConfirm(1),
+                      style: const TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text(
+                          AppLocalizations.of(context)!.cancel,
+                          style: const TextStyle(color: Colors.white54),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(
+                          AppLocalizations.of(context)!.delete,
+                          style: const TextStyle(color: Color(0xFFEF9A9A), fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true && mounted) {
+                  await AiCountHistoryManager.instance.deleteEntry(widget.entryId!);
+                  if (mounted) Navigator.pop(context);
+                }
+              },
+            ),
+        ],
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF1A0A2E),
+              Color(0xFF16213E),
+              Color(0xFF0F3460),
+              Color(0xFF0A1628),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Column(
+          children: [
+            // 画像表示エリア
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final double viewWidth = constraints.maxWidth;
+                      final double viewHeight = constraints.maxHeight;
+                      return InteractiveViewer(
+                        maxScale: 5.0,
+                        minScale: 0.5,
+                        boundaryMargin: const EdgeInsets.all(40),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: viewHeight),
+                          child: Center(
+                            child: Container(
+                              width: viewWidth,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(30),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.8),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(30),
+                                child: AspectRatio(
+                                  aspectRatio: widget.imageWidth / widget.imageHeight,
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      Image.memory(widget.imageBytes, fit: BoxFit.fill),
+                                      if (widget.points.isNotEmpty)
+                                        _MarkerOverlay(
+                                          points: widget.points,
+                                          imageBytes: widget.imageBytes,
+                                          opacity: _markerOpacity,
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  // マーカー透明度スライダー
+                  if (widget.points.isNotEmpty)
+                    Positioned(
+                      bottom: 15,
+                      left: 20,
+                      right: 20,
+                      child: Container(
+                        width: 140,
+                        padding: const EdgeInsets.only(left: 8, top: 4),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.opacity,
+                              color: Colors.white.withOpacity(0.7),
+                              size: 14,
+                            ),
+                            Expanded(
+                              child: SliderTheme(
+                                data: SliderThemeData(
+                                  trackHeight: 2,
+                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                                  activeTrackColor: Colors.white70,
+                                  inactiveTrackColor: Colors.white24,
+                                  thumbColor: Colors.white,
+                                  overlayColor: Colors.white24,
+                                ),
+                                child: Slider(
+                                  value: _markerOpacity,
+                                  min: 0.0,
+                                  max: 1.0,
+                                  onChanged: (v) => setState(() => _markerOpacity = v),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  // カウント結果バッジ
+                  Positioned(
+                    top: 12,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 40,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF7B2FBE).withOpacity(0.0),
+                              const Color(0xFF1E88E5).withOpacity(0.0),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF7B2FBE).withOpacity(0.6),
+                              blurRadius: 32,
+                              spreadRadius: -2,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+Text(
+                              widget.instruction,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            Text(
+                              '${widget.count}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 46,
+                                fontWeight: FontWeight.bold,
+                                height: 1,
+                              ),
+                            ),
+                            
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // 情報バー
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF1A0A2E),
+                    Color(0xFF16213E),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                border: Border(
+                  top: BorderSide(
+                    color: Color(0xFF7B61FF),
+                    width: 0.5,
+                  ),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.auto_awesome_rounded, color: Color(0xFFA78BFA), size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          widget.instruction,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${widget.count} ${AppLocalizations.of(context)!.aiCountResult}',
+                      style: const TextStyle(
+                        color: Color(0xFF93C5FD),
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context, widget.count),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF00BFA5).withOpacity(0.85),
+                                const Color(0xFF0097A7).withOpacity(0.85),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00BFA5).withOpacity(0.3),
+                                blurRadius: 12,
+                                spreadRadius: -2,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                              const SizedBox(width: 6),
+                              Text(
+                                AppLocalizations.of(context)!.reflectToCalc,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

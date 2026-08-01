@@ -2,7 +2,7 @@
   "@@locale": "en",
 
   "appTitle": "AI Calc",
-  "genbaCalc": "Genba Calc",
+  "genbaCalc": "Node Calc",
   "genbaCalcTagline": "Next-gen calculator for the field",
   "proLabel": "Pro",
 
@@ -904,5 +904,7 @@
   "captionHint": "Image caption (optional)",
   "reset": "Reset",
   "editValue": "Edit Value",
-  "numberInputHint": "Enter number"
+  "numberInputHint": "Enter number",
+  "aiCountHistory": "Count History",
+  "aiCountHistoryDetail": "Count History Detail"
 }

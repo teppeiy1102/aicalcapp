@@ -40,11 +40,11 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
         _calcDisplay = _fmtCalc(v / 100);
       } else if (key == '=') {
         _isClearState = true;
+        String flashExpr = '';
         if (_calcA != null && _calcOp.isNotEmpty) {
           final List<double> allTerms;
           final List<String> effectiveOps;
           if (_calcNewEntry) {
-            // 演算子直後に = → 最後の演算子をキャンセルして直前の値を結果とする
             allTerms = List<double>.from(_calcTermValues);
             effectiveOps = List<String>.from(_calcTermOps)..removeLast();
           } else {
@@ -55,33 +55,27 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
             _calcLastOp = _opToDart(_calcOp);
             _calcLastB = b;
           }
-          // 全項で左から右へ計算
           double result;
           if (allTerms.length == effectiveOps.length + 1 &&
               allTerms.length >= 2) {
             result = allTerms[0];
             for (int i = 0; i < effectiveOps.length; i++) {
-              result = _evalCalcSimple(
-                result,
-                effectiveOps[i],
-                allTerms[i + 1],
-              );
+              result = _evalCalcSimple(result, effectiveOps[i], allTerms[i + 1]);
             }
           } else {
             result = allTerms.isNotEmpty ? allTerms.last : (_calcA ?? 0);
           }
-          // 式文字列を全項から構築
           final exprParts = <String>[];
           for (int i = 0; i < allTerms.length; i++) {
             exprParts.add(_fmtCalc(allTerms[i]));
             if (i < effectiveOps.length) exprParts.add(effectiveOps[i]);
           }
-          // 表示用（カンマ付き）
           final exprDisplayParts = exprParts.map((p) {
             final v = double.tryParse(p);
             return v != null ? _addCommas(p) : p;
           }).toList();
           _calcExprStr = '${exprDisplayParts.join(' ')} = ${_addCommas(_fmtCalc(result))}';
+          flashExpr = _calcExprStr;
           _calcTermValues = allTerms;
           _calcTermOps = effectiveOps;
           _calcA = result;
@@ -89,18 +83,26 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
           _calcDisplay = _fmtCalc(result);
           _calcHasResult = true;
           _calcNewEntry = true;
-          // 履歴に保存（カンマなし）
-          CalcHistoryManager.instance.addEntry(
-            exprParts.join(' '),
-            _fmtCalc(result),
-          );
+          CalcHistoryManager.instance.addEntry(exprParts.join(' '), _fmtCalc(result));
         } else {
-          // 演算子なしで = を押した場合、何か意味のある入力があるときのみ結果扱い
-          // （追加直後のリセット状態 = '0' / _calcA==null のときは無視）
           if (_calcDisplay != '0' || _calcA != null) {
             _calcHasResult = true;
+            if (_calcTermValues.isNotEmpty && _calcTermOps.isNotEmpty) {
+              final exprParts = <String>[];
+              for (int i = 0; i < _calcTermValues.length; i++) {
+                exprParts.add(_fmtCalc(_calcTermValues[i]));
+                if (i < _calcTermOps.length) exprParts.add(_calcTermOps[i]);
+              }
+              CalcHistoryManager.instance.addEntry(exprParts.join(' '), _fmtCalc(_calcA ?? 0));
+              final dp = exprParts.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+              flashExpr = '${dp.join(' ')} = ${_addCommas(_fmtCalc(_calcA ?? 0))}';
+            } else if (_calcDisplay != '0') {
+              CalcHistoryManager.instance.addEntry(_calcDisplay, _calcDisplay);
+              flashExpr = _addCommas(_calcDisplay);
+            }
           }
         }
+        _triggerCalcFlash(flashExpr);
       } else if (['+', '-', '×', '÷'].contains(key)) {
         _isClearState = true;
         if (!_calcNewEntry || _calcA == null) {
@@ -611,7 +613,7 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
                       ),
                       child: Icon(
                         Icons.history_rounded,
-                        color: isDark ? Colors.white70 : Colors.black54,
+                        color: isDark ? Colors.white70 : Colors.black87,
                         size: 16,
                       ),
                     ),
@@ -629,7 +631,7 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
                           decoration: BoxDecoration(
                             color: _calcHasResult
                                 ? Colors.blueAccent
-                                : Colors.grey.withOpacity(0.3),
+                                : Colors.black.withOpacity(0.3),
                             borderRadius: BorderRadius.circular(40),
                           ),
                           alignment: Alignment.center,
@@ -655,48 +657,51 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
                 ],
               ),
               // 表示部
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
-                height: 80,
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.0)
-                      : Colors.black.withOpacity(0.0),
-                  borderRadius: BorderRadius.circular(0),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // 数値・式表示エリア
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (_calcTermValues.isNotEmpty)
-                            _buildCalcFormulaDisplay(
-                              isDark,
-                              subtitleFontSize,
-                            ),
-                          SizedBox(
-                            child: FittedBox(
-                              child: Text(
-                                _addCommas(_calcDisplay),
-                                maxLines: 1,
-                                style: TextStyle(
-                                  height: 1,
-                                  color: textColor,
-                                  fontSize: 64,
-                                  fontWeight: FontWeight.w200,
+              _CalcFlashOverlay(
+                key: calcFlashKey,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.0)
+                        : Colors.black.withOpacity(0.0),
+                    borderRadius: BorderRadius.circular(0),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // 数値・式表示エリア
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (_calcTermValues.isNotEmpty)
+                              _buildCalcFormulaDisplay(
+                                isDark,
+                                subtitleFontSize,
+                              ),
+                            SizedBox(
+                              child: FittedBox(
+                                child: Text(
+                                  _addCommas(_calcDisplay),
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    height: 1,
+                                    color: textColor,
+                                    fontSize: 64,
+                                    fontWeight: FontWeight.w200,
+                                  ),
+                                  textAlign: TextAlign.right,
                                 ),
-                                textAlign: TextAlign.right,
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 8),

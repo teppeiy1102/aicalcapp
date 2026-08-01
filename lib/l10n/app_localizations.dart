@@ -107,7 +107,7 @@ abstract class AppLocalizations {
   /// No description provided for @genbaCalc.
   ///
   /// In en, this message translates to:
-  /// **'Genba Calc'**
+  /// **'Node Calc'**
   String get genbaCalc;
 
   /// No description provided for @genbaCalcTagline.
@@ -5098,6 +5098,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter number'**
   String get numberInputHint;
+
+  /// No description provided for @aiCountHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Count History'**
+  String get aiCountHistory;
+
+  /// No description provided for @aiCountHistoryDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Count History Detail'**
+  String get aiCountHistoryDetail;
 }
 
 class _AppLocalizationsDelegate

@@ -1,5 +1,143 @@
 part of 'widget_page.dart';
 
+// ── =ボタン押下時の画面全体フラッシュオーバーレイ ──
+class _CalcFlashOverlay extends StatefulWidget {
+  final Widget child;
+  const _CalcFlashOverlay({super.key, required this.child});
+
+  @override
+  State<_CalcFlashOverlay> createState() => _CalcFlashOverlayState();
+}
+
+class _CalcFlashOverlayState extends State<_CalcFlashOverlay>
+    with SingleTickerProviderStateMixin {
+  OverlayEntry? _overlayEntry;
+  String _expression = '';
+
+  void trigger({String? expression}) {
+    _expression = expression ?? '';
+    _overlayEntry?.remove();
+    _overlayEntry = OverlayEntry(
+      builder: (ctx) => _FlashScreen(expression: _expression),
+    );
+    Overlay.of(context, rootOverlay: true).insert(_overlayEntry!);
+  }
+
+  @override
+  void dispose() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+class _FlashScreen extends StatefulWidget {
+  final String expression;
+  const _FlashScreen({required this.expression});
+
+  @override
+  State<_FlashScreen> createState() => _FlashScreenState();
+}
+
+class _FlashScreenState extends State<_FlashScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    // 0.0→0.15: フェードイン (0→1)
+    // 0.15→0.55: 表示維持 (1→1)
+    // 0.55→1.0: フェードアウト (1→0)
+    _anim = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.0, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeIn)),
+        weight: 15,
+      ),
+      TweenSequenceItem(
+        tween: ConstantTween<double>(1.0),
+        weight: 40,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeOut)),
+        weight: 45,
+      ),
+    ]).animate(_ctrl);
+    _ctrl.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        _removeOverlay();
+      }
+    });
+    _ctrl.forward();
+  }
+
+  void _removeOverlay() {
+    // 親の _CalcFlashOverlay から削除するためのコールバック
+    // BuildContext 経由で親 State に通知
+    final parentState = context.findAncestorStateOfType<_CalcFlashOverlayState>();
+    parentState?._overlayEntry?.remove();
+    parentState?._overlayEntry = null;
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (ctx, child) => IgnorePointer(
+        child: Stack(
+          children: [
+            // 白いフラッシュ背景
+            Positioned.fill(
+              child: Container(
+                color: Colors.white54.withOpacity(_anim.value),
+              ),
+            ),
+            // 中央に式を表示
+            if (_anim.value > 0.01)
+              Center(
+                child: Opacity(
+                  opacity: _anim.value.clamp(0.0, 3.5),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    decoration: BoxDecoration(
+                    ),
+                    child: Text(
+                      widget.expression,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w300,
+                        decoration: TextDecoration.none,
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ── 電卓キーボタン（押し込みアニメーション付き） ──
 class _CalcKeyButton extends StatefulWidget {
   final String label;
@@ -109,6 +247,7 @@ class _MiniCalcSheet extends StatefulWidget {
 }
 
 class _MiniCalcSheetState extends State<_MiniCalcSheet> {
+  final _flashKey = GlobalKey<_CalcFlashOverlayState>();
   String _display = '0';
   double? _calcA;
   String _calcOp = '';
@@ -180,6 +319,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
         _display = _fmt((double.tryParse(_display) ?? 0) / 100);
       } else if (key == '=') {
         _isClearState = true;
+        String flashExpr = '';
         if (_calcA != null && _calcOp.isNotEmpty) {
           final List<double> allTerms;
           final List<String> effectiveOps;
@@ -212,6 +352,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
             return v != null ? _addCommas(p) : p;
           }).toList();
           _exprStr = '${displayParts.join(' ')} = ${_addCommas(_fmt(result))}';
+          flashExpr = _exprStr;
           _termValues = allTerms;
           _termOps = effectiveOps;
           _calcA = result;
@@ -219,9 +360,37 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
           _display = _fmt(result);
           _hasResult = true;
           _newEntry = true;
+          // 履歴に保存（カンマなし）
+          CalcHistoryManager.instance.addEntry(
+            parts.join(' '),
+            _fmt(result),
+          );
         } else {
-          if (_display != '0' || _calcA != null) _hasResult = true;
+          if (_display != '0' || _calcA != null) {
+            _hasResult = true;
+            // 履歴に保存（繰り返し=ボタンでも毎回保存）
+            if (_termValues.isNotEmpty && _termOps.isNotEmpty) {
+              final parts = <String>[];
+              for (int i = 0; i < _termValues.length; i++) {
+                parts.add(_fmt(_termValues[i]));
+                if (i < _termOps.length) parts.add(_termOps[i]);
+              }
+              CalcHistoryManager.instance.addEntry(
+                parts.join(' '),
+                _fmt(_calcA ?? 0),
+              );
+              final dp = parts.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+              flashExpr = '${dp.join(' ')} = ${_addCommas(_fmt(_calcA ?? 0))}';
+            } else if (_display != '0') {
+              CalcHistoryManager.instance.addEntry(
+                _display,
+                _display,
+              );
+              flashExpr = _addCommas(_display);
+            }
+          }
         }
+        _flashKey.currentState?.trigger(expression: flashExpr);
       } else if (['+', '-', '×', '÷'].contains(key)) {
         _isClearState = true;
         if (!_newEntry || _calcA == null) {
@@ -240,7 +409,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
               runningResult = _evalSimple(
                 runningResult,
                 _termOps[i],
-                _termValues[i + 1],
+                _termValues[i],
               );
             }
             _display = _fmt(runningResult);
@@ -760,46 +929,49 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                 ],
               ),
               SizedBox(height: 12),
-              Container(
-                height: 120,
-                padding: const EdgeInsets.only(
-                  left: 4,
-                  right: 14,
-                  top: 12,
-                  bottom: 10,
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // 数値・式表示エリア
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if (_termValues.isNotEmpty)
-                            _buildCalcFormulaDisplay(
-                              20,
-                              true,
-                            ),
-                          const SizedBox(height: 6),
-                          FittedBox(
-                            child: Text(
-                              _addCommas(_display),
-                              maxLines: 1,
-                              style: const TextStyle(
-                                height: 1,
-                                color: textColor,
-                                fontSize: 54,
-                                fontWeight: FontWeight.w200,
+              _CalcFlashOverlay(
+                key: _flashKey,
+                child: Container(
+                  height: 120,
+                  padding: const EdgeInsets.only(
+                    left: 4,
+                    right: 14,
+                    top: 12,
+                    bottom: 10,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // 数値・式表示エリア
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (_termValues.isNotEmpty)
+                              _buildCalcFormulaDisplay(
+                                20,
+                                true,
                               ),
-                              textAlign: TextAlign.right,
+                            const SizedBox(height: 6),
+                            FittedBox(
+                              child: Text(
+                                _addCommas(_display),
+                                maxLines: 1,
+                                style: const TextStyle(
+                                  height: 1,
+                                  color: textColor,
+                                  fontSize: 54,
+                                  fontWeight: FontWeight.w200,
+                                ),
+                                textAlign: TextAlign.right,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 6),
