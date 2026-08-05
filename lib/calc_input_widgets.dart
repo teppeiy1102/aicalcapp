@@ -59,17 +59,18 @@ class _FlashScreenState extends State<_FlashScreen>
     // 0.55→1.0: フェードアウト (1→0)
     _anim = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 15,
       ),
+      TweenSequenceItem(tween: ConstantTween<double>(1.0), weight: 40),
       TweenSequenceItem(
-        tween: ConstantTween<double>(1.0),
-        weight: 40,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 0.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 45,
       ),
     ]).animate(_ctrl);
@@ -84,7 +85,8 @@ class _FlashScreenState extends State<_FlashScreen>
   void _removeOverlay() {
     // 親の _CalcFlashOverlay から削除するためのコールバック
     // BuildContext 経由で親 State に通知
-    final parentState = context.findAncestorStateOfType<_CalcFlashOverlayState>();
+    final parentState = context
+        .findAncestorStateOfType<_CalcFlashOverlayState>();
     parentState?._overlayEntry?.remove();
     parentState?._overlayEntry = null;
   }
@@ -104,9 +106,7 @@ class _FlashScreenState extends State<_FlashScreen>
           children: [
             // 白いフラッシュ背景
             Positioned.fill(
-              child: Container(
-                color: Colors.white54.withOpacity(_anim.value),
-              ),
+              child: Container(color: Colors.white54.withOpacity(_anim.value)),
             ),
             // 中央に式を表示
             if (_anim.value > 0.01)
@@ -114,9 +114,11 @@ class _FlashScreenState extends State<_FlashScreen>
                 child: Opacity(
                   opacity: _anim.value.clamp(0.0, 3.5),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    decoration: BoxDecoration(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
                     ),
+                    decoration: BoxDecoration(),
                     child: Text(
                       widget.expression,
                       style: const TextStyle(
@@ -217,11 +219,11 @@ class _CalcKeyButtonState extends State<_CalcKeyButton>
               BoxShadow(
                 color: Colors.black.withOpacity(.1),
                 blurRadius: 9.5,
-                spreadRadius:-1.5 ,
+                spreadRadius: -1.5,
                 offset: const Offset(1, 1),
               ),
             ],
-          ), 
+          ),
           alignment: Alignment.center,
           child: Text(
             widget.label,
@@ -361,10 +363,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
           _hasResult = true;
           _newEntry = true;
           // 履歴に保存（カンマなし）
-          CalcHistoryManager.instance.addEntry(
-            parts.join(' '),
-            _fmt(result),
-          );
+          CalcHistoryManager.instance.addEntry(parts.join(' '), _fmt(result));
         } else {
           if (_display != '0' || _calcA != null) {
             _hasResult = true;
@@ -379,13 +378,13 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                 parts.join(' '),
                 _fmt(_calcA ?? 0),
               );
-              final dp = parts.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+              final dp = parts.map((p) {
+                final v = double.tryParse(p);
+                return v != null ? _addCommas(p) : p;
+              }).toList();
               flashExpr = '${dp.join(' ')} = ${_addCommas(_fmt(_calcA ?? 0))}';
             } else if (_display != '0') {
-              CalcHistoryManager.instance.addEntry(
-                _display,
-                _display,
-              );
+              CalcHistoryManager.instance.addEntry(_display, _display);
               flashExpr = _addCommas(_display);
             }
           }
@@ -475,7 +474,11 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
             _calcOp = '';
             _termValues = _calcA != null ? [_calcA!] : [];
             _termOps = [];
-            _exprStr = '${entry.expression.split(' ').map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).join(' ')} = ${_addCommas(entry.result)}';
+            _exprStr =
+                '${entry.expression.split(' ').map((p) {
+                  final v = double.tryParse(p);
+                  return v != null ? _addCommas(p) : p;
+                }).join(' ')} = ${_addCommas(entry.result)}';
           });
         },
         onClear: () {
@@ -490,7 +493,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
   void _showAiCountDialog() async {
     final ai = GemmaAi();
     setState(() => _isAiCounting = true);
-    final count = await Navigator.push<int>(
+    final result = await Navigator.push<AiCountResult>(
       context,
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -500,16 +503,19 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
     if (!mounted) return;
     setState(() {
       _isAiCounting = false;
-      if (count != null) {
-        _display = count.toString();
+      if (result != null) {
+        final values = result.items
+            .map((item) => item.count.toDouble())
+            .toList();
+        _display = result.count.toString();
         _newEntry = true;
-        _hasResult = false;
+        _hasResult = true;
         _isClearState = false;
-        _calcA = null;
+        _calcA = result.count.toDouble();
         _calcOp = '';
-        _termValues = [];
-        _termOps = [];
-        _exprStr = '';
+        _termValues = values;
+        _termOps = List.filled(values.length > 0 ? values.length - 1 : 0, '+');
+        _exprStr = '${result.additionExpression} = ${result.count}';
       }
     });
   }
@@ -616,15 +622,13 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
         final opIdx = i;
         widgets.add(
           GestureDetector(
-            onTapDown: (details) =>
-                _pickCalcOp(opIdx, details.globalPosition),
+            onTapDown: (details) => _pickCalcOp(opIdx, details.globalPosition),
             child: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: Colors.orangeAccent.withOpacity(0.08),
                 shape: BoxShape.circle,
-                border:
-                    Border.all(color: Colors.orangeAccent.withOpacity(0.2)),
+                border: Border.all(color: Colors.orangeAccent.withOpacity(0.2)),
               ),
               child: Text(
                 _termOps[i],
@@ -635,7 +639,6 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                 ),
               ),
             ),
-
           ),
         );
       }
@@ -661,10 +664,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: widgets,
-      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: widgets),
     );
   }
 
@@ -678,84 +678,100 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
       context: context,
       builder: (ctx) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          ctrl.selection = TextSelection(baseOffset: 0, extentOffset: ctrl.text.length);
+          ctrl.selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: ctrl.text.length,
+          );
         });
         return AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          AppLocalizations.of(context)!.editValue,
-          style: const TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          keyboardType:
-              const TextInputType.numberWithOptions(decimal: true, signed: true),
-          style: const TextStyle(color: Colors.black87, fontSize: 22, fontWeight: FontWeight.w500),
-          textAlign: TextAlign.center,
-          decoration: InputDecoration(
-            hintText: AppLocalizations.of(context)!.numberInputHint,
-            hintStyle: TextStyle(color: Colors.grey.shade400),
-            filled: true,
-            fillColor: Colors.grey.shade100,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            AppLocalizations.of(context)!.editValue,
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
             ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              AppLocalizations.of(context)!.cancel,
-              style: TextStyle(color: Colors.grey.shade500),
+          content: TextField(
+            controller: ctrl,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(
+              decimal: true,
+              signed: true,
             ),
-          ),
-          TextButton(
-            onPressed: () {
-              final newVal =
-                  double.tryParse(ctrl.text.replaceAll(',', '')) ?? currentVal;
-              setState(() {
-                _termValues[index] = newVal;
-                // 再計算
-                double runningResult = _termValues[0];
-                for (int i = 0; i + 1 < _termValues.length; i++) {
-                  runningResult = _evalSimple(
-                    runningResult,
-                    _termOps[i],
-                    _termValues[i + 1],
-                  );
-                }
-                _display = _fmt(runningResult);
-                // 式文字列を再構築
-                final exprParts = <String>[];
-                for (int i = 0; i < _termValues.length; i++) {
-                  exprParts.add(_fmt(_termValues[i]));
-                  if (i < _termOps.length) exprParts.add(_termOps[i]);
-                }
-                final exprDisplayParts = exprParts.map((p) {
-                  final v = double.tryParse(p);
-                  return v != null ? _addCommas(p) : p;
-                }).toList();
-                if (_hasResult) {
-                  _exprStr =
-                      '${exprDisplayParts.join(' ')} = ${_addCommas(_fmt(runningResult))}';
-                }
-              });
-              Navigator.pop(ctx);
-            },
-            child: Text(
-              AppLocalizations.of(context)!.save,
-              style: TextStyle(
-                color: Color(0xFF5E81FF),
-                fontWeight: FontWeight.bold,
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 22,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            decoration: InputDecoration(
+              hintText: AppLocalizations.of(context)!.numberInputHint,
+              hintStyle: TextStyle(color: Colors.grey.shade400),
+              filled: true,
+              fillColor: Colors.grey.shade100,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
               ),
             ),
           ),
-        ],
-      );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                AppLocalizations.of(context)!.cancel,
+                style: TextStyle(color: Colors.grey.shade500),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                final newVal =
+                    double.tryParse(ctrl.text.replaceAll(',', '')) ??
+                    currentVal;
+                setState(() {
+                  _termValues[index] = newVal;
+                  // 再計算
+                  double runningResult = _termValues[0];
+                  for (int i = 0; i + 1 < _termValues.length; i++) {
+                    runningResult = _evalSimple(
+                      runningResult,
+                      _termOps[i],
+                      _termValues[i + 1],
+                    );
+                  }
+                  _display = _fmt(runningResult);
+                  // 式文字列を再構築
+                  final exprParts = <String>[];
+                  for (int i = 0; i < _termValues.length; i++) {
+                    exprParts.add(_fmt(_termValues[i]));
+                    if (i < _termOps.length) exprParts.add(_termOps[i]);
+                  }
+                  final exprDisplayParts = exprParts.map((p) {
+                    final v = double.tryParse(p);
+                    return v != null ? _addCommas(p) : p;
+                  }).toList();
+                  if (_hasResult) {
+                    _exprStr =
+                        '${exprDisplayParts.join(' ')} = ${_addCommas(_fmt(runningResult))}';
+                  }
+                });
+                Navigator.pop(ctx);
+              },
+              child: Text(
+                AppLocalizations.of(context)!.save,
+                style: TextStyle(
+                  color: Color(0xFF5E81FF),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
       },
     );
   }
@@ -785,11 +801,14 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
     return SafeArea(
       child: SingleChildScrollView(
         child: Container(
-          constraints: BoxConstraints(maxWidth: 400,maxHeight: 800),
+          constraints: BoxConstraints(maxWidth: 400, maxHeight: 800),
           padding: EdgeInsets.only(left: 10, right: 10, top: 30),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color.fromARGB(255, 34, 34, 34), Color.fromARGB(255, 0, 0, 0)],
+              colors: [
+                Color.fromARGB(255, 34, 34, 34),
+                Color.fromARGB(255, 0, 0, 0),
+              ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -832,13 +851,13 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                       child: Container(
                         width: 50,
                         height: 50,
-  decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 0.8,
-                        ),
-                         shape: BoxShape.circle,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.08),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                            width: 0.8,
+                          ),
+                          shape: BoxShape.circle,
                         ),
                         child: Stack(
                           alignment: Alignment.center,
@@ -894,7 +913,8 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                         onTap: _hasResult
                             ? () {
                                 widget.onResult(
-                                    double.tryParse(_display) ?? 0.0);
+                                  double.tryParse(_display) ?? 0.0,
+                                );
                                 Navigator.pop(context);
                               }
                             : null,
@@ -913,7 +933,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                               Icon(Icons.check, color: Colors.white, size: 16),
                               SizedBox(width: 6),
                               Text(
-                                 'この値を入力',
+                                'この値を入力',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -949,10 +969,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             if (_termValues.isNotEmpty)
-                              _buildCalcFormulaDisplay(
-                                20,
-                                true,
-                              ),
+                              _buildCalcFormulaDisplay(20, true),
                             const SizedBox(height: 6),
                             FittedBox(
                               child: Text(
@@ -977,7 +994,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
               const SizedBox(height: 6),
               Container(
                 constraints: BoxConstraints(maxWidth: 350),
-                
+
                 child: GridView.count(
                   padding: EdgeInsets.zero,
                   crossAxisCount: 4,
@@ -1010,11 +1027,15 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                     calcKey('⌫', bg: keyBg),
                     calcKey('0'),
                     calcKey('.'),
-                    calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
+                    calcKey(
+                      '=',
+                      bg: eqColor.withOpacity(0.8),
+                      fg: Colors.white,
+                    ),
                   ],
                 ),
               ),
-            //  const SizedBox(height: 8),
+              //  const SizedBox(height: 8),
             ],
           ),
         ),

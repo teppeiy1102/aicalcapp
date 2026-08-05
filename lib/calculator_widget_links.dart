@@ -47,7 +47,9 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
     String? selectedSrcSheetId; // null = 現在シート
     // 0=このシート, 1=開放された式, 2=結合シート
     int srcTab = 0;
-    bool srcConfirmed = false;
+    final selectSourceOnly = initialDestCalcIdx != null && initialDestField != null;
+    final selectDestinationOnly = initialSrcCalcIdx != null && initialSrcField != null;
+    bool srcConfirmed = selectDestinationOnly;
     // タブごとに最後に選択した (calcIdx, sheetId, field, dests) を記憶
     final Map<int, int?> _lastCalcIdxPerTab = {};
     final Map<int, String?> _lastSheetIdPerTab = {};
@@ -109,13 +111,13 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
         {
           'key': 'input',
           'label': l10n.calcTerm1,
-          'op': item['operator'] as String? ?? '+',
+          'op': item['op'] as String? ?? '+',
         },
         {
           'key': 'operand',
           'label': l10n.calcTerm2,
           'op': others.isNotEmpty
-              ? ((others[0] as Map)['operator'] as String? ?? '+')
+              ? ((others[0] as Map)['op'] as String? ?? '+')
               : null,
         },
         ...List.generate(
@@ -124,7 +126,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
             'key': 'other_$i',
             'label': l10n.calcTermOther(i + 3),
             'op': (i + 1 < others.length)
-                ? ((others[i + 1] as Map)['operator'] as String? ?? '+')
+                ? ((others[i + 1] as Map)['op'] as String? ?? '+')
                 : null,
           },
         ),
@@ -147,13 +149,13 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
         {
           'key': 'input',
           'label': l10n.calcTerm1,
-          'op': sItem['operator'] as String? ?? '+',
+          'op': sItem['op'] as String? ?? '+',
         },
         {
           'key': 'operand',
           'label': l10n.calcTerm2,
           'op': others.isNotEmpty
-              ? ((others[0] as Map)['operator'] as String? ?? '+')
+              ? ((others[0] as Map)['op'] as String? ?? '+')
               : null,
         },
         ...List.generate(
@@ -162,7 +164,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
             'key': 'other_$i',
             'label': l10n.calcTermOther(i + 3),
             'op': (i + 1 < others.length)
-                ? ((others[i + 1] as Map)['operator'] as String? ?? '+')
+                ? ((others[i + 1] as Map)['op'] as String? ?? '+')
                 : null,
           },
         ),
@@ -1760,13 +1762,13 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                           ),
                         ),
                       // ── STEP 2: リンク先セクション ──────────────────────────
-                      if (srcConfirmed)
+                      if (srcConfirmed && !selectSourceOnly)
                         const Icon(
                           Icons.arrow_downward_rounded,
                           size: 60,
                           color: Color.fromARGB(103, 143, 231, 243),
                         ),
-                      if (srcConfirmed)
+                      if (srcConfirmed && !selectSourceOnly)
                         Padding(
                         padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
                         child: Row(
@@ -1792,7 +1794,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                       ),
               
                       // ── リンク先シート選択（結合ビューの場合） ─────────
-                      if (srcConfirmed && siblingConfigs.isNotEmpty)
+                      if (srcConfirmed && !selectSourceOnly && siblingConfigs.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
                           child: SingleChildScrollView(
@@ -1888,7 +1890,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                             ),
                           ),
                         ),
-                      if (srcConfirmed)
+                      if (srcConfirmed && !selectSourceOnly)
                       Expanded(
                         flex: 5,
                         child: Container(
@@ -2023,7 +2025,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                                 (item['input'] as num? ?? 0.0)
                                                     .toDouble(),
                                             'op':
-                                                item['operator'] as String? ?? '+',
+                                              item['op'] as String? ?? '+',
                                           },
                                           {
                                             'key': 'operand',
@@ -2035,7 +2037,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                                     .toDouble(),
                                             'op': itemOthers.isNotEmpty
                                                 ? ((itemOthers[0]
-                                                              as Map)['operator']
+                                                      as Map)['op']
                                                           as String? ??
                                                       '+')
                                                 : null,
@@ -2056,7 +2058,7 @@ extension CalculatorWidgetLinks on _CalculatorWidgetState {
                                                         .toDouble(),
                                               'op': (j + 1 < itemOthers.length)
                                                   ? ((itemOthers[j + 1]
-                                                                as Map)['operator']
+                                                        as Map)['op']
                                                             as String? ??
                                                         '+')
                                                   : null,

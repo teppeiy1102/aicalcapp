@@ -49,7 +49,8 @@ class _CalculatorWidget extends StatefulWidget {
 
 class _CalculatorWidgetState extends State<_CalculatorWidget> {
   final calcFlashKey = GlobalKey<_CalcFlashOverlayState>();
-  void _triggerCalcFlash([String? expression]) => calcFlashKey.currentState?.trigger(expression: expression);
+  void _triggerCalcFlash([String? expression]) =>
+      calcFlashKey.currentState?.trigger(expression: expression);
 
   bool get _isExpanded => widget.config.data['isExpanded'] as bool? ?? true;
 
@@ -217,8 +218,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final newItems = List<Map<String, dynamic>>.from(_items);
     final newCalcIdx = newItems.length;
     final Map<String, dynamic> newItem = Map<String, dynamic>.from(item);
-    if (newItem['name'] == null ||
-        (newItem['name'] as String).trim().isEmpty) {
+    if (newItem['name'] == null || (newItem['name'] as String).trim().isEmpty) {
       newItem['name'] = l10n.defaultCalcName(newItems.length + 1);
     }
     newItems.add(newItem);
@@ -241,7 +241,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       final Map<String, dynamic> newItem = Map<String, dynamic>.from(item);
       if (newItem['name'] == null ||
           (newItem['name'] as String).isEmpty ||
-          newItem['name'] == l10n.calcNameDefault(1).replaceAll('1', '').trim()) {
+          newItem['name'] ==
+              l10n.calcNameDefault(1).replaceAll('1', '').trim()) {
         newItem['name'] = l10n.defaultCalcName(newItems.length + 1);
       }
       newItems.add(newItem);
@@ -311,8 +312,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       if (!mounted) return;
       showDialog<String?>(
         context: this.context,
-        builder: (ctx) =>
-            _MemoEditDialog(initialText: '', title: l10n.addMemo, saveLabel: l10n.add),
+        builder: (ctx) => _MemoEditDialog(
+          initialText: '',
+          title: l10n.addMemo,
+          saveLabel: l10n.add,
+        ),
       ).then((result) {
         if (result == null || !mounted) return;
         final newMemos = List<Map<String, dynamic>>.from(_memos);
@@ -362,7 +366,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final l10n = AppLocalizations.of(context)!;
     final consts = List<Map<String, dynamic>>.from(_constants);
     final newId = DateTime.now().millisecondsSinceEpoch.toString();
-    consts.add({'id': newId, 'name': l10n.defaultConstantName(consts.length + 1), 'value': 0.0});
+    consts.add({
+      'id': newId,
+      'name': l10n.defaultConstantName(consts.length + 1),
+      'value': 0.0,
+    });
     widget.onUpdate({...widget.config.data, 'constants': consts});
   }
 
@@ -387,8 +395,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       if (!mounted) return;
       showDialog<String?>(
         context: context,
-        builder: (ctx) =>
-            _MemoEditDialog(initialText: '', title: l10n.addMemo, saveLabel: l10n.add),
+        builder: (ctx) => _MemoEditDialog(
+          initialText: '',
+          title: l10n.addMemo,
+          saveLabel: l10n.add,
+        ),
       ).then((result) {
         if (result == null || !mounted) return;
         final newId = DateTime.now().millisecondsSinceEpoch.toString();
@@ -448,10 +459,15 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             children: [
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: Colors.white70),
-                title: Text(l10n.takePhoto, style: const TextStyle(color: Colors.white)),
+                title: Text(
+                  l10n.takePhoto,
+                  style: const TextStyle(color: Colors.white),
+                ),
                 onTap: () async {
                   Navigator.pop(ctx);
-                  final picked = await picker.pickImage(source: ImageSource.camera);
+                  final picked = await picker.pickImage(
+                    source: ImageSource.camera,
+                  );
                   if (picked != null && mounted) {
                     final bytes = await picked.readAsBytes();
                     _insertImageItem(bytes);
@@ -460,10 +476,15 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library, color: Colors.white70),
-                title: Text(l10n.chooseFromGallery, style: const TextStyle(color: Colors.white)),
+                title: Text(
+                  l10n.chooseFromGallery,
+                  style: const TextStyle(color: Colors.white),
+                ),
                 onTap: () async {
                   Navigator.pop(ctx);
-                  final picked = await picker.pickImage(source: ImageSource.gallery);
+                  final picked = await picker.pickImage(
+                    source: ImageSource.gallery,
+                  );
                   if (picked != null && mounted) {
                     final bytes = await picked.readAsBytes();
                     _insertImageItem(bytes);
@@ -481,7 +502,13 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final newId = DateTime.now().millisecondsSinceEpoch.toString();
     final base64Str = base64Encode(bytes);
     final newItems = List<Map<String, dynamic>>.from(_imageItems);
-    newItems.add({'id': newId, 'imageBytes': base64Str, 'cropScale': 1.0, 'cropOffsetX': 0.0, 'cropOffsetY': 0.0});
+    newItems.add({
+      'id': newId,
+      'imageBytes': base64Str,
+      'cropScale': 1.0,
+      'cropOffsetX': 0.0,
+      'cropOffsetY': 0.0,
+    });
     final order = List<Map<String, dynamic>>.from(_effectiveDisplayOrder);
     order.add({'type': 'image', 'itemId': newId});
     widget.onUpdate({
@@ -491,7 +518,15 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     });
   }
 
-  void _updateImageItem(String id, {double? cropScale, double? cropOffsetX, double? cropOffsetY, String? caption, double? editorWidth, double? editorHeight}) {
+  void _updateImageItem(
+    String id, {
+    double? cropScale,
+    double? cropOffsetX,
+    double? cropOffsetY,
+    String? caption,
+    double? editorWidth,
+    double? editorHeight,
+  }) {
     final items = List<Map<String, dynamic>>.from(_imageItems);
     final idx = items.indexWhere((e) => e['id'] == id);
     if (idx < 0) return;
@@ -532,8 +567,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final idx = items.indexWhere((e) => e['id'] == id);
     if (idx < 0) return;
     final currentScale = (items[idx]['cropScale'] as num? ?? 1.0).toDouble();
-    final currentOffsetX = (items[idx]['cropOffsetX'] as num? ?? 0.0).toDouble();
-    final currentOffsetY = (items[idx]['cropOffsetY'] as num? ?? 0.0).toDouble();
+    final currentOffsetX = (items[idx]['cropOffsetX'] as num? ?? 0.0)
+        .toDouble();
+    final currentOffsetY = (items[idx]['cropOffsetY'] as num? ?? 0.0)
+        .toDouble();
     final currentCaption = items[idx]['caption'] as String? ?? '';
     final base64Str = items[idx]['imageBytes'] as String? ?? '';
     if (base64Str.isEmpty) return;
@@ -580,24 +617,29 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               final ci = source['constIdx'] as int? ?? 0;
               final consts = _constants;
               final name = (ci >= 0 && ci < consts.length)
-                  ? consts[ci]['name'] as String? ?? AppLocalizations.of(context)!.constant
+                  ? consts[ci]['name'] as String? ??
+                        AppLocalizations.of(context)!.constant
                   : AppLocalizations.of(context)!.constant;
               final value = (ci >= 0 && ci < consts.length)
                   ? (consts[ci]['value'] as num? ?? 0.0).toDouble()
                   : 0.0;
-              final valStr = (value == value.truncateToDouble() && value.abs() < 1e12)
+              final valStr =
+                  (value == value.truncateToDouble() && value.abs() < 1e12)
                   ? _addCommas(value.toStringAsFixed(0))
                   : value.toString();
               return '$name: $valStr';
             }
             if (source['type'] == 'globalConstant') {
-              final name = source['constName'] as String? ?? AppLocalizations.of(context)!.constant;
+              final name =
+                  source['constName'] as String? ??
+                  AppLocalizations.of(context)!.constant;
               final idx = source['constIdx'] as int? ?? 0;
               final consts = widget.globalConstants;
               final value = (idx >= 0 && idx < consts.length)
                   ? (consts[idx]['value'] as num? ?? 0.0).toDouble()
                   : 0.0;
-              final valStr = (value == value.truncateToDouble() && value.abs() < 1e12)
+              final valStr =
+                  (value == value.truncateToDouble() && value.abs() < 1e12)
                   ? _addCommas(value.toStringAsFixed(0))
                   : value.toString();
               return '$name: $valStr';
@@ -613,9 +655,12 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
             final srcItems = (srcConfig.data['items'] as List? ?? [])
                 .map((e) => Map<String, dynamic>.from(e as Map))
                 .toList();
-            if (rowIdx < 0 || rowIdx >= srcItems.length) return AppLocalizations.of(context)!.calcLink;
+            if (rowIdx < 0 || rowIdx >= srcItems.length)
+              return AppLocalizations.of(context)!.calcLink;
             final item = srcItems[rowIdx];
-            final rowName = item['name'] as String? ?? AppLocalizations.of(context)!.defaultCalcName(rowIdx + 1);
+            final rowName =
+                item['name'] as String? ??
+                AppLocalizations.of(context)!.defaultCalcName(rowIdx + 1);
             String targetLabel;
             if (target == 'input') {
               targetLabel = AppLocalizations.of(context)!.calcTerm1;
@@ -1001,7 +1046,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.copiedItem(copy['name'] ?? AppLocalizations.of(context)!.normalCalc)),
+          content: Text(
+            AppLocalizations.of(context)!.copiedItem(
+              copy['name'] ?? AppLocalizations.of(context)!.normalCalc,
+            ),
+          ),
           backgroundColor: const Color.fromARGB(255, 70, 196, 255),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -1022,7 +1071,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.cutItem(copy['name'] ?? AppLocalizations.of(context)!.normalCalc)),
+          content: Text(
+            AppLocalizations.of(context)!.cutItem(
+              copy['name'] ?? AppLocalizations.of(context)!.normalCalc,
+            ),
+          ),
           backgroundColor: const Color.fromARGB(255, 206, 255, 70),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -1168,7 +1221,8 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
   void _editTitle() async {
     final l10n = AppLocalizations.of(context)!;
-    final currentTitle = widget.config.data['title'] as String? ?? l10n.sheetTitle;
+    final currentTitle =
+        widget.config.data['title'] as String? ?? l10n.sheetTitle;
     final currentColor = widget.config.data['bgColor'] as int?;
     final ctrl = TextEditingController(text: currentTitle);
     int selectedColor = currentColor ?? _kNoteColorPresets.first.value;
@@ -1241,71 +1295,81 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          children: _kNoteColorPresets.where((p) => !p.isDark).map((preset) {
-                            final isSelected = selectedColor == preset.value;
-                            return GestureDetector(
-                              onTap: () =>
-                                  setSheetState(() => selectedColor = preset.value),
-                              child: Container(
-                                margin: const EdgeInsets.only(right: 10),
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Color(preset.value),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? Colors.blueAccent
-                                        : Colors.white24,
-                                    width: isSelected ? 2.5 : 1,
+                          children: _kNoteColorPresets
+                              .where((p) => !p.isDark)
+                              .map((preset) {
+                                final isSelected =
+                                    selectedColor == preset.value;
+                                return GestureDetector(
+                                  onTap: () => setSheetState(
+                                    () => selectedColor = preset.value,
                                   ),
-                                ),
-                                child: isSelected
-                                    ? Icon(
-                                        Icons.check,
-                                        size: 18,
-                                        color: preset.isDark
-                                            ? Colors.white
-                                            : Colors.black54,
-                                      )
-                                    : null,
-                              ),
-                            );
-                          }).toList(),
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 10),
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Color(preset.value),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? Colors.blueAccent
+                                            : Colors.white24,
+                                        width: isSelected ? 2.5 : 1,
+                                      ),
+                                    ),
+                                    child: isSelected
+                                        ? Icon(
+                                            Icons.check,
+                                            size: 18,
+                                            color: preset.isDark
+                                                ? Colors.white
+                                                : Colors.black54,
+                                          )
+                                        : null,
+                                  ),
+                                );
+                              })
+                              .toList(),
                         ),
                         const SizedBox(height: 12),
                         Row(
-                          children: _kNoteColorPresets.where((p) => p.isDark).map((preset) {
-                            final isSelected = selectedColor == preset.value;
-                            return GestureDetector(
-                              onTap: () =>
-                                  setSheetState(() => selectedColor = preset.value),
-                              child: Container(
-                                margin: const EdgeInsets.only(right: 10),
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Color(preset.value),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? Colors.blueAccent
-                                        : Colors.white24,
-                                    width: isSelected ? 2.5 : 1,
+                          children: _kNoteColorPresets
+                              .where((p) => p.isDark)
+                              .map((preset) {
+                                final isSelected =
+                                    selectedColor == preset.value;
+                                return GestureDetector(
+                                  onTap: () => setSheetState(
+                                    () => selectedColor = preset.value,
                                   ),
-                                ),
-                                child: isSelected
-                                    ? Icon(
-                                        Icons.check,
-                                        size: 18,
-                                        color: preset.isDark
-                                            ? Colors.white
-                                            : Colors.black54,
-                                      )
-                                    : null,
-                              ),
-                            );
-                          }).toList(),
+                                  child: Container(
+                                    margin: const EdgeInsets.only(right: 10),
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Color(preset.value),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? Colors.blueAccent
+                                            : Colors.white24,
+                                        width: isSelected ? 2.5 : 1,
+                                      ),
+                                    ),
+                                    child: isSelected
+                                        ? Icon(
+                                            Icons.check,
+                                            size: 18,
+                                            color: preset.isDark
+                                                ? Colors.white
+                                                : Colors.black54,
+                                          )
+                                        : null,
+                                  ),
+                                );
+                              })
+                              .toList(),
                         ),
                       ],
                     ),
@@ -1326,7 +1390,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                         'title': ctrl.text,
                         'bgColor': selectedColor,
                       }),
-                      child: Text(AppLocalizations.of(context)!.save, style: TextStyle(fontSize: 16)),
+                      child: Text(
+                        AppLocalizations.of(context)!.save,
+                        style: TextStyle(fontSize: 16),
+                      ),
                     ),
                   ),
                 ],
@@ -1508,7 +1575,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               children: [
                 Row(
                   children: [
-                     Expanded(
+                    Expanded(
                       child: Text(
                         AppLocalizations.of(context)!.constantSettings,
                         style: TextStyle(
@@ -1528,21 +1595,21 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                    AppLocalizations.of(context)!.constantName,
+                  AppLocalizations.of(context)!.constantName,
                   style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: nameCtrl,
                   style: const TextStyle(color: Colors.white),
-                  decoration:  InputDecoration(
+                  decoration: InputDecoration(
                     hintText: AppLocalizations.of(context)!.constantNameHint,
                     hintStyle: TextStyle(color: Colors.white24),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                    AppLocalizations.of(context)!.constantValue,
+                  AppLocalizations.of(context)!.constantValue,
                   style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 const SizedBox(height: 6),
@@ -1733,7 +1800,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                           'name': nameCtrl.text,
                           'value': valCtrl.text,
                         }),
-                        child: Text(l10n.save, style: const TextStyle(fontSize: 16)),
+                        child: Text(
+                          l10n.save,
+                          style: const TextStyle(fontSize: 16),
+                        ),
                       ),
                     ),
                   ],
@@ -1781,7 +1851,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 Icons.push_pin_outlined,
                 color: Colors.amberAccent,
               ),
-              title: Text(l10n.addConstant, style: const TextStyle(color: Colors.white)),
+              title: Text(
+                l10n.addConstant,
+                style: const TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 _addConstant();
@@ -1792,7 +1865,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 Icons.sticky_note_2_outlined,
                 color: Colors.tealAccent,
               ),
-              title: Text(l10n.addMemo, style: const TextStyle(color: Colors.white)),
+              title: Text(
+                l10n.addMemo,
+                style: const TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 _addStandaloneMemo();
@@ -1805,7 +1881,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               ),
               title: Row(
                 children: [
-                  Text(l10n.addLogicItem, style: const TextStyle(color: Colors.white)),
+                  Text(
+                    l10n.addLogicItem,
+                    style: const TextStyle(color: Colors.white),
+                  ),
                   const SizedBox(width: 8),
                   const ProBadge(),
                 ],
@@ -1824,7 +1903,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                 Icons.image_outlined,
                 color: Colors.cyanAccent,
               ),
-              title: Text(l10n.addImage, style: const TextStyle(color: Colors.white)),
+              title: Text(
+                l10n.addImage,
+                style: const TextStyle(color: Colors.white),
+              ),
               onTap: () {
                 Navigator.pop(ctx);
                 _addImageItem();
@@ -1904,7 +1986,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               ),
               title: Row(
                 children: [
-                  Text(l10n.copyAsCsv, style: const TextStyle(color: Colors.white)),
+                  Text(
+                    l10n.copyAsCsv,
+                    style: const TextStyle(color: Colors.white),
+                  ),
                   const SizedBox(width: 8),
                   const ProBadge(),
                 ],
@@ -1918,7 +2003,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               leading: const Icon(Icons.qr_code_rounded, color: Colors.white70),
               title: Row(
                 children: [
-                  Text(l10n.shareWithQrCode, style: const TextStyle(color: Colors.white)),
+                  Text(
+                    l10n.shareWithQrCode,
+                    style: const TextStyle(color: Colors.white),
+                  ),
                   const SizedBox(width: 8),
                   const ProBadge(),
                 ],
@@ -2424,7 +2512,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     Clipboard.setData(ClipboardData(text: csvText));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: Text(AppLocalizations.of(context)!.csvCopied),
+        content: Text(AppLocalizations.of(context)!.csvCopied),
         backgroundColor: Color(0xFF2A2A3A),
       ),
     );
@@ -2448,7 +2536,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       return v.toStringAsFixed(precision);
     }
 
-    final title = widget.config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
+    final title =
+        widget.config.data['title'] as String? ??
+        AppLocalizations.of(context)!.standardCalc;
     final buf = StringBuffer();
     buf.writeln(escapeCsv(title));
     buf.writeln('名前,計算式,結果');
@@ -2546,7 +2636,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     }
 
     final resolvedRows = _computeResolvedRows(items, _constants);
-    final title = widget.config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
+    final title =
+        widget.config.data['title'] as String? ??
+        AppLocalizations.of(context)!.standardCalc;
 
     final qrItems = List.generate(items.length, (i) {
       final item = items[i];
@@ -3325,7 +3417,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                               padding: EdgeInsets.only(bottom: 50),
                               proxyDecorator: (child, index, animation) {
                                 return Material(
-                                  color: isDark ? const Color(0xFF2C2C2E) : Colors.white,
+                                  color: isDark
+                                      ? const Color(0xFF2C2C2E)
+                                      : Colors.white,
                                   elevation: 4,
                                   child: child,
                                 );
@@ -3639,10 +3733,9 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                             ReorderableDragStartListener(
                                               index: di,
                                               child: Padding(
-                                                padding:
-                                                    const EdgeInsets.only(
-                                                      right: 4,
-                                                    ),
+                                                padding: const EdgeInsets.only(
+                                                  right: 4,
+                                                ),
                                                 child: Icon(
                                                   Icons.drag_indicator,
                                                   color: isDark
@@ -3696,33 +3789,45 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                   excludeRowIdx: null,
                                                 ),
                                             getSourceRowName: (source) {
-                                              if (source == null) return AppLocalizations.of(context)!.calcLink;
+                                              if (source == null)
+                                                return AppLocalizations.of(
+                                                  context,
+                                                )!.calcLink;
                                               if (source['type'] ==
                                                   'constant') {
                                                 final ci =
-                                                    source['constIdx'] as int? ??
+                                                    source['constIdx']
+                                                        as int? ??
                                                     0;
                                                 final consts = _constants;
-                                                final name = (ci >= 0 &&
+                                                final name =
+                                                    (ci >= 0 &&
                                                         ci < consts.length)
                                                     ? consts[ci]['name']
-                                                            as String? ??
-                                                        AppLocalizations.of(context)!.constant
-                                                    : AppLocalizations.of(context)!.constant;
-                                                final value = (ci >= 0 &&
+                                                              as String? ??
+                                                          AppLocalizations.of(
+                                                            context,
+                                                          )!.constant
+                                                    : AppLocalizations.of(
+                                                        context,
+                                                      )!.constant;
+                                                final value =
+                                                    (ci >= 0 &&
                                                         ci < consts.length)
                                                     ? (consts[ci]['value']
-                                                                as num? ??
-                                                            0.0)
-                                                        .toDouble()
+                                                                  as num? ??
+                                                              0.0)
+                                                          .toDouble()
                                                     : 0.0;
-                                                final valStr = (value ==
+                                                final valStr =
+                                                    (value ==
                                                             value
                                                                 .truncateToDouble() &&
                                                         value.abs() < 1e12)
                                                     ? _addCommas(
-                                                        value
-                                                            .toStringAsFixed(0),
+                                                        value.toStringAsFixed(
+                                                          0,
+                                                        ),
                                                       )
                                                     : value.toString();
                                                 return '$name: $valStr';
@@ -3732,26 +3837,32 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                 final name =
                                                     source['constName']
                                                         as String? ??
-                                                    AppLocalizations.of(context)!.constant;
+                                                    AppLocalizations.of(
+                                                      context,
+                                                    )!.constant;
                                                 final idx =
-                                                    source['constIdx'] as int? ??
+                                                    source['constIdx']
+                                                        as int? ??
                                                     0;
                                                 final consts =
                                                     widget.globalConstants;
-                                                final value = (idx >= 0 &&
+                                                final value =
+                                                    (idx >= 0 &&
                                                         idx < consts.length)
                                                     ? (consts[idx]['value']
-                                                                as num? ??
-                                                            0.0)
-                                                        .toDouble()
+                                                                  as num? ??
+                                                              0.0)
+                                                          .toDouble()
                                                     : 0.0;
-                                                final valStr = (value ==
+                                                final valStr =
+                                                    (value ==
                                                             value
                                                                 .truncateToDouble() &&
                                                         value.abs() < 1e12)
                                                     ? _addCommas(
-                                                        value
-                                                            .toStringAsFixed(0),
+                                                        value.toStringAsFixed(
+                                                          0,
+                                                        ),
                                                       )
                                                     : value.toString();
                                                 return '$name: $valStr';
@@ -3785,16 +3896,24 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                       .toList();
                                               if (rowIdx < 0 ||
                                                   rowIdx >= srcItems.length)
-                                                return AppLocalizations.of(context)!.calcLink;
+                                                return AppLocalizations.of(
+                                                  context,
+                                                )!.calcLink;
                                               final item = srcItems[rowIdx];
                                               final rowName =
                                                   item['name'] as String? ??
                                                   '計算 ${rowIdx + 1}';
                                               String targetLabel;
                                               if (target == 'input') {
-                                                targetLabel = AppLocalizations.of(context)!.calcTerm1;
+                                                targetLabel =
+                                                    AppLocalizations.of(
+                                                      context,
+                                                    )!.calcTerm1;
                                               } else if (target == 'operand') {
-                                                targetLabel = AppLocalizations.of(context)!.calcTerm2;
+                                                targetLabel =
+                                                    AppLocalizations.of(
+                                                      context,
+                                                    )!.calcTerm2;
                                               } else if (target.startsWith(
                                                 'other_',
                                               )) {
@@ -3805,7 +3924,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
                                                     0;
                                                 targetLabel = '項${oi + 3}';
                                               } else {
-                                                targetLabel = AppLocalizations.of(context)!.calcAnswer;
+                                                targetLabel =
+                                                    AppLocalizations.of(
+                                                      context,
+                                                    )!.calcAnswer;
                                               }
                                               final v = _resolveExternalValue(
                                                 effectiveId,
@@ -4015,7 +4137,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
           builder: (ctx) => AlertDialog(
             backgroundColor: const Color(0xFF1E1E2E),
             title: Text(
-                    AppLocalizations.of(context)!.aiPurchaseRequired,
+              AppLocalizations.of(context)!.aiPurchaseRequired,
               style: TextStyle(color: Colors.white, fontSize: 16),
             ),
             content: const Text(
@@ -4026,7 +4148,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
                 child: Text(
-                    AppLocalizations.of(context)!.cancel,
+                  AppLocalizations.of(context)!.cancel,
                   style: TextStyle(color: Colors.white54),
                 ),
               ),
@@ -4055,7 +4177,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: Text(AppLocalizations.of(context)!.generatingFormula),
+        content: Text(AppLocalizations.of(context)!.generatingFormula),
         duration: Duration(seconds: 2),
       ),
     );
@@ -4065,24 +4187,32 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
 
     final prompt =
         """
+  An image is attached to this request. Inspect the image carefully and use its
+  visible text, numbers, formulas, and layout as the primary source of truth.
+  If the image contains a calculation request or an existing formula, convert
+  what is shown in the image into calculator formula objects. Do not ignore the
+  image just because the text instruction is empty.
+
 User wants to generate calculator expression(s) for: "$instruction".
 Return a JSON array of objects. Multiple formulas are allowed if the request implies multiple steps or variations.
 
 [CRITICAL INSTRUCTIONS]
 1. Combine calculation steps into the 'others' list of an item where appropriate. 
-2. For variables the user needs to input (e.g., "base", "height"), set "input" or "val" to 0.0 and put the label in "unit".
-3. For mathematical constants required by the formula (e.g., "2" in triangle area, "3.14" in circle), set the specific numerical value in "input", "operand", or "val".
-4. [IMPORTANT] Be mathematically precise. Only use division or constants (like /2) if the specific formula requires it.
-5. Use "brackets" to specify priority calculations (parentheses). Index 0 is "input", index 1 is "operand", index 2 is "others[0]", index 3 is "others[1]", and so on.
-6. Ensure every formula is mathematically correct.
+2. If the image contains countable people or objects requested by the user, count the visible instances first, separately for each requested category. Use those observed counts as actual numeric values in "input", "operand", or "val". Never replace an observed image count with 0.0.
+3. For example, if the image shows 2 women and 3 men and the user asks for their total, return input=2, unit1="女性", op="+", operand=3, unit2="男性", and unitResult="合計人数".
+4. For variables the user needs to input and that cannot be read from the image (e.g., "base", "height"), set "input" or "val" to 0.0 and put the label in "unit".
+5. For mathematical constants required by the formula (e.g., "2" in triangle area, "3.14" in circle), set the specific numerical value in "input", "operand", or "val".
+6. [IMPORTANT] Be mathematically precise. Only use division or constants (like /2) if the specific formula requires it.
+7. Use "brackets" to specify priority calculations (parentheses). Index 0 is "input", index 1 is "operand", index 2 is "others[0]", index 3 is "others[1]", and so on.
+8. Ensure every formula is mathematically correct.
 
 Structure per item:
 {
   "name": "Calculation name",
-  "input": 0.0,
+  "input": 0.0, // Use the observed image count or specified number; use 0.0 only if genuinely unavailable
   "unit1": "label for first value",
   "op": "+", (one of: +, -, x, /, %)
-  "operand": 0.0,
+  "operand": 0.0, // Use the observed image count or specified number; use 0.0 only if genuinely unavailable
   "unit2": "label for second value",
   "others": [
     { "op": "/", "val": 2.0, "unit": "" }
@@ -4112,18 +4242,48 @@ Example output:
 """;
 
     try {
+        final shouldExtractImageCounts =
+          result.imageBytes != null &&
+          isImageCategoryCountRequest(instruction);
+        final imageCounts = !shouldExtractImageCounts
+          ? null
+          : await ai.countInImage(
+            result.imageBytes!,
+            instruction,
+            requireCategories: true,
+          );
+        if (shouldExtractImageCounts &&
+          (imageCounts == null || imageCounts.items.isEmpty)) {
+        throw Exception('画像から対象の個数を取得できませんでした。');
+      }
+
+      final observedCounts = imageCounts == null
+          ? ''
+          : '''
+
+[IMAGE MEASUREMENTS - USE THESE ACTUAL NUMBERS]
+The following counts were extracted from the attached image. Treat them as
+authoritative measured inputs. Do not replace them with 0.0 or invent new
+counts. For a ratio/percentage request, create one formula per category using
+category count / total count x 100.
+${imageCounts.items.map((item) => '- ${item.target}: ${item.count}').join('\n')}
+Total observed count: ${imageCounts.count}
+''';
+      final formulaPrompt = '$prompt$observedCounts';
       final String res;
       final systemPrompt =
-          "You are a calculator generator AI. Return a JSON array of formula objects.";
+          "You are a calculator generator AI. Use any IMAGE MEASUREMENTS supplied in the prompt as authoritative numeric data. Return only a JSON array of formula objects.";
 
-      if (result.imageBytes != null) {
+      if (imageCounts != null) {
+        res = await ai.query(formulaPrompt, systemPrompt: systemPrompt);
+      } else if (result.imageBytes != null) {
         res = await ai.queryWithImage(
-          prompt,
+          formulaPrompt,
           result.imageBytes!,
           systemPrompt: systemPrompt,
         );
       } else {
-        res = await ai.query(prompt, systemPrompt: systemPrompt);
+        res = await ai.query(formulaPrompt, systemPrompt: systemPrompt);
       }
 
       final jsonStart = res.indexOf('[');
@@ -4180,7 +4340,7 @@ Example output:
       _showCalc = false; // 電卓を最小化してカメラ選択画面を隠れなくする
     });
 
-    final count = await Navigator.push<int>(
+    final result = await Navigator.push<AiCountResult>(
       context,
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -4191,17 +4351,28 @@ Example output:
     if (!mounted) return;
     setState(() => _isAiCounting = false);
 
-    if (count != null) {
+    if (result != null) {
       setState(() {
-        _calcDisplay = count.toString();
+        final values = result.items
+            .map((item) => item.count.toDouble())
+            .toList();
+        _calcDisplay = result.count.toString();
         _calcNewEntry = true;
-        _calcHasResult = false;
+        _calcHasResult = true;
         _isClearState = false;
-        _calcA = null;
+        _calcA = result.count.toDouble();
         _calcOp = '';
-        _calcTermValues = [];
-        _calcTermOps = [];
-        _calcExprStr = '';
+        _calcTermValues = values;
+        _calcTermOps = List.filled(
+          values.length > 0 ? values.length - 1 : 0,
+          '+',
+        );
+        if (values.length >= 2) {
+          _calcLastA = values[0];
+          _calcLastOp = '+';
+          _calcLastB = values[1];
+        }
+        _calcExprStr = '${result.additionExpression} = ${result.count}';
       });
     }
   }
@@ -4240,7 +4411,10 @@ Example output:
               for (int i = 0; i < parts.length; i++) {
                 if (i % 2 == 0) {
                   final v = double.tryParse(parts[i]);
-                  if (v == null) { valid = false; break; }
+                  if (v == null) {
+                    valid = false;
+                    break;
+                  }
                   termVals.add(v);
                 } else {
                   // 演算子は+, -, ×, ÷ のいずれか（保存時はそのまま）
@@ -4259,6 +4433,7 @@ Example output:
                 if (op == '÷') return '/';
                 return op;
               }
+
               _calcLastA = termVals[0];
               _calcLastOp = opDart(termOps[0]);
               _calcLastB = termVals[1];
@@ -4308,7 +4483,7 @@ Example output:
           return AlertDialog(
             backgroundColor: Colors.black,
             title: Text(
-                    AppLocalizations.of(context)!.bracketRange,
+              AppLocalizations.of(context)!.bracketRange,
               style: TextStyle(color: Colors.white, fontSize: 16),
             ),
             content: Column(
@@ -4316,7 +4491,7 @@ Example output:
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                    AppLocalizations.of(context)!.startItem,
+                  AppLocalizations.of(context)!.startItem,
                   style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 DropdownButton<int>(
@@ -4340,7 +4515,7 @@ Example output:
                 ),
                 const SizedBox(height: 16),
                 Text(
-                    AppLocalizations.of(context)!.endItem,
+                  AppLocalizations.of(context)!.endItem,
                   style: TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 DropdownButton<int>(
@@ -4442,7 +4617,7 @@ Example output:
                   Navigator.pop(ctx);
                 },
                 child: Text(
-                    AppLocalizations.of(context)!.historyAdd,
+                  AppLocalizations.of(context)!.historyAdd,
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),

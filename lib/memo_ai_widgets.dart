@@ -244,6 +244,7 @@ class _AiCountPageState extends State<_AiCountPage> {
   final _picker = ImagePicker();
   int? _remainingUses;
   List<AiCountHistoryEntry> _historyEntries = [];
+  List<String> _detectedObjects = [];
 
   @override
   void initState() {
@@ -313,12 +314,15 @@ class _AiCountPageState extends State<_AiCountPage> {
         _imageWidth = decodedImage.width.toDouble();
         _imageHeight = decodedImage.height.toDouble();
         _lastResult = null;
+        _detectedObjects = [];
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.imagePickFailed(e))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.imagePickFailed(e)),
+          ),
+        );
       }
     }
   }
@@ -327,9 +331,11 @@ class _AiCountPageState extends State<_AiCountPage> {
   Future<void> _runLlmCount() async {
     final instruction = _labelCtrl.text.trim();
     if (instruction.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.enterCountInstruction)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.enterCountInstruction),
+        ),
+      );
       return;
     }
     if (_imageBytes == null) return;
@@ -352,7 +358,10 @@ class _AiCountPageState extends State<_AiCountPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: Text(AppLocalizations.of(context)!.cancel, style: const TextStyle(color: Colors.white54)),
+                child: Text(
+                  AppLocalizations.of(context)!.cancel,
+                  style: const TextStyle(color: Colors.white54),
+                ),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -388,8 +397,7 @@ class _AiCountPageState extends State<_AiCountPage> {
         AiCountHistoryManager.instance.addEntry(
           imageBytes: _imageBytes!,
           instruction: instruction,
-          count: result.count,
-          points: result.points,
+          items: result.items,
         );
         _loadHistory();
       }
@@ -403,17 +411,26 @@ class _AiCountPageState extends State<_AiCountPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.errorOccurred(e.toString()))));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.errorOccurred(e.toString()),
+            ),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isCounting = false);
     }
   }
 
-  Future<void> _detectAndListObjects() async {
+  Future<void> _detectAndListObjects({bool forceRefresh = false}) async {
     if (_imageBytes == null) return;
+    if (_detectedObjects.isNotEmpty && !forceRefresh) {
+      await _showObjectSelectionSheet();
+      return;
+    }
+
     setState(() {
       _isCounting = true;
       _lastResult = null;
@@ -439,7 +456,10 @@ class _AiCountPageState extends State<_AiCountPage> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: Text(AppLocalizations.of(context)!.cancel, style: const TextStyle(color: Colors.white54)),
+                child: Text(
+                  AppLocalizations.of(context)!.cancel,
+                  style: const TextStyle(color: Colors.white54),
+                ),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -462,17 +482,20 @@ class _AiCountPageState extends State<_AiCountPage> {
         return;
       }
 
-      final prompt = 'この画像に写っている主要なオブジェクト（物体）の名称を、カンマ区切りでリストアップしてください。できるだけ多くの対象を列挙し、不要な説明や箇条書きの記号は省き、必ず名称のみを日本語でカンマ区切りで出力してください。';
+      final prompt =
+          'この画像に写っている主要なオブジェクト（物体）の名称を、カンマ区切りでリストアップしてください。できるだけ多くの対象を列挙し、不要な説明や箇条書きの記号は省き、必ず名称のみを日本語でカンマ区切りで出力してください。';
       final resultText = await GemmaAi().queryWithImage(
         prompt,
         _imageBytes!,
         systemPrompt: "You are an object detector.",
       );
       if (!mounted) return;
-      
+
       final objects = resultText
           .split(RegExp(r'[,、\n]'))
-          .map((e) => e.replaceAll(RegExp(r'^[-・* ]+|[-・* ]+$'), '').trim()) // remove markdown list dashes or stars
+          .map(
+            (e) => e.replaceAll(RegExp(r'^[-・* ]+|[-・* ]+$'), '').trim(),
+          ) // remove markdown list dashes or stars
           .where((e) => e.isNotEmpty && e != 'なし')
           .toList();
 
@@ -480,55 +503,138 @@ class _AiCountPageState extends State<_AiCountPage> {
         throw Exception('対象が見つかりませんでした。');
       }
 
-      final selected = await showModalBottomSheet<String>(
-        context: context,
-        backgroundColor: const Color(0xFF1E1E2E),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        builder: (ctx) => SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(AppLocalizations.of(context)!.selectObjectToCount, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-              ),
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: objects.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      title: Text(objects[index], style: const TextStyle(color: Colors.white)),
-                      leading: const Icon(Icons.check_circle_outline, color: Colors.tealAccent),
-                      onTap: () {
-                        Navigator.pop(ctx, objects[index]);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-
-      if (selected != null && mounted) {
-        // 選択されたアイテムはテキストフィールドに入力するだけ
-        _labelCtrl.text = selected;
-        setState(() => _isCounting = false);
-      } else {
-        if (mounted) setState(() => _isCounting = false);
-      }
-
+      final uniqueObjects = objects.toSet().toList();
+      setState(() => _detectedObjects = uniqueObjects);
     } catch (e) {
       if (mounted) {
-        setState(() => _isCounting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppLocalizations.of(context)!.errorOccurred(e.toString()))),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!.errorOccurred(e.toString()),
+            ),
+          ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isCounting = false);
+    }
+
+    if (mounted && _detectedObjects.isNotEmpty) {
+      await _showObjectSelectionSheet();
+    }
+  }
+
+  Future<void> _showObjectSelectionSheet() async {
+    if (_detectedObjects.isEmpty) return;
+    final selectedFromInput = _labelCtrl.text
+        .split(RegExp(r'[,、\n]'))
+        .map((item) => item.trim())
+        .where(_detectedObjects.contains)
+        .toSet();
+
+    final selected = await showModalBottomSheet<List<String>>(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E2E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      isScrollControlled: true,
+      builder: (ctx) {
+        final selectedObjects = <String>{...selectedFromInput};
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) => SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.7,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      AppLocalizations.of(context)!.selectObjectToCount,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: _detectedObjects.length,
+                      itemBuilder: (context, index) {
+                        final object = _detectedObjects[index];
+                        final isSelected = selectedObjects.contains(object);
+                        return CheckboxListTile(
+                          value: isSelected,
+                          activeColor: Colors.teal,
+                          checkColor: Colors.white,
+                          title: Text(
+                            object,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          onChanged: (checked) {
+                            setSheetState(() {
+                              if (checked == true) {
+                                selectedObjects.add(object);
+                              } else {
+                                selectedObjects.remove(object);
+                              }
+                            });
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: Row(
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _detectAndListObjects(forceRefresh: true);
+                          },
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: Text(
+                            AppLocalizations.of(context)!.redetectObjects,
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.tealAccent,
+                            side: const BorderSide(color: Colors.teal),
+                          ),
+                        ),
+                        const Spacer(),
+                        ElevatedButton(
+                          onPressed: selectedObjects.isEmpty
+                              ? null
+                              : () => Navigator.pop(
+                                  ctx,
+                                  selectedObjects.toList(),
+                                ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Text(AppLocalizations.of(context)!.save),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (selected != null && mounted) {
+      _labelCtrl.text = selected.join('、');
+      setState(() {});
     }
   }
 
@@ -542,11 +648,7 @@ class _AiCountPageState extends State<_AiCountPage> {
       builder: (ctx) => Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFF1A0A2E),
-              Color(0xFF16213E),
-              Color(0xFF0F3460),
-            ],
+            colors: [Color(0xFF1A0A2E), Color(0xFF16213E), Color(0xFF0F3460)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -604,7 +706,9 @@ class _AiCountPageState extends State<_AiCountPage> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          AppLocalizations.of(context)!.remainingUsesFormat(_remainingUses!),
+                          AppLocalizations.of(
+                            context,
+                          )!.remainingUsesFormat(_remainingUses!),
                           style: const TextStyle(
                             color: Color(0xFFC4B5FD),
                             fontSize: 13,
@@ -626,7 +730,10 @@ class _AiCountPageState extends State<_AiCountPage> {
                     _pickImage(ImageSource.camera);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 20,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -684,7 +791,10 @@ class _AiCountPageState extends State<_AiCountPage> {
                     _pickImage(ImageSource.gallery);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 20,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -746,7 +856,7 @@ class _AiCountPageState extends State<_AiCountPage> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor:Colors.transparent,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
         titleSpacing: 0,
@@ -763,7 +873,13 @@ class _AiCountPageState extends State<_AiCountPage> {
             ),
           ],
         ),
-        actions: [if (_lastResult != null) ...[]],
+        actions: [
+          IconButton(
+            onPressed: _isCounting ? null : _showSourcePicker,
+            icon: const Icon(Icons.photo_camera_outlined),
+            tooltip: AppLocalizations.of(context)!.changePhoto,
+          ),
+        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -876,7 +992,6 @@ class _AiCountPageState extends State<_AiCountPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                   
                       const SizedBox(height: 8),
                       // メインタイトル
                       ShaderMask(
@@ -918,12 +1033,14 @@ class _AiCountPageState extends State<_AiCountPage> {
                         ),
                       ),
                       //const SizedBox(height: 20),
-if (_remainingUses != null)
+                      if (_remainingUses != null)
                         GestureDetector(
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const StorePage()),
+                              MaterialPageRoute(
+                                builder: (_) => const StorePage(),
+                              ),
                             );
                           },
                           child: Container(
@@ -942,7 +1059,9 @@ if (_remainingUses != null)
                               borderRadius: BorderRadius.circular(28),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF7B2FBE).withOpacity(0.15),
+                                  color: const Color(
+                                    0xFF7B2FBE,
+                                  ).withOpacity(0.15),
                                   blurRadius: 16,
                                   spreadRadius: -2,
                                 ),
@@ -958,7 +1077,9 @@ if (_remainingUses != null)
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  AppLocalizations.of(context)!.remainingUsesFormat(_remainingUses!),
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.remainingUsesFormat(_remainingUses!),
                                   style: const TextStyle(
                                     color: Color(0xFFC4B5FD),
                                     fontSize: 13,
@@ -999,7 +1120,6 @@ if (_remainingUses != null)
                         ],
                       ),
                       const SizedBox(height: 24),
-   
                     ],
                   ),
                 ),
@@ -1013,17 +1133,18 @@ if (_remainingUses != null)
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFF0A1628),
-                  Color(0xFF0F1D32),
-                ],
+                colors: [Color(0xFF0A1628), Color(0xFF0F1D32)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.history_rounded, color: Color(0xFFA78BFA), size: 16),
+                const Icon(
+                  Icons.history_rounded,
+                  color: Color(0xFFA78BFA),
+                  size: 16,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   AppLocalizations.of(context)!.aiCountHistory,
@@ -1055,10 +1176,7 @@ if (_remainingUses != null)
             height: 180,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFF0A1628),
-                  Color(0xFF0D1B2A),
-                ],
+                colors: [Color(0xFF0A1628), Color(0xFF0D1B2A)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -1117,7 +1235,9 @@ if (_remainingUses != null)
             // サムネイル画像
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(15),
+                ),
                 child: Container(
                   decoration: BoxDecoration(
                     boxShadow: [
@@ -1143,7 +1263,9 @@ if (_remainingUses != null)
                     const Color(0xFF0F3460).withOpacity(0.9),
                   ],
                 ),
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(15),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -1159,7 +1281,9 @@ if (_remainingUses != null)
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${entry.instruction}',
+                    entry.items
+                        .map((item) => '${item.target}: ${item.count}')
+                        .join(' / '),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -1172,7 +1296,10 @@ if (_remainingUses != null)
                   const SizedBox(height: 2),
                   Text(
                     dateStr,
-                    style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.3),
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
@@ -1185,7 +1312,9 @@ if (_remainingUses != null)
 
   Future<void> _showHistoryDetail(AiCountHistoryEntry entry) async {
     // 画像ファイルを読み込む
-    final file = await AiCountHistoryManager.instance.getImageFile(entry.imagePath);
+    final file = await AiCountHistoryManager.instance.getImageFile(
+      entry.imagePath,
+    );
     if (file == null || !mounted) return;
     final bytes = await file.readAsBytes();
     if (!mounted) return;
@@ -1194,7 +1323,7 @@ if (_remainingUses != null)
     final decodedImage = await decodeImageFromList(bytes);
     if (!mounted) return;
 
-    await Navigator.push(
+    final result = await Navigator.push<AiCountResult>(
       context,
       MaterialPageRoute(
         builder: (_) => _AiCountHistoryDetailPage(
@@ -1203,11 +1332,15 @@ if (_remainingUses != null)
           imageHeight: decodedImage.height.toDouble(),
           count: entry.count,
           instruction: entry.instruction,
-          points: entry.points,
+          items: entry.items,
           entryId: entry.id,
         ),
       ),
     );
+    if (result != null && mounted) {
+      Navigator.pop(context, result);
+      return;
+    }
     // 戻った後に履歴リストを更新（削除された場合に備える）
     if (mounted) _loadHistory();
   }
@@ -1258,7 +1391,7 @@ if (_remainingUses != null)
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-              //    color: Colors.white.withOpacity(0.12),
+                  //    color: Colors.white.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -1267,7 +1400,7 @@ if (_remainingUses != null)
                   size: 40,
                 ),
               ),
-             // const SizedBox(height: 10),
+              // const SizedBox(height: 10),
               Text(
                 label,
                 style: TextStyle(
@@ -1301,23 +1434,26 @@ if (_remainingUses != null)
                 constraints: BoxConstraints(minHeight: viewHeight),
                 child: Center(
                   child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.8),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.8),
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
                         ),
+                      ],
+                    ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(30),
                       child: Container(
- decoration: BoxDecoration(
+                        decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(30),
-                        ),                       
+                        ),
                         width: viewWidth,
                         child: AspectRatio(
                           aspectRatio: _imageWidth / _imageHeight,
@@ -1327,9 +1463,11 @@ decoration: BoxDecoration(
                               Image.memory(_imageBytes!, fit: BoxFit.fill),
                               if (_showMarkers &&
                                   _lastResult != null &&
-                                  _lastResult!.points.isNotEmpty)
+                                  _lastResult!.items.any(
+                                    (item) => item.points.isNotEmpty,
+                                  ))
                                 _MarkerOverlay(
-                                  points: _lastResult!.points,
+                                  items: _lastResult!.items,
                                   imageBytes: _imageBytes!,
                                   opacity: _markerOpacity,
                                 ),
@@ -1383,8 +1521,12 @@ decoration: BoxDecoration(
                     child: SliderTheme(
                       data: SliderThemeData(
                         trackHeight: 2,
-                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 6,
+                        ),
+                        overlayShape: const RoundSliderOverlayShape(
+                          overlayRadius: 12,
+                        ),
                         activeTrackColor: Colors.white70,
                         inactiveTrackColor: Colors.white24,
                         thumbColor: Colors.white,
@@ -1406,59 +1548,123 @@ decoration: BoxDecoration(
         // カウント結果バッジ
         if (_lastResult != null && _showMarkers)
           Positioned(
-            top: 12,
-            left: 0,
+            top: 0,
+            //left: 0,
             right: 0,
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // カウント数バッジ
+                  // 対象ごとのカウント結果
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 14,
+                      horizontal: 24,
+                      vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF7B2FBE).withOpacity(0.7),
-                          const Color(0xFF1E88E5).withOpacity(0.7),
-                        ],
-                      ),
                       borderRadius: BorderRadius.circular(28),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
-                        width: 1.5,
-                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF7B2FBE).withOpacity(0.4),
-                          blurRadius: 24,
+                          color: const Color(0xFF7B2FBE).withOpacity(0.1),
+                          blurRadius: 34,
                           spreadRadius: -4,
                         ),
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 16,
+                          color: const Color.fromARGB(
+                            255,
+                            178,
+                            55,
+                            255,
+                          ).withOpacity(0.2),
+                          blurRadius: 36,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                    child: Text(
-                      '${_lastResult!.count}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 46,
-                        fontWeight: FontWeight.bold,
-                        height: 1,
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 0),
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.9,
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_lastResult!.items.length > 1) ...[
+                                    Text(
+                                      'TOTAL ${_lastResult!.count}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 24,
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(width: 20),
+
+                                  for (final item in _lastResult!.items) ...[
+                                    Container(
+                                      margin: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            width: 15,
+                                            height: 15,
+                                            decoration: BoxDecoration(
+                                              color: _MarkerPainter.colorFor(
+                                                _lastResult!.items.indexOf(
+                                                  item,
+                                                ),
+                                              ),
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 3),
+                                          ConstrainedBox(
+                                            constraints: const BoxConstraints(
+                                              maxWidth: 180,
+                                            ),
+                                            child: Text(
+                                              item.target,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 18,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            '${item.count}',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                              height: 1,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 12),
                   // 電卓反映ボタン
                   GestureDetector(
-                    onTap: () =>
-                        Navigator.pop(context, _lastResult!.count),
+                    onTap: () => Navigator.pop(context, _lastResult!),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
@@ -1525,53 +1731,6 @@ decoration: BoxDecoration(
               ),
             ),
           ),
-
-        // 写真変更ボタン
-        Positioned(
-          bottom: 80,
-          right: 20,
-          left: 20,
-          child: Center(
-            child: GestureDetector(
-              onTap: _isCounting ? null : _showSourcePicker,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.white.withOpacity(0.12),
-                      Colors.white.withOpacity(0.06),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.15),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.photo_camera_outlined,
-                      color: Colors.white.withOpacity(0.7),
-                      size: 16,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      AppLocalizations.of(context)!.changePhoto,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -1580,10 +1739,7 @@ decoration: BoxDecoration(
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Color.fromARGB(255, 0, 0, 0),
-            Color(0xFF16213E),
-          ],
+          colors: [Color.fromARGB(255, 0, 0, 0), Color(0xFF16213E)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
@@ -1611,12 +1767,14 @@ decoration: BoxDecoration(
                     color: Colors.tealAccent,
                     size: 12,
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    AppLocalizations.of(context)!.countTargetInstruction,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.35),
-                      fontSize: 11,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      AppLocalizations.of(context)!.countTargetInstruction,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.35),
+                        fontSize: 11,
+                      ),
                     ),
                   ),
                 ],
@@ -1651,14 +1809,18 @@ decoration: BoxDecoration(
                 const SizedBox(width: 10),
                 // カウントボタン（メインアクション）
                 GestureDetector(
-                  onTap: isBusy ? null : (_labelCtrl.text.isNotEmpty ? _runLlmCount : null),
+                  onTap: isBusy
+                      ? null
+                      : (_labelCtrl.text.isNotEmpty ? _runLlmCount : null),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: isBusy
                           ? Colors.teal.withOpacity(0.3)
-                          :_labelCtrl.text.isEmpty ? Colors.grey.withOpacity(1) : Colors.teal,
+                          : _labelCtrl.text.isEmpty
+                          ? Colors.grey.withOpacity(1)
+                          : Colors.teal,
                       shape: BoxShape.circle,
                       boxShadow: isBusy
                           ? []
@@ -1704,7 +1866,9 @@ decoration: BoxDecoration(
                 ),
                 icon: const Icon(Icons.list_alt, size: 20),
                 label: Text(
-                  AppLocalizations.of(context)!.listObjectsFromImage,
+                  _detectedObjects.isEmpty
+                      ? AppLocalizations.of(context)!.listObjectsFromImage
+                      : AppLocalizations.of(context)!.detectedObjectsList,
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -1856,7 +2020,11 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
               allTerms.length >= 2) {
             result = allTerms[0];
             for (int i = 0; i < effectiveOps.length; i++) {
-              result = _evalCalcSimple(result, effectiveOps[i], allTerms[i + 1]);
+              result = _evalCalcSimple(
+                result,
+                effectiveOps[i],
+                allTerms[i + 1],
+              );
             }
           } else {
             result = allTerms.isNotEmpty ? allTerms.last : (_calcA ?? 0);
@@ -1866,8 +2034,11 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
             exprParts.add(_fmtCalc(allTerms[i]));
             if (i < effectiveOps.length) exprParts.add(effectiveOps[i]);
           }
-          final displayExprParts = exprParts.map((p) => double.tryParse(p) != null ? _addCommas(p) : p).toList();
-          _calcExprStr = '${displayExprParts.join(' ')} = ${_addCommas(_fmtCalc(result))}';
+          final displayExprParts = exprParts
+              .map((p) => double.tryParse(p) != null ? _addCommas(p) : p)
+              .toList();
+          _calcExprStr =
+              '${displayExprParts.join(' ')} = ${_addCommas(_fmtCalc(result))}';
           flashExpr = _calcExprStr;
           _calcTermValues = allTerms;
           _calcTermOps = effectiveOps;
@@ -1876,7 +2047,10 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
           _calcDisplay = _fmtCalc(result);
           _calcHasResult = true;
           _calcNewEntry = true;
-          CalcHistoryManager.instance.addEntry(exprParts.join(' '), _fmtCalc(result));
+          CalcHistoryManager.instance.addEntry(
+            exprParts.join(' '),
+            _fmtCalc(result),
+          );
         } else {
           if (_calcDisplay != '0' || _calcA != null) {
             _calcHasResult = true;
@@ -1886,9 +2060,16 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                 exprParts.add(_fmtCalc(_calcTermValues[i]));
                 if (i < _calcTermOps.length) exprParts.add(_calcTermOps[i]);
               }
-              CalcHistoryManager.instance.addEntry(exprParts.join(' '), _fmtCalc(_calcA ?? 0));
-              final dp = exprParts.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
-              flashExpr = '${dp.join(' ')} = ${_addCommas(_fmtCalc(_calcA ?? 0))}';
+              CalcHistoryManager.instance.addEntry(
+                exprParts.join(' '),
+                _fmtCalc(_calcA ?? 0),
+              );
+              final dp = exprParts.map((p) {
+                final v = double.tryParse(p);
+                return v != null ? _addCommas(p) : p;
+              }).toList();
+              flashExpr =
+                  '${dp.join(' ')} = ${_addCommas(_fmtCalc(_calcA ?? 0))}';
             } else if (_calcDisplay != '0') {
               CalcHistoryManager.instance.addEntry(_calcDisplay, _calcDisplay);
               flashExpr = _addCommas(_calcDisplay);
@@ -1963,7 +2144,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
   void _showAiCountDialog() async {
     final ai = GemmaAi();
     setState(() => _isAiCounting = true);
-    final count = await Navigator.push<int>(
+    final result = await Navigator.push<AiCountResult>(
       context,
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -1973,16 +2154,22 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
     if (!mounted) return;
     setState(() {
       _isAiCounting = false;
-      if (count != null) {
-        _calcDisplay = count.toString();
+      if (result != null) {
+        final values = result.items
+            .map((item) => item.count.toDouble())
+            .toList();
+        _calcDisplay = result.count.toString();
         _calcNewEntry = true;
-        _calcHasResult = false;
+        _calcHasResult = true;
         _isClearState = false;
-        _calcA = null;
+        _calcA = result.count.toDouble();
         _calcOp = '';
-        _calcTermValues = [];
-        _calcTermOps = [];
-        _calcExprStr = '';
+        _calcTermValues = values;
+        _calcTermOps = List.filled(
+          values.length > 0 ? values.length - 1 : 0,
+          '+',
+        );
+        _calcExprStr = '${result.additionExpression} = ${result.count}';
       }
     });
   }
@@ -2009,7 +2196,8 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
             _calcOp = '';
             _calcTermValues = _calcA != null ? [_calcA!] : [];
             _calcTermOps = [];
-            _calcExprStr = '${entry.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(entry.result)}';
+            _calcExprStr =
+                '${entry.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(entry.result)}';
           });
         },
         onClear: () {
@@ -2022,7 +2210,9 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
           final sb = StringBuffer();
           for (final e in selectedEntries) {
             if (sb.isNotEmpty) sb.write('\n');
-            sb.write('${e.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(e.result)}');
+            sb.write(
+              '${e.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(e.result)}',
+            );
           }
           final insertText = sb.toString();
           final sel = _ctrl.selection;
@@ -2057,10 +2247,23 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
       position: position,
       color: const Color(0xFF2A2A32),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      items: ops.map((o) => PopupMenuItem<String>(
-        value: o,
-        child: Center(child: Text(o, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold))),
-      )).toList(),
+      items: ops
+          .map(
+            (o) => PopupMenuItem<String>(
+              value: o,
+              child: Center(
+                child: Text(
+                  o,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          )
+          .toList(),
     );
     if (selectedOp != null) {
       setState(() {
@@ -2075,8 +2278,12 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
           ep.add(_fmtCalc(_calcTermValues[i]));
           if (i < _calcTermOps.length) ep.add(_calcTermOps[i]);
         }
-        final dp = ep.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
-        if (_calcHasResult) _calcExprStr = '${dp.join(' ')} = ${_addCommas(_fmtCalc(r))}';
+        final dp = ep.map((p) {
+          final v = double.tryParse(p);
+          return v != null ? _addCommas(p) : p;
+        }).toList();
+        if (_calcHasResult)
+          _calcExprStr = '${dp.join(' ')} = ${_addCommas(_fmtCalc(r))}';
       });
     }
   }
@@ -2090,44 +2297,97 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
       context: context,
       builder: (ctx) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          ctrl.selection = TextSelection(baseOffset: 0, extentOffset: ctrl.text.length);
+          ctrl.selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: ctrl.text.length,
+          );
         });
         return AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(AppLocalizations.of(context)!.editValue, style: const TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w600)),
-        content: TextField(
-          controller: ctrl, autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-          style: const TextStyle(color: Colors.black87, fontSize: 22, fontWeight: FontWeight.w500),
-          textAlign: TextAlign.center,
-          decoration: InputDecoration(
-            hintText: AppLocalizations.of(context)!.numberInputHint, hintStyle: TextStyle(color: Colors.grey.shade400),
-            filled: true, fillColor: Colors.grey.shade100,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.of(context)!.cancel, style: TextStyle(color: Colors.grey.shade500))),
-          TextButton(
-            onPressed: () {
-              final newVal = double.tryParse(ctrl.text.replaceAll(',', '')) ?? currentVal;
-              setState(() {
-                _calcTermValues[index] = newVal;
-                double r = _calcTermValues[0];
-                for (int i = 0; i + 1 < _calcTermValues.length; i++) { r = _evalCalcSimple(r, _calcTermOps[i], _calcTermValues[i + 1]); }
-                _calcDisplay = _fmtCalc(r);
-                final ep = <String>[];
-                for (int i = 0; i < _calcTermValues.length; i++) { ep.add(_fmtCalc(_calcTermValues[i])); if (i < _calcTermOps.length) ep.add(_calcTermOps[i]); }
-                final dp = ep.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
-                if (_calcHasResult) _calcExprStr = '${dp.join(' ')} = ${_addCommas(_fmtCalc(r))}';
-              });
-              Navigator.pop(ctx);
-            },
-            child:  Text(AppLocalizations.of(context)!.save, style: TextStyle(color: Color(0xFF5E81FF), fontWeight: FontWeight.bold)),
+          title: Text(
+            AppLocalizations.of(context)!.editValue,
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ],
-      );
+          content: TextField(
+            controller: ctrl,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(
+              decimal: true,
+              signed: true,
+            ),
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 22,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            decoration: InputDecoration(
+              hintText: AppLocalizations.of(context)!.numberInputHint,
+              hintStyle: TextStyle(color: Colors.grey.shade400),
+              filled: true,
+              fillColor: Colors.grey.shade100,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                AppLocalizations.of(context)!.cancel,
+                style: TextStyle(color: Colors.grey.shade500),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                final newVal =
+                    double.tryParse(ctrl.text.replaceAll(',', '')) ??
+                    currentVal;
+                setState(() {
+                  _calcTermValues[index] = newVal;
+                  double r = _calcTermValues[0];
+                  for (int i = 0; i + 1 < _calcTermValues.length; i++) {
+                    r = _evalCalcSimple(
+                      r,
+                      _calcTermOps[i],
+                      _calcTermValues[i + 1],
+                    );
+                  }
+                  _calcDisplay = _fmtCalc(r);
+                  final ep = <String>[];
+                  for (int i = 0; i < _calcTermValues.length; i++) {
+                    ep.add(_fmtCalc(_calcTermValues[i]));
+                    if (i < _calcTermOps.length) ep.add(_calcTermOps[i]);
+                  }
+                  final dp = ep.map((p) {
+                    final v = double.tryParse(p);
+                    return v != null ? _addCommas(p) : p;
+                  }).toList();
+                  if (_calcHasResult)
+                    _calcExprStr =
+                        '${dp.join(' ')} = ${_addCommas(_fmtCalc(r))}';
+                });
+                Navigator.pop(ctx);
+              },
+              child: Text(
+                AppLocalizations.of(context)!.save,
+                style: TextStyle(
+                  color: Color(0xFF5E81FF),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
       },
     );
   }
@@ -2137,35 +2397,76 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
     if (_calcTermValues.isEmpty) return const SizedBox.shrink();
     final widgets = <Widget>[];
     for (int i = 0; i < _calcTermValues.length; i++) {
-      widgets.add(GestureDetector(
-        onTap: () => _editCalcTermValue(i),
-        child: Container(
-          margin: const EdgeInsets.only(right: 6),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.06), borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.0),
+      widgets.add(
+        GestureDetector(
+          onTap: () => _editCalcTermValue(i),
+          child: Container(
+            margin: const EdgeInsets.only(right: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.12),
+                width: 1.0,
+              ),
+            ),
+            child: Text(
+              _addCommas(_fmtCalc(_calcTermValues[i])),
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
-          child: Text(_addCommas(_fmtCalc(_calcTermValues[i])), style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.w600)),
         ),
-      ));
+      );
       if (i < _calcTermOps.length) {
         final opIdx = i;
-        widgets.add(GestureDetector(
-          onTapDown: (d) => _pickCalcOp(opIdx, d.globalPosition),
-          child: Container(
-          margin: const EdgeInsets.only(right: 6),
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(color: Colors.orangeAccent.withOpacity(0.08), shape: BoxShape.circle, border: Border.all(color: Colors.orangeAccent.withOpacity(0.2))),
-            child: Text(_calcTermOps[i], style: const TextStyle(color: Colors.orangeAccent, fontSize: 16, fontWeight: FontWeight.w800)),
+        widgets.add(
+          GestureDetector(
+            onTapDown: (d) => _pickCalcOp(opIdx, d.globalPosition),
+            child: Container(
+              margin: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.orangeAccent.withOpacity(0.08),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.orangeAccent.withOpacity(0.2)),
+              ),
+              child: Text(
+                _calcTermOps[i],
+                style: const TextStyle(
+                  color: Colors.orangeAccent,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
           ),
-        ));
+        );
       }
     }
     if (_calcHasResult) {
-      widgets.add(const Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text('=', style: TextStyle(color: Colors.white38, fontSize: 12, fontWeight: FontWeight.w500))));
+      widgets.add(
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            '=',
+            style: TextStyle(
+              color: Colors.white38,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      );
     }
-    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(mainAxisSize: MainAxisSize.min, children: widgets));
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(mainAxisSize: MainAxisSize.min, children: widgets),
+    );
   }
 
   Widget _buildCalcPanel() {
@@ -2211,14 +2512,15 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                     child: Container(
                       width: 44,
                       height: 44,
-   decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
-                        width: 0.8,
-                      ),),
-                     child: Stack(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.08),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Stack(
                         alignment: Alignment.center,
                         children: [
                           Positioned(
@@ -2240,17 +2542,17 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                                 color: Colors.tealAccent,
                               ),
                             ),
- Positioned(
-                                     top: -0,
-                                     child: Text(
-                                      'ai',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                                                       ),
-                                   )
+                          Positioned(
+                            top: -0,
+                            child: Text(
+                              'ai',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -2300,7 +2602,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                           children: [
                             Expanded(
                               child: Text(
-                                    AppLocalizations.of(context)!.insertToMemo,
+                                AppLocalizations.of(context)!.insertToMemo,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -2323,7 +2625,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
             _CalcFlashOverlay(
               key: _flashKey,
               child: Container(
-                margin: const EdgeInsets.only( top: 12),
+                margin: const EdgeInsets.only(top: 12),
                 padding: const EdgeInsets.symmetric(horizontal: 2),
                 height: 100,
                 child: Row(
@@ -2394,7 +2696,11 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                     calcKey('⌫'),
                     calcKey('0'),
                     calcKey('.'),
-                    calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
+                    calcKey(
+                      '=',
+                      bg: eqColor.withOpacity(0.8),
+                      fg: Colors.white,
+                    ),
                   ],
                 ),
               ),
@@ -2521,12 +2827,12 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
 
 // ── マーカーオーバーレイ ──
 class _MarkerOverlay extends StatelessWidget {
-  final List<List<double>> points;
+  final List<AiCountItem> items;
   final Uint8List imageBytes;
   final double opacity;
 
   const _MarkerOverlay({
-    required this.points,
+    required this.items,
     required this.imageBytes,
     this.opacity = 1.0,
   });
@@ -2537,7 +2843,7 @@ class _MarkerOverlay extends StatelessWidget {
       builder: (context, constraints) {
         return CustomPaint(
           size: Size(constraints.maxWidth, constraints.maxHeight),
-          painter: _MarkerPainter(points, opacity: opacity),
+          painter: _MarkerPainter(items, opacity: opacity),
         );
       },
     );
@@ -2545,15 +2851,24 @@ class _MarkerOverlay extends StatelessWidget {
 }
 
 class _MarkerPainter extends CustomPainter {
-  final List<List<double>> points;
+  static const _markerColors = [
+    Color(0xFFFF5252),
+    Color(0xFF40C4FF),
+    Color(0xFFFFAB40),
+    Color(0xFF69F0AE),
+    Color(0xFFE040FB),
+    Color(0xFFFFFF00),
+  ];
+
+  final List<AiCountItem> items;
   final double opacity;
-  _MarkerPainter(this.points, {this.opacity = 1.0});
+  _MarkerPainter(this.items, {this.opacity = 1.0});
+
+  static Color colorFor(int itemIndex) =>
+      _markerColors[itemIndex % _markerColors.length];
 
   @override
   void paint(Canvas canvas, Size size) {
-    final dotPaint = Paint()
-      ..color = Colors.redAccent.withOpacity(opacity)
-      ..style = PaintingStyle.fill;
     final borderPaint = Paint()
       ..color = Colors.white.withOpacity(opacity)
       ..style = PaintingStyle.stroke
@@ -2563,42 +2878,44 @@ class _MarkerPainter extends CustomPainter {
       ..color = Colors.black.withOpacity(0.0 * opacity)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
 
-    for (int i = 0; i < points.length; i++) {
-      final p = points[i];
-      final center = Offset(p[0] * size.width, p[1] * size.height);
+    for (int itemIndex = 0; itemIndex < items.length; itemIndex++) {
+      final dotPaint = Paint()
+        ..color = colorFor(itemIndex).withOpacity(opacity)
+        ..style = PaintingStyle.fill;
+      final item = items[itemIndex];
+      for (int pointIndex = 0; pointIndex < item.points.length; pointIndex++) {
+        final p = item.points[pointIndex];
+        final center = Offset(p[0] * size.width, p[1] * size.height);
 
-      // 影
-      canvas.drawCircle(center + const Offset(1, 1), 6, shadowPaint);
-      // 白枠
-      canvas.drawCircle(center, 6, borderPaint);
-      // 赤丸
-      canvas.drawCircle(center, 5, dotPaint);
+        canvas.drawCircle(center + const Offset(1, 1), 6, shadowPaint);
+        canvas.drawCircle(center, 6, borderPaint);
+        canvas.drawCircle(center, 5, dotPaint);
 
-      // 番号描画 (Chain of Thought に対応)
-      final textSpan = TextSpan(
-        text: '${i + 1}',
-        style: TextStyle(
-          color: Colors.white.withOpacity(opacity),
-          fontSize: 8,
-          letterSpacing: -0.8,
-          fontWeight: FontWeight.w500,
-        ),
-      );
-      final textPainter = TextPainter(
-        text: textSpan,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-      textPainter.paint(
-        canvas,
-        center - Offset(textPainter.width / 2, textPainter.height / 2),
-      );
+        final textSpan = TextSpan(
+          text: '${pointIndex + 1}',
+          style: TextStyle(
+            color: Colors.white.withOpacity(opacity),
+            fontSize: 8,
+            letterSpacing: -0.8,
+            fontWeight: FontWeight.w500,
+          ),
+        );
+        final textPainter = TextPainter(
+          text: textSpan,
+          textDirection: TextDirection.ltr,
+        );
+        textPainter.layout();
+        textPainter.paint(
+          canvas,
+          center - Offset(textPainter.width / 2, textPainter.height / 2),
+        );
+      }
     }
   }
 
   @override
   bool shouldRepaint(covariant _MarkerPainter old) =>
-      old.points != points || old.opacity != opacity;
+      old.items != items || old.opacity != opacity;
 }
 
 // ── 画像アイテム行ウィジェット（並び替え可能） ──
@@ -2674,8 +2991,10 @@ class _ImageItemRow extends StatelessWidget {
                           // At offset (0,0): centered → left = -w*(s-1)/2
                           // At offset (-1,0): show left → left = 0
                           // At offset (1,0): show right → left = -w*(s-1)
-                          final left = -w * (s - 1.0) / 2.0 * (1.0 + cropOffsetX);
-                          final top = -h * (s - 1.0) / 2.0 * (1.0 + cropOffsetY);
+                          final left =
+                              -w * (s - 1.0) / 2.0 * (1.0 + cropOffsetX);
+                          final top =
+                              -h * (s - 1.0) / 2.0 * (1.0 + cropOffsetY);
                           return ClipRect(
                             child: Stack(
                               clipBehavior: Clip.none,
@@ -2691,7 +3010,10 @@ class _ImageItemRow extends StatelessWidget {
                                     errorBuilder: (_, __, ___) => Container(
                                       color: Colors.white10,
                                       child: const Center(
-                                        child: Icon(Icons.broken_image, color: Colors.white38),
+                                        child: Icon(
+                                          Icons.broken_image,
+                                          color: Colors.white38,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -2711,8 +3033,8 @@ class _ImageItemRow extends StatelessWidget {
                         color: isDark ? Colors.white70 : Colors.black54,
                         fontSize: 12,
                       ),
-                     // maxLines: 2,
-                     // overflow: TextOverflow.ellipsis,
+                      // maxLines: 2,
+                      // overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ],
@@ -2743,14 +3065,19 @@ class _HistoryThumbnail extends StatelessWidget {
     return FutureBuilder<File?>(
       future: AiCountHistoryManager.instance.getImageFile(imagePath),
       builder: (ctx, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done && snapshot.data != null) {
+        if (snapshot.connectionState == ConnectionState.done &&
+            snapshot.data != null) {
           return Image.file(
             snapshot.data!,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
               color: Colors.white10,
               child: const Center(
-                child: Icon(Icons.broken_image, color: Colors.white38, size: 24),
+                child: Icon(
+                  Icons.broken_image,
+                  color: Colors.white38,
+                  size: 24,
+                ),
               ),
             ),
           );
@@ -2761,7 +3088,10 @@ class _HistoryThumbnail extends StatelessWidget {
             child: SizedBox(
               width: 20,
               height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.tealAccent),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.tealAccent,
+              ),
             ),
           ),
         );
@@ -2777,7 +3107,7 @@ class _AiCountHistoryDetailPage extends StatefulWidget {
   final double imageHeight;
   final int count;
   final String instruction;
-  final List<List<double>> points;
+  final List<AiCountItem> items;
   final String? entryId;
 
   const _AiCountHistoryDetailPage({
@@ -2786,12 +3116,13 @@ class _AiCountHistoryDetailPage extends StatefulWidget {
     required this.imageHeight,
     required this.count,
     required this.instruction,
-    required this.points,
+    required this.items,
     this.entryId,
   });
 
   @override
-  State<_AiCountHistoryDetailPage> createState() => _AiCountHistoryDetailPageState();
+  State<_AiCountHistoryDetailPage> createState() =>
+      _AiCountHistoryDetailPageState();
 }
 
 class _AiCountHistoryDetailPageState extends State<_AiCountHistoryDetailPage> {
@@ -2802,7 +3133,7 @@ class _AiCountHistoryDetailPageState extends State<_AiCountHistoryDetailPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor:Colors.transparent,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
         title: Row(
@@ -2820,20 +3151,29 @@ class _AiCountHistoryDetailPageState extends State<_AiCountHistoryDetailPage> {
         actions: [
           if (widget.entryId != null)
             IconButton(
-              icon: const Icon(Icons.delete_outline, color: Color(0xFFEF9A9A), size: 22),
+              icon: const Icon(
+                Icons.delete_outline,
+                color: Color(0xFFEF9A9A),
+                size: 22,
+              ),
               onPressed: () async {
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
                     backgroundColor: const Color(0xFF1E1E2E),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     title: Text(
                       AppLocalizations.of(context)!.deleteHistoryTitle,
                       style: const TextStyle(color: Colors.white, fontSize: 16),
                     ),
                     content: Text(
                       AppLocalizations.of(context)!.deleteHistoryConfirm(1),
-                      style: const TextStyle(color: Colors.white70, fontSize: 14),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
                     ),
                     actions: [
                       TextButton(
@@ -2847,14 +3187,19 @@ class _AiCountHistoryDetailPageState extends State<_AiCountHistoryDetailPage> {
                         onPressed: () => Navigator.pop(ctx, true),
                         child: Text(
                           AppLocalizations.of(context)!.delete,
-                          style: const TextStyle(color: Color(0xFFEF9A9A), fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            color: Color(0xFFEF9A9A),
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 );
                 if (confirmed == true && mounted) {
-                  await AiCountHistoryManager.instance.deleteEntry(widget.entryId!);
+                  await AiCountHistoryManager.instance.deleteEntry(
+                    widget.entryId!,
+                  );
                   if (mounted) Navigator.pop(context);
                 }
               },
@@ -2907,14 +3252,20 @@ class _AiCountHistoryDetailPageState extends State<_AiCountHistoryDetailPage> {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(30),
                                 child: AspectRatio(
-                                  aspectRatio: widget.imageWidth / widget.imageHeight,
+                                  aspectRatio:
+                                      widget.imageWidth / widget.imageHeight,
                                   child: Stack(
                                     fit: StackFit.expand,
                                     children: [
-                                      Image.memory(widget.imageBytes, fit: BoxFit.fill),
-                                      if (widget.points.isNotEmpty)
+                                      Image.memory(
+                                        widget.imageBytes,
+                                        fit: BoxFit.fill,
+                                      ),
+                                      if (widget.items.any(
+                                        (item) => item.points.isNotEmpty,
+                                      ))
                                         _MarkerOverlay(
-                                          points: widget.points,
+                                          items: widget.items,
                                           imageBytes: widget.imageBytes,
                                           opacity: _markerOpacity,
                                         ),
@@ -2929,7 +3280,7 @@ class _AiCountHistoryDetailPageState extends State<_AiCountHistoryDetailPage> {
                     },
                   ),
                   // マーカー透明度スライダー
-                  if (widget.points.isNotEmpty)
+                  if (widget.items.any((item) => item.points.isNotEmpty))
                     Positioned(
                       bottom: 15,
                       left: 20,
@@ -2948,8 +3299,12 @@ class _AiCountHistoryDetailPageState extends State<_AiCountHistoryDetailPage> {
                               child: SliderTheme(
                                 data: SliderThemeData(
                                   trackHeight: 2,
-                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                                  thumbShape: const RoundSliderThumbShape(
+                                    enabledThumbRadius: 6,
+                                  ),
+                                  overlayShape: const RoundSliderOverlayShape(
+                                    overlayRadius: 12,
+                                  ),
                                   activeTrackColor: Colors.white70,
                                   inactiveTrackColor: Colors.white24,
                                   thumbColor: Colors.white,
@@ -2959,7 +3314,8 @@ class _AiCountHistoryDetailPageState extends State<_AiCountHistoryDetailPage> {
                                   value: _markerOpacity,
                                   min: 0.0,
                                   max: 1.0,
-                                  onChanged: (v) => setState(() => _markerOpacity = v),
+                                  onChanged: (v) =>
+                                      setState(() => _markerOpacity = v),
                                 ),
                               ),
                             ),
@@ -2969,9 +3325,9 @@ class _AiCountHistoryDetailPageState extends State<_AiCountHistoryDetailPage> {
                     ),
                   // カウント結果バッジ
                   Positioned(
-                    top: 12,
-                    left: 0,
-                    right: 0,
+                    top: 0,
+                    // left: 0,
+                    right: -20,
                     child: Center(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -2995,25 +3351,36 @@ class _AiCountHistoryDetailPageState extends State<_AiCountHistoryDetailPage> {
                           ],
                         ),
                         child: Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-Text(
-                              widget.instruction,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                            for (final item in widget.items) ...[
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    item.target,
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    '${item.count}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 23,
+                                      fontWeight: FontWeight.bold,
+                                      height: 1,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            Text(
-                              '${widget.count}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 46,
-                                fontWeight: FontWeight.bold,
-                                height: 1,
-                              ),
-                            ),
-                            
+
+                              const SizedBox(height: 6),
+                            ],
                           ],
                         ),
                       ),
@@ -3026,18 +3393,12 @@ Text(
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF1A0A2E),
-                    Color(0xFF16213E),
-                  ],
+                  colors: [Color(0xFF1A0A2E), Color(0xFF16213E)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
                 border: Border(
-                  top: BorderSide(
-                    color: Color(0xFF7B61FF),
-                    width: 0.5,
-                  ),
+                  top: BorderSide(color: Color(0xFF7B61FF), width: 0.5),
                 ),
               ),
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -3049,31 +3410,44 @@ Text(
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.auto_awesome_rounded, color: Color(0xFFA78BFA), size: 14),
+                        const Icon(
+                          Icons.auto_awesome_rounded,
+                          color: Color(0xFFA78BFA),
+                          size: 14,
+                        ),
                         const SizedBox(width: 6),
-                        Text(
-                          widget.instruction,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            widget.items
+                                .map((item) => '${item.target}: ${item.count}')
+                                .join(' / '),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      '${widget.count} ${AppLocalizations.of(context)!.aiCountResult}',
-                      style: const TextStyle(
-                        color: Color(0xFF93C5FD),
-                        fontSize: 14,
+                    Center(
+                      child: Text(
+                        '${widget.count} ${AppLocalizations.of(context)!.aiCountResult}',
+                        style: const TextStyle(
+                          color: Color(0xFF93C5FD),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       child: GestureDetector(
-                        onTap: () => Navigator.pop(context, widget.count),
+                        onTap: () => Navigator.pop(
+                          context,
+                          AiCountResult(items: widget.items),
+                        ),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 13),
                           decoration: BoxDecoration(
@@ -3095,7 +3469,11 @@ Text(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                              const Icon(
+                                Icons.check_circle,
+                                color: Colors.white,
+                                size: 18,
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 AppLocalizations.of(context)!.reflectToCalc,
@@ -3146,6 +3524,7 @@ class _ImageCropEditorState extends State<_ImageCropEditor> {
   late Offset _offset;
   final TransformationController _transCtrl = TransformationController();
   Size _containerSize = Size.zero;
+  bool _initialTransformApplied = false;
   late TextEditingController _captionCtrl;
 
   @override
@@ -3200,11 +3579,27 @@ class _ImageCropEditorState extends State<_ImageCropEditor> {
     });
   }
 
+  void _applyInitialTransform(Size size) {
+    if (_initialTransformApplied || size.isEmpty) return;
+    _containerSize = size;
+    final scale = widget.initialScale.clamp(0.5, 5.0).toDouble();
+    final maxPanX = size.width * (scale - 1.0) / 2.0;
+    final maxPanY = size.height * (scale - 1.0) / 2.0;
+    final translation = Offset(
+      -widget.initialOffsetX * maxPanX,
+      -widget.initialOffsetY * maxPanY,
+    );
+    _transCtrl.value = Matrix4.identity()
+      ..translate(translation.dx, translation.dy)
+      ..scale(scale);
+    _initialTransformApplied = true;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-        appBar: AppBar(
+      appBar: AppBar(
         backgroundColor: const Color(0xFF0D0D1A),
         foregroundColor: Colors.white,
         title: Builder(
@@ -3240,17 +3635,24 @@ class _ImageCropEditorState extends State<_ImageCropEditor> {
                   fillColor: Colors.white.withOpacity(0.06),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+                    borderSide: BorderSide(
+                      color: Colors.white.withOpacity(0.15),
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+                    borderSide: BorderSide(
+                      color: Colors.white.withOpacity(0.15),
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: const BorderSide(color: Colors.cyanAccent),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                 ),
               ),
             ),
@@ -3263,7 +3665,8 @@ class _ImageCropEditorState extends State<_ImageCropEditor> {
                   padding: const EdgeInsets.all(16),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      _containerSize = Size(constraints.maxWidth, 200);
+                      final size = Size(constraints.maxWidth, 200);
+                      _applyInitialTransform(size);
                       return ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
@@ -3279,12 +3682,18 @@ class _ImageCropEditorState extends State<_ImageCropEditor> {
                           ),
                           child: InteractiveViewer(
                             transformationController: _transCtrl,
+                            alignment: Alignment.center,
+                            boundaryMargin: EdgeInsets.all(size.longestSide * 4),
                             minScale: 0.5,
                             maxScale: 5.0,
                             onInteractionEnd: _onScaleEnd,
-                            child: Image.memory(
-                              widget.imageBytes,
-                              fit: BoxFit.contain,
+                            child: SizedBox(
+                              width: constraints.maxWidth,
+                              height: 200,
+                              child: Image.memory(
+                                widget.imageBytes,
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
                         ),
@@ -3296,14 +3705,20 @@ class _ImageCropEditorState extends State<_ImageCropEditor> {
                   bottom: 24,
                   child: Builder(
                     builder: (context) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.7),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         AppLocalizations.of(context)!.cropEditorHint,
-                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ),
@@ -3318,17 +3733,17 @@ class _ImageCropEditorState extends State<_ImageCropEditor> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: Row(
             children: [
-                Builder(
-                  builder: (context) => Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        AppLocalizations.of(context)!.cancel,
-                        style: const TextStyle(color: Colors.white54),
-                      ),
+              Builder(
+                builder: (context) => Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      AppLocalizations.of(context)!.cancel,
+                      style: const TextStyle(color: Colors.white54),
                     ),
                   ),
                 ),
+              ),
               const SizedBox(width: 12),
               Builder(
                 builder: (context) => Expanded(
@@ -3364,4 +3779,3 @@ class _ImageCropEditorState extends State<_ImageCropEditor> {
     );
   }
 }
-

@@ -20,6 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ai_service.dart';
 import 'ai_count_history.dart';
+import 'ai_prompt_history.dart';
 import 'calc_history.dart';
 import 'link_graph_page.dart';
 import 'revenuecat_service.dart';
@@ -36,6 +37,8 @@ part 'calculator_widget_view.dart';
 part 'calculator_row.dart';
 part 'calculator_widget_source_picker.dart';
 part 'memo_ai_widgets.dart';
+part 'flash_mental_math_page.dart';
+part 'soroban_page.dart';
 
 // ── 数値文字列に3桁区切りカンマを追加するユーティリティ ────────────────────────────────
 /// 数値文字列 (例: "1234567.89") を "1,234,567.89" に変換する。
@@ -190,12 +193,26 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
   bool _isModify = false;
   Uint8List? _attachedImage;
   int? _remainingUses;
+  List<AiPromptHistoryEntry> _historyEntries = [];
 
   @override
   void initState() {
     super.initState();
     _ctrl = TextEditingController(text: widget.initialText);
     _loadRemainingUses();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    final entries = await AiPromptHistoryManager.instance.loadAll();
+    if (mounted) setState(() => _historyEntries = entries);
+  }
+
+  void _selectHistory(AiPromptHistoryEntry entry) {
+    setState(() {
+      _ctrl.text = entry.instruction;
+      _ctrl.selection = TextSelection.collapsed(offset: _ctrl.text.length);
+    });
   }
 
   Future<void> _loadRemainingUses() async {
@@ -233,11 +250,18 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
                   );
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.auto_awesome, color: Colors.purpleAccent, size: 16),
+                      const Icon(
+                        Icons.auto_awesome,
+                        color: Colors.purpleAccent,
+                        size: 16,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         l10n.remainingUsesFormat(remaining),
@@ -274,7 +298,11 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
     );
 
     if (source == null) return;
-    final file = await picker.pickImage(source: source, maxWidth: 1024);
+    final file = await picker.pickImage(
+      source: source,
+      maxWidth: 1024,
+      imageQuality: 90,
+    );
     if (file == null) return;
     final bytes = await file.readAsBytes();
     setState(() => _attachedImage = bytes);
@@ -283,186 +311,317 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final mediaQuery = MediaQuery.of(context);
+    final canGenerate = _ctrl.text.trim().isNotEmpty || _attachedImage != null;
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF1E1E1E), Color.fromARGB(255, 56, 116, 165)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1F2023),
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 24,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            10,
+            20,
+            mediaQuery.viewInsets.bottom + 18,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (_remainingUses != null) ...
-                      [
-                        const SizedBox(height: 4),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const StorePage()),
-                            );
-                          },
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.auto_awesome,
-                                color: Colors.purpleAccent,
-                                size: 13,
-                              ),
-                              const SizedBox(width: 4),
-                      Text(
-                        l10n.remainingUsesFormat(_remainingUses!),
-                        style: const TextStyle(
-                          color: Colors.purpleAccent,
-                          fontSize: 12,
-                        ),
-                      ),
-                            ],
-                          ),
-                        ),
-                      ],
-                  ],
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.24),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white54),
-                onPressed: () => Navigator.pop(context),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (widget.showModeSwitcher) ...[
-            Row(
-              children: [
-                _modeChip('新規作成', false),
-                const SizedBox(width: 8),
-                _modeChip('修正・追加', true),
-              ],
-            ),
-            const SizedBox(height: 12),
-          ],
-          TextField(
-            controller: _ctrl,
-            autofocus: true,
-            maxLines: 3,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: l10n.aiPromptHint,
-              hintStyle: const TextStyle(color: Colors.white24),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.06),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.all(16),
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (_attachedImage != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Stack(
+              const SizedBox(height: 18),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.memory(
-                      _attachedImage!,
-                      height: 120,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2B3541),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF536A84)),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome,
+                      color: Color(0xFFA8C7FA),
+                      size: 21,
                     ),
                   ),
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: GestureDetector(
-                      onTap: () => setState(() => _attachedImage = null),
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.black54,
-                          shape: BoxShape.circle,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.title,
+                          style: const TextStyle(
+                            color: Color(0xFFE8EAED),
+                            fontSize: 19,
+                            fontWeight: FontWeight.w600,
+                            height: 1.2,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 16,
+                        if (_remainingUses != null) ...[
+                          const SizedBox(height: 6),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const StorePage(),
+                                ),
+                              );
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.bolt_rounded,
+                                  color: Color(0xFFA8C7FA),
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  l10n.remainingUsesFormat(_remainingUses!),
+                                  style: const TextStyle(
+                                    color: Color(0xFFA8C7FA),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: l10n.cancel,
+                    icon: const Icon(Icons.close_rounded, size: 20),
+                    color: Colors.white60,
+                    onPressed: () => Navigator.pop(context),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.06),
+                      padding: const EdgeInsets.all(9),
+                      minimumSize: const Size(38, 38),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              if (widget.showModeSwitcher) ...[
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(child: _modeChip('新規作成', false)),
+                      Expanded(child: _modeChip('修正・追加', true)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF292A2D),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: Colors.white.withOpacity(0.12)),
+                ),
+                child: TextField(
+                  controller: _ctrl,
+                  autofocus: true,
+                  minLines: 3,
+                  maxLines: 5,
+                  onChanged: (_) => setState(() {}),
+                  style: const TextStyle(
+                    color: Color(0xFFE8EAED),
+                    fontSize: 16,
+                    height: 1.45,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: l10n.aiPromptHint,
+                    hintStyle: const TextStyle(
+                      color: Color(0xFF8A8D91),
+                      fontSize: 15,
+                      height: 1.45,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                  ),
+                ),
+              ),
+             
+                const SizedBox(height: 6),
+ if (_attachedImage != null) ...[
+                const SizedBox(height: 12),
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.memory(
+                        _attachedImage!,
+                        height: 128,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: IconButton(
+                        tooltip: l10n.cancel,
+                        onPressed: () => setState(() => _attachedImage = null),
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        color: Colors.white,
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black.withOpacity(0.65),
+                          padding: const EdgeInsets.all(7),
+                          minimumSize: const Size(34, 34),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+ if (_historyEntries.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.history_rounded,
+                      color: Color(0xFFB9C9DE),
+                      size: 17,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      l10n.history,
+                      style: const TextStyle(
+                        color: Color(0xFFB9C9DE),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _historyEntries.length,
+                  itemBuilder: (ctx, index) {
+                    final entry = _historyEntries[index];
+                    return InkWell(
+                      onTap: () => _selectHistory(entry),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.history_rounded,
+                              color: Colors.white38,
+                              size: 17,
+                            ),
+                            const SizedBox(width: 9),
+                            Expanded(
+                              child: Text(
+                                entry.instruction,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFFD8DCE2),
+                                  fontSize: 14,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+             
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  IconButton(
+                    tooltip: l10n.homeAiGenerateImage,
+                    onPressed: _pickImage,
+                    icon: const Icon(Icons.add_photo_alternate_outlined),
+                    color: const Color(0xFFB9C9DE),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.07),
+                      side: BorderSide(color: Colors.white.withOpacity(0.12)),
+                      padding: const EdgeInsets.all(12),
+                      minimumSize: const Size(48, 48),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: canGenerate
+                            ? () async {
+                                await AiPromptHistoryManager.instance.addEntry(
+                                  _ctrl.text,
+                                );
+                                if (!mounted) return;
+                              Navigator.pop(context, (
+                                instruction: _ctrl.text.trim(),
+                                isModify: _isModify,
+                                imageBytes: _attachedImage,
+                              ));
+                            }
+                          : null,
+                      icon: const Icon(Icons.auto_awesome, size: 18),
+                      label: Text(l10n.aiGenerate),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFA8C7FA),
+                        foregroundColor: const Color(0xFF17202C),
+                        disabledBackgroundColor: Colors.white.withOpacity(0.08),
+                        disabledForegroundColor: Colors.white30,
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                  onPressed: () {
-                    final text = _ctrl.text.trim();
-                    if (text.isEmpty && _attachedImage == null) return;
-                    Navigator.pop(context, (
-                      instruction: text,
-                      isModify: _isModify,
-                      imageBytes: _attachedImage,
-                    ));
-                  },
-                  child: Text(l10n.aiGenerate, style: const TextStyle(fontSize: 16)),
-                ),
-              ),
-              const SizedBox(width: 12),
-              IconButton(
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.all(14),
-                ),
-                onPressed: _pickImage,
-                icon: const Icon(
-                  Icons.add_a_photo_outlined,
-                  color: Colors.white70,
-                ),
-              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -472,21 +631,18 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
     return GestureDetector(
       onTap: () => setState(() => _isModify = value),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: selected
-              ? Colors.purpleAccent.withOpacity(0.3)
-              : Colors.white.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? Colors.purpleAccent : Colors.white12,
-          ),
+          color: selected ? const Color(0xFF3B4B60) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
           label,
+          textAlign: TextAlign.center,
           style: TextStyle(
-            color: selected ? Colors.purpleAccent : Colors.white54,
+            color: selected ? const Color(0xFFE8EAED) : Colors.white54,
             fontSize: 13,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
       ),
@@ -504,7 +660,7 @@ class _CalcBottomSheet extends StatefulWidget {
   final VoidCallback onClose;
   final ScrollController? scrollController;
   final DraggableScrollableController? sheetController;
-  final String? initialDisplay;
+  final AiCountResult? initialAiCountResult;
   final Future<void> Function()? onRequestAiCount;
 
   /// 履歴シートをオーバーレイより上に表示するための委譲コールバック。
@@ -516,11 +672,11 @@ class _CalcBottomSheet extends StatefulWidget {
 
   /// 値編集ボトムシートの委譲コールバック
   final void Function(double currentVal, void Function(double) onConfirm)?
-      onRequestEditValue;
+  onRequestEditValue;
 
   /// 演算子選択ボトムシートの委譲コールバック
   final void Function(String currentOp, void Function(String) onConfirm)?
-      onRequestPickOp;
+  onRequestPickOp;
 
   const _CalcBottomSheet({
     required this.existingItemCount,
@@ -529,7 +685,7 @@ class _CalcBottomSheet extends StatefulWidget {
     this.isDark = true,
     this.scrollController,
     this.sheetController,
-    this.initialDisplay,
+    this.initialAiCountResult,
     this.onRequestAiCount,
     this.onRequestHistory,
     this.onRequestEditValue,
@@ -557,13 +713,33 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
   @override
   void initState() {
     super.initState();
-    _display = widget.initialDisplay ?? '0';
-    if (widget.initialDisplay != null) _isClearState = false;
+    _display = '0';
+    if (widget.initialAiCountResult != null) {
+      _applyAiCountResult(widget.initialAiCountResult!);
+    }
   }
 
   bool _isAiCounting = false;
   List<double> _termValues = [];
   List<String> _termOps = [];
+
+  void _applyAiCountResult(AiCountResult result) {
+    final values = result.items.map((item) => item.count.toDouble()).toList();
+    _display = result.count.toString();
+    _newEntry = true;
+    _hasResult = true;
+    _isClearState = false;
+    _calcA = result.count.toDouble();
+    _calcOp = '';
+    _termValues = values;
+    _termOps = List.filled(values.length > 0 ? values.length - 1 : 0, '+');
+    if (values.length >= 2) {
+      _calcLastA = values[0];
+      _calcLastOp = '+';
+      _calcLastB = values[1];
+    }
+    _exprStr = '${result.additionExpression} = ${result.count}';
+  }
 
   String _fmt(double v) {
     if (v.isInfinite || v.isNaN) return '0';
@@ -666,7 +842,9 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
             parts.add(_fmt(allTerms[i]));
             if (i < effectiveOps.length) parts.add(effectiveOps[i]);
           }
-          final displayParts = parts.map((p) => double.tryParse(p) != null ? _addCommas(p) : p).toList();
+          final displayParts = parts
+              .map((p) => double.tryParse(p) != null ? _addCommas(p) : p)
+              .toList();
           _exprStr = '${displayParts.join(' ')} = ${_addCommas(_fmt(result))}';
           flashExpr = _exprStr;
           _termValues = allTerms;
@@ -686,8 +864,14 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                 exprParts.add(_fmt(_termValues[i]));
                 if (i < _termOps.length) exprParts.add(_termOps[i]);
               }
-              CalcHistoryManager.instance.addEntry(exprParts.join(' '), _fmt(_calcA ?? 0));
-              final dp = exprParts.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+              CalcHistoryManager.instance.addEntry(
+                exprParts.join(' '),
+                _fmt(_calcA ?? 0),
+              );
+              final dp = exprParts.map((p) {
+                final v = double.tryParse(p);
+                return v != null ? _addCommas(p) : p;
+              }).toList();
               flashExpr = '${dp.join(' ')} = ${_addCommas(_fmt(_calcA ?? 0))}';
             } else if (_display != '0') {
               CalcHistoryManager.instance.addEntry(_display, _display);
@@ -803,7 +987,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
     }
     final ai = GemmaAi();
     setState(() => _isAiCounting = true);
-    final count = await Navigator.push<int>(
+    final result = await Navigator.push<AiCountResult>(
       context,
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -811,20 +995,11 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
       ),
     );
     if (!mounted) return;
-    setState(() {
-      _isAiCounting = false;
-      if (count != null) {
-        _display = count.toString();
-        _newEntry = true;
-        _hasResult = false;
-        _isClearState = false;
-        _calcA = null;
-        _calcOp = '';
-        _termValues = [];
-        _termOps = [];
-        _exprStr = '';
-      }
-    });
+    if (result != null) {
+      _applyAiCountResult(result);
+    } else {
+      setState(() => _isAiCounting = false);
+    }
   }
 
   void _showHistory() async {
@@ -848,7 +1023,10 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
             for (int i = 0; i < parts.length; i++) {
               if (i % 2 == 0) {
                 final v = double.tryParse(parts[i]);
-                if (v == null) { valid = false; break; }
+                if (v == null) {
+                  valid = false;
+                  break;
+                }
                 termVals.add(v);
               } else {
                 termOps.add(parts[i]);
@@ -867,7 +1045,8 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
             _termValues = _calcA != null ? [_calcA!] : [];
             _termOps = [];
           }
-          _exprStr = '${entry.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(entry.result)}';
+          _exprStr =
+              '${entry.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(entry.result)}';
         });
       }, () => CalcHistoryManager.instance.clearAll());
       return;
@@ -898,7 +1077,10 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
               for (int i = 0; i < parts.length; i++) {
                 if (i % 2 == 0) {
                   final v = double.tryParse(parts[i]);
-                  if (v == null) { valid = false; break; }
+                  if (v == null) {
+                    valid = false;
+                    break;
+                  }
                   termVals.add(v);
                 } else {
                   termOps.add(parts[i]);
@@ -917,7 +1099,8 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
               _termValues = _calcA != null ? [_calcA!] : [];
               _termOps = [];
             }
-            _exprStr = '${entry.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(entry.result)}';
+            _exprStr =
+                '${entry.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(entry.result)}';
           });
         },
         onClear: () {
@@ -963,7 +1146,10 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
           ep.add(_fmt(_termValues[i]));
           if (i < _termOps.length) ep.add(_termOps[i]);
         }
-        final dp = ep.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+        final dp = ep.map((p) {
+          final v = double.tryParse(p);
+          return v != null ? _addCommas(p) : p;
+        }).toList();
         if (_hasResult) _exprStr = '${dp.join(' ')} = ${_addCommas(_fmt(r))}';
       });
     });
@@ -976,11 +1162,19 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
       setState(() {
         _termValues[index] = newVal;
         double r = _termValues[0];
-        for (int i = 0; i + 1 < _termValues.length; i++) { r = _evalSimple(r, _termOps[i], _termValues[i + 1]); }
+        for (int i = 0; i + 1 < _termValues.length; i++) {
+          r = _evalSimple(r, _termOps[i], _termValues[i + 1]);
+        }
         _display = _fmt(r);
         final ep = <String>[];
-        for (int i = 0; i < _termValues.length; i++) { ep.add(_fmt(_termValues[i])); if (i < _termOps.length) ep.add(_termOps[i]); }
-        final dp = ep.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+        for (int i = 0; i < _termValues.length; i++) {
+          ep.add(_fmt(_termValues[i]));
+          if (i < _termOps.length) ep.add(_termOps[i]);
+        }
+        final dp = ep.map((p) {
+          final v = double.tryParse(p);
+          return v != null ? _addCommas(p) : p;
+        }).toList();
         if (_hasResult) _exprStr = '${dp.join(' ')} = ${_addCommas(_fmt(r))}';
       });
     });
@@ -990,40 +1184,82 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
   Widget _buildCalcFormulaDisplay() {
     final isDark = widget.isDark;
     final textColor = isDark ? Colors.white : Colors.black;
-    final valBg = isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.05);
-    final valBorder = isDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.10);
+    final valBg = isDark
+        ? Colors.white.withOpacity(0.06)
+        : Colors.black.withOpacity(0.05);
+    final valBorder = isDark
+        ? Colors.white.withOpacity(0.12)
+        : Colors.black.withOpacity(0.10);
     if (_termValues.isEmpty) return const SizedBox.shrink();
     final widgets = <Widget>[];
     for (int i = 0; i < _termValues.length; i++) {
-      widgets.add(GestureDetector(
-        onTap: () => _editCalcTermValue(i),
-        child: Container(
-          margin: const EdgeInsets.only(right: 6),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: valBg, borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: valBorder, width: 1.0),
-          ),
-          child: Text(_addCommas(_fmt(_termValues[i])), style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 20, fontWeight: FontWeight.w600)),
-        ),
-      ));
-      if (i < _termOps.length) {
-        final opIdx = i;
-        widgets.add(GestureDetector(
-          onTap: () => _pickCalcOp(opIdx),
+      widgets.add(
+        GestureDetector(
+          onTap: () => _editCalcTermValue(i),
           child: Container(
             margin: const EdgeInsets.only(right: 6),
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(color: Colors.orangeAccent.withOpacity(0.08), shape: BoxShape.circle, border: Border.all(color: Colors.orangeAccent.withOpacity(0.2))),
-            child: Text(_termOps[i], style: const TextStyle(color: Colors.orangeAccent, fontSize: 20, fontWeight: FontWeight.w800)),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: valBg,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: valBorder, width: 1.0),
+            ),
+            child: Text(
+              _addCommas(_fmt(_termValues[i])),
+              style: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black87,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
-        ));
+        ),
+      );
+      if (i < _termOps.length) {
+        final opIdx = i;
+        widgets.add(
+          GestureDetector(
+            onTap: () => _pickCalcOp(opIdx),
+            child: Container(
+              margin: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.orangeAccent.withOpacity(0.08),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.orangeAccent.withOpacity(0.2)),
+              ),
+              child: Text(
+                _termOps[i],
+                style: const TextStyle(
+                  color: Colors.orangeAccent,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        );
       }
     }
     if (_hasResult) {
-      widgets.add(Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: Text('=', style: TextStyle(color: textColor.withOpacity(0.35), fontSize: 20, fontWeight: FontWeight.w500))));
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            '=',
+            style: TextStyle(
+              color: textColor.withOpacity(0.35),
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      );
     }
-    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(mainAxisSize: MainAxisSize.min, children: widgets));
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(mainAxisSize: MainAxisSize.min, children: widgets),
+    );
   }
 
   Widget _buildLayout(BuildContext context) {
@@ -1071,20 +1307,23 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
     }
 
     return Container(
- decoration: BoxDecoration(
-  gradient: isDark
-      ? const LinearGradient(
-          colors: [Color.fromARGB(255, 0, 0, 0), Color(0xFF16213E)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        )
-      : const LinearGradient(
-          colors: [Color.fromARGB(255, 255, 255, 255), Color.fromARGB(255, 207, 207, 207)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            ),
+      decoration: BoxDecoration(
+        gradient: isDark
+            ? const LinearGradient(
+                colors: [Color.fromARGB(255, 0, 0, 0), Color(0xFF16213E)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              )
+            : const LinearGradient(
+                colors: [
+                  Color.fromARGB(255, 255, 255, 255),
+                  Color.fromARGB(255, 207, 207, 207),
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       child: SingleChildScrollView(
         controller: widget.scrollController,
         physics: const ClampingScrollPhysics(),
@@ -1097,7 +1336,9 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
           ),
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1134,7 +1375,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                     ],
                   ),
                 ),
-            
+
                 const SizedBox(height: 4),
                 // カメラ・履歴ボタンと「追加」ボタンを横並びに
                 Row(
@@ -1149,21 +1390,21 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                         child: Container(
                           width: 50,
                           height: 50,
-             decoration: BoxDecoration(
+                          decoration: BoxDecoration(
                             color: Colors.black.withOpacity(1),
-                          borderRadius: BorderRadius.circular(1000),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.45),
-                            width: 0.8,
+                            borderRadius: BorderRadius.circular(1000),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.45),
+                              width: 0.8,
+                            ),
                           ),
-                        ),
-                         child: Stack(
+                          child: Stack(
                             alignment: Alignment.center,
                             children: [
                               Positioned(
                                 top: 14,
                                 bottom: 0,
-            
+
                                 child: Icon(
                                   Icons.camera_alt_outlined,
                                   color: Colors.white,
@@ -1179,17 +1420,17 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                                     color: Colors.white,
                                   ),
                                 ),
-              Positioned(
-                                         top: -0,
-                                         child: Text(
-                                          'ai',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                                                           ),
-                                       )
+                              Positioned(
+                                top: -0,
+                                child: Text(
+                                  'ai',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -1203,7 +1444,7 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                         width: 50,
                         height: 50,
                         decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(1),
+                          color: Colors.black.withOpacity(1),
                           borderRadius: BorderRadius.circular(1000),
                           border: Border.all(
                             color: Colors.white.withOpacity(0.45),
@@ -1237,7 +1478,11 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.add, color: Colors.white, size: 16),
+                                const Icon(
+                                  Icons.add,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
                                 const SizedBox(width: 6),
                                 Text(
                                   AppLocalizations.of(context)!.calcAddThis,
@@ -1260,45 +1505,46 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                 _CalcFlashOverlay(
                   key: _flashKey,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 2,
+                      vertical: 0,
+                    ),
                     constraints: const BoxConstraints(minHeight: 120),
                     child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // 数値・式表示エリア
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            if (_termValues.isNotEmpty)
-                              _buildCalcFormulaDisplay(),
-                            FittedBox(
-                              child: Text(
-                                _addCommas(_display),
-                                maxLines: 1,
-                                style: TextStyle(
-                                  height: 1,
-                                  color: textColor,
-                                  fontSize: 64,
-                                  fontWeight: FontWeight.w200,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // 数値・式表示エリア
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              if (_termValues.isNotEmpty)
+                                _buildCalcFormulaDisplay(),
+                              FittedBox(
+                                child: Text(
+                                  _addCommas(_display),
+                                  maxLines: 1,
+                                  style: TextStyle(
+                                    height: 1,
+                                    color: textColor,
+                                    fontSize: 64,
+                                    fontWeight: FontWeight.w200,
+                                  ),
+                                  textAlign: TextAlign.right,
                                 ),
-                                textAlign: TextAlign.right,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
                 // ボタングリッド（シート高さに応じてボタンサイズ可変）
                 Container(
-                  constraints: BoxConstraints(
-                    maxWidth:400
-                  ),
+                  constraints: BoxConstraints(maxWidth: 400),
                   child: GridView.count(
                     padding: EdgeInsets.zero,
                     crossAxisCount: 4,
@@ -1331,7 +1577,11 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
                       calcKey('⌫', bg: keyBg),
                       calcKey('0'),
                       calcKey('.'),
-                      calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.white),
+                      calcKey(
+                        '=',
+                        bg: eqColor.withOpacity(0.8),
+                        fg: Colors.white,
+                      ),
                     ],
                   ),
                 ),
@@ -1455,6 +1705,7 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
       }
       if (!completer.isCompleted) completer.complete(result);
     }
+
     entry = OverlayEntry(
       builder: (_) => Material(
         color: Colors.black54,
@@ -1564,8 +1815,9 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
     final inSelectMode = _selectMode != _HistorySelectMode.none;
     final isDeleteMode = _selectMode == _HistorySelectMode.delete;
     final checkboxColor = isDeleteMode ? Colors.redAccent : Colors.blueAccent;
-    final selectedBgColor =
-        isDeleteMode ? Colors.redAccent.withOpacity(0.15) : Colors.blueAccent.withOpacity(0.15);
+    final selectedBgColor = isDeleteMode
+        ? Colors.redAccent.withOpacity(0.15)
+        : Colors.blueAccent.withOpacity(0.15);
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.75,
@@ -1582,7 +1834,7 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 28),
             child: Row(
               children: [
-                if (inSelectMode)...[
+                if (inSelectMode) ...[
                   TextButton(
                     onPressed: _exitSelectMode,
                     style: TextButton.styleFrom(
@@ -1595,11 +1847,9 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                       style: TextStyle(color: subColor, fontSize: 13),
                     ),
                   ),
-                  Spacer()
-                  
-                  ]
-                else
-                  ...[Text(
+                  Spacer(),
+                ] else ...[
+                  Text(
                     AppLocalizations.of(context)!.historyTitle,
                     style: TextStyle(
                       color: fgColor,
@@ -1608,8 +1858,8 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                     ),
                   ),
 
-                const Spacer(),
-                  ],
+                  const Spacer(),
+                ],
 
                 if (inSelectMode) ...[
                   const SizedBox(width: 8),
@@ -1628,7 +1878,7 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
-                    AppLocalizations.of(context)!.historyClearAll,
+                      AppLocalizations.of(context)!.historyClearAll,
                       style: TextStyle(color: Colors.redAccent, fontSize: 13),
                     ),
                   ),
@@ -1643,20 +1893,24 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       child: Text(
-                    AppLocalizations.of(context)!.historyAdd,
-                        style: TextStyle(color: Colors.blueAccent, fontSize: 14),
+                        AppLocalizations.of(context)!.historyAdd,
+                        style: TextStyle(
+                          color: Colors.blueAccent,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 14),
+                  const SizedBox(width: 14),
                   TextButton(
-                    onPressed: () => _enterSelectMode(_HistorySelectMode.delete),
+                    onPressed: () =>
+                        _enterSelectMode(_HistorySelectMode.delete),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
-                    AppLocalizations.of(context)!.delete,
+                      AppLocalizations.of(context)!.delete,
                       style: TextStyle(color: Colors.redAccent, fontSize: 14),
                     ),
                   ),
@@ -1694,9 +1948,9 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                     },
                     onLongPress: !inSelectMode
                         ? () => _enterSelectMode(
-                              _HistorySelectMode.delete,
-                              initialIndex: i,
-                            )
+                            _HistorySelectMode.delete,
+                            initialIndex: i,
+                          )
                         : null,
                     child: Container(
                       color: isSelected ? selectedBgColor : null,
@@ -1720,7 +1974,14 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  e.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' '),
+                                  e.expression
+                                      .split(' ')
+                                      .map(
+                                        (p) => double.tryParse(p) != null
+                                            ? _addCommas(p)
+                                            : p,
+                                      )
+                                      .join(' '),
                                   style: TextStyle(
                                     color: subColor,
                                     fontSize: 20,
@@ -1763,17 +2024,19 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                 16,
                 12 + MediaQuery.of(context).padding.bottom,
               ),
-              child: _selectMode == _HistorySelectMode.add &&
+              child:
+                  _selectMode == _HistorySelectMode.add &&
                       widget.onAddMultiple != null
                   ? SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed:
-                            _selectedIndices.isNotEmpty ? _addSelected : null,
+                        onPressed: _selectedIndices.isNotEmpty
+                            ? _addSelected
+                            : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blueAccent,
-                          disabledBackgroundColor:
-                              Colors.blueAccent.withOpacity(0.3),
+                          disabledBackgroundColor: Colors.blueAccent
+                              .withOpacity(0.3),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -1800,8 +2063,9 @@ class _CalcHistorySheetState extends State<_CalcHistorySheet> {
                             : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.redAccent,
-                          disabledBackgroundColor:
-                              Colors.redAccent.withOpacity(0.3),
+                          disabledBackgroundColor: Colors.redAccent.withOpacity(
+                            0.3,
+                          ),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -1859,7 +2123,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
   final _scrollController = ScrollController();
   bool _calcSheetOpen = false;
   bool _isAiGenerating = false;
-  String? _pendingCalcDisplay; // AIカウント結果を電卓再オープン時に引き渡す
+  AiCountResult? _pendingAiCountResult;
   OverlayEntry? _calcSheetOverlay;
 
   @override
@@ -1978,64 +2242,285 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
 
   /// 値編集ボトムシートを表示
   void _showEditValueSheet(double currentVal, void Function(double) onConfirm) {
-    final text = currentVal == currentVal.truncateToDouble() ? currentVal.toInt().toString() : currentVal.toString();
+    final text = currentVal == currentVal.truncateToDouble()
+        ? currentVal.toInt().toString()
+        : currentVal.toString();
     final ctrl = TextEditingController(text: text);
     OverlayEntry? entry;
-    void close() { entry?.remove(); entry = null; }
-    entry = OverlayEntry(builder: (ctx) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ctrl.selection = TextSelection(baseOffset: 0, extentOffset: ctrl.text.length);
-      });
-      return Material(
-      color: Colors.transparent,
-      child: GestureDetector(onTap: close, behavior: HitTestBehavior.opaque, child: Stack(children: [
-        Container(color: Colors.black26),
-        Align(alignment: Alignment.bottomCenter, child: GestureDetector(onTap: () {}, child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          padding: EdgeInsets.only(left: 24, right: 24, top: 24, bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
-          decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Row(children: [const Icon(Icons.edit, color: Color(0xFF5E81FF), size: 20), const SizedBox(width: 8), Text(AppLocalizations.of(context)!.editValue, style: const TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w600)), const Spacer(), IconButton(icon: Icon(Icons.close, color: Colors.grey.shade400), onPressed: close, padding: EdgeInsets.zero, constraints: const BoxConstraints())]),
-            const SizedBox(height: 16),
-            TextField(controller: ctrl, autofocus: true, keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true), style: const TextStyle(color: Colors.black87, fontSize: 28, fontWeight: FontWeight.w500), textAlign: TextAlign.center, decoration: InputDecoration(hintText: AppLocalizations.of(context)!.numberInputHint, hintStyle: TextStyle(color: Colors.grey.shade400), filled: true, fillColor: Colors.grey.shade100, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none))),
-            const SizedBox(height: 20),
-            SizedBox(width: double.infinity, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF5E81FF), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), padding: const EdgeInsets.symmetric(vertical: 16)), onPressed: () { final v = double.tryParse(ctrl.text.replaceAll(',', '')) ?? currentVal; close(); onConfirm(v); }, child: Text(AppLocalizations.of(context)!.save, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)))),
-          ]),
-        ))),
-      ])),
+    void close() {
+      entry?.remove();
+      entry = null;
+    }
+
+    entry = OverlayEntry(
+      builder: (ctx) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ctrl.selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: ctrl.text.length,
+          );
+        });
+        return Material(
+          color: Colors.transparent,
+          child: GestureDetector(
+            onTap: close,
+            behavior: HitTestBehavior.opaque,
+            child: Stack(
+              children: [
+                Container(color: Colors.black26),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      padding: EdgeInsets.only(
+                        left: 24,
+                        right: 24,
+                        top: 24,
+                        bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+                      ),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.edit,
+                                color: Color(0xFF5E81FF),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                AppLocalizations.of(context)!.editValue,
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const Spacer(),
+                              IconButton(
+                                icon: Icon(
+                                  Icons.close,
+                                  color: Colors.grey.shade400,
+                                ),
+                                onPressed: close,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: ctrl,
+                            autofocus: true,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                              signed: true,
+                            ),
+                            style: const TextStyle(
+                              color: Colors.black87,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                            decoration: InputDecoration(
+                              hintText: AppLocalizations.of(
+                                context,
+                              )!.numberInputHint,
+                              hintStyle: TextStyle(color: Colors.grey.shade400),
+                              filled: true,
+                              fillColor: Colors.grey.shade100,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF5E81FF),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                              ),
+                              onPressed: () {
+                                final v =
+                                    double.tryParse(
+                                      ctrl.text.replaceAll(',', ''),
+                                    ) ??
+                                    currentVal;
+                                close();
+                                onConfirm(v);
+                              },
+                              child: Text(
+                                AppLocalizations.of(context)!.save,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
-    });
-    if (_calcSheetOverlay != null) { Overlay.of(context).insert(entry!, above: _calcSheetOverlay!); } else { Overlay.of(context).insert(entry!); }
+    if (_calcSheetOverlay != null) {
+      Overlay.of(context).insert(entry!, above: _calcSheetOverlay!);
+    } else {
+      Overlay.of(context).insert(entry!);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ctrl.selection = TextSelection(baseOffset: 0, extentOffset: ctrl.text.length);
+      ctrl.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: ctrl.text.length,
+      );
     });
   }
 
   /// 演算子選択ボトムシートを表示
   void _showPickOpSheet(String currentOp, void Function(String) onConfirm) {
     OverlayEntry? entry;
-    void close() { entry?.remove(); entry = null; }
-    entry = OverlayEntry(builder: (ctx) => Material(
-      color: Colors.transparent,
-      child: GestureDetector(onTap: close, behavior: HitTestBehavior.opaque, child: Stack(children: [
-        Container(color: Colors.black54),
-        Align(alignment: Alignment.bottomCenter, child: GestureDetector(onTap: () {}, child: Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          decoration: const BoxDecoration(color: Color(0xFF1E1E2A), borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Row(children: [const Icon(Icons.calculate, color: Colors.orangeAccent, size: 18), const SizedBox(width: 8), Text(AppLocalizations.of(context)!.selectOperation, style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)), const Spacer(), IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: close, padding: EdgeInsets.zero, constraints: const BoxConstraints())]),
-            const SizedBox(height: 16),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: ['+', '-', '×', '÷'].map((o) {
-              final sel = currentOp == o;
-              return GestureDetector(onTap: () { close(); onConfirm(o); }, child: Container(width: 64, height: 64, decoration: BoxDecoration(color: sel ? Colors.orangeAccent.withOpacity(0.3) : Colors.white.withOpacity(0.08), shape: BoxShape.circle, border: Border.all(color: sel ? Colors.orangeAccent : Colors.white.withOpacity(0.2), width: sel ? 2 : 1)), child: Center(child: Text(o, style: TextStyle(color: sel ? Colors.orangeAccent : Colors.white, fontSize: 28, fontWeight: FontWeight.bold)))));
-            }).toList()),
-            const SizedBox(height: 8),
-          ]),
-        ))),
-      ])),
-    ));
-    if (_calcSheetOverlay != null) { Overlay.of(context).insert(entry!, above: _calcSheetOverlay!); } else { Overlay.of(context).insert(entry!); }
+    void close() {
+      entry?.remove();
+      entry = null;
+    }
+
+    entry = OverlayEntry(
+      builder: (ctx) => Material(
+        color: Colors.transparent,
+        child: GestureDetector(
+          onTap: close,
+          behavior: HitTestBehavior.opaque,
+          child: Stack(
+            children: [
+              Container(color: Colors.black54),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 24,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF1E1E2A),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.calculate,
+                              color: Colors.orangeAccent,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              AppLocalizations.of(context)!.selectOperation,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white54,
+                              ),
+                              onPressed: close,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: ['+', '-', '×', '÷'].map((o) {
+                            final sel = currentOp == o;
+                            return GestureDetector(
+                              onTap: () {
+                                close();
+                                onConfirm(o);
+                              },
+                              child: Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: sel
+                                      ? Colors.orangeAccent.withOpacity(0.3)
+                                      : Colors.white.withOpacity(0.08),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: sel
+                                        ? Colors.orangeAccent
+                                        : Colors.white.withOpacity(0.2),
+                                    width: sel ? 2 : 1,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    o,
+                                    style: TextStyle(
+                                      color: sel
+                                          ? Colors.orangeAccent
+                                          : Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (_calcSheetOverlay != null) {
+      Overlay.of(context).insert(entry!, above: _calcSheetOverlay!);
+    } else {
+      Overlay.of(context).insert(entry!);
+    }
   }
 
   /// カメラボタン押下時: オーバーレイを閉じてから AIカウント画面へ遷移し、
@@ -2044,7 +2529,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
     _closeCalcSheet();
     final ai = GemmaAi();
     if (!mounted) return;
-    final count = await Navigator.push<int>(
+    final result = await Navigator.push<AiCountResult>(
       context,
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -2052,8 +2537,8 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
       ),
     );
     if (!mounted) return;
-    if (count != null) {
-      _pendingCalcDisplay = count.toString();
+    if (result != null) {
+      _pendingAiCountResult = result;
     }
     _openCalcSheet();
   }
@@ -2077,14 +2562,14 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
         : true;
 
     setState(() => _calcSheetOpen = true);
-    final pendingDisplay = _pendingCalcDisplay;
-    _pendingCalcDisplay = null;
+    final pendingResult = _pendingAiCountResult;
+    _pendingAiCountResult = null;
     _calcSheetOverlay = OverlayEntry(
       builder: (ctx) => _CalcDraggableSheetContent(
         existingItemCount: currentItems.length,
         isDark: isDark,
         bgColor: bgColorValue,
-        initialDisplay: pendingDisplay,
+        initialAiCountResult: pendingResult,
         onRequestAiCount: _handleCalcAiCountRequest,
         onRequestHistory: _showHistoryForCalc,
         onRequestEditValue: _showEditValueSheet,
@@ -2101,7 +2586,9 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final title = _config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
+    final title =
+        _config.data['title'] as String? ??
+        AppLocalizations.of(context)!.standardCalc;
     final bgColorValue = _config.data['bgColor'] as int?;
     final scaffoldBgColor = bgColorValue != null
         ? Color(bgColorValue)
@@ -2141,7 +2628,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-  const Padding(
+              const Padding(
                 padding: EdgeInsets.only(right: 0.0),
                 child: ProBadge(),
               ),
@@ -2154,7 +2641,6 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                 ),
                 tooltip: AppLocalizations.of(context)!.tooltipLinkValues,
               ),
-            
             ],
           ),
           IconButton(
@@ -2371,7 +2857,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                   Expanded(
+                  Expanded(
                     child: Text(
                       AppLocalizations.of(context)!.modeSelect,
                       style: TextStyle(
@@ -2452,7 +2938,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                 ),
               ),
               title: Text(
-                    AppLocalizations.of(context)!.viewModeLabel,
+                AppLocalizations.of(context)!.viewModeLabel,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -2541,7 +3027,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                 ),
               ),
               subtitle: Text(
-                    AppLocalizations.of(context)!.linkGraphSubtitle,
+                AppLocalizations.of(context)!.linkGraphSubtitle,
                 style: TextStyle(color: Colors.white38, fontSize: 12),
               ),
 
@@ -2552,11 +3038,9 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   MaterialPageRoute(
                     builder: (_) => LinkGraphPage(
                       configs: widget.allConfigs
-                          .map((c) => {
-                                'id': c.id,
-                                'type': c.type,
-                                'data': c.data,
-                              })
+                          .map(
+                            (c) => {'id': c.id, 'type': c.type, 'data': c.data},
+                          )
                           .toList(),
                       initialSheetId: _config.id,
                       onOpenSheet: (_) => Navigator.pop(context),
@@ -2572,6 +3056,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
     );
   }
 }
+
 class _CalcDraggableSheetContent extends StatefulWidget {
   final int existingItemCount;
   final void Function(Map<String, dynamic> item) onAddItem;
@@ -2579,7 +3064,7 @@ class _CalcDraggableSheetContent extends StatefulWidget {
   final bool isDark;
   final int? bgColor;
   final VoidCallback onClose;
-  final String? initialDisplay;
+  final AiCountResult? initialAiCountResult;
   final Future<void> Function()? onRequestAiCount;
   final void Function(
     void Function(CalcHistoryEntry) onSelect,
@@ -2589,11 +3074,11 @@ class _CalcDraggableSheetContent extends StatefulWidget {
 
   /// 値編集ボトムシートの委譲コールバック
   final void Function(double currentVal, void Function(double) onConfirm)?
-      onRequestEditValue;
+  onRequestEditValue;
 
   /// 演算子選択ボトムシートの委譲コールバック
   final void Function(String currentOp, void Function(String) onConfirm)?
-      onRequestPickOp;
+  onRequestPickOp;
 
   const _CalcDraggableSheetContent({
     required this.existingItemCount,
@@ -2601,7 +3086,7 @@ class _CalcDraggableSheetContent extends StatefulWidget {
     required this.isDark,
     required this.onClose,
     this.bgColor,
-    this.initialDisplay,
+    this.initialAiCountResult,
     this.onRequestAiCount,
     this.onRequestHistory,
     this.onRequestEditValue,
@@ -2665,7 +3150,7 @@ class _CalcDraggableSheetContentState
               onAddItem: widget.onAddItem,
               onAddItems: widget.onAddItems,
               onClose: widget.onClose,
-              initialDisplay: widget.initialDisplay,
+              initialAiCountResult: widget.initialAiCountResult,
               onRequestAiCount: widget.onRequestAiCount,
               onRequestHistory: widget.onRequestHistory,
               onRequestEditValue: widget.onRequestEditValue,
@@ -2676,6 +3161,17 @@ class _CalcDraggableSheetContentState
       },
     );
   }
+}
+
+Future<AiCountResult?> showAiCountPage(BuildContext context) {
+  final ai = GemmaAi();
+  return Navigator.push<AiCountResult>(
+    context,
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => _AiCountPage(onCount: ai.countInImage),
+    ),
+  );
 }
 
 /// HomeScreen から電卓ボトムシートを開く公開ユーティリティ
@@ -2702,10 +3198,11 @@ PersistentBottomSheetController? showHomeCalcSheet({
 }
 
 /// ホーム画面でAI生成用プロンプトシートを表示するユーティリティ
-Future<({String instruction, bool isModify, Uint8List? imageBytes})?> showHomeAiGenerateSheet(
-  BuildContext context,
-) {
-  return showModalBottomSheet<({String instruction, bool isModify, Uint8List? imageBytes})>(
+Future<({String instruction, bool isModify, Uint8List? imageBytes})?>
+showHomeAiGenerateSheet(BuildContext context) {
+  return showModalBottomSheet<
+    ({String instruction, bool isModify, Uint8List? imageBytes})
+  >(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
@@ -2801,7 +3298,8 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
   String _fmt(double v) {
     if (v.isInfinite || v.isNaN) return '0';
     if (v == 0) return '0';
-    if (v == v.truncateToDouble() && v.abs() < 1e15) return v.toInt().toString();
+    if (v == v.truncateToDouble() && v.abs() < 1e15)
+      return v.toInt().toString();
     if (v.abs() < 1e-15 || v.abs() >= 1e15) return v.toString();
     int intDigits = v.abs() >= 1 ? v.abs().toInt().toString().length : 0;
     int decDigits = (10 - intDigits).clamp(0, 10);
@@ -2811,19 +3309,27 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
 
   double _eval(double a, String op, double b) {
     switch (op) {
-      case '+': return a + b;
-      case '-': return a - b;
-      case '×': return a * b;
-      case '÷': return b != 0 ? a / b : 0;
-      default: return a;
+      case '+':
+        return a + b;
+      case '-':
+        return a - b;
+      case '×':
+        return a * b;
+      case '÷':
+        return b != 0 ? a / b : 0;
+      default:
+        return a;
     }
   }
 
   String _opToDart(String op) {
     switch (op) {
-      case '×': return 'x';
-      case '÷': return '/';
-      default: return op;
+      case '×':
+        return 'x';
+      case '÷':
+        return '/';
+      default:
+        return op;
     }
   }
 
@@ -2876,7 +3382,8 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
             _calcLastB = b;
           }
           double result;
-          if (allTerms.length == effectiveOps.length + 1 && allTerms.length >= 2) {
+          if (allTerms.length == effectiveOps.length + 1 &&
+              allTerms.length >= 2) {
             result = allTerms[0];
             for (int i = 0; i < effectiveOps.length; i++) {
               result = _eval(result, effectiveOps[i], allTerms[i + 1]);
@@ -2889,7 +3396,9 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
             parts.add(_fmt(allTerms[i]));
             if (i < effectiveOps.length) parts.add(effectiveOps[i]);
           }
-          final displayParts = parts.map((p) => double.tryParse(p) != null ? _addCommas(p) : p).toList();
+          final displayParts = parts
+              .map((p) => double.tryParse(p) != null ? _addCommas(p) : p)
+              .toList();
           _exprStr = '${displayParts.join(' ')} = ${_addCommas(_fmt(result))}';
           flashExpr = _exprStr;
           _termValues = allTerms;
@@ -2909,8 +3418,14 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                 exprParts.add(_fmt(_termValues[i]));
                 if (i < _termOps.length) exprParts.add(_termOps[i]);
               }
-              CalcHistoryManager.instance.addEntry(exprParts.join(' '), _fmt(_calcA ?? 0));
-              final dp = exprParts.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+              CalcHistoryManager.instance.addEntry(
+                exprParts.join(' '),
+                _fmt(_calcA ?? 0),
+              );
+              final dp = exprParts.map((p) {
+                final v = double.tryParse(p);
+                return v != null ? _addCommas(p) : p;
+              }).toList();
               flashExpr = '${dp.join(' ')} = ${_addCommas(_fmt(_calcA ?? 0))}';
             } else if (_display != '0') {
               CalcHistoryManager.instance.addEntry(_display, _display);
@@ -2982,7 +3497,11 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
     if (_termValues.length >= 3 && _termOps.length == _termValues.length - 1) {
       final others = List.generate(
         _termValues.length - 2,
-        (i) => {'op': _opToDart(_termOps[i + 1]), 'val': _termValues[i + 2], 'unit': ''},
+        (i) => {
+          'op': _opToDart(_termOps[i + 1]),
+          'val': _termValues[i + 2],
+          'unit': '',
+        },
       );
       item = {
         'name': '計算 1',
@@ -3008,7 +3527,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
   void _showAiCountDialog() async {
     final ai = GemmaAi();
     setState(() => _isAiCounting = true);
-    final count = await Navigator.push<int>(
+    final result = await Navigator.push<AiCountResult>(
       context,
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -3016,20 +3535,34 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
       ),
     );
     if (!mounted) return;
+    if (result != null) {
+      applyAiCountResult(result);
+    } else {
+      setState(() => _isAiCounting = false);
+    }
+  }
+
+  void applyAiCountResult(AiCountResult result) {
+    if (!mounted) return;
     setState(() {
       _isAiCounting = false;
-      if (count != null) {
-        _display = count.toString();
-        _newEntry = true;
-        _hasResult = false;
-        _isClearState = false;
-        _calcA = null;
-        _calcOp = '';
-        _termValues = [];
-        _termOps = [];
-        _exprStr = '';
+      final values = result.items.map((item) => item.count.toDouble()).toList();
+      _display = result.count.toString();
+      _newEntry = true;
+      _hasResult = true;
+      _isClearState = false;
+      _calcA = result.count.toDouble();
+      _calcOp = '';
+      _termValues = values;
+      _termOps = List.filled(values.length > 0 ? values.length - 1 : 0, '+');
+      if (values.length >= 2) {
+        _calcLastA = values[0];
+        _calcLastOp = '+';
+        _calcLastB = values[1];
       }
+      _exprStr = '${result.additionExpression} = ${result.count}';
     });
+    expand();
   }
 
   void _showHistory() async {
@@ -3059,7 +3592,10 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
               for (int i = 0; i < parts.length; i++) {
                 if (i % 2 == 0) {
                   final v = double.tryParse(parts[i]);
-                  if (v == null) { valid = false; break; }
+                  if (v == null) {
+                    valid = false;
+                    break;
+                  }
                   termVals.add(v);
                 } else {
                   termOps.add(parts[i]);
@@ -3078,7 +3614,8 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
               _termValues = _calcA != null ? [_calcA!] : [];
               _termOps = [];
             }
-            _exprStr = '${entry.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(entry.result)}';
+            _exprStr =
+                '${entry.expression.split(' ').map((p) => double.tryParse(p) != null ? _addCommas(p) : p).join(' ')} = ${_addCommas(entry.result)}';
           });
         },
         onClear: () {
@@ -3127,7 +3664,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
   }
 
   Widget _buildHandle({required double handleH}) {
- String inProg = '';
+    String inProg = '';
     final subtitle = _hasResult ? _exprStr : inProg;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -3139,11 +3676,14 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
       child: Container(
         height: handleH + 20,
         decoration: const BoxDecoration(
-
-         // borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
-         // borderRadius: BorderRadius.all( Radius.circular(30)),
+          // borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+          // borderRadius: BorderRadius.all( Radius.circular(30)),
           gradient: LinearGradient(
-            colors: [Color.fromARGB(255, 255, 255, 255),Color.fromARGB(255, 255, 255, 255), Color.fromARGB(181, 255, 255, 255)],
+            colors: [
+              Color.fromARGB(255, 255, 255, 255),
+              Color.fromARGB(255, 255, 255, 255),
+              Color.fromARGB(181, 255, 255, 255),
+            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -3151,8 +3691,6 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
             top: BorderSide(color: Color.fromARGB(255, 0, 0, 0), width: 0.5),
             bottom: BorderSide(color: Color.fromARGB(255, 0, 0, 0), width: 0.5),
           ),
-         
-       
         ),
         child: _isExpanded
             ? Padding(
@@ -3185,53 +3723,64 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                 ),
               )
             : Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10,vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 12,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                  //  const Icon(Icons.calculate_rounded, color: Colors.white60, size: 30),
+                    //  const Icon(Icons.calculate_rounded, color: Colors.white60, size: 30),
                     const SizedBox(width: 12),
-                   
-  subtitle.isNotEmpty?
-                            Expanded(
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Text(
-                                  subtitle,
-                                    maxLines: 1,
-                                  style: TextStyle(
-                                    height: 1,
-                                    color: Colors.black,
-                                    fontSize: 24,
-         //                           fontWeight: FontWeight.w900,
-                                  ),
+
+                    subtitle.isNotEmpty
+                        ? Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Text(
+                                subtitle,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  height: 1,
+                                  color: Colors.black,
+                                  fontSize: 24,
+                                  //                           fontWeight: FontWeight.w900,
                                 ),
                               ),
-                            ):Expanded(
-                              child: const Text(
-                                                    'CALCULATOR',
-                                                    style: TextStyle(
-                                                      color: Colors.black,
-                                                      fontSize: 22,
-                                                      fontWeight: FontWeight.w900,
-                                                      letterSpacing: 0.5,
-                                                    ),
-                                                  ),
                             ),
-GestureDetector(
-                        onTap: _showHistory,
-                        child: Container(
-                          margin: const EdgeInsets.only(left:10,right: 10),
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(1000),
-                         
+                          )
+                        : Expanded(
+                            child: const Text(
+                              'CALCULATOR',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
                           ),
-                          child: const Icon(Icons.history_rounded, color: Colors.black, size: 24),
+                    GestureDetector(
+                      onTap: _showHistory,
+                      child: Container(
+                        margin: const EdgeInsets.only(left: 10, right: 10),
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(1000),
+                        ),
+                        child: const Icon(
+                          Icons.history_rounded,
+                          color: Colors.black,
+                          size: 24,
                         ),
                       ),
-                    const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.black, size: 28),
+                    ),
+                    const Icon(
+                      Icons.keyboard_arrow_up_rounded,
+                      color: Colors.black,
+                      size: 28,
+                    ),
                   ],
                 ),
               ),
@@ -3253,10 +3802,23 @@ GestureDetector(
       position: position,
       color: const Color(0xFF2A2A32),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      items: ops.map((o) => PopupMenuItem<String>(
-        value: o,
-        child: Center(child: Text(o, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold))),
-      )).toList(),
+      items: ops
+          .map(
+            (o) => PopupMenuItem<String>(
+              value: o,
+              child: Center(
+                child: Text(
+                  o,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          )
+          .toList(),
     );
     if (selectedOp != null) {
       setState(() {
@@ -3271,7 +3833,10 @@ GestureDetector(
           ep.add(_fmt(_termValues[i]));
           if (i < _termOps.length) ep.add(_termOps[i]);
         }
-        final dp = ep.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
+        final dp = ep.map((p) {
+          final v = double.tryParse(p);
+          return v != null ? _addCommas(p) : p;
+        }).toList();
         if (_hasResult) _exprStr = '${dp.join(' ')} = ${_addCommas(_fmt(r))}';
       });
     }
@@ -3286,44 +3851,92 @@ GestureDetector(
       context: context,
       builder: (ctx) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          ctrl.selection = TextSelection(baseOffset: 0, extentOffset: ctrl.text.length);
+          ctrl.selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: ctrl.text.length,
+          );
         });
         return AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(AppLocalizations.of(context)!.editValue, style: const TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w600)),
-        content: TextField(
-          controller: ctrl, autofocus: true,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-          style: const TextStyle(color: Colors.black87, fontSize: 22, fontWeight: FontWeight.w500),
-          textAlign: TextAlign.center,
-          decoration: InputDecoration(
-            hintText: AppLocalizations.of(context)!.numberInputHint, hintStyle: TextStyle(color: Colors.grey.shade400),
-            filled: true, fillColor: Colors.grey.shade100,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.of(context)!.cancel, style: TextStyle(color: Colors.grey.shade500))),
-          TextButton(
-            onPressed: () {
-              final newVal = double.tryParse(ctrl.text.replaceAll(',', '')) ?? currentVal;
-              setState(() {
-                _termValues[index] = newVal;
-                double r = _termValues[0];
-                for (int i = 0; i + 1 < _termValues.length; i++) { r = _eval(r, _termOps[i], _termValues[i + 1]); }
-                _display = _fmt(r);
-                final ep = <String>[];
-                for (int i = 0; i < _termValues.length; i++) { ep.add(_fmt(_termValues[i])); if (i < _termOps.length) ep.add(_termOps[i]); }
-                final dp = ep.map((p) { final v = double.tryParse(p); return v != null ? _addCommas(p) : p; }).toList();
-                if (_hasResult) _exprStr = '${dp.join(' ')} = ${_addCommas(_fmt(r))}';
-              });
-              Navigator.pop(ctx);
-            },
-            child: Text(AppLocalizations.of(context)!.save, style: TextStyle(color: Color(0xFF5E81FF), fontWeight: FontWeight.bold)),
+          title: Text(
+            AppLocalizations.of(context)!.editValue,
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ],
-      );
+          content: TextField(
+            controller: ctrl,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(
+              decimal: true,
+              signed: true,
+            ),
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 22,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            decoration: InputDecoration(
+              hintText: AppLocalizations.of(context)!.numberInputHint,
+              hintStyle: TextStyle(color: Colors.grey.shade400),
+              filled: true,
+              fillColor: Colors.grey.shade100,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                AppLocalizations.of(context)!.cancel,
+                style: TextStyle(color: Colors.grey.shade500),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                final newVal =
+                    double.tryParse(ctrl.text.replaceAll(',', '')) ??
+                    currentVal;
+                setState(() {
+                  _termValues[index] = newVal;
+                  double r = _termValues[0];
+                  for (int i = 0; i + 1 < _termValues.length; i++) {
+                    r = _eval(r, _termOps[i], _termValues[i + 1]);
+                  }
+                  _display = _fmt(r);
+                  final ep = <String>[];
+                  for (int i = 0; i < _termValues.length; i++) {
+                    ep.add(_fmt(_termValues[i]));
+                    if (i < _termOps.length) ep.add(_termOps[i]);
+                  }
+                  final dp = ep.map((p) {
+                    final v = double.tryParse(p);
+                    return v != null ? _addCommas(p) : p;
+                  }).toList();
+                  if (_hasResult)
+                    _exprStr = '${dp.join(' ')} = ${_addCommas(_fmt(r))}';
+                });
+                Navigator.pop(ctx);
+              },
+              child: Text(
+                AppLocalizations.of(context)!.save,
+                style: TextStyle(
+                  color: Color(0xFF5E81FF),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
       },
     );
   }
@@ -3333,35 +3946,76 @@ GestureDetector(
     if (_termValues.isEmpty) return const SizedBox.shrink();
     final widgets = <Widget>[];
     for (int i = 0; i < _termValues.length; i++) {
-      widgets.add(GestureDetector(
-        onTap: () => _editCalcTermValue(i),
-        child: Container(
-          margin: const EdgeInsets.only(right: 6),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 255, 255, 255), borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.withOpacity(0.30), width: 1.0),
-          ),
-          child: Text(_addCommas(_fmt(_termValues[i])), style: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w600)),
-        ),
-      ));
-      if (i < _termOps.length) {
-        final opIdx = i;
-        widgets.add(GestureDetector(
-          onTapDown: (d) => _pickCalcOp(opIdx, d.globalPosition),
+      widgets.add(
+        GestureDetector(
+          onTap: () => _editCalcTermValue(i),
           child: Container(
             margin: const EdgeInsets.only(right: 6),
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(color: Colors.orangeAccent.withOpacity(0.08), shape: BoxShape.circle, border: Border.all(color: Colors.orangeAccent.withOpacity(0.2))),
-            child: Text(_termOps[i], style: const TextStyle(color: Colors.orangeAccent, fontSize: 16, fontWeight: FontWeight.w800)),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 255, 255, 255),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Colors.grey.withOpacity(0.30),
+                width: 1.0,
+              ),
+            ),
+            child: Text(
+              _addCommas(_fmt(_termValues[i])),
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
-        ));
+        ),
+      );
+      if (i < _termOps.length) {
+        final opIdx = i;
+        widgets.add(
+          GestureDetector(
+            onTapDown: (d) => _pickCalcOp(opIdx, d.globalPosition),
+            child: Container(
+              margin: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.orangeAccent.withOpacity(0.08),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.orangeAccent.withOpacity(0.2)),
+              ),
+              child: Text(
+                _termOps[i],
+                style: const TextStyle(
+                  color: Colors.orangeAccent,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        );
       }
     }
     if (_hasResult) {
-      widgets.add(const Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text('=', style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500))));
+      widgets.add(
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            '=',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      );
     }
-    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(mainAxisSize: MainAxisSize.min, children: widgets));
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(mainAxisSize: MainAxisSize.min, children: widgets),
+    );
   }
 
   Widget _buildCalcContent() {
@@ -3369,19 +4023,24 @@ GestureDetector(
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(0)),
         gradient: LinearGradient(
-          colors: [const Color.fromARGB(194, 255, 255, 255), const Color.fromARGB(255, 255, 255, 255), const Color.fromARGB(255, 226, 226, 226),const Color.fromARGB(255, 198, 198, 198)],
+          colors: [
+            const Color.fromARGB(194, 255, 255, 255),
+            const Color.fromARGB(255, 255, 255, 255),
+            const Color.fromARGB(255, 226, 226, 226),
+            const Color.fromARGB(255, 198, 198, 198),
+          ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          stops: const [0.0, 0.05, 0.5,1],
+          stops: const [0.0, 0.05, 0.5, 1],
         ),
-        
       ),
       child: LayoutBuilder(
-          builder: (ctx, constraints) {
+        builder: (ctx, constraints) {
           final screenH = MediaQuery.of(ctx).size.height;
           final topPad = MediaQuery.of(ctx).padding.top;
           // 展開時の最大コンテンツ高さをレイアウト計算の基準とする
-          final targetContentH = screenH - 64.0 - topPad; // 64.0 is _kHandleHeight
+          final targetContentH =
+              screenH - 64.0 - topPad; // 64.0 is _kHandleHeight
 
           // viewPadding.bottom は Scaffold/SafeArea に左右されず常にホームインジケーター高さを返す
           final bottomPad = MediaQuery.of(ctx).viewPadding.bottom;
@@ -3423,92 +4082,52 @@ GestureDetector(
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                  // ── Action row ──
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      GestureDetector(
-                        onTap: _isAiCounting ? null : _showAiCountDialog,
-                        child: AnimatedOpacity(
-                          opacity: _isAiCounting ? 0.4 : 1.0,
-                          duration: const Duration(milliseconds: 150),
-                          child: Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(1),
-                              borderRadius: BorderRadius.circular(1000),
-                          
-                            ),
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Positioned(
-                                 top: 14, 
-                                 bottom: 0,
-                                  child: const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 24)),
-                                if (_isAiCounting)
-                                  const SizedBox(
-                                    width: 34,
-                                    height: 34,
-                                    child: CircularProgressIndicator(strokeWidth: 1.5, color: Colors.white),
+                    // ── Action row ──
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        GestureDetector(
+                          onTap: _isAiCounting ? null : _showAiCountDialog,
+                          child: AnimatedOpacity(
+                            opacity: _isAiCounting ? 0.4 : 1.0,
+                            duration: const Duration(milliseconds: 150),
+                            child: Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(1),
+                                borderRadius: BorderRadius.circular(1000),
+                              ),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Positioned(
+                                    top: 14,
+                                    bottom: 0,
+                                    child: const Icon(
+                                      Icons.camera_alt_outlined,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
                                   ),
-                                   Positioned(
-                                     top: -0,
-                                     child: Text(
+                                  if (_isAiCounting)
+                                    const SizedBox(
+                                      width: 34,
+                                      height: 34,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 1.5,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  Positioned(
+                                    top: -0,
+                                    child: Text(
                                       'ai',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
                                       ),
-                                                                       ),
-                                   )
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      GestureDetector(
-                        onTap: _showHistory,
-                        child: Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(1),
-                            borderRadius: BorderRadius.circular(1000),
-                          ),
-                          child: const Icon(Icons.history_rounded, color: Colors.white, size: 24),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: AnimatedOpacity(
-                          opacity: _hasResult ? 1.0 : 0.35,
-                          duration: const Duration(milliseconds: 200),
-                          child: GestureDetector(
-                            onTap: _hasResult ? _addToSheet : null,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              decoration: BoxDecoration(
-                                color: _hasResult
-                                    ? Colors.blueAccent
-                                    : Colors.grey.withOpacity(1),
-                                borderRadius: BorderRadius.circular(40),
-                              ),
-                              alignment: Alignment.center,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(Icons.add, color: Colors.white, size: 16),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    AppLocalizations.of(context)!.calcAddThis,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
                                     ),
                                   ),
                                 ],
@@ -3516,79 +4135,166 @@ GestureDetector(
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                 // const SizedBox(height: 8),
-                  // ── 表示部 ──
-                  _CalcFlashOverlay(
-                    key: _flashKey,
-                    child: SafeArea(
-                      child: SizedBox(
-                        height: 110,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            if (_termValues.isNotEmpty)
-                              _buildCalcFormulaDisplay(),
-                            FittedBox(
-                              child: Text(
-                                _addCommas(_display),
-                                maxLines: 1,
-                                style: const TextStyle(
-                                  height: 1,
-                                  color: Colors.black,
-                                  fontSize: 34,
-                                  fontWeight: FontWeight.w200,
+                        const SizedBox(width: 8),
+                        GestureDetector(
+                          onTap: _showHistory,
+                          child: Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(1),
+                              borderRadius: BorderRadius.circular(1000),
+                            ),
+                            child: const Icon(
+                              Icons.history_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: AnimatedOpacity(
+                            opacity: _hasResult ? 1.0 : 0.35,
+                            duration: const Duration(milliseconds: 200),
+                            child: GestureDetector(
+                              onTap: _hasResult ? _addToSheet : null,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
                                 ),
-                                textAlign: TextAlign.right,
+                                decoration: BoxDecoration(
+                                  color: _hasResult
+                                      ? Colors.blueAccent
+                                      : Colors.grey.withOpacity(1),
+                                  borderRadius: BorderRadius.circular(40),
+                                ),
+                                alignment: Alignment.center,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.add,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      AppLocalizations.of(context)!.calcAddThis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // const SizedBox(height: 8),
+                    // ── 表示部 ──
+                    _CalcFlashOverlay(
+                      key: _flashKey,
+                      child: SafeArea(
+                        child: SizedBox(
+                          height: 110,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              if (_termValues.isNotEmpty)
+                                _buildCalcFormulaDisplay(),
+                              FittedBox(
+                                child: Text(
+                                  _addCommas(_display),
+                                  maxLines: 1,
+                                  style: const TextStyle(
+                                    height: 1,
+                                    color: Colors.black,
+                                    fontSize: 34,
+                                    fontWeight: FontWeight.w200,
+                                  ),
+                                  textAlign: TextAlign.right,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // ── ボタングリッド ──
+                    SafeArea(
+                      child: SizedBox(
+                        height: 5 * buttonH + 4 * 10,
+                        child: GridView.count(
+                          padding: EdgeInsets.zero,
+                          crossAxisCount: 4,
+                          mainAxisSpacing: 5,
+                          crossAxisSpacing: 5,
+                          childAspectRatio: ratio,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: [
+                            calcKey(
+                              'C',
+                              bg: const Color.fromARGB(255, 251, 81, 65),
+                              fg: Colors.white,
+                            ),
+                            calcKey('+/-', bg: Colors.white, fg: Colors.black),
+                            calcKey('%', bg: Colors.white, fg: Colors.black),
+                            calcKey(
+                              '÷',
+                              bg: opColor,
+                              fg: const Color.fromARGB(255, 0, 0, 0),
+                            ),
+                            calcKey('7', bg: Colors.white, fg: Colors.black),
+                            calcKey('8', bg: Colors.white, fg: Colors.black),
+                            calcKey('9', bg: Colors.white, fg: Colors.black),
+                            calcKey(
+                              '×',
+                              bg: opColor,
+                              fg: const Color.fromARGB(255, 0, 0, 0),
+                            ),
+                            calcKey('4', bg: Colors.white, fg: Colors.black),
+                            calcKey('5', bg: Colors.white, fg: Colors.black),
+                            calcKey('6', bg: Colors.white, fg: Colors.black),
+                            calcKey(
+                              '-',
+                              bg: opColor,
+                              fg: const Color.fromARGB(255, 0, 0, 0),
+                            ),
+                            calcKey('1', bg: Colors.white, fg: Colors.black),
+                            calcKey('2', bg: Colors.white, fg: Colors.black),
+                            calcKey('3', bg: Colors.white, fg: Colors.black),
+                            calcKey(
+                              '+',
+                              bg: opColor,
+                              fg: const Color.fromARGB(255, 0, 0, 0),
+                            ),
+                            calcKey('⌫', bg: Colors.white, fg: Colors.black),
+                            calcKey('0', bg: Colors.white, fg: Colors.black),
+                            calcKey('.', bg: Colors.white, fg: Colors.black),
+                            calcKey(
+                              '=',
+                              bg: eqColor.withOpacity(0.8),
+                              fg: Colors.black,
                             ),
                           ],
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  // ── ボタングリッド ──
-                  SafeArea(
-                    child: SizedBox(
-                      height: 5* buttonH + 4 * 10,
-                      child: GridView.count(
-                        padding: EdgeInsets.zero,
-                        crossAxisCount: 4,
-                        mainAxisSpacing: 5,
-                        crossAxisSpacing: 5,
-                        childAspectRatio: ratio,
-                        physics: const NeverScrollableScrollPhysics(),
-                        children: [
-                          calcKey('C', bg: const Color.fromARGB(255, 251, 81, 65), fg: Colors.white),
-                          calcKey('+/-',bg:Colors.white,fg: Colors.black),
-                          calcKey('%',bg:Colors.white,fg: Colors.black),
-                          calcKey('÷', bg: opColor, fg: const Color.fromARGB(255, 0, 0, 0)),
-                          calcKey('7',bg:Colors.white,fg: Colors.black), calcKey('8',bg:Colors.white,fg: Colors.black), calcKey('9',bg:Colors.white,fg: Colors.black),
-                          calcKey('×', bg: opColor, fg: const Color.fromARGB(255, 0, 0, 0)),
-                          calcKey('4',bg:Colors.white,fg: Colors.black), calcKey('5',bg:Colors.white,fg: Colors.black), calcKey('6',bg:Colors.white,fg: Colors.black),
-                          calcKey('-', bg: opColor, fg: const Color.fromARGB(255, 0, 0, 0)),
-                          calcKey('1',bg:Colors.white,fg: Colors.black), calcKey('2',bg:Colors.white,fg: Colors.black), calcKey('3',bg:Colors.white,fg: Colors.black),
-                          calcKey('+', bg: opColor, fg: const Color.fromARGB(255, 0, 0, 0)),
-                          calcKey('⌫',bg:Colors.white,fg: Colors.black,),
-                          calcKey('0',bg:Colors.white,fg: Colors.black),
-                          calcKey('.',bg:Colors.white,fg: Colors.black),
-                          calcKey('=', bg: eqColor.withOpacity(0.8), fg: Colors.black),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              ))
+            ),
           );
         },
       ),
     );
-
   }
 }
 
@@ -3665,12 +4371,14 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
   // ── 結合ビュー用電卓オーバーレイ ──
   OverlayEntry? _mergedCalcOverlay;
   bool _mergedCalcOpen = false;
-  String? _pendingMergedCalcDisplay;
+  AiCountResult? _pendingMergedAiCountResult;
 
   @override
   void initState() {
     super.initState();
-    _title = widget.mergedConfig.data['title'] as String? ?? AppLocalizations.of(context)!.mergedView;
+    _title =
+        widget.mergedConfig.data['title'] as String? ??
+        AppLocalizations.of(context)!.mergedView;
     _bgColor = widget.mergedConfig.data['bgColor'] as int? ?? 0xFF0D0D14;
     _sheetIds = (widget.mergedConfig.data['sheetIds'] as List<dynamic>? ?? [])
         .map((e) => e as String)
@@ -3698,7 +4406,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
     _closeMergedCalcSheet();
     final ai = GemmaAi();
     if (!mounted) return;
-    final count = await Navigator.push<int>(
+    final result = await Navigator.push<AiCountResult>(
       context,
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -3706,8 +4414,8 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
       ),
     );
     if (!mounted) return;
-    if (count != null) {
-      _pendingMergedCalcDisplay = count.toString();
+    if (result != null) {
+      _pendingMergedAiCountResult = result;
     }
     _openMergedCalcSheet();
   }
@@ -3722,7 +4430,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
       builder: (ctx) => _CalcDraggableSheetContent(
         existingItemCount: 0,
         isDark: true,
-        initialDisplay: _pendingMergedCalcDisplay,
+        initialAiCountResult: _pendingMergedAiCountResult,
         onAddItem: (item) {
           _closeMergedCalcSheet();
           Future.microtask(() => _pickSheetAndAdd(item));
@@ -3732,7 +4440,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
         onClose: _closeMergedCalcSheet,
       ),
     );
-    _pendingMergedCalcDisplay = null;
+    _pendingMergedAiCountResult = null;
     Overlay.of(context).insert(_mergedCalcOverlay!);
   }
 
@@ -3784,7 +4492,9 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                     onAddMultiple: (selectedEntries) {
                       closeHistory();
                       _closeMergedCalcSheet();
-                      final items = selectedEntries.map(_historyEntryToItem).toList();
+                      final items = selectedEntries
+                          .map(_historyEntryToItem)
+                          .toList();
                       Future.microtask(() => _pickSheetAndAddMultiple(items));
                     },
                   ),
@@ -3823,7 +4533,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                     Expanded(
+                    Expanded(
                       child: Text(
                         AppLocalizations.of(context)!.selectSheetToAdd,
                         style: TextStyle(
@@ -3850,7 +4560,9 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                     try {
                       sheet = _localSheets.firstWhere((s) => s.id == id);
                     } catch (_) {}
-                    final title = sheet?.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
+                    final title =
+                        sheet?.data['title'] as String? ??
+                        AppLocalizations.of(context)!.standardCalc;
                     final itemCount =
                         (sheet?.data['items'] as List?)?.length ?? 0;
                     return ListTile(
@@ -3966,7 +4678,8 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                       sheet = _localSheets.firstWhere((s) => s.id == id);
                     } catch (_) {}
                     final title =
-                        sheet?.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
+                        sheet?.data['title'] as String? ??
+                        AppLocalizations.of(context)!.standardCalc;
                     final itemCount =
                         (sheet?.data['items'] as List?)?.length ?? 0;
                     return ListTile(
@@ -4059,7 +4772,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                     Expanded(
+                    Expanded(
                       child: Text(
                         AppLocalizations.of(context)!.navigateToSheet,
                         style: TextStyle(
@@ -4087,7 +4800,9 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                     try {
                       sheet = _localSheets.firstWhere((s) => s.id == id);
                     } catch (_) {}
-                    final title = sheet?.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
+                    final title =
+                        sheet?.data['title'] as String? ??
+                        AppLocalizations.of(context)!.standardCalc;
                     return ListTile(
                       leading: Container(
                         width: 36,
@@ -4237,7 +4952,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                   Expanded(
+                  Expanded(
                     child: Text(
                       AppLocalizations.of(context)!.allSheetsDisplayModeLabel,
                       style: TextStyle(
@@ -4270,7 +4985,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                 ),
               ),
               subtitle: Text(
-                    AppLocalizations.of(context)!.applyToAllSheets,
+                AppLocalizations.of(context)!.applyToAllSheets,
                 style: TextStyle(color: Colors.white38, fontSize: 11),
               ),
               trailing: _globalMode == 0
@@ -4292,14 +5007,14 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                     : Colors.white54,
               ),
               title: Text(
-                    AppLocalizations.of(context)!.viewModeLabel,
+                AppLocalizations.of(context)!.viewModeLabel,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               subtitle: Text(
-                    AppLocalizations.of(context)!.applyToAllSheets,
+                AppLocalizations.of(context)!.applyToAllSheets,
                 style: TextStyle(color: Colors.white38, fontSize: 11),
               ),
               trailing: _globalMode == 1
@@ -4328,7 +5043,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                 ),
               ),
               subtitle: Text(
-                    AppLocalizations.of(context)!.applyToAllSheets,
+                AppLocalizations.of(context)!.applyToAllSheets,
                 style: TextStyle(color: Colors.white38, fontSize: 11),
               ),
               trailing: _globalMode == 2
@@ -4361,10 +5076,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
         backgroundColor: bgColor,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: iconColor,
-          ),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: iconColor),
           onPressed: () => Navigator.pop(context),
         ),
         title: GestureDetector(
@@ -4392,7 +5104,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                     children: [
                       Row(
                         children: [
-                           Expanded(
+                          Expanded(
                             child: Text(
                               AppLocalizations.of(context)!.mergedViewNameColor,
                               style: TextStyle(
@@ -4415,7 +5127,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                    AppLocalizations.of(context)!.viewName,
+                        AppLocalizations.of(context)!.viewName,
                         style: TextStyle(color: Colors.white54, fontSize: 12),
                       ),
                       const SizedBox(height: 6),
@@ -4430,7 +5142,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                    AppLocalizations.of(context)!.backgroundColorLabel,
+                        AppLocalizations.of(context)!.backgroundColorLabel,
                         style: TextStyle(color: Colors.white54, fontSize: 12),
                       ),
                       const SizedBox(height: 10),
@@ -4440,73 +5152,85 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              children: _kNoteColorPresets.where((p) => !p.isDark).map((preset) {
-                                final isSelected = tempColor == preset.value;
-                                return GestureDetector(
-                                  onTap: () => setSheetState(
-                                    () => tempColor = preset.value,
-                                  ),
-                                  child: Container(
-                                    margin: const EdgeInsets.only(right: 10),
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Color(preset.value),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? Colors.blueAccent
-                                            : Colors.white24,
-                                        width: isSelected ? 2.5 : 1,
+                              children: _kNoteColorPresets
+                                  .where((p) => !p.isDark)
+                                  .map((preset) {
+                                    final isSelected =
+                                        tempColor == preset.value;
+                                    return GestureDetector(
+                                      onTap: () => setSheetState(
+                                        () => tempColor = preset.value,
                                       ),
-                                    ),
-                                    child: isSelected
-                                        ? Icon(
-                                            Icons.check,
-                                            size: 18,
-                                            color: preset.isDark
-                                                ? Colors.white
-                                                : Colors.black54,
-                                          )
-                                        : null,
-                                  ),
-                                );
-                              }).toList(),
+                                      child: Container(
+                                        margin: const EdgeInsets.only(
+                                          right: 10,
+                                        ),
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: Color(preset.value),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? Colors.blueAccent
+                                                : Colors.white24,
+                                            width: isSelected ? 2.5 : 1,
+                                          ),
+                                        ),
+                                        child: isSelected
+                                            ? Icon(
+                                                Icons.check,
+                                                size: 18,
+                                                color: preset.isDark
+                                                    ? Colors.white
+                                                    : Colors.black54,
+                                              )
+                                            : null,
+                                      ),
+                                    );
+                                  })
+                                  .toList(),
                             ),
                             const SizedBox(height: 12),
                             Row(
-                              children: _kNoteColorPresets.where((p) => p.isDark).map((preset) {
-                                final isSelected = tempColor == preset.value;
-                                return GestureDetector(
-                                  onTap: () => setSheetState(
-                                    () => tempColor = preset.value,
-                                  ),
-                                  child: Container(
-                                    margin: const EdgeInsets.only(right: 10),
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: Color(preset.value),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? Colors.blueAccent
-                                            : Colors.white24,
-                                        width: isSelected ? 2.5 : 1,
+                              children: _kNoteColorPresets
+                                  .where((p) => p.isDark)
+                                  .map((preset) {
+                                    final isSelected =
+                                        tempColor == preset.value;
+                                    return GestureDetector(
+                                      onTap: () => setSheetState(
+                                        () => tempColor = preset.value,
                                       ),
-                                    ),
-                                    child: isSelected
-                                        ? Icon(
-                                            Icons.check,
-                                            size: 18,
-                                            color: preset.isDark
-                                                ? Colors.white
-                                                : Colors.black54,
-                                          )
-                                        : null,
-                                  ),
-                                );
-                              }).toList(),
+                                      child: Container(
+                                        margin: const EdgeInsets.only(
+                                          right: 10,
+                                        ),
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: Color(preset.value),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: isSelected
+                                                ? Colors.blueAccent
+                                                : Colors.white24,
+                                            width: isSelected ? 2.5 : 1,
+                                          ),
+                                        ),
+                                        child: isSelected
+                                            ? Icon(
+                                                Icons.check,
+                                                size: 18,
+                                                color: preset.isDark
+                                                    ? Colors.white
+                                                    : Colors.black54,
+                                              )
+                                            : null,
+                                      ),
+                                    );
+                                  })
+                                  .toList(),
                             ),
                           ],
                         ),
@@ -4527,7 +5251,7 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                             'title': ctrl.text,
                             'bgColor': tempColor,
                           }),
-                          child:  Text(
+                          child: Text(
                             AppLocalizations.of(context)!.save,
                             style: TextStyle(fontSize: 16),
                           ),
@@ -4604,7 +5328,11 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                         if (sheetConfig == null) return const SizedBox.shrink();
                         return Padding(
                           key: _keyForSheet(id),
-                          padding: const EdgeInsets.only(bottom: 16,right: 0, left: 0),
+                          padding: const EdgeInsets.only(
+                            bottom: 16,
+                            right: 0,
+                            left: 0,
+                          ),
                           child: _MergedSheetSection(
                             key: ValueKey(id),
                             config: sheetConfig,
@@ -4788,7 +5516,10 @@ class _MergedBottomNavBar extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color.fromARGB(255, 0, 0, 0), Color(0xFF252535)],
+                          colors: [
+                            Color.fromARGB(255, 0, 0, 0),
+                            Color(0xFF252535),
+                          ],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
@@ -4884,10 +5615,7 @@ class _MergedBottomNavBar extends StatelessWidget {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ClipboardBottomBar(
-              item: item,
-              onClear: onClipboardClear ?? () {},
-            ),
+            ClipboardBottomBar(item: item, onClear: onClipboardClear ?? () {}),
             navBar,
           ],
         );
@@ -4931,7 +5659,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
   OverlayEntry? _calcOverlay;
   bool _calcSheetOpen = false;
   bool _isAiGenerating = false;
-  String? _pendingCalcDisplay;
+  AiCountResult? _pendingAiCountResult;
   late WidgetConfig _config;
 
   @override
@@ -4975,7 +5703,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
     _closeCalcSheet();
     final ai = GemmaAi();
     if (!mounted) return;
-    final count = await Navigator.push<int>(
+    final result = await Navigator.push<AiCountResult>(
       context,
       MaterialPageRoute(
         fullscreenDialog: true,
@@ -4983,8 +5711,8 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
       ),
     );
     if (!mounted) return;
-    if (count != null) {
-      _pendingCalcDisplay = count.toString();
+    if (result != null) {
+      _pendingAiCountResult = result;
     }
     _openCalcSheet();
   }
@@ -5008,14 +5736,14 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
         : true;
 
     setState(() => _calcSheetOpen = true);
-    final pendingDisplay = _pendingCalcDisplay;
-    _pendingCalcDisplay = null;
+    final pendingResult = _pendingAiCountResult;
+    _pendingAiCountResult = null;
     _calcOverlay = OverlayEntry(
       builder: (ctx) => _CalcDraggableSheetContent(
         existingItemCount: currentItems.length,
         isDark: isDark,
         bgColor: bgColorValue,
-        initialDisplay: pendingDisplay,
+        initialAiCountResult: pendingResult,
         onRequestAiCount: _handleCalcAiCountRequest,
         onAddItem: (item) => state?._addItemFromMap(item),
         onAddItems: (items) => state?._addItemsFromMaps(items),
@@ -5051,7 +5779,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                   Expanded(
+                  Expanded(
                     child: Text(
                       AppLocalizations.of(context)!.modeSelect,
                       style: TextStyle(
@@ -5104,7 +5832,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                 color: isViewMode ? const Color(0xFF5E81FF) : Colors.white54,
               ),
               title: Text(
-                    AppLocalizations.of(context)!.viewModeLabel,
+                AppLocalizations.of(context)!.viewModeLabel,
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -5174,7 +5902,7 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                 ),
               ),
               subtitle: Text(
-                    AppLocalizations.of(context)!.linkGraphSubtitle,
+                AppLocalizations.of(context)!.linkGraphSubtitle,
                 style: TextStyle(color: Colors.white38, fontSize: 12),
               ),
               onTap: () {
@@ -5184,11 +5912,9 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                   MaterialPageRoute(
                     builder: (_) => LinkGraphPage(
                       configs: widget.allConfigs
-                          .map((c) => {
-                                'id': c.id,
-                                'type': c.type,
-                                'data': c.data,
-                              })
+                          .map(
+                            (c) => {'id': c.id, 'type': c.type, 'data': c.data},
+                          )
                           .toList(),
                       initialSheetId: _config.id,
                       onOpenSheet: (_) => Navigator.pop(context),
@@ -5325,7 +6051,9 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
     final borderColor = isDark
         ? Colors.white.withOpacity(0.06)
         : Colors.black.withOpacity(0.12);
-    final title = _config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
+    final title =
+        _config.data['title'] as String? ??
+        AppLocalizations.of(context)!.standardCalc;
 
     return Container(
       decoration: BoxDecoration(
@@ -5375,9 +6103,12 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
                         ),
                         onPressed: () => ProGuard.checkAndRun(
                           context,
-                          () => _calcKey.currentState?._showSheetLinkSettingsDialog(),
+                          () => _calcKey.currentState
+                              ?._showSheetLinkSettingsDialog(),
                         ),
-                        tooltip: AppLocalizations.of(context)!.tooltipLinkValues,
+                        tooltip: AppLocalizations.of(
+                          context,
+                        )!.tooltipLinkValues,
                         padding: const EdgeInsets.all(8),
                         constraints: const BoxConstraints(),
                       ),
@@ -5535,7 +6266,7 @@ class _ToolbarButton extends StatelessWidget {
                     ),
                   )
                 : Icon(icon, color: color, size: 24),
-            if (showLabel) ...[  
+            if (showLabel) ...[
               const SizedBox(height: 4),
               Text(
                 label,
@@ -5586,7 +6317,7 @@ class ClipboardBottomBar extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                    AppLocalizations.of(context)!.clipboardLabel,
+                  AppLocalizations.of(context)!.clipboardLabel,
                   style: TextStyle(
                     color: Colors.blueAccent,
                     fontSize: 10,
@@ -5651,7 +6382,7 @@ class _QrShareDialogState extends State<_QrShareDialog> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-          content: Text(AppLocalizations.of(context)!.galleryAccessDenied),
+              content: Text(AppLocalizations.of(context)!.galleryAccessDenied),
               backgroundColor: Color(0xFF2A2A3A),
             ),
           );
@@ -5692,7 +6423,7 @@ class _QrShareDialogState extends State<_QrShareDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-          content: Text(AppLocalizations.of(context)!.saveSuccess),
+            content: Text(AppLocalizations.of(context)!.saveSuccess),
             backgroundColor: Color(0xFF1A3A2A),
           ),
         );
@@ -5842,7 +6573,7 @@ class _QrShareDialogState extends State<_QrShareDialog> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                 Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
                     AppLocalizations.of(context)!.scanAllQr,
@@ -5909,7 +6640,7 @@ class _QrShareDialogState extends State<_QrShareDialog> {
                   ),
                 ),
               ] else ...[
-                 Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
                     AppLocalizations.of(context)!.scanOnOtherDevice,
@@ -5946,7 +6677,11 @@ class _QrShareDialogState extends State<_QrShareDialog> {
                             ),
                           )
                         : const Icon(Icons.save_alt_rounded, size: 18),
-                    label: Text(_saving ? AppLocalizations.of(context)!.saving : AppLocalizations.of(context)!.saveImageToGallery),
+                    label: Text(
+                      _saving
+                          ? AppLocalizations.of(context)!.saving
+                          : AppLocalizations.of(context)!.saveImageToGallery,
+                    ),
                   ),
                 ),
               ),
@@ -5965,7 +6700,7 @@ class _QrShareDialogState extends State<_QrShareDialog> {
                     ),
                     onPressed: () => Navigator.pop(context),
                     child: Text(
-                    AppLocalizations.of(context)!.close,
+                      AppLocalizations.of(context)!.close,
                       style: TextStyle(color: Colors.white54),
                     ),
                   ),
@@ -6032,7 +6767,7 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-          content: Text(AppLocalizations.of(context)!.galleryAccessDenied),
+              content: Text(AppLocalizations.of(context)!.galleryAccessDenied),
               backgroundColor: Color(0xFF2A2A3A),
             ),
           );
@@ -6070,7 +6805,7 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-          content: Text(AppLocalizations.of(context)!.saveSuccess),
+            content: Text(AppLocalizations.of(context)!.saveSuccess),
             backgroundColor: Color(0xFF1A3A2A),
           ),
         );
@@ -6102,8 +6837,9 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
     final qrSize = (width < height ? width : height) * 0.84;
 
     // シート内のチャンク番号（シートが複数チャンクを持つ場合のみ表示）
-    final chunkLabel =
-        sheetChunks > 1 ? '  (${cur.chunkIdx + 1}/$sheetChunks枚目)' : '';
+    final chunkLabel = sheetChunks > 1
+        ? '  (${cur.chunkIdx + 1}/$sheetChunks枚目)'
+        : '';
     // シート番号ラベル（複数シートの場合のみ表示）
     final sheetLabel = totalSheets > 1
         ? 'シート ${cur.sheetIdx + 1} / $totalSheets  ·  '
@@ -6117,10 +6853,7 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
         decoration: BoxDecoration(
           color: const Color(0xFF1A1A2E),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.08),
-            width: 1,
-          ),
+          border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -6244,7 +6977,7 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
                               ),
                             const SizedBox(width: 6),
                             Text(
-                    AppLocalizations.of(context)!.saveImageToGallery,
+                              AppLocalizations.of(context)!.saveImageToGallery,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -6266,7 +6999,7 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
                       ),
                     ),
                     child: Text(
-                    AppLocalizations.of(context)!.close,
+                      AppLocalizations.of(context)!.close,
                       style: TextStyle(color: Colors.white54),
                     ),
                   ),

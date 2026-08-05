@@ -1362,6 +1362,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get selectObjectToCount => 'カウントする対象を選択';
 
   @override
+  String get detectedObjectsList => '取得済みのリスト';
+
+  @override
+  String get redetectObjects => '再取得';
+
+  @override
   String remainingUsesFormat(Object count) {
     return '残りAI使用回数: $count 回 (追加購入)';
   }
@@ -1488,10 +1494,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get analyzingImage => 'AIが画像を解析中...';
 
   @override
-  String get countTargetInstruction => 'カウント対象を入力して、AIに画像を解析させましょう。';
+  String get countTargetInstruction =>
+      'カウント対象を入力してください。複数の対象は「りんごとみかん」のように指定できます。';
 
   @override
-  String get countHintText => '何を数えますか？（例：人、ボルト、箱）';
+  String get countHintText => '何を数えますか？（例：りんごとみかん、赤い箱と青い箱）';
 
   @override
   String remainingUsesText(Object count) {

@@ -8,10 +8,138 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 enum AiModel { local, openrouter }
 
-class AiCountResult {
+String _imageMimeType(Uint8List bytes) {
+  if (bytes.length >= 3 &&
+      bytes[0] == 0xFF &&
+      bytes[1] == 0xD8 &&
+      bytes[2] == 0xFF) {
+    return 'image/jpeg';
+  }
+  if (bytes.length >= 8 &&
+      bytes[0] == 0x89 &&
+      bytes[1] == 0x50 &&
+      bytes[2] == 0x4E &&
+      bytes[3] == 0x47 &&
+      bytes[4] == 0x0D &&
+      bytes[5] == 0x0A &&
+      bytes[6] == 0x1A &&
+      bytes[7] == 0x0A) {
+    return 'image/png';
+  }
+  if (bytes.length >= 6 &&
+      bytes[0] == 0x47 &&
+      bytes[1] == 0x49 &&
+      bytes[2] == 0x46 &&
+      bytes[3] == 0x38) {
+    return 'image/gif';
+  }
+  if (bytes.length >= 12 &&
+      bytes[0] == 0x52 &&
+      bytes[1] == 0x49 &&
+      bytes[2] == 0x46 &&
+      bytes[3] == 0x46 &&
+      bytes[8] == 0x57 &&
+      bytes[9] == 0x45 &&
+      bytes[10] == 0x42 &&
+      bytes[11] == 0x50) {
+    return 'image/webp';
+  }
+  return 'image/jpeg';
+}
+
+bool isImageCategoryCountRequest(String instruction) => RegExp(
+  r'色|割合|比率|構成比|内訳|種類|カテゴリ|男女|人数|個数|合計|count|ratio|percentage|proportion|color|category|total|number|people',
+  caseSensitive: false,
+).hasMatch(instruction);
+
+String _buildCountPrompt(String instruction) =>
+    '''画像内の対象物を、計算に使える個数データへ変換してください。
+依頼: 「$instruction」
+
+次の手順を守って画像を解析してください。
+1. 依頼文から「何を1個と数えるか」を特定し、対象物だけを数える。背景、文字、模様、影、反射、同じ物体の写り込みは数えない。
+2. 画像全体を左上から右下まで走査し、見えている各対象物を1回だけ数える。重なっていても、別の物体として確認できるものはそれぞれ数える。部分的に見える物体は、実在すると確認できる場合だけ1個として数え、推測で補わない。
+3. 色・種類・カテゴリの指定がある場合は、依頼に必要なカテゴリだけを使う。カテゴリは互いに重ならないようにし、1つの物体を複数カテゴリへ重複計上しない。カテゴリを求められた場合は、画像内で確認できる各カテゴリをitemsに分ける。
+4. 最後に別の走査を行い、各itemsのcountと、対象物を全体で数えた数を照合する。見落としや二重計上を修正してから返す。
+
+countは必ず0以上の整数にしてください。判別できない対象を想像で追加しないでください。
+pointsには、数えた各対象物の中心点を対象物ごとに1点ずつ入れてください。座標は必ず画像左上を原点とする0〜1000の整数で、[x, y]（xは左から右、yは上から下）としてください。座標の順番はcountと一致させ、確実に特定できない場合だけ空配列にしてください。説明、計算式、Markdownは出力しないでください。
+
+JSONのみで返してください。形式は {"items":[{"target":"色または対象カテゴリ","count":整数,"points":[]}]} です。''';
+
+double _normalizePointCoordinate(num value, {required bool usesThousandScale}) {
+  final coordinate = value.toDouble();
+  final normalized = usesThousandScale ? coordinate / 1000.0 : coordinate;
+  return normalized.clamp(0.0, 1.0).toDouble();
+}
+
+List<List<double>> _normalizePoints(List<dynamic>? rawPoints) {
+  final points =
+      rawPoints
+          ?.whereType<List>()
+          .where(
+            (point) => point.length >= 2 && point[0] is num && point[1] is num,
+          )
+          .toList() ??
+      [];
+  final usesThousandScale = points.any(
+    (point) => (point[0] as num).abs() > 1 || (point[1] as num).abs() > 1,
+  );
+  return points
+      .map(
+        (point) => [
+          _normalizePointCoordinate(
+            point[0] as num,
+            usesThousandScale: usesThousandScale,
+          ),
+          _normalizePointCoordinate(
+            point[1] as num,
+            usesThousandScale: usesThousandScale,
+          ),
+        ],
+      )
+      .toList();
+}
+
+class AiCountItem {
+  final String target;
   final int count;
-  final List<List<double>> points; // Normalized coordinates [x, y] (0.0 to 1.0)
-  AiCountResult({required this.count, required this.points});
+  final List<List<double>> points;
+
+  const AiCountItem({
+    required this.target,
+    required this.count,
+    required this.points,
+  });
+
+  factory AiCountItem.fromJson(Map<String, dynamic> json) {
+    final points = _normalizePoints(json['points'] as List<dynamic>?);
+    return AiCountItem(
+      target:
+          json['target'] as String? ??
+          json['label'] as String? ??
+          json['instruction'] as String? ??
+          '',
+      count: (json['count'] as num?)?.toInt() ?? 0,
+      points: points,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'target': target,
+    'count': count,
+    'points': points,
+  };
+}
+
+class AiCountResult {
+  final List<AiCountItem> items;
+
+  const AiCountResult({required this.items});
+
+  int get count => items.fold(0, (total, item) => total + item.count);
+  String get additionExpression => items.map((item) => item.count).join(' + ');
+  List<List<double>> get points => [for (final item in items) ...item.points];
 }
 
 class GemmaAi {
@@ -113,6 +241,7 @@ class GemmaAi {
     final dio = Dio();
     try {
       final base64Image = base64Encode(imageBytes);
+      final mimeType = _imageMimeType(imageBytes);
       final sp =
           systemPrompt ?? "You are a helpful assistant. Reply concisely.";
 
@@ -128,9 +257,10 @@ class GemmaAi {
           responseType: ResponseType.json,
         ),
         data: jsonEncode({
-       //  'model': 'xiaomi/mimo-v2.5',
-         'model': '~google/gemini-flash-latest',
-      //    'model': '~anthropic/claude-fable-latest',
+          //    'model': 'moonshotai/kimi-k3',
+          'model': '~google/gemini-flash-latest',
+          //'model': 'openai/gpt-5.6-luna',
+          //    'model': '~anthropic/claude-fable-latest',
           'messages': [
             {'role': 'system', 'content': sp},
             {
@@ -138,7 +268,10 @@ class GemmaAi {
               'content': [
                 {
                   'type': 'image_url',
-                  'image_url': {'url': 'data:image/jpeg;base64,$base64Image'},
+                  'image_url': {
+                    'url': 'data:$mimeType;base64,$base64Image',
+                    'detail': 'high',
+                  },
                 },
                 {'type': 'text', 'text': prompt},
               ],
@@ -219,7 +352,7 @@ class GemmaAi {
         ),
         data: jsonEncode({
           'model': '~google/gemini-flash-latest',
-         // 'model': '~anthropic/claude-fable-latest',
+          //'model': 'moonshotai/kimi-k3',
           'messages': [
             {'role': 'system', 'content': sp},
             {'role': 'user', 'content': prompt},
@@ -251,18 +384,28 @@ class GemmaAi {
   /// 画像内の指定物体をカウントする（OpenRouter ビジョン LLM を使用）
   Future<AiCountResult?> countInImage(
     Uint8List imageBytes,
-    String instruction,
-  ) async {
+    String instruction, {
+    bool requireCategories = false,
+  }) async {
     if (_currentModel == AiModel.openrouter) {
-      return await _countInImageOpenRouter(imageBytes, instruction);
+      return await _countInImageOpenRouter(
+        imageBytes,
+        instruction,
+        requireCategories: requireCategories,
+      );
     }
-    return await _countInImageLocal(imageBytes, instruction);
+    return await _countInImageLocal(
+      imageBytes,
+      instruction,
+      requireCategories: requireCategories,
+    );
   }
 
   Future<AiCountResult?> _countInImageLocal(
     Uint8List imageBytes,
-    String instruction,
-  ) async {
+    String instruction, {
+    bool requireCategories = false,
+  }) async {
     if (!_isInit) return null;
 
     while (_queryLock != null) {
@@ -271,8 +414,7 @@ class GemmaAi {
     _queryLock = Completer<void>();
 
     try {
-      final prompt =
-          'この画像の中にある「$instruction」を注意深く数えて、その個数を整数（数字のみ）で答えてください。説明・単位・記号は一切不要です。整数1つだけを返してください。';
+      final prompt = _buildCountPrompt(instruction);
       final response = await _channel
           .invokeMethod<String>('queryWithImage', {
             'prompt': prompt,
@@ -280,10 +422,43 @@ class GemmaAi {
           })
           .timeout(const Duration(seconds: 120));
       final trimmed = response?.trim() ?? '';
+      final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(trimmed);
+      if (jsonMatch != null) {
+        try {
+          final data = jsonDecode(jsonMatch.group(0)!);
+          final rawItems = data['items'] as List?;
+          if (rawItems != null && rawItems.isNotEmpty) {
+            final items = rawItems
+                .whereType<Map>()
+                .map((item) {
+                  final target =
+                      item['target'] as String? ??
+                      item['label'] as String? ??
+                      item['instruction'] as String? ??
+                      '';
+                  if (requireCategories && target.trim().isEmpty) return null;
+                  final parsed = AiCountItem.fromJson(
+                    Map<String, dynamic>.from(item),
+                  );
+                  return AiCountItem(
+                    target: parsed.target.isEmpty ? instruction : parsed.target,
+                    count: parsed.count,
+                    points: parsed.points,
+                  );
+                })
+                .whereType<AiCountItem>()
+                .toList();
+            if (items.isNotEmpty) return AiCountResult(items: items);
+          }
+        } catch (_) {}
+      }
+      if (requireCategories) return null;
       final match = RegExp(r'\d+').firstMatch(trimmed);
       final count = match != null ? int.tryParse(match.group(0)!) : null;
       if (count == null) return null;
-      return AiCountResult(count: count, points: []);
+      return AiCountResult(
+        items: [AiCountItem(target: instruction, count: count, points: [])],
+      );
     } on TimeoutException {
       return null;
     } catch (e) {
@@ -298,33 +473,16 @@ class GemmaAi {
 
   Future<AiCountResult?> _countInImageOpenRouter(
     Uint8List imageBytes,
-    String instruction,
-  ) async {
+    String instruction, {
+    bool requireCategories = false,
+  }) async {
     final dio = Dio();
     try {
       final base64Image = base64Encode(imageBytes);
+      final mimeType = _imageMimeType(imageBytes);
       if (kDebugMode) print('countInImage (OpenRouter): 送信中...');
 
-      final prompt =
-          '''
-あなたは画像解析の専門家です。画像内の「$instruction」を極めて正確に特定し、カウントしてください。
-
-以下の手順で思考し、分析結果を出力してください：
-画像を仮想的に3×3の9つのエリア（左上、中上、右上...）に分割し、各エリアごとに以下の手順を行ってください。
-この画像の中にある「$instruction」を見つけてください。
-精度を高めるために、以下のステップで思考してください：
-1. 画像内のすべての対象物を左上から順に番号を振り、それぞれの中心座標 [x, y] (0から1000の正規化座標) を特定してください。
-2. 重なり合っているものも個別に見つけてください。
-3. 漏れが無いか再度確認してください。重なり合って1つに見えるものがないか、薄くて見えにくいものがないか注意深く確認してください。
-4. 背景の模様や無関係な物体をカウントに含めないよう注意してください。
-5. 20個以上の場合や、あいまいな場合は正確に数えるためにズームインして確認してください。
-
-最後に、以下の形式のJSONのみを返してください。他の説明やテキストは一切含めないでください。
-{
-  "count": 総数(整数),
-  "points": [[x1, y1], [x2, y2], ...]
-}
-''';
+      final prompt = _buildCountPrompt(instruction);
 
       final response = await dio
           .post(
@@ -339,8 +497,12 @@ class GemmaAi {
               responseType: ResponseType.json,
             ),
             data: jsonEncode({
+              'response_format': {'type': 'json_object'},
+              'temperature': 0,
+              //'model': 'openai/gpt-5.6-luna',
               'model': '~google/gemini-flash-latest',
-            //  'model': 'anthropic/claude-fable-latest',
+              //'model': 'moonshotai/kimi-k3',
+              //  'model': 'anthropic/claude-fable-latest',
               'messages': [
                 {
                   'role': 'user',
@@ -348,7 +510,8 @@ class GemmaAi {
                     {
                       'type': 'image_url',
                       'image_url': {
-                        'url': 'data:image/jpeg;base64,$base64Image',
+                        'url': 'data:$mimeType;base64,$base64Image',
+                        'detail': 'high',
                       },
                     },
                     {'type': 'text', 'text': prompt},
@@ -357,7 +520,7 @@ class GemmaAi {
               ],
             }),
           )
-          .timeout(const Duration(seconds: 60));
+          .timeout(const Duration(seconds: 120));
 
       final body = response.data is String
           ? jsonDecode(response.data as String) as Map
@@ -372,23 +535,52 @@ class GemmaAi {
       if (jsonMatch != null) {
         final jsonStr = jsonMatch.group(0)!;
         final data = jsonDecode(jsonStr);
-        final count = data['count'] as int;
-        final pointsRaw = data['points'] as List;
-        final points = pointsRaw.map((p) {
-          final lp = p as List;
-          return [
-            (lp[0] as num).toDouble() / 1000.0,
-            (lp[1] as num).toDouble() / 1000.0,
-          ];
-        }).toList();
-        return AiCountResult(count: count, points: points);
+        final rawItems = data['items'] as List?;
+        if (rawItems != null) {
+          final items = rawItems
+              .whereType<Map>()
+              .map((item) {
+                final target =
+                    item['target'] as String? ??
+                    item['label'] as String? ??
+                    item['instruction'] as String? ??
+                    '';
+                if (requireCategories && target.trim().isEmpty) return null;
+                final parsed = AiCountItem.fromJson(
+                  Map<String, dynamic>.from(item),
+                );
+                return AiCountItem(
+                  target: parsed.target.isEmpty ? instruction : parsed.target,
+                  count: parsed.count,
+                  points: parsed.points,
+                );
+              })
+              .whereType<AiCountItem>()
+              .toList();
+          if (items.isNotEmpty) return AiCountResult(items: items);
+        }
+
+        if (requireCategories) return null;
+        final count = (data['count'] as num?)?.toInt();
+        if (count != null) {
+          final pointsRaw = data['points'] as List? ?? [];
+          final points = _normalizePoints(pointsRaw);
+          return AiCountResult(
+            items: [
+              AiCountItem(target: instruction, count: count, points: points),
+            ],
+          );
+        }
       }
 
       // フォールバック: 以前の単純なパース
+      if (requireCategories) return null;
       final match = RegExp(r'\d+').firstMatch(content);
       final count = match != null ? int.tryParse(match.group(0)!) : null;
       if (count != null) {
-        return AiCountResult(count: count, points: []);
+        return AiCountResult(
+          items: [AiCountItem(target: instruction, count: count, points: [])],
+        );
       }
       return null;
     } on DioException catch (e) {

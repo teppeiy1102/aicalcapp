@@ -2654,6 +2654,18 @@ abstract class AppLocalizations {
   /// **'Select object to count'**
   String get selectObjectToCount;
 
+  /// No description provided for @detectedObjectsList.
+  ///
+  /// In en, this message translates to:
+  /// **'Detected object list'**
+  String get detectedObjectsList;
+
+  /// No description provided for @redetectObjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Detect again'**
+  String get redetectObjects;
+
   /// No description provided for @remainingUsesFormat.
   ///
   /// In en, this message translates to:
@@ -2873,13 +2885,13 @@ abstract class AppLocalizations {
   /// No description provided for @countTargetInstruction.
   ///
   /// In en, this message translates to:
-  /// **'Enter what to count, and AI will analyze the image.'**
+  /// **'Enter what to count. You can specify multiple targets, such as apples and oranges.'**
   String get countTargetInstruction;
 
   /// No description provided for @countHintText.
   ///
   /// In en, this message translates to:
-  /// **'What to count? (e.g., people, bolts, boxes)'**
+  /// **'What to count? (e.g., apples and oranges, red and blue boxes)'**
   String get countHintText;
 
   /// No description provided for @remainingUsesText.

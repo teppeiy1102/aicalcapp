@@ -1380,6 +1380,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectObjectToCount => 'Select object to count';
 
   @override
+  String get detectedObjectsList => 'Detected object list';
+
+  @override
+  String get redetectObjects => 'Detect again';
+
+  @override
   String remainingUsesFormat(Object count) {
     return 'Remaining AI uses: $count (Purchase more)';
   }
@@ -1509,10 +1515,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get countTargetInstruction =>
-      'Enter what to count, and AI will analyze the image.';
+      'Enter what to count. You can specify multiple targets, such as apples and oranges.';
 
   @override
-  String get countHintText => 'What to count? (e.g., people, bolts, boxes)';
+  String get countHintText =>
+      'What to count? (e.g., apples and oranges, red and blue boxes)';
 
   @override
   String remainingUsesText(Object count) {

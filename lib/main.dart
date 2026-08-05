@@ -415,25 +415,33 @@ class _HomeScreenState extends State<HomeScreen> {
     final instruction = result.instruction;
     final prompt =
 """
+  An image is attached to this request. Inspect the image carefully and use its
+  visible text, numbers, formulas, and layout as the primary source of truth.
+  If the image contains a calculation request or an existing formula, convert
+  what is shown in the image into calculator formula objects. Do not ignore the
+  image just because the text instruction is empty.
+
 User wants to generate calculator expression(s) for: "$instruction".
 Return a JSON array of objects. Multiple formulas are allowed if the request implies multiple steps or variations.
 
 [CRITICAL INSTRUCTIONS]
 1. Combine calculation steps into the 'others' list of an item where appropriate. 
 2. [IMPORTANT] If the user explicitly mentions specific numbers in the instruction (e.g., "3万円", "5人"), use those actual numbers in the corresponding fields ("input", "operand", or "val") instead of 0.0. 
-3. If a value is required for the calculation but NOT specified in the user's instruction, set "input", "operand", or "val" to 0.0 and put the label in "unit".
-4. For mathematical constants required by the formula (e.g., "2" in triangle area, "3.14" in circle), set the specific numerical value in "input", "operand", or "val".
-5. Be mathematically precise. Only use division or constants (like /2) if the specific formula requires it.
-6. Use "brackets" to specify priority calculations (parentheses). Index 0 is "input", index 1 is "operand", index 2 is "others[0]", index 3 is "others[1]", and so on.
-7. Ensure every formula is mathematically correct.
+3. If the image contains countable people or objects requested by the user, count the visible instances first, separately for each requested category. Use those observed counts as actual numeric values in "input", "operand", or "val". Never replace an observed image count with 0.0.
+4. For example, if the image shows 2 women and 3 men and the user asks for their total, return input=2, unit1="女性", op="+", operand=3, unit2="男性", and unitResult="合計人数".
+5. Only when a value is genuinely unavailable from both the instruction and the image, set "input", "operand", or "val" to 0.0 and put the label in "unit".
+6. For mathematical constants required by the formula (e.g., "2" in triangle area, "3.14" in circle), set the specific numerical value in "input", "operand", or "val".
+7. Be mathematically precise. Only use division or constants (like /2) if the specific formula requires it.
+8. Use "brackets" to specify priority calculations (parentheses). Index 0 is "input", index 1 is "operand", index 2 is "others[0]", index 3 is "others[1]", and so on.
+9. Ensure every formula is mathematically correct.
 
 Structure per item:
 {
   "name": "Calculation name",
-  "input": 0.0, // Use the user's specified number if available, otherwise 0.0
+  "input": 0.0, // Use the observed image count or specified number; use 0.0 only if genuinely unavailable
   "unit1": "label for first value",
   "op": "+", (one of: +, -, x, /, %)
-  "operand": 0.0, // Use the user's specified number if available, otherwise 0.0
+  "operand": 0.0, // Use the observed image count or specified number; use 0.0 only if genuinely unavailable
   "unit2": "label for second value",
   "others": [
     { "op": "/", "val": 2.0, "unit": "" } // Use the user's specified number if available
@@ -463,17 +471,47 @@ Example output for "3万円を5人で割り勘":
 """;
 
     try {
+        final shouldExtractImageCounts =
+          result.imageBytes != null &&
+          isImageCategoryCountRequest(instruction);
+        final imageCounts = !shouldExtractImageCounts
+          ? null
+          : await ai.countInImage(
+            result.imageBytes!,
+            instruction,
+            requireCategories: true,
+          );
+        if (shouldExtractImageCounts &&
+          (imageCounts == null || imageCounts.items.isEmpty)) {
+        throw Exception('画像から対象の個数を取得できませんでした。');
+      }
+
+      final observedCounts = imageCounts == null
+          ? ''
+          : '''
+
+[IMAGE MEASUREMENTS - USE THESE ACTUAL NUMBERS]
+The following counts were extracted from the attached image. Treat them as
+authoritative measured inputs. Do not replace them with 0.0 or invent new
+counts. For a ratio/percentage request, create one formula per category using
+category count / total count x 100.
+${imageCounts.items.map((item) => '- ${item.target}: ${item.count}').join('\n')}
+Total observed count: ${imageCounts.count}
+''';
+      final formulaPrompt = '$prompt$observedCounts';
       const systemPrompt =
-          "You are a calculator generator AI. Return a JSON array of formula objects.";
+          "You are a calculator generator AI. Use any IMAGE MEASUREMENTS supplied in the prompt as authoritative numeric data. Return only a JSON array of formula objects.";
       final String res;
-      if (result.imageBytes != null) {
+      if (imageCounts != null) {
+        res = await ai.query(formulaPrompt, systemPrompt: systemPrompt);
+      } else if (result.imageBytes != null) {
         res = await ai.queryWithImage(
-          prompt,
+          formulaPrompt,
           result.imageBytes!,
           systemPrompt: systemPrompt,
         );
       } else {
-        res = await ai.query(prompt, systemPrompt: systemPrompt);
+        res = await ai.query(formulaPrompt, systemPrompt: systemPrompt);
       }
 
       final jsonStart = res.indexOf('[');
@@ -508,6 +546,7 @@ Example output for "3万円を5人で割り勘":
               duration: const Duration(seconds: 3),
             ),
           );
+          _openDetail(0);
         }
       }
     } catch (e) {
@@ -677,272 +716,49 @@ Example output for "3万円を5人で割り勘":
   }
 
   void _showMainMenu() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.black,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-              Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _HomeToolsPage(
+          onStartMerge: () => ProGuard.checkAndRun(context, _startSelectMode),
+          onStartQrShare: () =>
+              ProGuard.checkAndRun(context, _startQrSelectMode),
+          onShowQrScanner: () => ProGuard.checkAndRun(context, _showQrScanner),
+          onOpenSettings: _openSettings,
+          onOpenFlashMath: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const FlashMentalMathPage(),
+              ),
+            );
+          },
+          onOpenLinkGraph: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => LinkGraphPage(
+                  configs: _configs
+                      .map((c) => {'id': c.id, 'type': c.type, 'data': c.data})
+                      .toList(),
+                  onOpenSheet: (sheetId) {
+                    final idx = _configs.indexWhere((c) => c.id == sheetId);
+                    if (idx != -1) _openDetail(idx);
+                  },
                 ),
               ),
-              ListTile(
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF5E81FF).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.merge_rounded,
-                    color: Color(0xFF5E81FF),
-                    size: 22,
-                  ),
-                ),
-                title: Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Text(
-                        AppLocalizations.of(context)!.mergeSheets,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const ProBadge(),
-                  ],
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppLocalizations.of(context)!.mergeSheetsDesc,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.4),
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    ProRequiredLabel(text: AppLocalizations.of(context)!.proRequired),
-                  ],
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  ProGuard.checkAndRun(context, _startSelectMode);
-                },
-              ),
-              const Divider(color: Colors.white10, indent: 16, endIndent: 16),
-              ListTile(
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.purpleAccent.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.qr_code_2_rounded,
-                    color: Colors.purpleAccent,
-                    size: 22,
-                  ),
-                ),
-              title: Row(
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.qrShare,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const ProBadge(),
-                ],
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.qrShareDesc,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.4),
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  ProRequiredLabel(text: AppLocalizations.of(context)!.proRequired),
-                ],
-              ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  ProGuard.checkAndRun(context, _startQrSelectMode);
-                },
-              ),
-              const Divider(color: Colors.white10, indent: 16, endIndent: 16),
-              ListTile(
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.tealAccent.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.qr_code_scanner_rounded,
-                    color: Colors.tealAccent,
-                    size: 22,
-                  ),
-                ),
-              title: Row(
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.qrImport,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const ProBadge(),
-                ],
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.qrImportDesc,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.4),
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  ProRequiredLabel(text: AppLocalizations.of(context)!.proRequired),
-                ],
-              ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  ProGuard.checkAndRun(context, _showQrScanner);
-                },
-              ),
-              const Divider(color: Colors.white10, indent: 16, endIndent: 16),
-             ListTile(
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7B7FFF).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.hub_rounded,
-                    color: Color(0xFF7B7FFF),
-                    size: 22,
-                  ),
-                ),
-              title: Row(
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.linkGraph,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(context)!.linkGraphDesc,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.4),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => LinkGraphPage(
-                          configs: _configs
-                              .map((c) => {
-                                    'id': c.id,
-                                    'type': c.type,
-                                    'data': c.data,
-                                  })
-                              .toList(),
-                          onOpenSheet: (sheetId) {
-                            final idx =
-                                _configs.indexWhere((c) => c.id == sheetId);
-                            if (idx != -1) _openDetail(idx);
-                          },
-                        ),
-                      ),
-                    );
-                },
-              ),
-              const Divider(color: Colors.white10, indent: 16, endIndent: 16),
-    ListTile(
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.amberAccent.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.tune_rounded,
-                    color: Colors.amberAccent,
-                    size: 22,
-                  ),
-                ),
-                title: Text(
-                  AppLocalizations.of(context)!.settings,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                subtitle: Text(
-                  AppLocalizations.of(context)!.userConstantsDesc,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.4),
-                    fontSize: 12,
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _openSettings();
-                },
-              ),
-           
-            ],
-          ),
-        ),
+            );
+          },
+          onAiCount: _runHomeAiCount,
         ),
       ),
     );
+  }
+
+  Future<void> _runHomeAiCount() async {
+    final result = await showAiCountPage(context);
+    if (!mounted || result == null) return;
+    _homeCalcPanelKey.currentState?.applyAiCountResult(result);
   }
 
   void _startSelectMode() {
@@ -1997,6 +1813,247 @@ class _HomeLogoTitle extends StatefulWidget {
 
   @override
   State<_HomeLogoTitle> createState() => _HomeLogoTitleState();
+}
+
+class _HomeToolsPage extends StatelessWidget {
+  final VoidCallback onStartMerge;
+  final VoidCallback onStartQrShare;
+  final VoidCallback onShowQrScanner;
+  final VoidCallback onOpenSettings;
+  final VoidCallback onOpenFlashMath;
+  final VoidCallback onOpenLinkGraph;
+  final VoidCallback onAiCount;
+
+  const _HomeToolsPage({
+    required this.onStartMerge,
+    required this.onStartQrShare,
+    required this.onShowQrScanner,
+    required this.onOpenSettings,
+    required this.onOpenFlashMath,
+    required this.onOpenLinkGraph,
+    required this.onAiCount,
+  });
+
+  void _closeAndRun(BuildContext context, VoidCallback action) {
+    Navigator.pop(context);
+    action();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F4F0),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF4F4F0),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          color: Colors.black87,
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          l10n.settings,
+          style: const TextStyle(
+            color: Colors.black87,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
+          children: [
+            Text(
+              'TOOLS',
+              style: TextStyle(
+                color: Colors.black.withOpacity(0.42),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.4,
+              ),
+            ),
+            const SizedBox(height: 10),
+            _HomeToolTile(
+              title: l10n.aiCountTitle,
+              subtitle: l10n.aiCountDesc,
+              icon: Icons.center_focus_strong_rounded,
+              color: const Color(0xFF00A98F),
+              onTap: () => _closeAndRun(context, onAiCount),
+            ),
+            const SizedBox(height: 10),
+            _HomeToolTile(
+              title: 'フラッシュ暗算',
+              subtitle: '数字を見て答えるトレーニングゲーム',
+              icon: Icons.flash_on_rounded,
+              color: const Color(0xFFE05B3F),
+              onTap: () => _closeAndRun(context, onOpenFlashMath),
+            ),
+            const SizedBox(height: 10),
+            _HomeToolTile(
+              title: l10n.mergeSheets,
+              subtitle: l10n.mergeSheetsDesc,
+              icon: Icons.merge_rounded,
+              color: const Color(0xFF5E81FF),
+              badge: const ProBadge(),
+              footer: ProRequiredLabel(text: l10n.proRequired),
+              onTap: () => _closeAndRun(context, onStartMerge),
+            ),
+            const SizedBox(height: 10),
+            _HomeToolTile(
+              title: l10n.qrShare,
+              subtitle: l10n.qrShareDesc,
+              icon: Icons.qr_code_2_rounded,
+              color: const Color(0xFF8A63D2),
+              badge: const ProBadge(),
+              footer: ProRequiredLabel(text: l10n.proRequired),
+              onTap: () => _closeAndRun(context, onStartQrShare),
+            ),
+            const SizedBox(height: 10),
+            _HomeToolTile(
+              title: l10n.qrImport,
+              subtitle: l10n.qrImportDesc,
+              icon: Icons.qr_code_scanner_rounded,
+              color: const Color(0xFF008F9C),
+              badge: const ProBadge(),
+              footer: ProRequiredLabel(text: l10n.proRequired),
+              onTap: () => _closeAndRun(context, onShowQrScanner),
+            ),
+            const SizedBox(height: 10),
+            _HomeToolTile(
+              title: l10n.linkGraph,
+              subtitle: l10n.linkGraphDesc,
+              icon: Icons.hub_rounded,
+              color: const Color(0xFFD06B2D),
+              onTap: () => _closeAndRun(context, onOpenLinkGraph),
+            ),
+            const SizedBox(height: 10),
+            _HomeToolTile(
+              title: l10n.settings,
+              subtitle: l10n.userConstantsDesc,
+              icon: Icons.tune_rounded,
+              color: const Color(0xFFB27A00),
+              onTap: () => _closeAndRun(context, onOpenSettings),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeToolTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final Widget? badge;
+  final Widget? footer;
+  final VoidCallback onTap;
+
+  const _HomeToolTile({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+    this.badge,
+    this.footer,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          height: 112,
+          child: Stack(
+            children: [
+              Positioned(
+                right: -16,
+                bottom: -26,
+                child: Icon(
+                  icon,
+                  size: 142,
+                  color: color.withOpacity(0.10),
+                ),
+              ),
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                child: Container(width: 6, color: color),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(22, 16, 24, 14),
+                child: Row(
+                  children: [
+                    Icon(icon, color: color, size: 28),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              if (badge != null) ...[
+                                const SizedBox(width: 8),
+                                badge!,
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            subtitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.black.withOpacity(0.48),
+                              fontSize: 12,
+                              height: 1.25,
+                            ),
+                          ),
+                          if (footer != null) ...[
+                            const SizedBox(height: 4),
+                            footer!,
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 15,
+                      color: color.withOpacity(0.7),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _HomeLogoTitleState extends State<_HomeLogoTitle> {

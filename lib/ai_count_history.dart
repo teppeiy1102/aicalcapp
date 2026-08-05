@@ -3,47 +3,73 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
+import 'ai_service.dart';
 
 class AiCountHistoryEntry {
   final String id;
   final String instruction;
-  final int count;
-  final List<List<double>> points;
+  final List<AiCountItem> items;
   final DateTime dateTime;
   final String imagePath; // relative path to image file
 
   AiCountHistoryEntry({
     required this.id,
     required this.instruction,
-    required this.count,
-    required this.points,
+    required this.items,
     required this.dateTime,
     required this.imagePath,
   });
+
+  int get count => items.fold(0, (total, item) => total + item.count);
+  List<List<double>> get points => [for (final item in items) ...item.points];
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'instruction': instruction,
     'count': count,
     'points': points,
+    'items': items.map((item) => item.toJson()).toList(),
     'dateTime': dateTime.toIso8601String(),
     'imagePath': imagePath,
   };
 
-  factory AiCountHistoryEntry.fromJson(Map<String, dynamic> json) =>
-      AiCountHistoryEntry(
-        id: json['id'] as String? ?? '',
-        instruction: json['instruction'] as String? ?? '',
-        count: json['count'] as int? ?? 0,
-        points: (json['points'] as List<dynamic>?)
-                ?.map((p) => (p as List).map((e) => (e as num).toDouble()).toList())
-                .toList() ??
-            [],
-        dateTime:
-            DateTime.tryParse(json['dateTime'] as String? ?? '') ??
-            DateTime.now(),
-        imagePath: json['imagePath'] as String? ?? '',
-      );
+  factory AiCountHistoryEntry.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'] as List<dynamic>?;
+    final items = rawItems != null && rawItems.isNotEmpty
+        ? rawItems
+              .whereType<Map>()
+              .map(
+                (item) => AiCountItem.fromJson(Map<String, dynamic>.from(item)),
+              )
+              .toList()
+        : [
+            AiCountItem(
+              target: json['instruction'] as String? ?? '',
+              count: (json['count'] as num?)?.toInt() ?? 0,
+              points:
+                  (json['points'] as List<dynamic>?)
+                      ?.whereType<List>()
+                      .where((point) => point.length >= 2)
+                      .map(
+                        (point) => [
+                          (point[0] as num).toDouble(),
+                          (point[1] as num).toDouble(),
+                        ],
+                      )
+                      .toList() ??
+                  [],
+            ),
+          ];
+    return AiCountHistoryEntry(
+      id: json['id'] as String? ?? '',
+      instruction: json['instruction'] as String? ?? '',
+      items: items,
+      dateTime:
+          DateTime.tryParse(json['dateTime'] as String? ?? '') ??
+          DateTime.now(),
+      imagePath: json['imagePath'] as String? ?? '',
+    );
+  }
 }
 
 /// AIカウントの履歴を管理するシングルトン
@@ -94,16 +120,14 @@ class AiCountHistoryManager {
   Future<void> addEntry({
     required Uint8List imageBytes,
     required String instruction,
-    required int count,
-    required List<List<double>> points,
+    required List<AiCountItem> items,
   }) async {
     await _ensureLoaded();
     final imagePath = await _saveImage(imageBytes);
     final entry = AiCountHistoryEntry(
       id: '${DateTime.now().millisecondsSinceEpoch}',
       instruction: instruction,
-      count: count,
-      points: points,
+      items: items,
       dateTime: DateTime.now(),
       imagePath: imagePath,
     );
