@@ -7,17 +7,41 @@ class SorobanPage extends StatefulWidget {
   State<SorobanPage> createState() => _SorobanPageState();
 }
 
+class _SorobanPracticeQuestion {
+  final int? previous;
+  final String? operator;
+  final int? operand;
+  final int answer;
+
+  const _SorobanPracticeQuestion({
+    required this.previous,
+    required this.operator,
+    required this.operand,
+    required this.answer,
+  });
+}
+
 class _SorobanPageState extends State<SorobanPage>
-    with SingleTickerProviderStateMixin {
+  with TickerProviderStateMixin {
   static const _columnCount = 8;
 
   final List<int> _digits = List<int>.filled(_columnCount, 0);
   late final AnimationController _beadController;
+  late final AnimationController _correctEffectController;
   List<double> _animationFromUpper = List<double>.filled(_columnCount, 0);
   List<double> _animationFromLower = List<double>.filled(_columnCount, 0);
   int? _activeColumn;
   int? _lastShownValue;
   Timer? _valueTimer;
+  final _random = math.Random();
+  bool _practiceActive = false;
+  int _practiceDigits = 2;
+  bool _practiceSubtraction = false;
+  bool _practiceMultiplication = false;
+  bool _practiceDivision = false;
+  _SorobanPracticeQuestion? _practiceQuestion;
+  bool? _practiceLastCorrect;
+  int _practiceSolvedCount = 0;
 
   @override
   void initState() {
@@ -33,12 +57,17 @@ class _SorobanPageState extends State<SorobanPage>
         )..addListener(() {
           if (mounted) setState(() {});
         });
+    _correctEffectController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    );
   }
 
   @override
   void dispose() {
     _valueTimer?.cancel();
     _beadController.dispose();
+    _correctEffectController.dispose();
     SystemChrome.setPreferredOrientations(const [
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
@@ -73,9 +102,221 @@ class _SorobanPageState extends State<SorobanPage>
       _digits[column] = nextValue;
       _activeColumn = column;
       _lastShownValue = _value;
+      _practiceLastCorrect = null;
     });
     _beadController.forward(from: 0);
     _showValueBriefly();
+    _checkPracticeAnswer();
+  }
+
+  void _checkPracticeAnswer() {
+    final question = _practiceQuestion;
+    if (!_practiceActive || question == null) return;
+    if (_value != question.answer) return;
+
+    setState(() {
+      _practiceQuestion = _generatePracticeQuestion(question.answer);
+      _practiceLastCorrect = true;
+      _practiceSolvedCount++;
+      _lastShownValue = null;
+    });
+    _valueTimer?.cancel();
+    _correctEffectController.forward(from: 0);
+  }
+
+  _SorobanPracticeQuestion _generateInitialQuestion() {
+    final minimum = _practiceDigits == 1
+        ? 1
+        : math.pow(10, _practiceDigits - 1).toInt();
+    final maximum = math.pow(10, _practiceDigits).toInt() - 1;
+    return _SorobanPracticeQuestion(
+      previous: null,
+      operator: null,
+      operand: null,
+      answer: _randomInRange(minimum, maximum),
+    );
+  }
+
+  _SorobanPracticeQuestion _generatePracticeQuestion(int previous) {
+    final minimum = _practiceDigits == 1
+        ? 1
+        : math.pow(10, _practiceDigits - 1).toInt();
+    final maximum = math.pow(10, _practiceDigits).toInt() - 1;
+    final operations = <String>['+'];
+    if (_practiceSubtraction) operations.add('-');
+    if (_practiceMultiplication) operations.add('×');
+    if (_practiceDivision) operations.add('÷');
+    final maxSorobanValue = math.pow(10, _columnCount).toInt() - 1;
+
+    operations.shuffle(_random);
+    for (final operator in operations) {
+      switch (operator) {
+        case '+':
+          final maximumOperand = math
+              .min(maximum, maxSorobanValue - previous)
+              .toInt();
+          if (maximumOperand < 1) continue;
+          final minimumOperand = minimum <= maximumOperand ? minimum : 1;
+          final operand = _randomInRange(minimumOperand, maximumOperand);
+          return _SorobanPracticeQuestion(
+            previous: previous,
+            operator: operator,
+            operand: operand,
+            answer: previous + operand,
+          );
+        case '-':
+          final maximumOperand = math.min(maximum, previous - 1).toInt();
+          if (maximumOperand < 1) continue;
+          final minimumOperand = minimum <= maximumOperand ? minimum : 1;
+          final operand = _randomInRange(minimumOperand, maximumOperand);
+          return _SorobanPracticeQuestion(
+            previous: previous,
+            operator: operator,
+            operand: operand,
+            answer: previous - operand,
+          );
+        case '×':
+          final factors = <int>[];
+          for (var factor = 2; factor <= 9; factor++) {
+            if (previous <= maxSorobanValue ~/ factor) {
+              factors.add(factor);
+            }
+          }
+          if (factors.isEmpty) continue;
+          final factor = factors[_random.nextInt(factors.length)];
+          return _SorobanPracticeQuestion(
+            previous: previous,
+            operator: operator,
+            operand: factor,
+            answer: previous * factor,
+          );
+        case '÷':
+          final divisors = <int>[];
+          for (var divisor = 2; divisor <= 9; divisor++) {
+            if (previous % divisor == 0) divisors.add(divisor);
+          }
+          if (divisors.isEmpty) continue;
+          final divisor = divisors[_random.nextInt(divisors.length)];
+          return _SorobanPracticeQuestion(
+            previous: previous,
+            operator: operator,
+            operand: divisor,
+            answer: previous ~/ divisor,
+          );
+      }
+    }
+    return _generateInitialQuestion();
+  }
+
+  int _randomInRange(int minimum, int maximum) {
+    return minimum + _random.nextInt(maximum - minimum + 1);
+  }
+
+  Future<void> _showPracticeSettings() async {
+    var digits = _practiceDigits;
+    var subtraction = _practiceSubtraction;
+    var multiplication = _practiceMultiplication;
+    var division = _practiceDivision;
+    final settings = await showDialog<_SorobanPracticeSettings>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('そろばん練習問題'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(child: Text('桁数')),
+                      Text('$digits 桁'),
+                    ],
+                  ),
+                  Slider(
+                    value: digits.toDouble(),
+                    min: 1,
+                    max: _columnCount.toDouble(),
+                    divisions: _columnCount - 1,
+                    label: '$digits 桁',
+                    onChanged: (value) =>
+                        setDialogState(() => digits = value.round()),
+                  ),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('引き算'),
+                    value: subtraction,
+                    onChanged: (value) =>
+                        setDialogState(() => subtraction = value),
+                  ),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('掛け算'),
+                    value: multiplication,
+                    onChanged: (value) =>
+                        setDialogState(() => multiplication = value),
+                  ),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('割り算'),
+                    value: division,
+                    onChanged: (value) =>
+                        setDialogState(() => division = value),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('キャンセル'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(
+                  context,
+                  _SorobanPracticeSettings(
+                    digits: digits,
+                    subtraction: subtraction,
+                    multiplication: multiplication,
+                    division: division,
+                  ),
+                ),
+                child: Text(_practiceActive ? 'この設定で続ける' : '開始'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (!mounted || settings == null) return;
+
+    _captureCurrentAnimationState();
+    setState(() {
+      _practiceDigits = settings.digits;
+      _practiceSubtraction = settings.subtraction;
+      _practiceMultiplication = settings.multiplication;
+      _practiceDivision = settings.division;
+      _practiceActive = true;
+      _practiceQuestion = _generateInitialQuestion();
+      _practiceLastCorrect = null;
+      _practiceSolvedCount = 0;
+      for (var index = 0; index < _digits.length; index++) {
+        _digits[index] = 0;
+      }
+      _activeColumn = null;
+      _lastShownValue = null;
+    });
+    _valueTimer?.cancel();
+    _beadController.forward(from: 0);
+  }
+
+  void _stopPractice() {
+    setState(() {
+      _practiceActive = false;
+      _practiceQuestion = null;
+      _practiceLastCorrect = null;
+      _practiceSolvedCount = 0;
+    });
   }
 
   void _showValueBriefly() {
@@ -144,6 +385,7 @@ class _SorobanPageState extends State<SorobanPage>
 
   Widget _buildValuePanel() {
     final currentValue = _formatValue(_value);
+    if (_practiceActive) return _buildPracticePanel();
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -197,6 +439,16 @@ class _SorobanPageState extends State<SorobanPage>
           ),
         ),
         const SizedBox(height: 18),
+        OutlinedButton.icon(
+          onPressed: _showPracticeSettings,
+          icon: const Icon(Icons.school_rounded, size: 18),
+          label: const Text('練習問題'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFFFFD98A),
+            side: const BorderSide(color: Color(0xFF8B6B43)),
+          ),
+        ),
+        const SizedBox(height: 18),
         const Text(
           '玉を上下に動かして\n数字をつくります',
           textAlign: TextAlign.center,
@@ -205,6 +457,164 @@ class _SorobanPageState extends State<SorobanPage>
       ],
     );
   }
+
+  Widget _buildPracticePanel() {
+    final question = _practiceQuestion;
+    final isInitialQuestion = question == null || question.previous == null;
+    return AnimatedBuilder(
+      animation: _correctEffectController,
+      builder: (context, child) {
+        final pulse = Curves.easeOut.transform(
+          math.sin(_correctEffectController.value * math.pi),
+        );
+        return Transform.scale(
+          scale: 1 + pulse * .035,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Color.lerp(
+                Colors.transparent,
+                const Color(0xFF254C35),
+                pulse * .22,
+              ),
+              boxShadow: [
+                if (pulse > 0)
+                  BoxShadow(
+                    color: const Color(
+                      0xFF80D890,
+                    ).withValues(alpha: pulse * .75),
+                    blurRadius: 22 * pulse,
+                    spreadRadius: 3 * pulse,
+                  ),
+              ],
+            ),
+            child: child,
+          ),
+        );
+      },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: IconButton(
+              tooltip: '問題設定',
+              onPressed: _showPracticeSettings,
+              icon: const Icon(Icons.tune_rounded),
+              color: const Color(0xFFE8D8B9),
+            ),
+          ),
+          Text(
+            isInitialQuestion ? '最初の数字' : '前の数字',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isInitialQuestion
+                  ? const Color(0xFF9EB1A7)
+                  : const Color(0xFF9EB1A7).withValues(alpha: .8),
+              fontSize: isInitialQuestion ? 13 : 11,
+            ),
+          ),
+          const SizedBox(height: 8),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: Text(
+              question == null
+                  ? ''
+                  : _formatValue(
+                      isInitialQuestion ? question.answer : question.previous!,
+                    ),
+              key: ValueKey(
+                question == null
+                    ? null
+                    : isInitialQuestion
+                    ? question.answer
+                    : question.previous,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFFC1CEC6),
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          if (!isInitialQuestion) ...[
+            const SizedBox(height: 8),
+            const Text(
+              '演算する数字',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFF9EB1A7), fontSize: 12),
+            ),
+            const SizedBox(height: 2),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: Text(
+                '${question.operator} ${_formatValue(question.operand!)}',
+                key: ValueKey('${question.operator}${question.operand}'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFFFFD98A),
+                  fontSize: 34,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 14),
+          Text(
+            _practiceLastCorrect == true
+                ? '正解！ 次の問題'
+                : isInitialQuestion
+                ? '最初の数字をそろばんで入力'
+                : '計算結果をそろばんで入力',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: _practiceLastCorrect == true
+                  ? const Color(0xFF9ED6A5)
+                  : const Color(0xFF9EB1A7),
+              fontSize: _practiceLastCorrect == true ? 17 : 12,
+              fontWeight: _practiceLastCorrect == true
+                  ? FontWeight.w900
+                  : FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$_practiceSolvedCount 問正解',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Color(0xFFE0A458), fontSize: 12),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: _stopPractice,
+            icon: const Icon(Icons.stop_circle_outlined, size: 18),
+            label: const Text('練習を終了'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFFFD98A),
+              side: const BorderSide(color: Color(0xFF8B6B43)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SorobanPracticeSettings {
+  final int digits;
+  final bool subtraction;
+  final bool multiplication;
+  final bool division;
+
+  const _SorobanPracticeSettings({
+    required this.digits,
+    required this.subtraction,
+    required this.multiplication,
+    required this.division,
+  });
 }
 
 class _SorobanBoard extends StatelessWidget {
