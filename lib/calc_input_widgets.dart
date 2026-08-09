@@ -52,26 +52,26 @@ class _FlashScreenState extends State<_FlashScreen>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 700),
     );
-    // 0.0→0.15: フェードイン (0→1)
-    // 0.15→0.55: 表示維持 (1→1)
-    // 0.55→1.0: フェードアウト (1→0)
+    // 0.0→0.18: フェードイン (0→1)
+    // 0.18→0.60: 表示維持 (1→1)
+    // 0.60→1.0: フェードアウト (1→0)
     _anim = TweenSequence<double>([
       TweenSequenceItem(
         tween: Tween<double>(
           begin: 0.0,
           end: 1.0,
         ).chain(CurveTween(curve: Curves.easeIn)),
-        weight: 15,
+        weight: 18,
       ),
-      TweenSequenceItem(tween: ConstantTween<double>(1.0), weight: 40),
+      TweenSequenceItem(tween: ConstantTween<double>(1.0), weight: 42),
       TweenSequenceItem(
         tween: Tween<double>(
           begin: 1.0,
           end: 0.0,
         ).chain(CurveTween(curve: Curves.easeOut)),
-        weight: 45,
+        weight: 40,
       ),
     ]).animate(_ctrl);
     _ctrl.addStatusListener((status) {

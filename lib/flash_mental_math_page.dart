@@ -633,37 +633,6 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
         children: [
           _buildHeroCard(),
-          const SizedBox(height: 18),
-          bestLevel == 0
-              ? const Text(
-                  '現在クリア済みのレベルはありません',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color.fromARGB(255, 54, 54, 54),
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                  ),
-                )
-              : ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
-                    colors: [
-                      Color.fromARGB(255, 97, 53, 240),
-                      Color.fromARGB(255, 46, 216, 216),
-                      Color.fromARGB(255, 153, 103, 234),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ).createShader(bounds),
-                  child: Text(
-                    'Lv.$bestLevel Cleared!',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
           const SizedBox(height: 24),
           const Text(
             '今日の実績',
@@ -698,6 +667,38 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
               ),
             ],
           ),
+
+          const SizedBox(height: 20),
+          bestLevel == 0
+              ? const Text(
+                  '現在クリア済みのレベルはありません',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color.fromARGB(255, 54, 54, 54),
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                  ),
+                )
+              : ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [
+                      Color.fromARGB(255, 97, 53, 240),
+                      Color.fromARGB(255, 46, 216, 216),
+                      Color.fromARGB(255, 153, 103, 234),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(bounds),
+                  child: Text(
+                    'Lv.$bestLevel Cleared!',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
           const SizedBox(height: 18),
 
           OutlinedButton.icon(
@@ -733,22 +734,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             ),
           ),
           const SizedBox(height: 10),
-          OutlinedButton.icon(
-            onPressed: () => Navigator.push<void>(
-              context,
-              MaterialPageRoute(builder: (_) => const SorobanPage()),
-            ),
-            icon: const Icon(Icons.view_agenda_rounded),
-            label: const Text('そろばんシミュレーター'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF168A7A),
-              side: const BorderSide(color: Color(0xFF168A7A)),
-              minimumSize: const Size.fromHeight(52),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(34),
-              ),
-            ),
-          ),
+
           const SizedBox(height: 20),
           _settingsCard(),
           const SizedBox(height: 18),
@@ -873,27 +859,45 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                   ),
                 ),
               ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                tooltip: 'レベルを下げる',
+                onPressed: _level > 1 ? () => setState(() => _level--) : null,
+                icon: const Icon(Icons.remove_rounded),
+                color: const Color(0xFFC64932),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
+                  horizontal: 22,
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFE4DD),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(30),
                 ),
                 child: Text(
                   'LEVEL $_level',
                   style: const TextStyle(
                     color: Color(0xFFC64932),
-                    fontSize: 12,
+                    fontSize: 30,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
+              IconButton(
+                tooltip: 'レベルを上げる',
+                onPressed: _level < 99 ? () => setState(() => _level++) : null,
+                icon: const Icon(Icons.add_rounded),
+                color: const Color(0xFFC64932),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
           Row(
             children: [
               const Text(
@@ -911,17 +915,6 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                   onChanged: (value) => setState(() => _level = value.round()),
                 ),
               ),
-              SizedBox(
-                width: 28,
-                child: Text(
-                  '$_level',
-                  textAlign: TextAlign.end,
-                  style: const TextStyle(
-                    color: Color(0xFF262321),
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
             ],
           ),
           _autoSettingRow('桁数', '$_levelDigits 桁', Icons.pin_rounded),
@@ -935,6 +928,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             '$_levelTermCount 個',
             Icons.format_list_numbered_rounded,
           ),
+          const SizedBox(height: 12),
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
             dense: true,

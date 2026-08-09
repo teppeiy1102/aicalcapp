@@ -733,6 +733,12 @@ Total observed count: ${imageCounts.count}
               ),
             );
           },
+          onOpenSoroban: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SorobanPage()),
+            );
+          },
           onOpenLinkGraph: () {
             Navigator.push(
               context,
@@ -1821,6 +1827,7 @@ class _HomeToolsPage extends StatelessWidget {
   final VoidCallback onShowQrScanner;
   final VoidCallback onOpenSettings;
   final VoidCallback onOpenFlashMath;
+  final VoidCallback onOpenSoroban;
   final VoidCallback onOpenLinkGraph;
   final VoidCallback onAiCount;
 
@@ -1830,6 +1837,7 @@ class _HomeToolsPage extends StatelessWidget {
     required this.onShowQrScanner,
     required this.onOpenSettings,
     required this.onOpenFlashMath,
+    required this.onOpenSoroban,
     required this.onOpenLinkGraph,
     required this.onAiCount,
   });
@@ -1854,7 +1862,8 @@ class _HomeToolsPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          l10n.settings,
+        //  l10n.settings,
+          'TOOLS',
           style: const TextStyle(
             color: Colors.black87,
             fontSize: 20,
@@ -1866,16 +1875,6 @@ class _HomeToolsPage extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
           children: [
-            Text(
-              'TOOLS',
-              style: TextStyle(
-                color: Colors.black.withOpacity(0.42),
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.4,
-              ),
-            ),
-            const SizedBox(height: 10),
             _HomeToolTile(
               title: l10n.aiCountTitle,
               subtitle: l10n.aiCountDesc,
@@ -1890,6 +1889,14 @@ class _HomeToolsPage extends StatelessWidget {
               icon: Icons.flash_on_rounded,
               color: const Color(0xFFE05B3F),
               onTap: () => _closeAndRun(context, onOpenFlashMath),
+            ),
+            const SizedBox(height: 10),
+            _HomeToolTile(
+              title: 'そろばんシミュレーター',
+              subtitle: 'そろばんを動かして計算を練習',
+              icon: Icons.diamond,
+              color: const Color(0xFF168A7A),
+              onTap: () => _closeAndRun(context, onOpenSoroban),
             ),
             const SizedBox(height: 10),
             _HomeToolTile(
@@ -1966,21 +1973,21 @@ class _HomeToolTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
+    
+      color: color.withOpacity(0.05),
+      borderRadius: BorderRadius.circular(20),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: SizedBox(
-          height: 112,
           child: Stack(
             children: [
               Positioned(
                 right: -16,
-                bottom: -26,
+                bottom: -56,
                 child: Icon(
                   icon,
-                  size: 142,
+                  size: 192,
                   color: color.withOpacity(0.10),
                 ),
               ),
@@ -1988,14 +1995,12 @@ class _HomeToolTile extends StatelessWidget {
                 left: 0,
                 top: 0,
                 bottom: 0,
-                child: Container(width: 6, color: color),
+                child: Container(width: 14, color: color.withAlpha(200)),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(22, 16, 24, 14),
+                padding: const EdgeInsets.fromLTRB(32, 26, 14, 24),
                 child: Row(
                   children: [
-                    Icon(icon, color: color, size: 28),
-                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2006,11 +2011,11 @@ class _HomeToolTile extends StatelessWidget {
                               Flexible(
                                 child: Text(
                                   title,
-                                  maxLines: 1,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     color: Colors.black87,
-                                    fontSize: 16,
+                                    fontSize: 20,
                                     fontWeight: FontWeight.w800,
                                   ),
                                 ),
