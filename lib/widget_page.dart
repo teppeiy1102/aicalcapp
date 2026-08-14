@@ -3716,7 +3716,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Text(
-                      'Node Calc',
+                      'NodeCalc',
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 30,

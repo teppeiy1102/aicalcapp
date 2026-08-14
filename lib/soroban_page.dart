@@ -151,6 +151,7 @@ class _SorobanPageState extends State<SorobanPage>
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _beadController =
         AnimationController(
           vsync: this,
@@ -174,6 +175,7 @@ class _SorobanPageState extends State<SorobanPage>
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 

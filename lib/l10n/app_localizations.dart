@@ -107,7 +107,7 @@ abstract class AppLocalizations {
   /// No description provided for @genbaCalc.
   ///
   /// In en, this message translates to:
-  /// **'Node Calc'**
+  /// **'NodeCalc'**
   String get genbaCalc;
 
   /// No description provided for @genbaCalcTagline.

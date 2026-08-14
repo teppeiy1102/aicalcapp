@@ -928,6 +928,8 @@ class _LinkGraphPageState extends State<LinkGraphPage>
                       top: 12,
                       left: 12,
                       child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Material(
@@ -957,7 +959,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        l10n.graphLinkedOnlyOption,
+                                        'Link Only',
                                         style: const TextStyle(
                                           color: Color(0xFF394150),
                                           fontSize: 12,

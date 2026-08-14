@@ -12,7 +12,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'AI Calc';
 
   @override
-  String get genbaCalc => 'Node Calc';
+  String get genbaCalc => 'NodeCalc';
 
   @override
   String get genbaCalcTagline => 'Next-gen calculator for the field';
