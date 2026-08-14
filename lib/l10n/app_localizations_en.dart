@@ -940,6 +940,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clipboardBarClear => 'Clear';
 
   @override
+  String get pasteToThisSheet => 'Paste to this sheet';
+
+  @override
+  String get selectPasteSheet => 'Select a sheet to paste into';
+
+  @override
   String get aiModelLabel => 'AI Model';
 
   @override
@@ -1719,6 +1725,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get graphTooltipShowLinked => 'Showing Linked Only';
+
+  @override
+  String get graphLinkedOnlyOption => 'Show linked formulas only';
 
   @override
   String get graphTooltipFit => 'Fit to Screen';
@@ -2688,6 +2697,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scanOnOtherDevice => 'Scan on another device to import sheets';
 
   @override
+  String qrScanProgressTitle(Object collected, Object total) {
+    return 'QR Scan ($collected/$total)';
+  }
+
+  @override
+  String importedSheetsCount(Object count) {
+    return '$count imported';
+  }
+
+  @override
+  String doneWithCount(Object count) {
+    return 'Done ($count)';
+  }
+
+  @override
+  String linkedQrScanProgress(Object collected, Object total) {
+    return 'Linked QR: $collected/$total scanned';
+  }
+
+  @override
+  String remainingQrScan(Object count) {
+    return 'Scan $count remaining QR codes';
+  }
+
+  @override
+  String get continueQrScan => 'Scan the next sheet\'s QR code';
+
+  @override
+  String get alignSheetQr => 'Align the sheet QR code within the frame';
+
+  @override
+  String get loadFromFile => 'Load from file';
+
+  @override
+  String imagePageSwipe(Object current, Object total) {
+    return '$current / $total  ← Swipe to switch →';
+  }
+
+  @override
+  String get analyzingQrCode => 'Analyzing QR code...';
+
+  @override
+  String get readQrCode => 'Scan QR code';
+
+  @override
   String linkedQrPage(Object page, Object total) {
     return 'Linked QR: $page/$total';
   }
@@ -2793,4 +2847,366 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiCountHistoryDetail => 'Count History Detail';
+
+  @override
+  String get flashMathTitle => 'Flash Mental Math';
+
+  @override
+  String get toolsTitle => 'Tools';
+
+  @override
+  String get flashMathToolDescription =>
+      'A training game where you solve numbers as they appear';
+
+  @override
+  String get sorobanTitle => 'Abacus Simulator';
+
+  @override
+  String get sorobanDescription => 'Practice calculations by moving the abacus';
+
+  @override
+  String get flashMathStats => 'Statistics';
+
+  @override
+  String get flashMathTodayStats => 'Today\'s Results';
+
+  @override
+  String get flashMathPlay => 'Plays';
+
+  @override
+  String get flashMathAccuracy => 'Accuracy';
+
+  @override
+  String get flashMathStreak => 'Streak';
+
+  @override
+  String flashMathPlayCount(Object count) {
+    return '$count plays';
+  }
+
+  @override
+  String get flashMathNoClearedLevel => 'No cleared levels yet';
+
+  @override
+  String flashMathLevelCleared(Object level) {
+    return 'Lv. $level Cleared!';
+  }
+
+  @override
+  String get flashMathCustomStart => 'Start with Custom Settings';
+
+  @override
+  String get flashMathStart => 'Start Game';
+
+  @override
+  String get flashMathHeroTitle => 'Catch the Numbers in an Instant';
+
+  @override
+  String get flashMathHeroDescription =>
+      'Train your focus and mental math every day';
+
+  @override
+  String get flashMathGameSettings => 'Game Settings';
+
+  @override
+  String get flashMathLevelDown => 'Decrease level';
+
+  @override
+  String get flashMathLevelUp => 'Increase level';
+
+  @override
+  String get flashMathLevel => 'Level';
+
+  @override
+  String get flashMathDigits => 'Digits';
+
+  @override
+  String flashMathDigitsValue(Object count) {
+    return '$count digits';
+  }
+
+  @override
+  String get flashMathDisplaySpeed => 'Display Speed';
+
+  @override
+  String flashMathSecondsValue(Object seconds) {
+    return '${seconds}s';
+  }
+
+  @override
+  String get flashMathCalculationCount => 'Calculations';
+
+  @override
+  String flashMathTermValue(Object count) {
+    return '$count terms';
+  }
+
+  @override
+  String get flashMathAddMultiplication => 'Add multiplication';
+
+  @override
+  String get flashMathDifficultyIncreases => 'Increases difficulty';
+
+  @override
+  String get flashMathAddDivision => 'Add division';
+
+  @override
+  String get flashMathDecimalAnswers => 'Decimal answers may appear';
+
+  @override
+  String get flashMathAddSubtraction => 'Add subtraction';
+
+  @override
+  String get flashMathNegativeAnswers => 'Negative answers may appear';
+
+  @override
+  String get flashMathCustomSettings => 'Custom Settings';
+
+  @override
+  String get flashMathCustomSession => 'CUSTOM';
+
+  @override
+  String get flashMathStartSignal => 'START';
+
+  @override
+  String flashMathLevelValue(Object level) {
+    return 'LEVEL $level';
+  }
+
+  @override
+  String get flashMathCustomSettingsDescription =>
+      'Set digits, display speed, and calculations freely';
+
+  @override
+  String get flashMathCountdownStarting => 'Starting soon';
+
+  @override
+  String get flashMathAnswerInput => 'Enter Answer';
+
+  @override
+  String get flashMathAnswerQuestion => 'What is the answer?';
+
+  @override
+  String get flashMathAnswerHint => 'Answer';
+
+  @override
+  String get flashMathCheckAnswer => 'Check Answer';
+
+  @override
+  String get flashMathRoundResult => 'Round Result';
+
+  @override
+  String get flashMathCorrect => 'Correct!';
+
+  @override
+  String get flashMathAlmost => 'Almost';
+
+  @override
+  String flashMathCorrectAnswer(Object answer) {
+    return 'Correct  $answer';
+  }
+
+  @override
+  String flashMathYourAnswer(Object answer) {
+    return 'Your answer  $answer';
+  }
+
+  @override
+  String get flashMathPlayAgain => 'Again';
+
+  @override
+  String get flashMathBackToSettings => 'Back to Settings';
+
+  @override
+  String get flashMathAnswerRequired => 'Please enter an answer';
+
+  @override
+  String get flashMathCustomStartWithSettings => 'Start with These Settings';
+
+  @override
+  String get flashMathDetailedStats => 'Detailed Statistics';
+
+  @override
+  String get flashMathTotalPlays => 'Total Plays';
+
+  @override
+  String get flashMathAverageAnswer => 'Average Response';
+
+  @override
+  String get flashMathHighestLevel => 'Highest Level';
+
+  @override
+  String get flashMathLongestStreak => 'Longest Streak';
+
+  @override
+  String flashMathQuestionCount(Object count) {
+    return '$count questions';
+  }
+
+  @override
+  String get flashMathStatsBySetting => 'Results by Setting';
+
+  @override
+  String get flashMathStatsEmpty => 'Play to see results by level';
+
+  @override
+  String get flashMathPlayHistory => 'Play History (Latest 50)';
+
+  @override
+  String get flashMathNoPlayHistory => 'No play history yet';
+
+  @override
+  String flashMathCorrectIncorrectStats(
+    Object accuracy,
+    Object correct,
+    Object incorrect,
+  ) {
+    return 'Correct $correct  /  Incorrect $incorrect  /  Accuracy $accuracy%';
+  }
+
+  @override
+  String get flashMathNoClearRecord => 'No clear record';
+
+  @override
+  String flashMathShortestClear(Object seconds) {
+    return 'Fastest clear ${seconds}s';
+  }
+
+  @override
+  String flashMathSecondsPerQuestion(Object seconds) {
+    return '${seconds}s / question';
+  }
+
+  @override
+  String get flashMathCorrectLabel => 'Correct';
+
+  @override
+  String get flashMathIncorrectLabel => 'Incorrect';
+
+  @override
+  String flashMathLevelConfiguration(Object level) {
+    return 'Level $level';
+  }
+
+  @override
+  String flashMathCustomConfiguration(
+    Object count,
+    Object digits,
+    Object operators,
+    Object seconds,
+  ) {
+    return 'Custom · $digits digits · ${seconds}s · $count terms · $operators';
+  }
+
+  @override
+  String get sorobanPracticeHistory => 'Abacus Practice History';
+
+  @override
+  String get sorobanNoPracticeHistory => 'No practice history yet.';
+
+  @override
+  String sorobanBestRecord(Object seconds) {
+    return 'Best Record (Fastest)  $seconds / question';
+  }
+
+  @override
+  String sorobanQuestionsSolved(Object count, Object seconds) {
+    return '$seconds / question  $count questions';
+  }
+
+  @override
+  String get sorobanClose => 'Close';
+
+  @override
+  String get sorobanPracticeProblem => 'Abacus Practice Problem';
+
+  @override
+  String get sorobanDigits => 'Digits';
+
+  @override
+  String sorobanDigitsValue(Object count) {
+    return '$count digits';
+  }
+
+  @override
+  String get sorobanSubtraction => 'Subtraction';
+
+  @override
+  String get sorobanMultiplication => 'Multiplication';
+
+  @override
+  String get sorobanDivision => 'Division';
+
+  @override
+  String get sorobanContinueWithSettings => 'Continue with These Settings';
+
+  @override
+  String get sorobanStart => 'Start';
+
+  @override
+  String get sorobanReset => 'Reset';
+
+  @override
+  String get sorobanBack => 'Back';
+
+  @override
+  String get sorobanCurrentValue => 'Current Value';
+
+  @override
+  String sorobanBestRecordShort(Object seconds) {
+    return 'Best Record  $seconds / question';
+  }
+
+  @override
+  String get sorobanHistory => 'History';
+
+  @override
+  String get sorobanPractice => 'Practice Problems';
+
+  @override
+  String get sorobanProblemSettings => 'Problem Settings';
+
+  @override
+  String get sorobanInitialNumber => 'Starting Number';
+
+  @override
+  String get sorobanPreviousNumber => 'Previous Number';
+
+  @override
+  String get sorobanOperandNumber => 'Number to Operate';
+
+  @override
+  String get sorobanEnterInitialNumber =>
+      'Enter the starting number on the abacus';
+
+  @override
+  String sorobanSolvedCount(Object count) {
+    return '$count solved';
+  }
+
+  @override
+  String sorobanElapsed(Object seconds) {
+    return 'Elapsed $seconds';
+  }
+
+  @override
+  String sorobanAverage(Object seconds) {
+    return 'Average $seconds / question';
+  }
+
+  @override
+  String get sorobanAverageEmpty => 'Average -- / question';
+
+  @override
+  String sorobanBest(Object seconds) {
+    return 'Best $seconds / question';
+  }
+
+  @override
+  String get sorobanEndPractice => 'End Practice';
+
+  @override
+  String sorobanConfiguration(Object digits, Object operators) {
+    return '$digits digits · $operators';
+  }
 }

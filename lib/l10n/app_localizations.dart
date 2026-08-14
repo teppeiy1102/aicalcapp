@@ -1808,6 +1808,18 @@ abstract class AppLocalizations {
   /// **'Clear'**
   String get clipboardBarClear;
 
+  /// No description provided for @pasteToThisSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste to this sheet'**
+  String get pasteToThisSheet;
+
+  /// No description provided for @selectPasteSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a sheet to paste into'**
+  String get selectPasteSheet;
+
   /// No description provided for @aiModelLabel.
   ///
   /// In en, this message translates to:
@@ -3241,6 +3253,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Showing Linked Only'**
   String get graphTooltipShowLinked;
+
+  /// No description provided for @graphLinkedOnlyOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Show linked formulas only'**
+  String get graphLinkedOnlyOption;
 
   /// No description provided for @graphTooltipFit.
   ///
@@ -4937,6 +4955,72 @@ abstract class AppLocalizations {
   /// **'Scan on another device to import sheets'**
   String get scanOnOtherDevice;
 
+  /// No description provided for @qrScanProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'QR Scan ({collected}/{total})'**
+  String qrScanProgressTitle(Object collected, Object total);
+
+  /// No description provided for @importedSheetsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} imported'**
+  String importedSheetsCount(Object count);
+
+  /// No description provided for @doneWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Done ({count})'**
+  String doneWithCount(Object count);
+
+  /// No description provided for @linkedQrScanProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked QR: {collected}/{total} scanned'**
+  String linkedQrScanProgress(Object collected, Object total);
+
+  /// No description provided for @remainingQrScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan {count} remaining QR codes'**
+  String remainingQrScan(Object count);
+
+  /// No description provided for @continueQrScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the next sheet\'s QR code'**
+  String get continueQrScan;
+
+  /// No description provided for @alignSheetQr.
+  ///
+  /// In en, this message translates to:
+  /// **'Align the sheet QR code within the frame'**
+  String get alignSheetQr;
+
+  /// No description provided for @loadFromFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Load from file'**
+  String get loadFromFile;
+
+  /// No description provided for @imagePageSwipe.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} / {total}  ← Swipe to switch →'**
+  String imagePageSwipe(Object current, Object total);
+
+  /// No description provided for @analyzingQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing QR code...'**
+  String get analyzingQrCode;
+
+  /// No description provided for @readQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR code'**
+  String get readQrCode;
+
   /// No description provided for @linkedQrPage.
   ///
   /// In en, this message translates to:
@@ -5122,6 +5206,621 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Count History Detail'**
   String get aiCountHistoryDetail;
+
+  /// No description provided for @flashMathTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Flash Mental Math'**
+  String get flashMathTitle;
+
+  /// No description provided for @toolsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get toolsTitle;
+
+  /// No description provided for @flashMathToolDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A training game where you solve numbers as they appear'**
+  String get flashMathToolDescription;
+
+  /// No description provided for @sorobanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Abacus Simulator'**
+  String get sorobanTitle;
+
+  /// No description provided for @sorobanDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Practice calculations by moving the abacus'**
+  String get sorobanDescription;
+
+  /// No description provided for @flashMathStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Statistics'**
+  String get flashMathStats;
+
+  /// No description provided for @flashMathTodayStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Results'**
+  String get flashMathTodayStats;
+
+  /// No description provided for @flashMathPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Plays'**
+  String get flashMathPlay;
+
+  /// No description provided for @flashMathAccuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'Accuracy'**
+  String get flashMathAccuracy;
+
+  /// No description provided for @flashMathStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Streak'**
+  String get flashMathStreak;
+
+  /// No description provided for @flashMathPlayCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} plays'**
+  String flashMathPlayCount(Object count);
+
+  /// No description provided for @flashMathNoClearedLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'No cleared levels yet'**
+  String get flashMathNoClearedLevel;
+
+  /// No description provided for @flashMathLevelCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Lv. {level} Cleared!'**
+  String flashMathLevelCleared(Object level);
+
+  /// No description provided for @flashMathCustomStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with Custom Settings'**
+  String get flashMathCustomStart;
+
+  /// No description provided for @flashMathStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Game'**
+  String get flashMathStart;
+
+  /// No description provided for @flashMathHeroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Catch the Numbers in an Instant'**
+  String get flashMathHeroTitle;
+
+  /// No description provided for @flashMathHeroDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Train your focus and mental math every day'**
+  String get flashMathHeroDescription;
+
+  /// No description provided for @flashMathGameSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Game Settings'**
+  String get flashMathGameSettings;
+
+  /// No description provided for @flashMathLevelDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease level'**
+  String get flashMathLevelDown;
+
+  /// No description provided for @flashMathLevelUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase level'**
+  String get flashMathLevelUp;
+
+  /// No description provided for @flashMathLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Level'**
+  String get flashMathLevel;
+
+  /// No description provided for @flashMathDigits.
+  ///
+  /// In en, this message translates to:
+  /// **'Digits'**
+  String get flashMathDigits;
+
+  /// No description provided for @flashMathDigitsValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} digits'**
+  String flashMathDigitsValue(Object count);
+
+  /// No description provided for @flashMathDisplaySpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Display Speed'**
+  String get flashMathDisplaySpeed;
+
+  /// No description provided for @flashMathSecondsValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds}s'**
+  String flashMathSecondsValue(Object seconds);
+
+  /// No description provided for @flashMathCalculationCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Calculations'**
+  String get flashMathCalculationCount;
+
+  /// No description provided for @flashMathTermValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} terms'**
+  String flashMathTermValue(Object count);
+
+  /// No description provided for @flashMathAddMultiplication.
+  ///
+  /// In en, this message translates to:
+  /// **'Add multiplication'**
+  String get flashMathAddMultiplication;
+
+  /// No description provided for @flashMathDifficultyIncreases.
+  ///
+  /// In en, this message translates to:
+  /// **'Increases difficulty'**
+  String get flashMathDifficultyIncreases;
+
+  /// No description provided for @flashMathAddDivision.
+  ///
+  /// In en, this message translates to:
+  /// **'Add division'**
+  String get flashMathAddDivision;
+
+  /// No description provided for @flashMathDecimalAnswers.
+  ///
+  /// In en, this message translates to:
+  /// **'Decimal answers may appear'**
+  String get flashMathDecimalAnswers;
+
+  /// No description provided for @flashMathAddSubtraction.
+  ///
+  /// In en, this message translates to:
+  /// **'Add subtraction'**
+  String get flashMathAddSubtraction;
+
+  /// No description provided for @flashMathNegativeAnswers.
+  ///
+  /// In en, this message translates to:
+  /// **'Negative answers may appear'**
+  String get flashMathNegativeAnswers;
+
+  /// No description provided for @flashMathCustomSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Settings'**
+  String get flashMathCustomSettings;
+
+  /// No description provided for @flashMathCustomSession.
+  ///
+  /// In en, this message translates to:
+  /// **'CUSTOM'**
+  String get flashMathCustomSession;
+
+  /// No description provided for @flashMathStartSignal.
+  ///
+  /// In en, this message translates to:
+  /// **'START'**
+  String get flashMathStartSignal;
+
+  /// No description provided for @flashMathLevelValue.
+  ///
+  /// In en, this message translates to:
+  /// **'LEVEL {level}'**
+  String flashMathLevelValue(Object level);
+
+  /// No description provided for @flashMathCustomSettingsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Set digits, display speed, and calculations freely'**
+  String get flashMathCustomSettingsDescription;
+
+  /// No description provided for @flashMathCountdownStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting soon'**
+  String get flashMathCountdownStarting;
+
+  /// No description provided for @flashMathAnswerInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Answer'**
+  String get flashMathAnswerInput;
+
+  /// No description provided for @flashMathAnswerQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'What is the answer?'**
+  String get flashMathAnswerQuestion;
+
+  /// No description provided for @flashMathAnswerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer'**
+  String get flashMathAnswerHint;
+
+  /// No description provided for @flashMathCheckAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Check Answer'**
+  String get flashMathCheckAnswer;
+
+  /// No description provided for @flashMathRoundResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Round Result'**
+  String get flashMathRoundResult;
+
+  /// No description provided for @flashMathCorrect.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct!'**
+  String get flashMathCorrect;
+
+  /// No description provided for @flashMathAlmost.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost'**
+  String get flashMathAlmost;
+
+  /// No description provided for @flashMathCorrectAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct  {answer}'**
+  String flashMathCorrectAnswer(Object answer);
+
+  /// No description provided for @flashMathYourAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Your answer  {answer}'**
+  String flashMathYourAnswer(Object answer);
+
+  /// No description provided for @flashMathPlayAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Again'**
+  String get flashMathPlayAgain;
+
+  /// No description provided for @flashMathBackToSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Settings'**
+  String get flashMathBackToSettings;
+
+  /// No description provided for @flashMathAnswerRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter an answer'**
+  String get flashMathAnswerRequired;
+
+  /// No description provided for @flashMathCustomStartWithSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with These Settings'**
+  String get flashMathCustomStartWithSettings;
+
+  /// No description provided for @flashMathDetailedStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Detailed Statistics'**
+  String get flashMathDetailedStats;
+
+  /// No description provided for @flashMathTotalPlays.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Plays'**
+  String get flashMathTotalPlays;
+
+  /// No description provided for @flashMathAverageAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Average Response'**
+  String get flashMathAverageAnswer;
+
+  /// No description provided for @flashMathHighestLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Highest Level'**
+  String get flashMathHighestLevel;
+
+  /// No description provided for @flashMathLongestStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest Streak'**
+  String get flashMathLongestStreak;
+
+  /// No description provided for @flashMathQuestionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} questions'**
+  String flashMathQuestionCount(Object count);
+
+  /// No description provided for @flashMathStatsBySetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Results by Setting'**
+  String get flashMathStatsBySetting;
+
+  /// No description provided for @flashMathStatsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Play to see results by level'**
+  String get flashMathStatsEmpty;
+
+  /// No description provided for @flashMathPlayHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Play History (Latest 50)'**
+  String get flashMathPlayHistory;
+
+  /// No description provided for @flashMathNoPlayHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No play history yet'**
+  String get flashMathNoPlayHistory;
+
+  /// No description provided for @flashMathCorrectIncorrectStats.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct {correct}  /  Incorrect {incorrect}  /  Accuracy {accuracy}%'**
+  String flashMathCorrectIncorrectStats(
+    Object accuracy,
+    Object correct,
+    Object incorrect,
+  );
+
+  /// No description provided for @flashMathNoClearRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'No clear record'**
+  String get flashMathNoClearRecord;
+
+  /// No description provided for @flashMathShortestClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Fastest clear {seconds}s'**
+  String flashMathShortestClear(Object seconds);
+
+  /// No description provided for @flashMathSecondsPerQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds}s / question'**
+  String flashMathSecondsPerQuestion(Object seconds);
+
+  /// No description provided for @flashMathCorrectLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Correct'**
+  String get flashMathCorrectLabel;
+
+  /// No description provided for @flashMathIncorrectLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect'**
+  String get flashMathIncorrectLabel;
+
+  /// No description provided for @flashMathLevelConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'Level {level}'**
+  String flashMathLevelConfiguration(Object level);
+
+  /// No description provided for @flashMathCustomConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom · {digits} digits · {seconds}s · {count} terms · {operators}'**
+  String flashMathCustomConfiguration(
+    Object count,
+    Object digits,
+    Object operators,
+    Object seconds,
+  );
+
+  /// No description provided for @sorobanPracticeHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Abacus Practice History'**
+  String get sorobanPracticeHistory;
+
+  /// No description provided for @sorobanNoPracticeHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'No practice history yet.'**
+  String get sorobanNoPracticeHistory;
+
+  /// No description provided for @sorobanBestRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Best Record (Fastest)  {seconds} / question'**
+  String sorobanBestRecord(Object seconds);
+
+  /// No description provided for @sorobanQuestionsSolved.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} / question  {count} questions'**
+  String sorobanQuestionsSolved(Object count, Object seconds);
+
+  /// No description provided for @sorobanClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get sorobanClose;
+
+  /// No description provided for @sorobanPracticeProblem.
+  ///
+  /// In en, this message translates to:
+  /// **'Abacus Practice Problem'**
+  String get sorobanPracticeProblem;
+
+  /// No description provided for @sorobanDigits.
+  ///
+  /// In en, this message translates to:
+  /// **'Digits'**
+  String get sorobanDigits;
+
+  /// No description provided for @sorobanDigitsValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} digits'**
+  String sorobanDigitsValue(Object count);
+
+  /// No description provided for @sorobanSubtraction.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtraction'**
+  String get sorobanSubtraction;
+
+  /// No description provided for @sorobanMultiplication.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiplication'**
+  String get sorobanMultiplication;
+
+  /// No description provided for @sorobanDivision.
+  ///
+  /// In en, this message translates to:
+  /// **'Division'**
+  String get sorobanDivision;
+
+  /// No description provided for @sorobanContinueWithSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with These Settings'**
+  String get sorobanContinueWithSettings;
+
+  /// No description provided for @sorobanStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get sorobanStart;
+
+  /// No description provided for @sorobanReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get sorobanReset;
+
+  /// No description provided for @sorobanBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get sorobanBack;
+
+  /// No description provided for @sorobanCurrentValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Value'**
+  String get sorobanCurrentValue;
+
+  /// No description provided for @sorobanBestRecordShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Best Record  {seconds} / question'**
+  String sorobanBestRecordShort(Object seconds);
+
+  /// No description provided for @sorobanHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get sorobanHistory;
+
+  /// No description provided for @sorobanPractice.
+  ///
+  /// In en, this message translates to:
+  /// **'Practice Problems'**
+  String get sorobanPractice;
+
+  /// No description provided for @sorobanProblemSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Problem Settings'**
+  String get sorobanProblemSettings;
+
+  /// No description provided for @sorobanInitialNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting Number'**
+  String get sorobanInitialNumber;
+
+  /// No description provided for @sorobanPreviousNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous Number'**
+  String get sorobanPreviousNumber;
+
+  /// No description provided for @sorobanOperandNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Number to Operate'**
+  String get sorobanOperandNumber;
+
+  /// No description provided for @sorobanEnterInitialNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the starting number on the abacus'**
+  String get sorobanEnterInitialNumber;
+
+  /// No description provided for @sorobanSolvedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} solved'**
+  String sorobanSolvedCount(Object count);
+
+  /// No description provided for @sorobanElapsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Elapsed {seconds}'**
+  String sorobanElapsed(Object seconds);
+
+  /// No description provided for @sorobanAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Average {seconds} / question'**
+  String sorobanAverage(Object seconds);
+
+  /// No description provided for @sorobanAverageEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Average -- / question'**
+  String get sorobanAverageEmpty;
+
+  /// No description provided for @sorobanBest.
+  ///
+  /// In en, this message translates to:
+  /// **'Best {seconds} / question'**
+  String sorobanBest(Object seconds);
+
+  /// No description provided for @sorobanEndPractice.
+  ///
+  /// In en, this message translates to:
+  /// **'End Practice'**
+  String get sorobanEndPractice;
+
+  /// No description provided for @sorobanConfiguration.
+  ///
+  /// In en, this message translates to:
+  /// **'{digits} digits · {operators}'**
+  String sorobanConfiguration(Object digits, Object operators);
 }
 
 class _AppLocalizationsDelegate

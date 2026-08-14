@@ -7,6 +7,7 @@ class _CalculatorWidget extends StatefulWidget {
   final VoidCallback onDuplicate;
   final bool showToolbar;
   final bool showHeader;
+  final bool showCopySnackBar;
   final EdgeInsetsGeometry? contentPadding;
 
   /// AI生成中フラグが変化したときに通知するコールバック
@@ -34,6 +35,7 @@ class _CalculatorWidget extends StatefulWidget {
     required this.onDuplicate,
     this.showToolbar = true,
     this.showHeader = true,
+    this.showCopySnackBar = true,
     this.contentPadding,
     this.onAiGeneratingChanged,
     this.globalConstants = const [],
@@ -1043,7 +1045,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     if (calcIdx < 0 || calcIdx >= items.length) return;
     final copy = Map<String, dynamic>.from(items[calcIdx]);
     widget.clipboardNotifier?.value = copy;
-    if (mounted) {
+    if (widget.showCopySnackBar && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1068,7 +1070,7 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     final copy = Map<String, dynamic>.from(items[calcIdx]);
     widget.clipboardNotifier?.value = copy;
     _removeItem(calcIdx);
-    if (mounted) {
+    if (widget.showCopySnackBar && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -1128,6 +1130,11 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
       'displayOrder': order,
       'memos': _memos,
     });
+  }
+
+  void _pasteClipboardToEnd() {
+    if (widget.clipboardNotifier?.value == null) return;
+    _pasteFromClipboard(_items.length - 1);
   }
 
   /// 表示順上の from 位置を to 位置へ移動する（displayOrder のみ更新）
@@ -4242,17 +4249,16 @@ Example output:
 """;
 
     try {
-        final shouldExtractImageCounts =
-          result.imageBytes != null &&
-          isImageCategoryCountRequest(instruction);
-        final imageCounts = !shouldExtractImageCounts
+      final shouldExtractImageCounts =
+          result.imageBytes != null && isImageCategoryCountRequest(instruction);
+      final imageCounts = !shouldExtractImageCounts
           ? null
           : await ai.countInImage(
-            result.imageBytes!,
-            instruction,
-            requireCategories: true,
-          );
-        if (shouldExtractImageCounts &&
+              result.imageBytes!,
+              instruction,
+              requireCategories: true,
+            );
+      if (shouldExtractImageCounts &&
           (imageCounts == null || imageCounts.items.isEmpty)) {
         throw Exception('画像から対象の個数を取得できませんでした。');
       }

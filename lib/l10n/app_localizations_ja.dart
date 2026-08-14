@@ -925,6 +925,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get clipboardBarClear => 'クリア';
 
   @override
+  String get pasteToThisSheet => 'このシートにペースト';
+
+  @override
+  String get selectPasteSheet => 'ペースト先のシートを選択';
+
+  @override
   String get aiModelLabel => 'AIモデル';
 
   @override
@@ -1698,6 +1704,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get graphTooltipShowLinked => 'リンク済みのみ表示中';
 
   @override
+  String get graphLinkedOnlyOption => 'リンクされた式のみ表示';
+
+  @override
   String get graphTooltipFit => '画面にフィット';
 
   @override
@@ -2147,7 +2156,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get applyToAllWithLinks => '数値を他の全ての行に適用';
 
   @override
-  String get add => 'Add';
+  String get add => '追加';
 
   @override
   String get addRow => '行追加';
@@ -2660,6 +2669,51 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scanOnOtherDevice => '別の端末でスキャンしてシートを取り込めます';
 
   @override
+  String qrScanProgressTitle(Object collected, Object total) {
+    return 'QRスキャン ($collected/$total枚)';
+  }
+
+  @override
+  String importedSheetsCount(Object count) {
+    return '$count件取り込み済み';
+  }
+
+  @override
+  String doneWithCount(Object count) {
+    return '完了 ($count件)';
+  }
+
+  @override
+  String linkedQrScanProgress(Object collected, Object total) {
+    return '連結QR: $collected/$total枚スキャン済み';
+  }
+
+  @override
+  String remainingQrScan(Object count) {
+    return '残り $count枚のQRをスキャンしてください';
+  }
+
+  @override
+  String get continueQrScan => '続けて次のシートのQRをスキャンできます';
+
+  @override
+  String get alignSheetQr => 'シートのQRコードをフレーム内に合わせてください';
+
+  @override
+  String get loadFromFile => 'ファイルから読み込み';
+
+  @override
+  String imagePageSwipe(Object current, Object total) {
+    return '$current / $total  ← スワイプで切り替え →';
+  }
+
+  @override
+  String get analyzingQrCode => 'QRコードを解析中...';
+
+  @override
+  String get readQrCode => 'QRを読み込む';
+
+  @override
   String linkedQrPage(Object page, Object total) {
     return '連結QR: $page/$total枚目';
   }
@@ -2765,4 +2819,362 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aiCountHistoryDetail => 'カウント履歴詳細';
+
+  @override
+  String get flashMathTitle => 'フラッシュ暗算';
+
+  @override
+  String get toolsTitle => 'ツール';
+
+  @override
+  String get flashMathToolDescription => '数字を見て答えるトレーニングゲーム';
+
+  @override
+  String get sorobanTitle => 'そろばんシミュレーター';
+
+  @override
+  String get sorobanDescription => 'そろばんを動かして計算を練習';
+
+  @override
+  String get flashMathStats => '統計';
+
+  @override
+  String get flashMathTodayStats => '今日の実績';
+
+  @override
+  String get flashMathPlay => 'プレイ';
+
+  @override
+  String get flashMathAccuracy => '正答率';
+
+  @override
+  String get flashMathStreak => '連続正解';
+
+  @override
+  String flashMathPlayCount(Object count) {
+    return '$count回';
+  }
+
+  @override
+  String get flashMathNoClearedLevel => '現在クリア済みのレベルはありません';
+
+  @override
+  String flashMathLevelCleared(Object level) {
+    return 'Lv.$level クリア済み';
+  }
+
+  @override
+  String get flashMathCustomStart => 'カスタム設定で始める';
+
+  @override
+  String get flashMathStart => 'ゲームをスタート';
+
+  @override
+  String get flashMathHeroTitle => '一瞬の数字をつかむ';
+
+  @override
+  String get flashMathHeroDescription => '集中力と暗算力を毎日トレーニング';
+
+  @override
+  String get flashMathGameSettings => 'ゲーム設定';
+
+  @override
+  String get flashMathLevelDown => 'レベルを下げる';
+
+  @override
+  String get flashMathLevelUp => 'レベルを上げる';
+
+  @override
+  String get flashMathLevel => 'レベル';
+
+  @override
+  String get flashMathDigits => '桁数';
+
+  @override
+  String flashMathDigitsValue(Object count) {
+    return '$count桁';
+  }
+
+  @override
+  String get flashMathDisplaySpeed => '表示速度';
+
+  @override
+  String flashMathSecondsValue(Object seconds) {
+    return '$seconds秒';
+  }
+
+  @override
+  String get flashMathCalculationCount => '計算数';
+
+  @override
+  String flashMathTermValue(Object count) {
+    return '$count個';
+  }
+
+  @override
+  String get flashMathAddMultiplication => '掛け算を加える';
+
+  @override
+  String get flashMathDifficultyIncreases => '難易度が上がります';
+
+  @override
+  String get flashMathAddDivision => '割り算を加える';
+
+  @override
+  String get flashMathDecimalAnswers => '小数の答えも出題されます';
+
+  @override
+  String get flashMathAddSubtraction => '引き算を加える';
+
+  @override
+  String get flashMathNegativeAnswers => '負の答えが出題される場合があります';
+
+  @override
+  String get flashMathCustomSettings => 'カスタム設定';
+
+  @override
+  String get flashMathCustomSession => 'カスタム';
+
+  @override
+  String get flashMathStartSignal => 'スタート';
+
+  @override
+  String flashMathLevelValue(Object level) {
+    return 'レベル $level';
+  }
+
+  @override
+  String get flashMathCustomSettingsDescription => '桁数・表示速度・計算数を自由に設定';
+
+  @override
+  String get flashMathCountdownStarting => 'まもなくスタート';
+
+  @override
+  String get flashMathAnswerInput => '答えを入力';
+
+  @override
+  String get flashMathAnswerQuestion => 'いくつになりましたか？';
+
+  @override
+  String get flashMathAnswerHint => '答え';
+
+  @override
+  String get flashMathCheckAnswer => '答え合わせ';
+
+  @override
+  String get flashMathRoundResult => 'ラウンド結果';
+
+  @override
+  String get flashMathCorrect => '正解！';
+
+  @override
+  String get flashMathAlmost => 'あと一歩';
+
+  @override
+  String flashMathCorrectAnswer(Object answer) {
+    return '正解  $answer';
+  }
+
+  @override
+  String flashMathYourAnswer(Object answer) {
+    return 'あなたの答え  $answer';
+  }
+
+  @override
+  String get flashMathPlayAgain => 'もう一度';
+
+  @override
+  String get flashMathBackToSettings => '設定に戻る';
+
+  @override
+  String get flashMathAnswerRequired => '答えを入力してください';
+
+  @override
+  String get flashMathCustomStartWithSettings => 'この設定で始める';
+
+  @override
+  String get flashMathDetailedStats => '詳しい統計';
+
+  @override
+  String get flashMathTotalPlays => '総プレイ';
+
+  @override
+  String get flashMathAverageAnswer => '平均回答';
+
+  @override
+  String get flashMathHighestLevel => '最高レベル';
+
+  @override
+  String get flashMathLongestStreak => '最長連続';
+
+  @override
+  String flashMathQuestionCount(Object count) {
+    return '$count問';
+  }
+
+  @override
+  String get flashMathStatsBySetting => '設定別成績';
+
+  @override
+  String get flashMathStatsEmpty => 'プレイするとレベル別の成績が表示されます';
+
+  @override
+  String get flashMathPlayHistory => 'プレイ履歴（最新50件）';
+
+  @override
+  String get flashMathNoPlayHistory => 'まだプレイ履歴がありません';
+
+  @override
+  String flashMathCorrectIncorrectStats(
+    Object accuracy,
+    Object correct,
+    Object incorrect,
+  ) {
+    return '正解 $correct回  /  不正解 $incorrect回  /  正答率 $accuracy%';
+  }
+
+  @override
+  String get flashMathNoClearRecord => 'クリア記録なし';
+
+  @override
+  String flashMathShortestClear(Object seconds) {
+    return '最短クリア $seconds秒';
+  }
+
+  @override
+  String flashMathSecondsPerQuestion(Object seconds) {
+    return '$seconds秒 /問';
+  }
+
+  @override
+  String get flashMathCorrectLabel => '正解';
+
+  @override
+  String get flashMathIncorrectLabel => '不正解';
+
+  @override
+  String flashMathLevelConfiguration(Object level) {
+    return 'レベル $level';
+  }
+
+  @override
+  String flashMathCustomConfiguration(
+    Object count,
+    Object digits,
+    Object operators,
+    Object seconds,
+  ) {
+    return 'カスタム・$digits桁・$seconds秒・$count個・$operators';
+  }
+
+  @override
+  String get sorobanPracticeHistory => 'そろばん練習履歴';
+
+  @override
+  String get sorobanNoPracticeHistory => 'まだ練習履歴がありません。';
+
+  @override
+  String sorobanBestRecord(Object seconds) {
+    return '最高記録（最速）  $seconds /問';
+  }
+
+  @override
+  String sorobanQuestionsSolved(Object count, Object seconds) {
+    return '$seconds /問  $count問';
+  }
+
+  @override
+  String get sorobanClose => '閉じる';
+
+  @override
+  String get sorobanPracticeProblem => 'そろばん練習問題';
+
+  @override
+  String get sorobanDigits => '桁数';
+
+  @override
+  String sorobanDigitsValue(Object count) {
+    return '$count桁';
+  }
+
+  @override
+  String get sorobanSubtraction => '引き算';
+
+  @override
+  String get sorobanMultiplication => '掛け算';
+
+  @override
+  String get sorobanDivision => '割り算';
+
+  @override
+  String get sorobanContinueWithSettings => 'この設定で続ける';
+
+  @override
+  String get sorobanStart => '開始';
+
+  @override
+  String get sorobanReset => 'リセット';
+
+  @override
+  String get sorobanBack => '戻る';
+
+  @override
+  String get sorobanCurrentValue => '現在の値';
+
+  @override
+  String sorobanBestRecordShort(Object seconds) {
+    return '最高記録  $seconds /問';
+  }
+
+  @override
+  String get sorobanHistory => '履歴';
+
+  @override
+  String get sorobanPractice => '練習問題';
+
+  @override
+  String get sorobanProblemSettings => '問題設定';
+
+  @override
+  String get sorobanInitialNumber => '最初の数字';
+
+  @override
+  String get sorobanPreviousNumber => '前の数字';
+
+  @override
+  String get sorobanOperandNumber => '演算する数字';
+
+  @override
+  String get sorobanEnterInitialNumber => '最初の数字をそろばんで入力';
+
+  @override
+  String sorobanSolvedCount(Object count) {
+    return '$count 問正解';
+  }
+
+  @override
+  String sorobanElapsed(Object seconds) {
+    return '経過 $seconds';
+  }
+
+  @override
+  String sorobanAverage(Object seconds) {
+    return '平均 $seconds /問';
+  }
+
+  @override
+  String get sorobanAverageEmpty => '平均 -- /問';
+
+  @override
+  String sorobanBest(Object seconds) {
+    return '最高 $seconds /問';
+  }
+
+  @override
+  String get sorobanEndPractice => '練習を終了';
+
+  @override
+  String sorobanConfiguration(Object digits, Object operators) {
+    return '$digits桁・$operators';
+  }
 }

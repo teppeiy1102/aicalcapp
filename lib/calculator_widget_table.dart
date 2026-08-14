@@ -3,7 +3,9 @@ part of 'widget_page.dart';
 extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
   Widget _buildTableModeWidget() {
     final items = _items;
-    final title = widget.config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
+    final title =
+        widget.config.data['title'] as String? ??
+        AppLocalizations.of(context)!.standardCalc;
     final bgColorValue = widget.config.data['bgColor'] as int?;
     final isDark = bgColorValue != null
         ? _kNoteColorPresets
@@ -95,12 +97,23 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                 }
               }
               if (logic != null) {
-                final isTrue = _CalculatorWidgetState._evalLogicItem(logic, resolveLink);
+                final isTrue = _CalculatorWidgetState._evalLogicItem(
+                  logic,
+                  resolveLink,
+                );
                 final trueVal = (source['trueLink'] as bool? ?? false)
-                    ? resolveLink(source['trueLinkSource'] as Map<String, dynamic>?, true, 1.0)
+                    ? resolveLink(
+                        source['trueLinkSource'] as Map<String, dynamic>?,
+                        true,
+                        1.0,
+                      )
                     : (source['trueVal'] as num? ?? 1.0).toDouble();
                 final falseVal = (source['falseLink'] as bool? ?? false)
-                    ? resolveLink(source['falseLinkSource'] as Map<String, dynamic>?, true, 0.0)
+                    ? resolveLink(
+                        source['falseLinkSource'] as Map<String, dynamic>?,
+                        true,
+                        0.0,
+                      )
                     : (source['falseVal'] as num? ?? 0.0).toDouble();
                 return isTrue ? trueVal : falseVal;
               }
@@ -207,8 +220,10 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
       final sTarget = source['target'] as String? ?? 'result';
       if (sRowIdx < 0 || sRowIdx >= items.length) return fallback;
       if (sTarget == 'result') return finalResults[sRowIdx];
-      if (sTarget == 'input') return (items[sRowIdx]['input'] as num? ?? 0.0).toDouble();
-      if (sTarget == 'operand') return (items[sRowIdx]['operand'] as num? ?? 0.0).toDouble();
+      if (sTarget == 'input')
+        return (items[sRowIdx]['input'] as num? ?? 0.0).toDouble();
+      if (sTarget == 'operand')
+        return (items[sRowIdx]['operand'] as num? ?? 0.0).toDouble();
       return fallback;
     }
 
@@ -320,7 +335,15 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
     Color colColor(String key) => key == 'name' ? Colors.black : Colors.black87;
 
     // セルの表示文字列（リンク解決済み値・変換オプション表示対応）
-    List<InlineSpan> cellValueSpans(String key, int rowIdx, bool isRes, bool isEditable, Color fgColor, Color subColor, Color c) {
+    List<InlineSpan> cellValueSpans(
+      String key,
+      int rowIdx,
+      bool isRes,
+      bool isEditable,
+      Color fgColor,
+      Color subColor,
+      Color c,
+    ) {
       final item = items[rowIdx];
       final resolved = resolvedRows[rowIdx];
       final precision = item['precision'] as int? ?? 2;
@@ -329,7 +352,7 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
       final unitResult = item['unitResult'] as String? ?? '';
 
       final textColor = isRes ? fgColor : (isDark ? Colors.white : c);
-      final fontSize = isRes ? 13.0 : 12.0;
+      final fontSize = isRes ? 14.0 : 13.0;
       final fontWeight = isRes ? FontWeight.w700 : FontWeight.w500;
 
       final valStyle = TextStyle(
@@ -352,7 +375,8 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
         ];
       }
 
-      if (key == 'name') return [TextSpan(text: item['name'] as String? ?? '', style: valStyle)];
+      if (key == 'name')
+        return [TextSpan(text: item['name'] as String? ?? '', style: valStyle)];
       if (key == 'input') {
         final v = resolved['input'] as double;
         final transform = item['inputTransform'] as String?;
@@ -462,7 +486,9 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
           if (visibleColumns.isEmpty || items.isEmpty)
             Center(
               child: Text(
-                items.isEmpty ? '計算式がありません' : AppLocalizations.of(context)!.noColumnsToDisplay,
+                items.isEmpty
+                    ? '計算式がありません'
+                    : AppLocalizations.of(context)!.noColumnsToDisplay,
                 style: TextStyle(
                   color: isDark ? Colors.white24 : Colors.black26,
                   fontFamily: 'ZenOldMincho',
@@ -574,7 +600,15 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                           final isLastCol = col == visibleColumns.last;
                           final isRes = isResultCol(key);
                           final editable = !isRes;
-                          final spans = cellValueSpans(key, rowIdx, isRes, editable, fgColor, subColor, c);
+                          final spans = cellValueSpans(
+                            key,
+                            rowIdx,
+                            isRes,
+                            editable,
+                            fgColor,
+                            subColor,
+                            c,
+                          );
                           return GestureDetector(
                             onTap: isRes
                                 ? () => _showTableItemEditSheet(
@@ -660,7 +694,10 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                   logicItem,
                   resolveForLogicDisplay,
                 );
-                final isTrue = _CalculatorWidgetState._evalLogicItem(logicItem, resolveForLogicDisplay);
+                final isTrue = _CalculatorWidgetState._evalLogicItem(
+                  logicItem,
+                  resolveForLogicDisplay,
+                );
                 final logicName = logicItem['name'] as String? ?? '';
                 final itemId = logicItem['id'] as String? ?? '';
                 return GestureDetector(
@@ -670,37 +707,59 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                       builder: (ctx) => _LogicItemEditDialog(
                         initial: logicItem,
                         resolver: resolveForLogicDisplay,
-                        onPickLinkSource: () => _showLinkSourcePicker(excludeRowIdx: null),
+                        onPickLinkSource: () =>
+                            _showLinkSourcePicker(excludeRowIdx: null),
                         getSourceRowName: (source) {
-                          if (source == null) return AppLocalizations.of(context)!.calcLink;
+                          if (source == null)
+                            return AppLocalizations.of(context)!.calcLink;
                           final sheetId = source['sheetId'] as String?;
                           final rowIdx = source['rowIdx'] as int? ?? 0;
-                          final target = source['target'] as String? ?? 'result';
+                          final target =
+                              source['target'] as String? ?? 'result';
                           final effectiveId = sheetId ?? widget.config.id;
                           final srcConfig = widget.allConfigs.firstWhere(
                             (c) => c.id == effectiveId,
                             orElse: () => widget.config,
                           );
-                          final srcItems = (srcConfig.data['items'] as List? ?? [])
-                              .map((e) => Map<String, dynamic>.from(e as Map))
-                              .toList();
-                          if (rowIdx < 0 || rowIdx >= srcItems.length) return AppLocalizations.of(context)!.calcLink;
+                          final srcItems =
+                              (srcConfig.data['items'] as List? ?? [])
+                                  .map(
+                                    (e) => Map<String, dynamic>.from(e as Map),
+                                  )
+                                  .toList();
+                          if (rowIdx < 0 || rowIdx >= srcItems.length)
+                            return AppLocalizations.of(context)!.calcLink;
                           final item = srcItems[rowIdx];
-                          final rowName = item['name'] as String? ?? AppLocalizations.of(context)!.defaultCalcName(rowIdx + 1);
+                          final rowName =
+                              item['name'] as String? ??
+                              AppLocalizations.of(
+                                context,
+                              )!.defaultCalcName(rowIdx + 1);
                           String targetLabel;
                           if (target == 'input') {
-                            targetLabel = AppLocalizations.of(context)!.calcTerm1;
+                            targetLabel = AppLocalizations.of(
+                              context,
+                            )!.calcTerm1;
                           } else if (target == 'operand') {
-                            targetLabel = AppLocalizations.of(context)!.calcTerm2;
+                            targetLabel = AppLocalizations.of(
+                              context,
+                            )!.calcTerm2;
                           } else if (target.startsWith('other_')) {
                             final oi = int.tryParse(target.split('_')[1]) ?? 0;
                             targetLabel = '項${oi + 3}';
                           } else {
-                            targetLabel = AppLocalizations.of(context)!.calcAnswer;
+                            targetLabel = AppLocalizations.of(
+                              context,
+                            )!.calcAnswer;
                           }
-                          final v = _resolveExternalValue(effectiveId, rowIdx, target);
+                          final v = _resolveExternalValue(
+                            effectiveId,
+                            rowIdx,
+                            target,
+                          );
                           final precision = item['precision'] as int? ?? 2;
-                          final valStr = (v == v.truncateToDouble() && v.abs() < 1e12)
+                          final valStr =
+                              (v == v.truncateToDouble() && v.abs() < 1e12)
                               ? _addCommas(v.toStringAsFixed(0))
                               : _addCommas(v.toStringAsFixed(precision));
                           return '$rowName / $targetLabel: $valStr';
@@ -772,7 +831,9 @@ extension _CalculatorWidgetStateTable on _CalculatorWidgetState {
                             ),
                           ),
                           child: Text(
-                            isTrue ? AppLocalizations.of(context)!.trueLabel : AppLocalizations.of(context)!.falseLabel,
+                            isTrue
+                                ? AppLocalizations.of(context)!.trueLabel
+                                : AppLocalizations.of(context)!.falseLabel,
                             style: TextStyle(
                               color: isTrue
                                   ? (isDark

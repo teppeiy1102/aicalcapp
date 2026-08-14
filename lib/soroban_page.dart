@@ -45,12 +45,12 @@ class _SorobanPracticeRecord {
     );
   }
 
-  String get configurationLabel {
+  String configurationLabel(AppLocalizations l10n) {
     final operators = <String>['+'];
     if (subtraction) operators.add('-');
     if (multiplication) operators.add('×');
     if (division) operators.add('÷');
-    return '${digits}桁・${operators.join()}';
+    return l10n.sorobanConfiguration(digits, operators.join());
   }
 }
 
@@ -276,7 +276,7 @@ class _SorobanPageState extends State<SorobanPage>
     _practiceRecords = _SorobanPracticeStore.instance.records;
   }
 
-  String _formatSeconds(double seconds) => '${seconds.toStringAsFixed(1)}秒';
+  String _formatSeconds(double seconds) => seconds.toStringAsFixed(1);
 
   String _formatPracticeDate(DateTime date) {
     final local = date.toLocal();
@@ -285,6 +285,7 @@ class _SorobanPageState extends State<SorobanPage>
   }
 
   Future<void> _showPracticeHistory() async {
+    final l10n = AppLocalizations.of(context)!;
     await _loadPracticeHistory();
     if (!mounted) return;
     final records = _practiceRecords;
@@ -294,17 +295,19 @@ class _SorobanPageState extends State<SorobanPage>
       builder: (context) => AlertDialog(
         contentPadding: EdgeInsets.fromLTRB(24, 0, 24, 0),
         insetPadding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-        title: const Text('そろばん練習履歴'),
+        title: Text(l10n.sorobanPracticeHistory),
         content: SizedBox(
           width: 420,
           child: records.isEmpty
-              ? const Text('まだ練習履歴がありません。')
+              ? Text(l10n.sorobanNoPracticeHistory)
               : Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      '最高記録（最速）  ${_formatSeconds(best!.averageSeconds)} /問',
+                      l10n.sorobanBestRecord(
+                        _formatSeconds(best!.averageSeconds),
+                      ),
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 12),
@@ -319,11 +322,13 @@ class _SorobanPageState extends State<SorobanPage>
                           return ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(
-                              '${_formatSeconds(record.averageSeconds)} /問  '
-                              '${record.solvedCount}問',
+                              l10n.sorobanQuestionsSolved(
+                                _formatSeconds(record.averageSeconds),
+                                record.solvedCount,
+                              ),
                             ),
                             subtitle: Text(
-                              '${record.configurationLabel}  '
+                              '${record.configurationLabel(l10n)}  '
                               '${_formatPracticeDate(record.playedAt)}',
                             ),
                           );
@@ -332,7 +337,7 @@ class _SorobanPageState extends State<SorobanPage>
                     ),
  TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('閉じる'),
+            child: Text(l10n.sorobanClose),
           ),
                   ],
                 ),
@@ -430,6 +435,7 @@ class _SorobanPageState extends State<SorobanPage>
   }
 
   Future<void> _showPracticeSettings() async {
+    final l10n = AppLocalizations.of(context)!;
     var digits = _practiceDigits;
     var subtraction = _practiceSubtraction;
     var multiplication = _practiceMultiplication;
@@ -439,15 +445,15 @@ class _SorobanPageState extends State<SorobanPage>
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            title: const Text('そろばん練習問題'),
+            title: Text(l10n.sorobanPracticeProblem),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     children: [
-                      const Expanded(child: Text('桁数')),
-                      Text('$digits 桁'),
+                      Expanded(child: Text(l10n.sorobanDigits)),
+                      Text(l10n.sorobanDigitsValue(digits)),
                     ],
                   ),
                   Slider(
@@ -455,27 +461,27 @@ class _SorobanPageState extends State<SorobanPage>
                     min: 1,
                     max: _columnCount.toDouble() - 2,
                     divisions: _columnCount - 1,
-                    label: '$digits 桁',
+                    label: l10n.sorobanDigitsValue(digits),
                     onChanged: (value) =>
                         setDialogState(() => digits = value.round()),
                   ),
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('引き算'),
+                    title: Text(l10n.sorobanSubtraction),
                     value: subtraction,
                     onChanged: (value) =>
                         setDialogState(() => subtraction = value),
                   ),
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('掛け算'),
+                    title: Text(l10n.sorobanMultiplication),
                     value: multiplication,
                     onChanged: (value) =>
                         setDialogState(() => multiplication = value),
                   ),
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('割り算'),
+                    title: Text(l10n.sorobanDivision),
                     value: division,
                     onChanged: (value) =>
                         setDialogState(() => division = value),
@@ -486,7 +492,7 @@ class _SorobanPageState extends State<SorobanPage>
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('キャンセル'),
+                child: Text(AppLocalizations.of(context)!.cancel),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(
@@ -498,7 +504,11 @@ class _SorobanPageState extends State<SorobanPage>
                     division: division,
                   ),
                 ),
-                child: Text(_practiceActive ? 'この設定で続ける' : '開始'),
+                child: Text(
+                  _practiceActive
+                      ? l10n.sorobanContinueWithSettings
+                      : l10n.sorobanStart,
+                ),
               ),
             ],
           );
@@ -616,6 +626,7 @@ class _SorobanPageState extends State<SorobanPage>
   Widget _buildValuePanel() {
     final currentValue = _formatValue(_value);
     final best = _bestPracticeRecord;
+    final l10n = AppLocalizations.of(context)!;
     if (_practiceActive) return _buildPracticePanel();
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -624,7 +635,7 @@ class _SorobanPageState extends State<SorobanPage>
         Row(
           children: [
             IconButton(
-              tooltip: 'リセット',
+              tooltip: l10n.sorobanReset,
               onPressed: _reset,
               icon: const Icon(Icons.refresh_rounded, size: 36),
               color: const Color(0xFFE8D8B9),
@@ -639,7 +650,7 @@ class _SorobanPageState extends State<SorobanPage>
             OutlinedButton.icon(
               onPressed: _exitSimulator,
               icon: const Icon(Icons.arrow_back_rounded, size: 18),
-              label: const Text('back'),
+              label: Text(l10n.sorobanBack),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFFB8C6C0),
                 side: const BorderSide(color: Color(0xFF53615F)),
@@ -649,8 +660,8 @@ class _SorobanPageState extends State<SorobanPage>
         ),
 
         const Spacer(),
-        const Text(
-          '現在の値',
+        Text(
+          l10n.sorobanCurrentValue,
           textAlign: TextAlign.center,
           style: TextStyle(color: Color(0xFF9EB1A7), fontSize: 13),
         ),
@@ -682,7 +693,9 @@ class _SorobanPageState extends State<SorobanPage>
         const Spacer(),
         if (best != null) ...[
           Text(
-            '最高記録  ${_formatSeconds(best.averageSeconds)} /問',
+            l10n.sorobanBestRecordShort(
+              _formatSeconds(best.averageSeconds),
+            ),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xFFFFD98A),
@@ -695,7 +708,7 @@ class _SorobanPageState extends State<SorobanPage>
         OutlinedButton.icon(
           onPressed: _showPracticeHistory,
           icon: const Icon(Icons.history_rounded, size: 18),
-          label: const Text('履歴'),
+          label: Text(l10n.sorobanHistory),
           style: OutlinedButton.styleFrom(
             foregroundColor: const Color(0xFFB8C6C0),
             side: const BorderSide(color: Color(0xFF53615F)),
@@ -705,7 +718,7 @@ class _SorobanPageState extends State<SorobanPage>
         OutlinedButton.icon(
           onPressed: _showPracticeSettings,
           icon: const Icon(Icons.school_rounded, size: 18),
-          label: const Text('練習問題'),
+          label: Text(l10n.sorobanPractice),
           style: OutlinedButton.styleFrom(
             foregroundColor: const Color(0xFFFFD98A),
             side: const BorderSide(color: Color(0xFF8B6B43)),
@@ -716,6 +729,7 @@ class _SorobanPageState extends State<SorobanPage>
   }
 
   Widget _buildPracticePanel() {
+    final l10n = AppLocalizations.of(context)!;
     final question = _practiceQuestion;
     final isInitialQuestion = question == null || question.previous == null;
     return AnimatedBuilder(
@@ -759,7 +773,7 @@ class _SorobanPageState extends State<SorobanPage>
           Row(
             children: [
               IconButton(
-                tooltip: '問題設定',
+                tooltip: l10n.sorobanProblemSettings,
                 onPressed: _showPracticeSettings,
                 icon: const Icon(Icons.tune_rounded),
                 color: const Color(0xFFE8D8B9),
@@ -769,7 +783,7 @@ class _SorobanPageState extends State<SorobanPage>
               OutlinedButton.icon(
                 onPressed: _exitSimulator,
                 icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                label: const Text('back'),
+                label: Text(l10n.sorobanBack),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFB8C6C0),
                   side: const BorderSide(color: Color(0xFF53615F)),
@@ -780,7 +794,9 @@ class _SorobanPageState extends State<SorobanPage>
 
           Spacer(),
           Text(
-            isInitialQuestion ? '最初の数字' : '前の数字',
+            isInitialQuestion
+              ? l10n.sorobanInitialNumber
+              : l10n.sorobanPreviousNumber,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: isInitialQuestion
@@ -817,8 +833,8 @@ class _SorobanPageState extends State<SorobanPage>
           ),
           if (!isInitialQuestion) ...[
             const Spacer(),
-            const Text(
-              '演算する数字',
+            Text(
+              l10n.sorobanOperandNumber,
               textAlign: TextAlign.center,
               style: TextStyle(color: Color(0xFF9EB1A7), fontSize: 12),
             ),
@@ -839,9 +855,9 @@ class _SorobanPageState extends State<SorobanPage>
           ],
           Text(
             _practiceLastCorrect == true
-                ? 'OK！'
+              ? l10n.ok
                 : isInitialQuestion
-                ? '最初の数字をそろばんで入力'
+                ? l10n.sorobanEnterInitialNumber
                 : '',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -856,20 +872,24 @@ class _SorobanPageState extends State<SorobanPage>
           ),
           const Spacer(),
           Text(
-            '$_practiceSolvedCount 問正解',
+            l10n.sorobanSolvedCount(_practiceSolvedCount),
             textAlign: TextAlign.center,
             style: const TextStyle(color: Color(0xFFE0A458), fontSize: 12),
           ),
           const SizedBox(height: 4),
           Text(
-            '経過 ${_formatSeconds(_practiceElapsedMs / 1000)}',
+            l10n.sorobanElapsed(
+              _formatSeconds(_practiceElapsedMs / 1000),
+            ),
             textAlign: TextAlign.center,
             style: const TextStyle(color: Color(0xFFC1CEC6), fontSize: 12),
           ),
           Text(
             _practiceSolvedCount == 0
-                ? '平均 -- /問'
-                : '平均 ${_formatSeconds(_practiceAverageSeconds)} /問',
+                ? l10n.sorobanAverageEmpty
+                : l10n.sorobanAverage(
+                    _formatSeconds(_practiceAverageSeconds),
+                  ),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xFFFFD98A),
@@ -879,7 +899,9 @@ class _SorobanPageState extends State<SorobanPage>
           ),
           if (_bestPracticeRecord != null)
             Text(
-              '最高 ${_formatSeconds(_bestPracticeRecord!.averageSeconds)} /問',
+              l10n.sorobanBest(
+                _formatSeconds(_bestPracticeRecord!.averageSeconds),
+              ),
               textAlign: TextAlign.center,
               style: const TextStyle(color: Color(0xFF9ED6A5), fontSize: 11),
             ),
@@ -887,7 +909,7 @@ class _SorobanPageState extends State<SorobanPage>
           OutlinedButton.icon(
             onPressed: _stopPractice,
             icon: const Icon(Icons.stop_circle_outlined, size: 18),
-            label: const Text('練習を終了'),
+            label: Text(l10n.sorobanEndPractice),
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFFFFD98A),
               side: const BorderSide(color: Color(0xFF8B6B43)),
@@ -1071,6 +1093,7 @@ class _SorobanPainter extends CustomPainter {
   final List<double> animationFromUpper;
   final List<double> animationFromLower;
   final double animationProgress;
+
   const _SorobanPainter({
     required this.digits,
     required this.animationFromUpper,

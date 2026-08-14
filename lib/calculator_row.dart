@@ -58,7 +58,8 @@ class _CalculatorRow extends StatelessWidget {
   final List<dynamic> logicItems;
   final void Function(Map<String, dynamic> newItem)? onAddLogicItem;
   final Future<Map<String, dynamic>?> Function()? onPickLinkSource;
-  final void Function(double currentValue, void Function(double) onConfirm)? onValueTap;
+  final void Function(double currentValue, void Function(double) onConfirm)?
+  onValueTap;
 
   const _CalculatorRow({
     required this.name,
@@ -397,7 +398,7 @@ class _CalculatorRow extends StatelessWidget {
         builder: (context, setDialogState) {
           final l10n = AppLocalizations.of(context)!;
 
-  if (!_valSelected) {
+          if (!_valSelected) {
             _valSelected = true;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               nameCtrl.selection = TextSelection(
@@ -406,204 +407,210 @@ class _CalculatorRow extends StatelessWidget {
               );
             });
           }
-          
+
           return Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.editItemSettings,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 24,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.editItemSettings,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white54),
-                    onPressed: () => Navigator.pop(ctx),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildFieldLabel(l10n.editName),
-                      TextField(
-                        controller: nameCtrl,
-                        autofocus: true,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: InputDecoration(
-                          hintText: l10n.calcNameExample,
-                          hintStyle: const TextStyle(color: Colors.grey),
-                          border: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(16)),
-                        ),
-                      ),
-                      ),
-                      const SizedBox(height: 16),
-                      InkWell(
-                        onTap: () => setDialogState(
-                          () => _unitsExpanded = !_unitsExpanded,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.1),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white54),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildFieldLabel(l10n.editName),
+                        TextField(
+                          controller: nameCtrl,
+                          autofocus: true,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: l10n.calcNameExample,
+                            hintStyle: const TextStyle(color: Colors.grey),
+                            border: const OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(16),
+                              ),
                             ),
                           ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.straighten_outlined,
-                                size: 16,
-                                color: Colors.white54,
+                        ),
+                        const SizedBox(height: 16),
+                        InkWell(
+                          onTap: () => setDialogState(
+                            () => _unitsExpanded = !_unitsExpanded,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.1),
                               ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  l10n.unitSettings,
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 14,
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.straighten_outlined,
+                                  size: 16,
+                                  color: Colors.white54,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    l10n.unitSettings,
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Icon(
-                                _unitsExpanded
-                                    ? Icons.expand_less
-                                    : Icons.expand_more,
-                                color: Colors.white54,
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Container(
-                        constraints: BoxConstraints(minHeight:_unitsExpanded ? MediaQuery.of(context).size.height*0.3 : 0),
-                        height: _unitsExpanded ? 1 : 0,
-                        margin: const EdgeInsets.only(top: 8, bottom: 12),
-                        //color: Colors.white.withOpacity(0.1),
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: [
-                                                if (_unitsExpanded) ...[
-                          const SizedBox(height: 16),
-                          _buildUnitSection(
-                            context,
-                            l10n.unitForTerm1,
-                            unit1Ctrl,
-                            setDialogState,
-                            suggestedUnits: suggestedUnits,
-                          ),
-                          const SizedBox(height: 16),
-                          _buildUnitSection(
-                            context,
-                            l10n.unitForTerm2,
-                            unit2Ctrl,
-                            setDialogState,
-                            suggestedUnits: suggestedUnits,
-                          ),
-                          const SizedBox(height: 16),
-                          for (int i = 0; i < others.length; i++) ...[
-                            _buildUnitSection(
-                              context,
-                              l10n.unitForOtherTerm(i + 3),
-                              othersUnitsCtrls[i],
-                              setDialogState,
-                              suggestedUnits: suggestedUnits,
+                                Icon(
+                                  _unitsExpanded
+                                      ? Icons.expand_less
+                                      : Icons.expand_more,
+                                  color: Colors.white54,
+                                  size: 20,
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 16),
-                          ],
-                          _buildUnitSection(
-                            context,
-                            l10n.unitForResult,
-                            unitResCtrl,
-                            setDialogState,
-                            suggestedUnits: suggestedUnits,
-                          ),
-                                                ],
-                           
-                          
-                          
-                            ],
                           ),
                         ),
-                      ),
-                     const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                        Container(
+                          constraints: BoxConstraints(
+                            minHeight: _unitsExpanded
+                                ? MediaQuery.of(context).size.height * 0.3
+                                : 0,
+                          ),
+                          height: _unitsExpanded ? 1 : 0,
+                          margin: const EdgeInsets.only(top: 8, bottom: 12),
+                          //color: Colors.white.withOpacity(0.1),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              children: [
+                                if (_unitsExpanded) ...[
+                                  const SizedBox(height: 16),
+                                  _buildUnitSection(
+                                    context,
+                                    l10n.unitForTerm1,
+                                    unit1Ctrl,
+                                    setDialogState,
+                                    suggestedUnits: suggestedUnits,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildUnitSection(
+                                    context,
+                                    l10n.unitForTerm2,
+                                    unit2Ctrl,
+                                    setDialogState,
+                                    suggestedUnits: suggestedUnits,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  for (int i = 0; i < others.length; i++) ...[
+                                    _buildUnitSection(
+                                      context,
+                                      l10n.unitForOtherTerm(i + 3),
+                                      othersUnitsCtrls[i],
+                                      setDialogState,
+                                      suggestedUnits: suggestedUnits,
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                  _buildUnitSection(
+                                    context,
+                                    l10n.unitForResult,
+                                    unitResCtrl,
+                                    setDialogState,
+                                    suggestedUnits: suggestedUnits,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  onPressed: () {
-                    final map = {
-                      'name': nameCtrl.text,
-                      'input': input,
-                      'inputLink': inputLink,
-                      'inputLinkSource': inputLinkSource,
-                      'op': op,
-                      'operand': operand,
-                      'operandLink': operandLink,
-                      'operandLinkSource': operandLinkSource,
-                      'others': others.asMap().entries.map((entry) {
-                        final map = Map<String, dynamic>.from(
-                          entry.value as Map,
-                        );
-                        map['unit'] = othersUnitsCtrls[entry.key].text;
-                        return map;
-                      }).toList(),
-                      'brackets': brackets,
-                      'precision': precision,
-                      'unit1': unit1Ctrl.text,
-                      'unit2': unit2Ctrl.text,
-                      'unitResult': unitResCtrl.text,
-                    };
-                    onChanged(map);
-                    Navigator.pop(ctx);
-                  },
-                  child: Text(l10n.save, style: const TextStyle(fontSize: 16)),
                 ),
-              ),
-            ],
-          ),
-        );
-  },
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () {
+                      final map = {
+                        'name': nameCtrl.text,
+                        'input': input,
+                        'inputLink': inputLink,
+                        'inputLinkSource': inputLinkSource,
+                        'op': op,
+                        'operand': operand,
+                        'operandLink': operandLink,
+                        'operandLinkSource': operandLinkSource,
+                        'others': others.asMap().entries.map((entry) {
+                          final map = Map<String, dynamic>.from(
+                            entry.value as Map,
+                          );
+                          map['unit'] = othersUnitsCtrls[entry.key].text;
+                          return map;
+                        }).toList(),
+                        'brackets': brackets,
+                        'precision': precision,
+                        'unit1': unit1Ctrl.text,
+                        'unit2': unit2Ctrl.text,
+                        'unitResult': unitResCtrl.text,
+                      };
+                      onChanged(map);
+                      Navigator.pop(ctx);
+                    },
+                    child: Text(
+                      l10n.save,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -687,7 +694,10 @@ class _CalculatorRow extends StatelessWidget {
                 setDialogState(() => ctrl.text = u);
               }),
               icon: const Icon(Icons.category_outlined, size: 14),
-              label: Text(l10n.selectUnitFromCategory, style: const TextStyle(fontSize: 11)),
+              label: Text(
+                l10n.selectUnitFromCategory,
+                style: const TextStyle(fontSize: 11),
+              ),
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
                 minimumSize: Size.zero,
@@ -743,7 +753,7 @@ class _CalculatorRow extends StatelessWidget {
                       setDialogState(() => ctrl.text = u);
                     }),
                 child: Container(
-                 constraints: const BoxConstraints(maxWidth: 180),
+                  constraints: const BoxConstraints(maxWidth: 180),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 8,
@@ -837,7 +847,11 @@ class _CalculatorRow extends StatelessWidget {
   }
 
   /// リンク元チップのラベル（式名 / 項目: 値）
-  String _getLinkChipLabel(Map<String, dynamic>? source, int precision, BuildContext context) {
+  String _getLinkChipLabel(
+    Map<String, dynamic>? source,
+    int precision,
+    BuildContext context,
+  ) {
     final label = _getSourceLabel(source, context);
     final v = _resolveLinkVal(source);
     if (v == null) return label;
@@ -852,7 +866,9 @@ class _CalculatorRow extends StatelessWidget {
         final logic = _findLogicItem(logicId);
         if (logic != null) {
           final name = logic['name'] as String? ?? '';
-          return name.isNotEmpty ? '$name（論理式）' : AppLocalizations.of(context)!.formulaLogic;
+          return name.isNotEmpty
+              ? '$name（論理式）'
+              : AppLocalizations.of(context)!.formulaLogic;
         }
       }
       return AppLocalizations.of(context)!.formulaLogic;
@@ -860,7 +876,8 @@ class _CalculatorRow extends StatelessWidget {
     if (source['type'] == 'constant') {
       final ci = source['constIdx'] as int? ?? 0;
       final name = ci < constants.length
-          ? constants[ci]['name'] as String? ?? AppLocalizations.of(context)!.constant
+          ? constants[ci]['name'] as String? ??
+                AppLocalizations.of(context)!.constant
           : AppLocalizations.of(context)!.constant;
       return '$name（定数）';
     }
@@ -868,7 +885,8 @@ class _CalculatorRow extends StatelessWidget {
     final target = source['target'] as String? ?? 'result';
 
     final rowName = (rowIdx < allItems.length)
-        ? (allItems[rowIdx] as Map)['name'] as String? ?? AppLocalizations.of(context)!.defaultCalcName(rowIdx + 1)
+        ? (allItems[rowIdx] as Map)['name'] as String? ??
+              AppLocalizations.of(context)!.defaultCalcName(rowIdx + 1)
         : '計算 ${rowIdx + 1}';
 
     String fieldLabel = '';
@@ -894,7 +912,9 @@ class _CalculatorRow extends StatelessWidget {
         final logic = _findLogicItem(logicId);
         if (logic != null) {
           final name = logic['name'] as String? ?? '';
-          return name.isNotEmpty ? name : AppLocalizations.of(context)!.formulaLogic;
+          return name.isNotEmpty
+              ? name
+              : AppLocalizations.of(context)!.formulaLogic;
         }
       }
       return AppLocalizations.of(context)!.formulaLogic;
@@ -902,7 +922,8 @@ class _CalculatorRow extends StatelessWidget {
     if (source != null && source['type'] == 'constant') {
       final ci = source['constIdx'] as int? ?? 0;
       return ci < constants.length
-          ? constants[ci]['name'] as String? ?? AppLocalizations.of(context)!.constant
+          ? constants[ci]['name'] as String? ??
+                AppLocalizations.of(context)!.constant
           : AppLocalizations.of(context)!.constant;
     }
     if (source == null) {
@@ -912,7 +933,8 @@ class _CalculatorRow extends StatelessWidget {
     }
     final rowIdx = source['rowIdx'] as int? ?? 0;
     if (rowIdx < 0 || rowIdx >= allItems.length) return '';
-    return (allItems[rowIdx] as Map)['name'] as String? ?? AppLocalizations.of(context)!.defaultCalcName(rowIdx + 1);
+    return (allItems[rowIdx] as Map)['name'] as String? ??
+        AppLocalizations.of(context)!.defaultCalcName(rowIdx + 1);
   }
 
   String _getLogicLabel(dynamic logicId, BuildContext context) {
@@ -946,11 +968,11 @@ class _CalculatorRow extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.black,
         title: Text(
-                    AppLocalizations.of(context)!.linkSettingsWarning,
+          AppLocalizations.of(context)!.linkSettingsWarning,
           style: TextStyle(color: Colors.white, fontSize: 16),
         ),
         content: Text(
-                    AppLocalizations.of(context)!.linkSettingsWarningDesc,
+          AppLocalizations.of(context)!.linkSettingsWarningDesc,
           style: TextStyle(color: Colors.white70, fontSize: 14),
         ),
         actions: [
@@ -961,14 +983,14 @@ class _CalculatorRow extends StatelessWidget {
           TextButton(
             onPressed: () => Navigator.pop(ctx, 'skipLinked'),
             child: Text(
-                    AppLocalizations.of(context)!.skipLinkedApply,
+              AppLocalizations.of(context)!.skipLinkedApply,
               style: TextStyle(color: Colors.blueAccent),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, 'overwrite'),
             child: Text(
-                    AppLocalizations.of(context)!.overwriteApply,
+              AppLocalizations.of(context)!.overwriteApply,
               style: TextStyle(color: Colors.orangeAccent),
             ),
           ),
@@ -1357,106 +1379,96 @@ class _CalculatorRow extends StatelessWidget {
 
           final l10n = AppLocalizations.of(context)!;
           return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    left: 24,
-                    right: 24,
-                    top: 24,
-                    bottom: 8,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              l10n.valueSettings(_termLabel('input', context)),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      left: 24,
+                      right: 24,
+                      top: 24,
+                      bottom: 8,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                l10n.valueSettings(
+                                  _termLabel('input', context),
+                                ),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.close,
-                              color: Colors.white54,
-                            ),
-                            onPressed: () => Navigator.pop(ctx),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-l10n.numericValue,
-                        style: TextStyle(color: Colors.white54, fontSize: 12),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: ctrl,
-                              focusNode: valFocusNode,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                              inputFormatters: [_ThousandsFormatter()],
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
+                            IconButton(
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white54,
                               ),
-                              autofocus: true,
-                              readOnly: tempLink,
-                              decoration: InputDecoration(
-                                hintText: '0.0',
-                                hintStyle: const TextStyle(
-                                  color: Colors.white24,
+                              onPressed: () => Navigator.pop(ctx),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          l10n.numericValue,
+                          style: TextStyle(color: Colors.white54, fontSize: 12),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: ctrl,
+                                focusNode: valFocusNode,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                inputFormatters: [_ThousandsFormatter()],
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: tempLink
-                                        ? Colors.blueAccent.withOpacity(0.5)
-                                        : Colors.white24,
-                                    width: 1,
+                                autofocus: true,
+                                readOnly: tempLink,
+                                decoration: InputDecoration(
+                                  hintText: '0.0',
+                                  hintStyle: const TextStyle(
+                                    color: Colors.white24,
                                   ),
-                                ),
-                                suffix: tempLink
-                                    ? GestureDetector(
-                                        onTap: () => setSheetState(() {
-                                          tempLink = false;
-                                          // リンク元は保持して一時的に解除（解除ボタンで完全削除）
-                                        }),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                (tempLinkSource != null &&
-                                                            tempLinkSource!['type'] ==
-                                                                'logic'
-                                                        ? Colors
-                                                              .deepPurpleAccent
-                                                        : Colors.blueAccent)
-                                                    .withOpacity(0.2),
-                                            borderRadius: BorderRadius.circular(
-                                              6,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: tempLink
+                                          ? Colors.blueAccent.withOpacity(0.5)
+                                          : Colors.white24,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  suffix: tempLink
+                                      ? GestureDetector(
+                                          onTap: () => setSheetState(() {
+                                            tempLink = false;
+                                            // リンク元は保持して一時的に解除（解除ボタンで完全削除）
+                                          }),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
                                             ),
-                                            border: Border.all(
+                                            decoration: BoxDecoration(
                                               color:
                                                   (tempLinkSource != null &&
                                                               tempLinkSource!['type'] ==
@@ -1464,744 +1476,882 @@ l10n.numericValue,
                                                           ? Colors
                                                                 .deepPurpleAccent
                                                           : Colors.blueAccent)
-                                                      .withOpacity(0.5),
+                                                      .withOpacity(0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              border: Border.all(
+                                                color:
+                                                    (tempLinkSource != null &&
+                                                                tempLinkSource!['type'] ==
+                                                                    'logic'
+                                                            ? Colors
+                                                                  .deepPurpleAccent
+                                                            : Colors.blueAccent)
+                                                        .withOpacity(0.5),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              tempLinkSource != null &&
+                                                      tempLinkSource!['type'] ==
+                                                          'logic'
+                                                  ? l10n.logicLinking
+                                                  : l10n.linking,
+                                              style: TextStyle(
+                                                color:
+                                                    tempLinkSource != null &&
+                                                        tempLinkSource!['type'] ==
+                                                            'logic'
+                                                    ? Colors.purpleAccent
+                                                    : Colors.blueAccent,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
                                           ),
+                                        )
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildUnitSection(
+                          context,
+                          l10n.unitLabel,
+                          unitCtrl,
+                          setSheetState,
+                          suggestedUnits: suggestedUnits,
+                        ),
+                        const SizedBox(height: 4),
+                        GestureDetector(
+                          onTap: () => ProGuard.checkAndRun(
+                            context,
+                            () => setSheetState(
+                              () => tempOptionsExpanded = !tempOptionsExpanded,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                Text(
+                                  l10n.optionsLabel,
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const ProBadge(),
+                                const Spacer(),
+                                Icon(
+                                  tempOptionsExpanded
+                                      ? Icons.expand_less_rounded
+                                      : Icons.expand_more_rounded,
+                                  color: Colors.white38,
+                                  size: 20,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (tempOptionsExpanded) ...[
+                          const SizedBox(height: 8),
+                          // _editInputLinkSection
+                          CheckboxListTile(
+                            title: Text(
+                              l10n.applyToAllWithLinks,
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
+                            ),
+                            value: tempApplyToAll,
+                            onChanged: (v) => setSheetState(
+                              () => tempApplyToAll = v ?? false,
+                            ),
+                            contentPadding: EdgeInsets.zero,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            activeColor: Colors.blueAccent,
+                            dense: true,
+                          ),
+                          if (tempLink || tempLinkSource != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8, bottom: 4),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      (tempLinkSource != null &&
+                                          tempLinkSource!['type'] == 'logic'
+                                      ? Colors.purple.withOpacity(0.15)
+                                      : (tempLink
+                                                ? Colors.blueAccent
+                                                : Colors.orangeAccent)
+                                            .withOpacity(0.1)),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color:
+                                        (tempLinkSource != null &&
+                                            tempLinkSource!['type'] == 'logic'
+                                        ? Colors.purpleAccent.withOpacity(0.4)
+                                        : (tempLink
+                                                  ? Colors.blueAccent
+                                                  : Colors.orangeAccent)
+                                              .withOpacity(0.3)),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          tempLinkSource != null &&
+                                                  tempLinkSource!['type'] ==
+                                                      'logic'
+                                              ? Icons.rule_rounded
+                                              : (tempLink
+                                                    ? Icons.link
+                                                    : Icons.link_off),
+                                          size: 14,
+                                          color:
+                                              tempLinkSource != null &&
+                                                  tempLinkSource!['type'] ==
+                                                      'logic'
+                                              ? Colors.purpleAccent
+                                              : (tempLink
+                                                    ? Colors.blueAccent
+                                                    : Colors.orangeAccent),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
                                           child: Text(
                                             tempLinkSource != null &&
                                                     tempLinkSource!['type'] ==
                                                         'logic'
-                                                ? l10n.logicLinking
-                                                : l10n.linking,
+                                                ? l10n.logicLinkPrefix(
+                                                    _getLogicLabel(
+                                                      tempLinkSource!['logicId'],
+                                                      context,
+                                                    ),
+                                                  )
+                                                : (tempLink
+                                                      ? l10n.linkSourcePrefix(
+                                                          _getSourceLabel(
+                                                            tempLinkSource,
+                                                            context,
+                                                          ),
+                                                        )
+                                                      : l10n.previousLinkPrefix(
+                                                          _getSourceLabel(
+                                                            tempLinkSource,
+                                                            context,
+                                                          ),
+                                                        )),
                                             style: TextStyle(
                                               color:
                                                   tempLinkSource != null &&
                                                       tempLinkSource!['type'] ==
                                                           'logic'
                                                   ? Colors.purpleAccent
-                                                  : Colors.blueAccent,
+                                                  : (tempLink
+                                                        ? Colors.blueAccent
+                                                        : Colors.orangeAccent),
                                               fontSize: 12,
-                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
                                         ),
-                                      )
-                                    : null,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _buildUnitSection(
-                        context,
-                        l10n.unitLabel,
-                        unitCtrl,
-                        setSheetState,
-                        suggestedUnits: suggestedUnits,
-                      ),
-                      const SizedBox(height: 4),
-                      GestureDetector(
-                        onTap: () => ProGuard.checkAndRun(
-                          context,
-                          () => setSheetState(
-                            () => tempOptionsExpanded = !tempOptionsExpanded,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Row(
-                            children: [
-                              Text(
-                                l10n.optionsLabel,
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const ProBadge(),
-                              const Spacer(),
-                              Icon(
-                                tempOptionsExpanded
-                                    ? Icons.expand_less_rounded
-                                    : Icons.expand_more_rounded,
-                                color: Colors.white38,
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (tempOptionsExpanded) ...[
-                        const SizedBox(height: 8),
-                        // _editInputLinkSection
-                        CheckboxListTile(
-                          title: Text(
-l10n.applyToAllWithLinks,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                            ),
-                          ),
-                          value: tempApplyToAll,
-                          onChanged: (v) =>
-                              setSheetState(() => tempApplyToAll = v ?? false),
-                          contentPadding: EdgeInsets.zero,
-                          controlAffinity: ListTileControlAffinity.leading,
-                          activeColor: Colors.blueAccent,
-                          dense: true,
-                        ),
-                        if (tempLink || tempLinkSource != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8, bottom: 4),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    (tempLinkSource != null &&
-                                        tempLinkSource!['type'] == 'logic'
-                                    ? Colors.purple.withOpacity(0.15)
-                                    : (tempLink
-                                              ? Colors.blueAccent
-                                              : Colors.orangeAccent)
-                                          .withOpacity(0.1)),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color:
-                                      (tempLinkSource != null &&
-                                          tempLinkSource!['type'] == 'logic'
-                                      ? Colors.purpleAccent.withOpacity(0.4)
-                                      : (tempLink
-                                                ? Colors.blueAccent
-                                                : Colors.orangeAccent)
-                                            .withOpacity(0.3)),
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        tempLinkSource != null &&
-                                                tempLinkSource!['type'] ==
-                                                    'logic'
-                                            ? Icons.rule_rounded
-                                            : (tempLink
-                                                  ? Icons.link
-                                                  : Icons.link_off),
-                                        size: 14,
-                                        color:
-                                            tempLinkSource != null &&
-                                                tempLinkSource!['type'] ==
-                                                    'logic'
-                                            ? Colors.purpleAccent
-                                            : (tempLink
-                                                  ? Colors.blueAccent
-                                                  : Colors.orangeAccent),
+                                        if (tempLink)
+                                          GestureDetector(
+                                            onTap: () => setSheetState(() {
+                                              tempLink = false;
+                                              tempLinkSource = null;
+                                            }),
+                                            child: Text(
+                                              l10n.unlink,
+                                              style: TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          GestureDetector(
+                                            onTap: () => setSheetState(
+                                              () => tempLink = true,
+                                            ),
+                                            child: Text(
+                                              l10n.restoreLink,
+                                              style: TextStyle(
+                                                color: Colors.blueAccent,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    if (tempLinkSource != null &&
+                                        tempLinkSource!['type'] == 'logic') ...[
+                                      const SizedBox(height: 12),
+                                      const Divider(
+                                        color: Colors.white12,
+                                        height: 1,
                                       ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          tempLinkSource != null &&
-                                                  tempLinkSource!['type'] ==
-                                                      'logic'
-                                              ? l10n.logicLinkPrefix(_getLogicLabel(tempLinkSource!['logicId'], context))
-                                              : (tempLink
-                                                    ? l10n.linkSourcePrefix(_getSourceLabel(tempLinkSource, context))
-                                                    : l10n.previousLinkPrefix(_getSourceLabel(tempLinkSource, context))),
-                                          style: TextStyle(
-                                            color:
-                                                tempLinkSource != null &&
-                                                    tempLinkSource!['type'] ==
-                                                        'logic'
-                                                ? Colors.purpleAccent
-                                                : (tempLink
-                                                      ? Colors.blueAccent
-                                                      : Colors.orangeAccent),
-                                            fontSize: 12,
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  l10n.trueValue,
+                                                  style: TextStyle(
+                                                    color: Colors.white54,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: tempTrueLink
+                                                          ? Container(
+                                                              padding:
+                                                                  const EdgeInsets.symmetric(
+                                                                    horizontal:
+                                                                        8,
+                                                                    vertical: 6,
+                                                                  ),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors
+                                                                    .blueAccent
+                                                                    .withOpacity(
+                                                                      0.15,
+                                                                    ),
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      4,
+                                                                    ),
+                                                                border: Border.all(
+                                                                  color: Colors
+                                                                      .blueAccent
+                                                                      .withOpacity(
+                                                                        0.4,
+                                                                      ),
+                                                                ),
+                                                              ),
+                                                              child: Row(
+                                                                children: [
+                                                                  const Icon(
+                                                                    Icons
+                                                                        .link_rounded,
+                                                                    color: Colors
+                                                                        .blueAccent,
+                                                                    size: 14,
+                                                                  ),
+                                                                  const SizedBox(
+                                                                    width: 4,
+                                                                  ),
+                                                                  Expanded(
+                                                                    child: Text(
+                                                                      _getLinkChipLabel(
+                                                                        tempTrueLinkSource,
+                                                                        2,
+                                                                        context,
+                                                                      ),
+                                                                      maxLines:
+                                                                          2,
+                                                                      style: const TextStyle(
+                                                                        color: Colors
+                                                                            .blueAccent,
+                                                                        fontSize:
+                                                                            12,
+                                                                      ),
+                                                                      overflow:
+                                                                          TextOverflow
+                                                                              .ellipsis,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            )
+                                                          : TextField(
+                                                              controller:
+                                                                  trueValCtrl,
+                                                              keyboardType:
+                                                                  const TextInputType.numberWithOptions(
+                                                                    decimal:
+                                                                        true,
+                                                                  ),
+                                                              inputFormatters: [
+                                                                _ThousandsFormatter(),
+                                                              ],
+                                                              style:
+                                                                  const TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontSize:
+                                                                        13,
+                                                                  ),
+                                                              decoration: InputDecoration(
+                                                                hintText: '1.0',
+                                                                isDense: true,
+                                                                contentPadding:
+                                                                    EdgeInsets.symmetric(
+                                                                      vertical:
+                                                                          8,
+                                                                      horizontal:
+                                                                          8,
+                                                                    ),
+                                                                border:
+                                                                    OutlineInputBorder(),
+                                                              ),
+                                                              onChanged: (v) {
+                                                                tempLinkSource!['trueVal'] =
+                                                                    double.tryParse(
+                                                                      v.replaceAll(
+                                                                        ',',
+                                                                        '',
+                                                                      ),
+                                                                    ) ??
+                                                                    1.0;
+                                                              },
+                                                            ),
+                                                    ),
+                                                    if (onPickLinkSource !=
+                                                        null)
+                                                      tempTrueLink
+                                                          ? IconButton(
+                                                              icon: const Icon(
+                                                                Icons
+                                                                    .link_off_rounded,
+                                                                color: Colors
+                                                                    .white38,
+                                                              ),
+                                                              iconSize: 18,
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  const BoxConstraints(),
+                                                              onPressed: () {
+                                                                setSheetState(() {
+                                                                  tempTrueLink =
+                                                                      false;
+                                                                  tempTrueLinkSource =
+                                                                      null;
+                                                                  tempLinkSource!['trueLink'] =
+                                                                      false;
+                                                                  tempLinkSource!['trueLinkSource'] =
+                                                                      null;
+                                                                });
+                                                              },
+                                                            )
+                                                          : IconButton(
+                                                              icon: const Icon(
+                                                                Icons
+                                                                    .link_rounded,
+                                                                color: Colors
+                                                                    .blueAccent,
+                                                              ),
+                                                              iconSize: 18,
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  const BoxConstraints(),
+                                                              onPressed: () async {
+                                                                final src =
+                                                                    await onPickLinkSource!();
+                                                                if (src !=
+                                                                    null) {
+                                                                  setSheetState(() {
+                                                                    tempTrueLink =
+                                                                        true;
+                                                                    tempTrueLinkSource =
+                                                                        src;
+                                                                    tempLinkSource!['trueLink'] =
+                                                                        true;
+                                                                    tempLinkSource!['trueLinkSource'] =
+                                                                        src;
+                                                                  });
+                                                                }
+                                                              },
+                                                            ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  l10n.falseValue,
+                                                  style: TextStyle(
+                                                    color: Colors.white54,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: tempFalseLink
+                                                          ? Container(
+                                                              padding:
+                                                                  const EdgeInsets.symmetric(
+                                                                    horizontal:
+                                                                        8,
+                                                                    vertical: 6,
+                                                                  ),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors
+                                                                    .blueAccent
+                                                                    .withOpacity(
+                                                                      0.15,
+                                                                    ),
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      4,
+                                                                    ),
+                                                                border: Border.all(
+                                                                  color: Colors
+                                                                      .blueAccent
+                                                                      .withOpacity(
+                                                                        0.4,
+                                                                      ),
+                                                                ),
+                                                              ),
+                                                              child: Row(
+                                                                children: [
+                                                                  const Icon(
+                                                                    Icons
+                                                                        .link_rounded,
+                                                                    color: Colors
+                                                                        .blueAccent,
+                                                                    size: 14,
+                                                                  ),
+                                                                  const SizedBox(
+                                                                    width: 4,
+                                                                  ),
+                                                                  Expanded(
+                                                                    child: Text(
+                                                                      _getLinkChipLabel(
+                                                                        tempFalseLinkSource,
+                                                                        2,
+                                                                        context,
+                                                                      ),
+                                                                      maxLines:
+                                                                          2,
+                                                                      style: const TextStyle(
+                                                                        color: Colors
+                                                                            .blueAccent,
+                                                                        fontSize:
+                                                                            12,
+                                                                      ),
+                                                                      overflow:
+                                                                          TextOverflow
+                                                                              .ellipsis,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            )
+                                                          : TextField(
+                                                              controller:
+                                                                  falseValCtrl,
+                                                              keyboardType:
+                                                                  const TextInputType.numberWithOptions(
+                                                                    decimal:
+                                                                        true,
+                                                                  ),
+                                                              inputFormatters: [
+                                                                _ThousandsFormatter(),
+                                                              ],
+                                                              style:
+                                                                  const TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontSize:
+                                                                        13,
+                                                                  ),
+                                                              decoration: InputDecoration(
+                                                                hintText: '0.0',
+                                                                isDense: true,
+                                                                contentPadding:
+                                                                    EdgeInsets.symmetric(
+                                                                      vertical:
+                                                                          8,
+                                                                      horizontal:
+                                                                          8,
+                                                                    ),
+                                                                border:
+                                                                    OutlineInputBorder(),
+                                                              ),
+                                                              onChanged: (v) {
+                                                                tempLinkSource!['falseVal'] =
+                                                                    double.tryParse(
+                                                                      v.replaceAll(
+                                                                        ',',
+                                                                        '',
+                                                                      ),
+                                                                    ) ??
+                                                                    0.0;
+                                                              },
+                                                            ),
+                                                    ),
+                                                    if (onPickLinkSource !=
+                                                        null)
+                                                      tempFalseLink
+                                                          ? IconButton(
+                                                              icon: const Icon(
+                                                                Icons
+                                                                    .link_off_rounded,
+                                                                color: Colors
+                                                                    .white38,
+                                                              ),
+                                                              iconSize: 18,
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  const BoxConstraints(),
+                                                              onPressed: () {
+                                                                setSheetState(() {
+                                                                  tempFalseLink =
+                                                                      false;
+                                                                  tempFalseLinkSource =
+                                                                      null;
+                                                                  tempLinkSource!['falseLink'] =
+                                                                      false;
+                                                                  tempLinkSource!['falseLinkSource'] =
+                                                                      null;
+                                                                });
+                                                              },
+                                                            )
+                                                          : IconButton(
+                                                              icon: const Icon(
+                                                                Icons
+                                                                    .link_rounded,
+                                                                color: Colors
+                                                                    .blueAccent,
+                                                              ),
+                                                              iconSize: 18,
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  const BoxConstraints(),
+                                                              onPressed: () async {
+                                                                final src =
+                                                                    await onPickLinkSource!();
+                                                                if (src !=
+                                                                    null) {
+                                                                  setSheetState(() {
+                                                                    tempFalseLink =
+                                                                        true;
+                                                                    tempFalseLinkSource =
+                                                                        src;
+                                                                    tempLinkSource!['falseLink'] =
+                                                                        true;
+                                                                    tempLinkSource!['falseLinkSource'] =
+                                                                        src;
+                                                                  });
+                                                                }
+                                                              },
+                                                            ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      if (tempLink)
-                                        GestureDetector(
-                                          onTap: () => setSheetState(() {
-                                            tempLink = false;
-                                            tempLinkSource = null;
-                                          }),
-                                          child: Text(
-l10n.unlink,
-                                            style: TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        )
-                                      else
-                                        GestureDetector(
-                                          onTap: () => setSheetState(
-                                            () => tempLink = true,
-                                          ),
-                                          child: Text(
-l10n.restoreLink,
-                                            style: TextStyle(
-                                              color: Colors.blueAccent,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
                                     ],
-                                  ),
-                                  if (tempLinkSource != null &&
-                                      tempLinkSource!['type'] == 'logic') ...[
-                                    const SizedBox(height: 12),
-                                    const Divider(
-                                      color: Colors.white12,
-                                      height: 1,
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8, bottom: 4),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.white12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.linkSettingsHint,
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                     const SizedBox(height: 8),
                                     Row(
                                       children: [
                                         Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-l10n.trueValue,
-                                                style: TextStyle(
-                                                  color: Colors.white54,
-                                                  fontSize: 11,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: tempTrueLink
-                                                        ? Container(
-                                                            padding:
-                                                                const EdgeInsets.symmetric(
-                                                                  horizontal: 8,
-                                                                  vertical: 6,
-                                                                ),
-                                                            decoration: BoxDecoration(
-                                                              color: Colors
-                                                                  .blueAccent
-                                                                  .withOpacity(
-                                                                    0.15,
-                                                                  ),
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    4,
-                                                                  ),
-                                                              border: Border.all(
-                                                                color: Colors
-                                                                    .blueAccent
-                                                                    .withOpacity(
-                                                                      0.4,
-                                                                    ),
-                                                              ),
-                                                            ),
-                                                            child: Row(
-                                                              children: [
-                                                                const Icon(
-                                                                  Icons
-                                                                      .link_rounded,
-                                                                  color: Colors
-                                                                      .blueAccent,
-                                                                  size: 14,
-                                                                ),
-                                                                const SizedBox(
-                                                                  width: 4,
-                                                                ),
-                                                                Expanded(
-                                                                  child: Text(
-                                                                    _getLinkChipLabel(
-                                                                      tempTrueLinkSource,
-                                                                      2, context
-                                                                    ),
-                                                                    maxLines: 2,
-                                                                    style: const TextStyle(
-                                                                      color: Colors
-                                                                          .blueAccent,
-                                                                      fontSize:
-                                                                          12,
-                                                                    ),
-                                                                    overflow:
-                                                                        TextOverflow
-                                                                            .ellipsis,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          )
-                                                        : TextField(
-                                                            controller:
-                                                                trueValCtrl,
-                                                            keyboardType:
-                                                                const TextInputType.numberWithOptions(
-                                                                  decimal: true,
-                                                                ),
-                                                            inputFormatters: [
-                                                              _ThousandsFormatter(),
-                                                            ],
-                                                            style:
-                                                                const TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize: 13,
-                                                                ),
-                                                            decoration: InputDecoration(
-                                                              hintText: '1.0',
-                                                              isDense: true,
-                                                              contentPadding:
-                                                                  EdgeInsets.symmetric(
-                                                                    vertical: 8,
-                                                                    horizontal:
-                                                                        8,
-                                                                  ),
-                                                              border:
-                                                                  OutlineInputBorder(),
-                                                            ),
-                                                            onChanged: (v) {
-                                                              tempLinkSource!['trueVal'] =
-                                                                  double.tryParse(
-                                                                    v.replaceAll(
-                                                                      ',',
-                                                                      '',
-                                                                    ),
-                                                                  ) ??
-                                                                  1.0;
-                                                            },
-                                                          ),
+                                          child: ElevatedButton.icon(
+                                            icon: const Icon(
+                                              Icons.upload_rounded,
+                                              size: 16,
+                                            ),
+                                            label: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  l10n.makeLinkSource,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
                                                   ),
-                                                  if (onPickLinkSource != null)
-                                                    tempTrueLink
-                                                        ? IconButton(
-                                                            icon: const Icon(
-                                                              Icons
-                                                                  .link_off_rounded,
-                                                              color: Colors
-                                                                  .white38,
-                                                            ),
-                                                            iconSize: 18,
-                                                            padding:
-                                                                EdgeInsets.zero,
-                                                            constraints:
-                                                                const BoxConstraints(),
-                                                            onPressed: () {
-                                                              setSheetState(() {
-                                                                tempTrueLink =
-                                                                    false;
-                                                                tempTrueLinkSource =
-                                                                    null;
-                                                                tempLinkSource!['trueLink'] =
-                                                                    false;
-                                                                tempLinkSource!['trueLinkSource'] =
-                                                                    null;
-                                                              });
-                                                            },
-                                                          )
-                                                        : IconButton(
-                                                            icon: const Icon(
-                                                              Icons
-                                                                  .link_rounded,
-                                                              color: Colors
-                                                                  .blueAccent,
-                                                            ),
-                                                            iconSize: 18,
-                                                            padding:
-                                                                EdgeInsets.zero,
-                                                            constraints:
-                                                                const BoxConstraints(),
-                                                            onPressed: () async {
-                                                              final src =
-                                                                  await onPickLinkSource!();
-                                                              if (src != null) {
-                                                                setSheetState(() {
-                                                                  tempTrueLink =
-                                                                      true;
-                                                                  tempTrueLinkSource =
-                                                                      src;
-                                                                  tempLinkSource!['trueLink'] =
-                                                                      true;
-                                                                  tempLinkSource!['trueLinkSource'] =
-                                                                      src;
-                                                                });
-                                                              }
-                                                            },
-                                                          ),
-                                                ],
-                                              ),
-                                            ],
+                                                ),
+                                                SizedBox(width: 4),
+                                                ProBadge(),
+                                              ],
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.blueAccent
+                                                  .withOpacity(0.2),
+                                              foregroundColor:
+                                                  Colors.blueAccent,
+                                              elevation: 0,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 8,
+                                                  ),
+                                            ),
+                                            onPressed: () {
+                                              Navigator.pop(ctx);
+                                              ProGuard.checkAndRun(context, () {
+                                                if (onLinkSettingsPressed !=
+                                                    null) {
+                                                  onLinkSettingsPressed!(
+                                                    'source',
+                                                    'input',
+                                                  );
+                                                }
+                                              });
+                                            },
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
+                                        const SizedBox(width: 8),
                                         Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-l10n.falseValue,
-                                                style: TextStyle(
-                                                  color: Colors.white54,
-                                                  fontSize: 11,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: tempFalseLink
-                                                        ? Container(
-                                                            padding:
-                                                                const EdgeInsets.symmetric(
-                                                                  horizontal: 8,
-                                                                  vertical: 6,
-                                                                ),
-                                                            decoration: BoxDecoration(
-                                                              color: Colors
-                                                                  .blueAccent
-                                                                  .withOpacity(
-                                                                    0.15,
-                                                                  ),
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    4,
-                                                                  ),
-                                                              border: Border.all(
-                                                                color: Colors
-                                                                    .blueAccent
-                                                                    .withOpacity(
-                                                                      0.4,
-                                                                    ),
-                                                              ),
-                                                            ),
-                                                            child: Row(
-                                                              children: [
-                                                                const Icon(
-                                                                  Icons
-                                                                      .link_rounded,
-                                                                  color: Colors
-                                                                      .blueAccent,
-                                                                  size: 14,
-                                                                ),
-                                                                const SizedBox(
-                                                                  width: 4,
-                                                                ),
-                                                                Expanded(
-                                                                  child: Text(
-                                                                    _getLinkChipLabel(
-                                                                      tempFalseLinkSource,
-                                                                      2, context
-                                                                    ),
-                                                                    maxLines: 2,
-                                                                    style: const TextStyle(
-                                                                      color: Colors
-                                                                          .blueAccent,
-                                                                      fontSize:
-                                                                          12,
-                                                                    ),
-                                                                    overflow:
-                                                                        TextOverflow
-                                                                            .ellipsis,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          )
-                                                        : TextField(
-                                                            controller:
-                                                                falseValCtrl,
-                                                            keyboardType:
-                                                                const TextInputType.numberWithOptions(
-                                                                  decimal: true,
-                                                                ),
-                                                            inputFormatters: [
-                                                              _ThousandsFormatter(),
-                                                            ],
-                                                            style:
-                                                                const TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize: 13,
-                                                                ),
-                                                            decoration: InputDecoration(
-                                                              hintText: '0.0',
-                                                              isDense: true,
-                                                              contentPadding:
-                                                                  EdgeInsets.symmetric(
-                                                                    vertical: 8,
-                                                                    horizontal:
-                                                                        8,
-                                                                  ),
-                                                              border:
-                                                                  OutlineInputBorder(),
-                                                            ),
-                                                            onChanged: (v) {
-                                                              tempLinkSource!['falseVal'] =
-                                                                  double.tryParse(
-                                                                    v.replaceAll(
-                                                                      ',',
-                                                                      '',
-                                                                    ),
-                                                                  ) ??
-                                                                  0.0;
-                                                            },
-                                                          ),
+                                          child: ElevatedButton.icon(
+                                            icon: const Icon(
+                                              Icons.download_rounded,
+                                              size: 16,
+                                            ),
+                                            label: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  l10n.makeLinkTarget,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
                                                   ),
-                                                  if (onPickLinkSource != null)
-                                                    tempFalseLink
-                                                        ? IconButton(
-                                                            icon: const Icon(
-                                                              Icons
-                                                                  .link_off_rounded,
-                                                              color: Colors
-                                                                  .white38,
-                                                            ),
-                                                            iconSize: 18,
-                                                            padding:
-                                                                EdgeInsets.zero,
-                                                            constraints:
-                                                                const BoxConstraints(),
-                                                            onPressed: () {
-                                                              setSheetState(() {
-                                                                tempFalseLink =
-                                                                    false;
-                                                                tempFalseLinkSource =
-                                                                    null;
-                                                                tempLinkSource!['falseLink'] =
-                                                                    false;
-                                                                tempLinkSource!['falseLinkSource'] =
-                                                                    null;
-                                                              });
-                                                            },
-                                                          )
-                                                        : IconButton(
-                                                            icon: const Icon(
-                                                              Icons
-                                                                  .link_rounded,
-                                                              color: Colors
-                                                                  .blueAccent,
-                                                            ),
-                                                            iconSize: 18,
-                                                            padding:
-                                                                EdgeInsets.zero,
-                                                            constraints:
-                                                                const BoxConstraints(),
-                                                            onPressed: () async {
-                                                              final src =
-                                                                  await onPickLinkSource!();
-                                                              if (src != null) {
-                                                                setSheetState(() {
-                                                                  tempFalseLink =
-                                                                      true;
-                                                                  tempFalseLinkSource =
-                                                                      src;
-                                                                  tempLinkSource!['falseLink'] =
-                                                                      true;
-                                                                  tempLinkSource!['falseLinkSource'] =
-                                                                      src;
-                                                                });
-                                                              }
-                                                            },
-                                                          ),
-                                                ],
-                                              ),
-                                            ],
+                                                ),
+                                                SizedBox(width: 4),
+                                                ProBadge(),
+                                              ],
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.cyan
+                                                  .withOpacity(0.2),
+                                              foregroundColor: Colors.cyan,
+                                              elevation: 0,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 8,
+                                                  ),
+                                            ),
+                                            onPressed: () {
+                                              Navigator.pop(ctx);
+                                              ProGuard.checkAndRun(context, () {
+                                                if (onLinkSettingsPressed !=
+                                                    null) {
+                                                  onLinkSettingsPressed!(
+                                                    'target',
+                                                    'input',
+                                                  );
+                                                }
+                                              });
+                                            },
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          )
-                        else
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8, bottom: 4),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.white12),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-l10n.linkSettingsHint,
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12,
+                                    const SizedBox(height: 12),
+                                    const Divider(
+                                      color: Colors.white12,
+                                      height: 1,
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: ElevatedButton.icon(
-                                          icon: const Icon(
-                                            Icons.upload_rounded,
-                                            size: 16,
-                                          ),
-                                          label: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                l10n.makeLinkSource,
-                                                style: TextStyle(fontSize: 12),
-                                              ),
-                                              SizedBox(width: 4),
-                                              ProBadge(),
-                                            ],
-                                          ),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blueAccent
-                                                .withOpacity(0.2),
-                                            foregroundColor: Colors.blueAccent,
-                                            elevation: 0,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 8,
-                                            ),
-                                          ),
-                                          onPressed: () {
-                                            Navigator.pop(ctx);
-                                            ProGuard.checkAndRun(context, () {
-                                              if (onLinkSettingsPressed !=
-                                                  null) {
-                                                onLinkSettingsPressed!(
-                                                  'source',
-                                                  'input',
-                                                );
-                                              }
-                                            });
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: ElevatedButton.icon(
-                                          icon: const Icon(
-                                            Icons.download_rounded,
-                                            size: 16,
-                                          ),
-                                          label: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                l10n.makeLinkTarget,
-                                                style: TextStyle(fontSize: 12),
-                                              ),
-                                              SizedBox(width: 4),
-                                              ProBadge(),
-                                            ],
-                                          ),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.cyan
-                                                .withOpacity(0.2),
-                                            foregroundColor: Colors.cyan,
-                                            elevation: 0,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 8,
-                                            ),
-                                          ),
-                                          onPressed: () {
-                                            Navigator.pop(ctx);
-                                            ProGuard.checkAndRun(context, () {
-                                              if (onLinkSettingsPressed !=
-                                                  null) {
-                                                onLinkSettingsPressed!(
-                                                  'target',
-                                                  'input',
-                                                );
-                                              }
-                                            });
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  const Divider(
-                                    color: Colors.white12,
-                                    height: 1,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.rule_rounded,
-                                        color: Colors.purpleAccent,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-l10n.linkLogic,
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      TextButton.icon(
-                                        icon: const Icon(
-                                          Icons.add_rounded,
-                                          size: 14,
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.rule_rounded,
                                           color: Colors.purpleAccent,
+                                          size: 16,
                                         ),
-                                        label: Text(
-l10n.addLogic,
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          l10n.linkLogic,
                                           style: TextStyle(
-                                            color: Colors.purpleAccent,
+                                            color: Colors.white70,
                                             fontSize: 12,
                                           ),
                                         ),
-                                        style: TextButton.styleFrom(
-                                          padding: EdgeInsets.zero,
-                                          minimumSize: Size.zero,
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        onPressed: () async {
-                                          final newLogic =
-                                              await showDialog<
-                                                Map<String, dynamic>
-                                              >(
-                                                context: context,
-                                                builder: (ctx) =>
-                                                    const _LogicItemEditDialog(
-                                                      initial: null,
-                                                    ),
-                                              );
-                                          if (newLogic != null) {
-                                            final newId =
-                                                'logic_${DateTime.now().millisecondsSinceEpoch}';
-                                            final newLogicItem = {
-                                              ...newLogic,
-                                              'id': newId,
-                                            };
-                                            if (onAddLogicItem != null) {
-                                              onAddLogicItem!(newLogicItem);
+                                        const Spacer(),
+                                        TextButton.icon(
+                                          icon: const Icon(
+                                            Icons.add_rounded,
+                                            size: 14,
+                                            color: Colors.purpleAccent,
+                                          ),
+                                          label: Text(
+                                            l10n.addLogic,
+                                            style: TextStyle(
+                                              color: Colors.purpleAccent,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          style: TextButton.styleFrom(
+                                            padding: EdgeInsets.zero,
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize
+                                                .shrinkWrap,
+                                          ),
+                                          onPressed: () async {
+                                            final newLogic =
+                                                await showDialog<
+                                                  Map<String, dynamic>
+                                                >(
+                                                  context: context,
+                                                  builder: (ctx) =>
+                                                      const _LogicItemEditDialog(
+                                                        initial: null,
+                                                      ),
+                                                );
+                                            if (newLogic != null) {
+                                              final newId =
+                                                  'logic_${DateTime.now().millisecondsSinceEpoch}';
+                                              final newLogicItem = {
+                                                ...newLogic,
+                                                'id': newId,
+                                              };
+                                              if (onAddLogicItem != null) {
+                                                onAddLogicItem!(newLogicItem);
+                                              }
+                                              setSheetState(() {
+                                                localLogicItems.add(
+                                                  newLogicItem,
+                                                );
+                                                tempLink = true;
+                                                tempLinkSource = {
+                                                  'type': 'logic',
+                                                  'logicId': newId,
+                                                  'trueVal': 1.0,
+                                                  'falseVal': 0.0,
+                                                  'trueLink': false,
+                                                  'trueLinkSource': null,
+                                                  'falseLink': false,
+                                                  'falseLinkSource': null,
+                                                };
+                                                tempTrueLink = false;
+                                                tempTrueLinkSource = null;
+                                                tempFalseLink = false;
+                                                tempFalseLinkSource = null;
+                                                trueValCtrl.text = '1.0';
+                                                falseValCtrl.text = '0.0';
+                                              });
                                             }
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    if (localLogicItems.isEmpty)
+                                      Text(
+                                        l10n.noSettingLogicYet,
+                                        style: TextStyle(
+                                          color: Colors.white38,
+                                          fontSize: 11,
+                                        ),
+                                      )
+                                    else
+                                      DropdownButtonFormField<String>(
+                                        dropdownColor: Colors.black,
+                                        hint: Text(
+                                          l10n.selectLogic,
+                                          style: TextStyle(
+                                            color: Colors.white38,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        isExpanded: true,
+                                        decoration: InputDecoration(
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 8,
+                                          ),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        items: localLogicItems.map((logic) {
+                                          final name =
+                                              logic['name'] as String? ?? '';
+                                          final expr =
+                                              _CalculatorWidgetState._buildLogicExprString(
+                                                logic,
+                                              );
+                                          return DropdownMenuItem<String>(
+                                            value: logic['id'] as String,
+                                            child: Text(
+                                              name.isNotEmpty
+                                                  ? '$name: $expr'
+                                                  : expr,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          );
+                                        }).toList(),
+                                        onChanged: (selectedId) {
+                                          if (selectedId != null) {
                                             setSheetState(() {
-                                              localLogicItems.add(newLogicItem);
                                               tempLink = true;
                                               tempLinkSource = {
                                                 'type': 'logic',
-                                                'logicId': newId,
-                                                'trueVal': 1.0,
+                                                'logicId': selectedId,
+                                                'trueVal':
+                                                    double.tryParse(
+                                                      ctrl.text.replaceAll(
+                                                        ',',
+                                                        '',
+                                                      ),
+                                                    ) ??
+                                                    1.0,
                                                 'falseVal': 0.0,
                                                 'trueLink': false,
                                                 'trueLinkSource': null,
@@ -2212,445 +2362,380 @@ l10n.addLogic,
                                               tempTrueLinkSource = null;
                                               tempFalseLink = false;
                                               tempFalseLinkSource = null;
-                                              trueValCtrl.text = '1.0';
+                                              trueValCtrl.text =
+                                                  (double.tryParse(
+                                                            ctrl.text
+                                                                .replaceAll(
+                                                                  ',',
+                                                                  '',
+                                                                ),
+                                                          ) ??
+                                                          1.0)
+                                                      .toString();
                                               falseValCtrl.text = '0.0';
                                             });
                                           }
                                         },
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  if (localLogicItems.isEmpty)
-                                    Text(
-l10n.noSettingLogicYet,
-                                      style: TextStyle(
-                                        color: Colors.white38,
-                                        fontSize: 11,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          if (constants.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              l10n.constantLink,
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: constants.asMap().entries.map((e) {
+                                  final ci = e.key;
+                                  final c = e.value;
+                                  final name = c['name'] as String? ?? '';
+                                  final val = (c['value'] as num? ?? 0.0);
+                                  final isSelected =
+                                      tempLink &&
+                                      tempLinkSource != null &&
+                                      tempLinkSource!['type'] == 'constant' &&
+                                      tempLinkSource!['constIdx'] == ci;
+                                  return GestureDetector(
+                                    onTap: () => setSheetState(() {
+                                      tempLink = true;
+                                      tempLinkSource = {
+                                        'type': 'constant',
+                                        'constIdx': ci,
+                                      };
+                                    }),
+                                    child: Container(
+                                      margin: const EdgeInsets.only(right: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
                                       ),
-                                    )
-                                  else
-                                    DropdownButtonFormField<String>(
-                                      dropdownColor: Colors.black,
-                                      hint: Text(
-l10n.selectLogic,
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? Colors.amberAccent.withOpacity(
+                                                0.2,
+                                              )
+                                            : Colors.white.withOpacity(0.05),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? Colors.amberAccent
+                                              : Colors.white24,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '$name = $val',
                                         style: TextStyle(
-                                          color: Colors.white38,
+                                          color: isSelected
+                                              ? Colors.amberAccent
+                                              : Colors.white70,
                                           fontSize: 12,
                                         ),
                                       ),
-                                      isExpanded: true,
-                                      decoration: InputDecoration(
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(
-                                          vertical: 8,
-                                          horizontal: 8,
-                                        ),
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      items: localLogicItems.map((logic) {
-                                        final name =
-                                            logic['name'] as String? ?? '';
-                                        final expr =
-                                            _CalculatorWidgetState._buildLogicExprString(
-                                              logic,
-                                            );
-                                        return DropdownMenuItem<String>(
-                                          value: logic['id'] as String,
-                                          child: Text(
-                                            name.isNotEmpty
-                                                ? '$name: $expr'
-                                                : expr,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        );
-                                      }).toList(),
-                                      onChanged: (selectedId) {
-                                        if (selectedId != null) {
-                                          setSheetState(() {
-                                            tempLink = true;
-                                            tempLinkSource = {
-                                              'type': 'logic',
-                                              'logicId': selectedId,
-                                              'trueVal':
-                                                  double.tryParse(
-                                                    ctrl.text.replaceAll(
-                                                      ',',
-                                                      '',
-                                                    ),
-                                                  ) ??
-                                                  1.0,
-                                              'falseVal': 0.0,
-                                              'trueLink': false,
-                                              'trueLinkSource': null,
-                                              'falseLink': false,
-                                              'falseLinkSource': null,
-                                            };
-                                            tempTrueLink = false;
-                                            tempTrueLinkSource = null;
-                                            tempFalseLink = false;
-                                            tempFalseLinkSource = null;
-                                            trueValCtrl.text =
-                                                (double.tryParse(
-                                                          ctrl.text.replaceAll(
-                                                            ',',
-                                                            '',
-                                                          ),
-                                                        ) ??
-                                                        1.0)
-                                                    .toString();
-                                            falseValCtrl.text = '0.0';
-                                          });
-                                        }
-                                      },
                                     ),
-                                ],
+                                  );
+                                }).toList(),
                               ),
                             ),
-                          ),
-                        if (constants.isNotEmpty) ...[
-                          const SizedBox(height: 8),
+                          ],
+                          const Divider(color: Colors.white12),
+                          const SizedBox(height: 4),
                           Text(
-l10n.constantLink,
+                            l10n.transformSection,
                             style: TextStyle(
                               color: Colors.white54,
                               fontSize: 12,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(vertical: 4),
                             child: Row(
-                              children: constants.asMap().entries.map((e) {
-                                final ci = e.key;
-                                final c = e.value;
-                                final name = c['name'] as String? ?? '';
-                                final val = (c['value'] as num? ?? 0.0);
-                                final isSelected =
-                                    tempLink &&
-                                    tempLinkSource != null &&
-                                    tempLinkSource!['type'] == 'constant' &&
-                                    tempLinkSource!['constIdx'] == ci;
-                                return GestureDetector(
-                                  onTap: () => setSheetState(() {
-                                    tempLink = true;
-                                    tempLinkSource = {
-                                      'type': 'constant',
-                                      'constIdx': ci,
-                                    };
-                                  }),
-                                  child: Container(
-                                    margin: const EdgeInsets.only(right: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? Colors.amberAccent.withOpacity(0.2)
-                                          : Colors.white.withOpacity(0.05),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? Colors.amberAccent
-                                            : Colors.white24,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      '$name = $val',
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? Colors.amberAccent
+                              children: [
+                                for (final entry in <List<String?>>[
+                                  [l10n.noTransform, null],
+                                  [l10n.transformSqrt, 'sqrt'],
+                                  [l10n.transformPowLabel, 'pow'],
+                                  [l10n.transformNroot, 'nroot'],
+                                  [l10n.transformAbs, 'abs'],
+                                  [l10n.transformFloor, 'floor'],
+                                  [l10n.transformCeil, 'ceil'],
+                                  [l10n.transformRound, 'round'],
+                                  [l10n.transformLog10, 'log10'],
+                                  [l10n.transformReciprocal, 'reciprocal'],
+                                  [l10n.transformSin, 'sin'],
+                                  [l10n.transformCos, 'cos'],
+                                  [l10n.transformTan, 'tan'],
+                                ])
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: ChoiceChip(
+                                      label: Text(entry[0]!),
+                                      selected: tempTransform == entry[1],
+                                      selectedColor: entry[1] == null
+                                          ? null
+                                          : _CalculatorRow._transformColor(
+                                              entry[1],
+                                            ).withOpacity(0.2),
+                                      labelStyle: TextStyle(
+                                        color:
+                                            tempTransform == entry[1] &&
+                                                entry[1] != null
+                                            ? _CalculatorRow._transformColor(
+                                                entry[1],
+                                              )
                                             : Colors.white70,
                                         fontSize: 12,
                                       ),
+                                      onSelected: (_) => setSheetState(
+                                        () => tempTransform = entry[1],
+                                      ),
                                     ),
                                   ),
-                                );
-                              }).toList(),
+                              ],
                             ),
                           ),
-                        ],
-                        const Divider(color: Colors.white12),
-                        const SizedBox(height: 4),
-                        Text(
-l10n.transformSection,
-                          style: TextStyle(color: Colors.white54, fontSize: 12),
-                        ),
-                        const SizedBox(height: 8),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              for (final entry in <List<String?>>[
-                                [l10n.noTransform, null],
-                                [l10n.transformSqrt, 'sqrt'],
-                                [l10n.transformPowLabel, 'pow'],
-                                [l10n.transformNroot, 'nroot'],
-                                [l10n.transformAbs, 'abs'],
-                                [l10n.transformFloor, 'floor'],
-                                [l10n.transformCeil, 'ceil'],
-                                [l10n.transformRound, 'round'],
-                                [l10n.transformLog10, 'log10'],
-                                [l10n.transformReciprocal, 'reciprocal'],
-                                [l10n.transformSin, 'sin'],
-                                [l10n.transformCos, 'cos'],
-                                [l10n.transformTan, 'tan'],
-                              ])
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: ChoiceChip(
-                                    label: Text(entry[0]!),
-                                    selected: tempTransform == entry[1],
-                                    selectedColor: entry[1] == null
-                                        ? null
-                                        : _CalculatorRow._transformColor(
-                                            entry[1],
-                                          ).withOpacity(0.2),
-                                    labelStyle: TextStyle(
-                                      color:
-                                          tempTransform == entry[1] &&
-                                              entry[1] != null
-                                          ? _CalculatorRow._transformColor(
-                                              entry[1],
-                                            )
-                                          : Colors.white70,
-                                      fontSize: 12,
-                                    ),
-                                    onSelected: (_) => setSheetState(
-                                      () => tempTransform = entry[1],
-                                    ),
+                          if (tempTransform == 'pow' ||
+                              tempTransform == 'nroot') ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Text(
+                                  tempTransform == 'pow'
+                                      ? l10n.powExponentQ
+                                      : l10n.nrootExponentQ,
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
                                   ),
                                 ),
-                            ],
-                          ),
-                        ),
-                        if (tempTransform == 'pow' ||
-                            tempTransform == 'nroot') ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Text(
-                                tempTransform == 'pow'
-                                    ? l10n.powExponentQ
-                                    : l10n.nrootExponentQ,
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              SizedBox(
-                                width: 80,
-                                child: TextField(
-                                  controller: powExpCtrl,
-                                  keyboardType:
-                                      const TextInputType.numberWithOptions(
-                                        decimal: true,
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 80,
+                                  child: TextField(
+                                    controller: powExpCtrl,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                    inputFormatters: [_ThousandsFormatter()],
+                                    style: const TextStyle(color: Colors.white),
+                                    decoration: InputDecoration(
+                                      hintText: '2',
+                                      hintStyle: TextStyle(
+                                        color: Colors.white24,
                                       ),
-                                  inputFormatters: [_ThousandsFormatter()],
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
-                                    hintText: '2',
-                                    hintStyle: TextStyle(color: Colors.white24),
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(
-                                      vertical: 8,
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
                                     ),
+                                    onChanged: (v) {
+                                      tempPowExp =
+                                          double.tryParse(
+                                            v.replaceAll(',', ''),
+                                          ) ??
+                                          tempPowExp;
+                                      setSheetState(() {});
+                                    },
                                   ),
-                                  onChanged: (v) {
-                                    tempPowExp =
-                                        double.tryParse(
-                                          v.replaceAll(',', ''),
-                                        ) ??
-                                        tempPowExp;
-                                    setSheetState(() {});
-                                  },
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        if (tempTransform != null) ...[
-                          const SizedBox(height: 10),
-                          Builder(
-                            builder: (_) {
-                              final v =
-                                  double.tryParse(
-                                    ctrl.text.replaceAll(',', ''),
-                                  ) ??
-                                  0.0;
-                              final res = _applyTermTransform(
-                                v,
-                                tempTransform,
-                                tempPowExp,
-                              );
-                              String fmtPreview(double x) {
-                                if (x.isInfinite || x.isNaN) return AppLocalizations.of(context)!.errorResult;
-                                if (x == x.truncateToDouble() && x.abs() < 1e12)
-                                  return x.toInt().toString();
-                                final intD = x.abs() >= 1
-                                    ? x.abs().toInt().toString().length
-                                    : 0;
-                                final decD = (10 - intD).clamp(0, 10);
-                                final s = x.toStringAsFixed(decD);
-                                return s
-                                    .replaceAll(RegExp(r'0+$'), '')
-                                    .replaceAll(RegExp(r'\.$'), '');
-                              }
+                              ],
+                            ),
+                          ],
+                          if (tempTransform != null) ...[
+                            const SizedBox(height: 10),
+                            Builder(
+                              builder: (_) {
+                                final v =
+                                    double.tryParse(
+                                      ctrl.text.replaceAll(',', ''),
+                                    ) ??
+                                    0.0;
+                                final res = _applyTermTransform(
+                                  v,
+                                  tempTransform,
+                                  tempPowExp,
+                                );
+                                String fmtPreview(double x) {
+                                  if (x.isInfinite || x.isNaN)
+                                    return AppLocalizations.of(
+                                      context,
+                                    )!.errorResult;
+                                  if (x == x.truncateToDouble() &&
+                                      x.abs() < 1e12)
+                                    return x.toInt().toString();
+                                  final intD = x.abs() >= 1
+                                      ? x.abs().toInt().toString().length
+                                      : 0;
+                                  final decD = (10 - intD).clamp(0, 10);
+                                  final s = x.toStringAsFixed(decD);
+                                  return s
+                                      .replaceAll(RegExp(r'0+$'), '')
+                                      .replaceAll(RegExp(r'\.$'), '');
+                                }
 
-                              final exprStr = _CalculatorRow._transformExprStr(
-                                ctrl.text,
-                                tempTransform,
-                                tempPowExp,
-                              );
-                              final color = _CalculatorRow._transformColor(
-                                tempTransform,
-                              );
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: color.withOpacity(0.25),
+                                final exprStr =
+                                    _CalculatorRow._transformExprStr(
+                                      ctrl.text,
+                                      tempTransform,
+                                      tempPowExp,
+                                    );
+                                final color = _CalculatorRow._transformColor(
+                                  tempTransform,
+                                );
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
                                   ),
-                                ),
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        exprStr,
-                                        style: const TextStyle(
-                                          color: Colors.white54,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      const Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                        ),
-                                        child: Text(
-                                          '=',
-                                          style: TextStyle(
-                                            color: Colors.white38,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: color.withOpacity(0.25),
+                                    ),
+                                  ),
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          exprStr,
+                                          style: const TextStyle(
+                                            color: Colors.white54,
                                             fontSize: 13,
                                           ),
                                         ),
-                                      ),
-                                      Text(
-                                        _addCommas(fmtPreview(res)),
-                                        style: TextStyle(
-                                          color: color,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                          ),
+                                          child: Text(
+                                            '=',
+                                            style: TextStyle(
+                                              color: Colors.white38,
+                                              fontSize: 13,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                        Text(
+                                          _addCommas(fmtPreview(res)),
+                                          style: TextStyle(
+                                            color: color,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ], // end オプション
-                      const SizedBox(height: 8),
-                    ],
+                                );
+                              },
+                            ),
+                          ],
+                        ], // end オプション
+                        const SizedBox(height: 8),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 8,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-              ),
-              child: Row(
-                children: [
-                  if (!tempLink)
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                      ),
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.calculate_outlined,
-                          color: Colors.black,
+              Padding(
+                padding: EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 8,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+                child: Row(
+                  children: [
+                    if (!tempLink)
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
                         ),
-                        tooltip: AppLocalizations.of(context)!.calculatorTooltip,
-                        onPressed: () => _showMiniCalcSheet(context, (v) {
-                          setSheetState(() {
-                            if (v == v.truncateToDouble() && v.abs() < 1e15) {
-                              ctrl.text = _addCommas(v.toInt().toString());
-                            } else {
-                              final intD = v.abs() >= 1
-                                  ? v.abs().toInt().toString().length
-                                  : 0;
-                              final decD = (10 - intD).clamp(0, 10);
-                              ctrl.text = _addCommas(
-                                v
-                                    .toStringAsFixed(decD)
-                                    .replaceAll(RegExp(r'0+$'), '')
-                                    .replaceAll(RegExp(r'\.$'), ''),
-                              );
-                            }
-                          });
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.calculate_outlined,
+                            color: Colors.black,
+                          ),
+                          tooltip: AppLocalizations.of(
+                            context,
+                          )!.calculatorTooltip,
+                          onPressed: () => _showMiniCalcSheet(context, (v) {
+                            setSheetState(() {
+                              if (v == v.truncateToDouble() && v.abs() < 1e15) {
+                                ctrl.text = _addCommas(v.toInt().toString());
+                              } else {
+                                final intD = v.abs() >= 1
+                                    ? v.abs().toInt().toString().length
+                                    : 0;
+                                final decD = (10 - intD).clamp(0, 10);
+                                ctrl.text = _addCommas(
+                                  v
+                                      .toStringAsFixed(decD)
+                                      .replaceAll(RegExp(r'0+$'), '')
+                                      .replaceAll(RegExp(r'\.$'), ''),
+                                );
+                              }
+                            });
+                          }),
+                        ),
+                      ),
+                    if (others.isNotEmpty)
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, {'delete': true}),
+                        child: Text(
+                          l10n.deleteTerm,
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                      ),
+                    const Spacer(),
+                    SizedBox(
+                      width: 140,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: () => Navigator.pop(ctx, {
+                          'val': ctrl.text,
+                          'unit': unitCtrl.text,
+                          'link': tempLink,
+                          'source': tempLinkSource,
+                          'transform': tempTransform,
+                          'powExp': tempPowExp,
+                          'applyToAll': tempApplyToAll,
+                          'delete': false,
                         }),
-                      ),
-                    ),
-                  if (others.isNotEmpty)
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, {'delete': true}),
-                      child: Text(
-l10n.deleteTerm,
-                        style: TextStyle(color: Colors.redAccent),
-                      ),
-                    ),
-                  const Spacer(),
-                  SizedBox(
-                    width: 140,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        child: Text(
+                          AppLocalizations.of(context)!.save,
+                          style: TextStyle(fontSize: 16),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      onPressed: () => Navigator.pop(ctx, {
-                        'val': ctrl.text,
-                        'unit': unitCtrl.text,
-                        'link': tempLink,
-                        'source': tempLinkSource,
-                        'transform': tempTransform,
-                        'powExp': tempPowExp,
-                        'applyToAll': tempApplyToAll,
-                        'delete': false,
-                      }),
-                      child: Text(AppLocalizations.of(context)!.save, style: TextStyle(fontSize: 16)),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
-
-        );
-        }
+            ],
+          );
+        },
       ),
     );
 
@@ -2759,105 +2844,95 @@ l10n.deleteTerm,
 
           final l10n = AppLocalizations.of(context)!;
           return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    left: 24,
-                    right: 24,
-                    top: 24,
-                    bottom: 8,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              l10n.valueSettings(_termLabel('operand', context)),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      left: 24,
+                      right: 24,
+                      top: 24,
+                      bottom: 8,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                l10n.valueSettings(
+                                  _termLabel('operand', context),
+                                ),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.close,
-                              color: Colors.white54,
-                            ),
-                            onPressed: () => Navigator.pop(ctx),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-l10n.numericValue,
-                        style: TextStyle(color: Colors.white54, fontSize: 12),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: ctrl,
-                              focusNode: valFocusNode,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                              inputFormatters: [_ThousandsFormatter()],
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 26,
+                            IconButton(
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white54,
                               ),
-                              autofocus: true,
-                              readOnly: tempLink,
-                              decoration: InputDecoration(
-                                hintText: '0.0',
-                                hintStyle: const TextStyle(
-                                  color: Colors.white24,
+                              onPressed: () => Navigator.pop(ctx),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          l10n.numericValue,
+                          style: TextStyle(color: Colors.white54, fontSize: 12),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: ctrl,
+                                focusNode: valFocusNode,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                inputFormatters: [_ThousandsFormatter()],
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 26,
                                 ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: tempLink
-                                        ? Colors.blueAccent.withOpacity(0.5)
-                                        : Colors.white24,
-                                    width: 1,
+                                autofocus: true,
+                                readOnly: tempLink,
+                                decoration: InputDecoration(
+                                  hintText: '0.0',
+                                  hintStyle: const TextStyle(
+                                    color: Colors.white24,
                                   ),
-                                ),
-                                suffix: tempLink
-                                    ? GestureDetector(
-                                        onTap: () => setSheetState(() {
-                                          tempLink = false;
-                                          // リンク元は保持して一時的に解除（解除ボタンで完全削除）
-                                        }),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                (tempLinkSource != null &&
-                                                            tempLinkSource!['type'] ==
-                                                                'logic'
-                                                        ? Colors
-                                                              .deepPurpleAccent
-                                                        : Colors.blueAccent)
-                                                    .withOpacity(0.2),
-                                            borderRadius: BorderRadius.circular(
-                                              6,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: tempLink
+                                          ? Colors.blueAccent.withOpacity(0.5)
+                                          : Colors.white24,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  suffix: tempLink
+                                      ? GestureDetector(
+                                          onTap: () => setSheetState(() {
+                                            tempLink = false;
+                                            // リンク元は保持して一時的に解除（解除ボタンで完全削除）
+                                          }),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
                                             ),
-                                            border: Border.all(
+                                            decoration: BoxDecoration(
                                               color:
                                                   (tempLinkSource != null &&
                                                               tempLinkSource!['type'] ==
@@ -2865,742 +2940,878 @@ l10n.numericValue,
                                                           ? Colors
                                                                 .deepPurpleAccent
                                                           : Colors.blueAccent)
-                                                      .withOpacity(0.5),
+                                                      .withOpacity(0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              border: Border.all(
+                                                color:
+                                                    (tempLinkSource != null &&
+                                                                tempLinkSource!['type'] ==
+                                                                    'logic'
+                                                            ? Colors
+                                                                  .deepPurpleAccent
+                                                            : Colors.blueAccent)
+                                                        .withOpacity(0.5),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              tempLinkSource != null &&
+                                                      tempLinkSource!['type'] ==
+                                                          'logic'
+                                                  ? l10n.logicLinking
+                                                  : l10n.linking,
+                                              style: TextStyle(
+                                                color:
+                                                    tempLinkSource != null &&
+                                                        tempLinkSource!['type'] ==
+                                                            'logic'
+                                                    ? Colors.purpleAccent
+                                                    : Colors.blueAccent,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
                                           ),
+                                        )
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildUnitSection(
+                          context,
+                          l10n.unitLabel,
+                          unitCtrl,
+                          setSheetState,
+                          suggestedUnits: suggestedUnits,
+                        ),
+                        const SizedBox(height: 4),
+                        GestureDetector(
+                          onTap: () => ProGuard.checkAndRun(
+                            context,
+                            () => setSheetState(
+                              () => tempOptionsExpanded = !tempOptionsExpanded,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                Text(
+                                  l10n.optionsLabel,
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const ProBadge(),
+                                const Spacer(),
+                                Icon(
+                                  tempOptionsExpanded
+                                      ? Icons.expand_less_rounded
+                                      : Icons.expand_more_rounded,
+                                  color: Colors.white38,
+                                  size: 20,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (tempOptionsExpanded) ...[
+                          const SizedBox(height: 8),
+                          // _editOperandLinkSection
+                          CheckboxListTile(
+                            title: Text(
+                              l10n.applyToAllWithLinks,
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
+                            ),
+                            value: tempApplyToAll,
+                            onChanged: (v) => setSheetState(
+                              () => tempApplyToAll = v ?? false,
+                            ),
+                            contentPadding: EdgeInsets.zero,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            activeColor: Colors.blueAccent,
+                            dense: true,
+                          ),
+                          if (tempLink || tempLinkSource != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8, bottom: 4),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      (tempLinkSource != null &&
+                                          tempLinkSource!['type'] == 'logic'
+                                      ? Colors.purple.withOpacity(0.15)
+                                      : (tempLink
+                                                ? Colors.blueAccent
+                                                : Colors.orangeAccent)
+                                            .withOpacity(0.1)),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color:
+                                        (tempLinkSource != null &&
+                                            tempLinkSource!['type'] == 'logic'
+                                        ? Colors.purpleAccent.withOpacity(0.4)
+                                        : (tempLink
+                                                  ? Colors.blueAccent
+                                                  : Colors.orangeAccent)
+                                              .withOpacity(0.3)),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          tempLinkSource != null &&
+                                                  tempLinkSource!['type'] ==
+                                                      'logic'
+                                              ? Icons.rule_rounded
+                                              : (tempLink
+                                                    ? Icons.link
+                                                    : Icons.link_off),
+                                          size: 14,
+                                          color:
+                                              tempLinkSource != null &&
+                                                  tempLinkSource!['type'] ==
+                                                      'logic'
+                                              ? Colors.purpleAccent
+                                              : (tempLink
+                                                    ? Colors.blueAccent
+                                                    : Colors.orangeAccent),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
                                           child: Text(
                                             tempLinkSource != null &&
                                                     tempLinkSource!['type'] ==
                                                         'logic'
-                                                ? l10n.logicLinking
-                                                : l10n.linking,
+                                                ? l10n.logicLinkPrefix(
+                                                    _getLogicLabel(
+                                                      tempLinkSource!['logicId'],
+                                                      context,
+                                                    ),
+                                                  )
+                                                : (tempLink
+                                                      ? l10n.linkSourcePrefix(
+                                                          _getSourceLabel(
+                                                            tempLinkSource,
+                                                            context,
+                                                          ),
+                                                        )
+                                                      : l10n.previousLinkPrefix(
+                                                          _getSourceLabel(
+                                                            tempLinkSource,
+                                                            context,
+                                                          ),
+                                                        )),
                                             style: TextStyle(
                                               color:
                                                   tempLinkSource != null &&
                                                       tempLinkSource!['type'] ==
                                                           'logic'
                                                   ? Colors.purpleAccent
-                                                  : Colors.blueAccent,
+                                                  : (tempLink
+                                                        ? Colors.blueAccent
+                                                        : Colors.orangeAccent),
                                               fontSize: 12,
-                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
                                         ),
-                                      )
-                                    : null,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _buildUnitSection(
-                        context,
-                        l10n.unitLabel,
-                        unitCtrl,
-                        setSheetState,
-                        suggestedUnits: suggestedUnits,
-                      ),
-                      const SizedBox(height: 4),
-                      GestureDetector(
-                        onTap: () => ProGuard.checkAndRun(
-                          context,
-                          () => setSheetState(
-                            () => tempOptionsExpanded = !tempOptionsExpanded,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Row(
-                            children: [
-                              Text(
-                                l10n.optionsLabel,
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const ProBadge(),
-                              const Spacer(),
-                              Icon(
-                                tempOptionsExpanded
-                                    ? Icons.expand_less_rounded
-                                    : Icons.expand_more_rounded,
-                                color: Colors.white38,
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (tempOptionsExpanded) ...[
-                        const SizedBox(height: 8),
-                        // _editOperandLinkSection
-                        CheckboxListTile(
-                          title: Text(
-l10n.applyToAllWithLinks,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                            ),
-                          ),
-                          value: tempApplyToAll,
-                          onChanged: (v) =>
-                              setSheetState(() => tempApplyToAll = v ?? false),
-                          contentPadding: EdgeInsets.zero,
-                          controlAffinity: ListTileControlAffinity.leading,
-                          activeColor: Colors.blueAccent,
-                          dense: true,
-                        ),
-                        if (tempLink || tempLinkSource != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8, bottom: 4),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    (tempLinkSource != null &&
-                                        tempLinkSource!['type'] == 'logic'
-                                    ? Colors.purple.withOpacity(0.15)
-                                    : (tempLink
-                                              ? Colors.blueAccent
-                                              : Colors.orangeAccent)
-                                          .withOpacity(0.1)),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color:
-                                      (tempLinkSource != null &&
-                                          tempLinkSource!['type'] == 'logic'
-                                      ? Colors.purpleAccent.withOpacity(0.4)
-                                      : (tempLink
-                                                ? Colors.blueAccent
-                                                : Colors.orangeAccent)
-                                            .withOpacity(0.3)),
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        tempLinkSource != null &&
-                                                tempLinkSource!['type'] ==
-                                                    'logic'
-                                            ? Icons.rule_rounded
-                                            : (tempLink
-                                                  ? Icons.link
-                                                  : Icons.link_off),
-                                        size: 14,
-                                        color:
-                                            tempLinkSource != null &&
-                                                tempLinkSource!['type'] ==
-                                                    'logic'
-                                            ? Colors.purpleAccent
-                                            : (tempLink
-                                                  ? Colors.blueAccent
-                                                  : Colors.orangeAccent),
+                                        if (tempLink)
+                                          GestureDetector(
+                                            onTap: () => setSheetState(() {
+                                              tempLink = false;
+                                              tempLinkSource = null;
+                                            }),
+                                            child: Text(
+                                              l10n.unlink,
+                                              style: TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          GestureDetector(
+                                            onTap: () => setSheetState(
+                                              () => tempLink = true,
+                                            ),
+                                            child: Text(
+                                              l10n.restoreLink,
+                                              style: TextStyle(
+                                                color: Colors.blueAccent,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    if (tempLinkSource != null &&
+                                        tempLinkSource!['type'] == 'logic') ...[
+                                      const SizedBox(height: 12),
+                                      const Divider(
+                                        color: Colors.white12,
+                                        height: 1,
                                       ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          tempLinkSource != null &&
-                                                  tempLinkSource!['type'] ==
-                                                      'logic'
-                                              ? l10n.logicLinkPrefix(_getLogicLabel(tempLinkSource!['logicId'], context))
-                                              : (tempLink
-                                                    ? l10n.linkSourcePrefix(_getSourceLabel(tempLinkSource, context))
-                                                    : l10n.previousLinkPrefix(_getSourceLabel(tempLinkSource, context))),
-                                          style: TextStyle(
-                                            color:
-                                                tempLinkSource != null &&
-                                                    tempLinkSource!['type'] ==
-                                                        'logic'
-                                                ? Colors.purpleAccent
-                                                : (tempLink
-                                                      ? Colors.blueAccent
-                                                      : Colors.orangeAccent),
-                                            fontSize: 12,
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  l10n.trueValue,
+                                                  style: TextStyle(
+                                                    color: Colors.white54,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: tempTrueLink
+                                                          ? Container(
+                                                              padding:
+                                                                  const EdgeInsets.symmetric(
+                                                                    horizontal:
+                                                                        8,
+                                                                    vertical: 6,
+                                                                  ),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors
+                                                                    .blueAccent
+                                                                    .withOpacity(
+                                                                      0.15,
+                                                                    ),
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      4,
+                                                                    ),
+                                                                border: Border.all(
+                                                                  color: Colors
+                                                                      .blueAccent
+                                                                      .withOpacity(
+                                                                        0.4,
+                                                                      ),
+                                                                ),
+                                                              ),
+                                                              child: Row(
+                                                                children: [
+                                                                  const Icon(
+                                                                    Icons
+                                                                        .link_rounded,
+                                                                    color: Colors
+                                                                        .blueAccent,
+                                                                    size: 14,
+                                                                  ),
+                                                                  const SizedBox(
+                                                                    width: 4,
+                                                                  ),
+                                                                  Expanded(
+                                                                    child: Text(
+                                                                      _getLinkChipLabel(
+                                                                        tempTrueLinkSource,
+                                                                        2,
+                                                                        context,
+                                                                      ),
+                                                                      style: const TextStyle(
+                                                                        color: Colors
+                                                                            .blueAccent,
+                                                                        fontSize:
+                                                                            12,
+                                                                      ),
+                                                                      overflow:
+                                                                          TextOverflow
+                                                                              .ellipsis,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            )
+                                                          : TextField(
+                                                              controller:
+                                                                  trueValCtrl,
+                                                              keyboardType:
+                                                                  const TextInputType.numberWithOptions(
+                                                                    decimal:
+                                                                        true,
+                                                                  ),
+                                                              inputFormatters: [
+                                                                _ThousandsFormatter(),
+                                                              ],
+                                                              style:
+                                                                  const TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontSize:
+                                                                        13,
+                                                                  ),
+                                                              decoration: InputDecoration(
+                                                                hintText: '1.0',
+                                                                isDense: true,
+                                                                contentPadding:
+                                                                    EdgeInsets.symmetric(
+                                                                      vertical:
+                                                                          8,
+                                                                      horizontal:
+                                                                          8,
+                                                                    ),
+                                                                border:
+                                                                    OutlineInputBorder(),
+                                                              ),
+                                                              onChanged: (v) {
+                                                                tempLinkSource!['trueVal'] =
+                                                                    double.tryParse(
+                                                                      v.replaceAll(
+                                                                        ',',
+                                                                        '',
+                                                                      ),
+                                                                    ) ??
+                                                                    1.0;
+                                                              },
+                                                            ),
+                                                    ),
+                                                    if (onPickLinkSource !=
+                                                        null)
+                                                      tempTrueLink
+                                                          ? IconButton(
+                                                              icon: const Icon(
+                                                                Icons
+                                                                    .link_off_rounded,
+                                                                color: Colors
+                                                                    .white38,
+                                                              ),
+                                                              iconSize: 18,
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  const BoxConstraints(),
+                                                              onPressed: () {
+                                                                setSheetState(() {
+                                                                  tempTrueLink =
+                                                                      false;
+                                                                  tempTrueLinkSource =
+                                                                      null;
+                                                                  tempLinkSource!['trueLink'] =
+                                                                      false;
+                                                                  tempLinkSource!['trueLinkSource'] =
+                                                                      null;
+                                                                });
+                                                              },
+                                                            )
+                                                          : IconButton(
+                                                              icon: const Icon(
+                                                                Icons
+                                                                    .link_rounded,
+                                                                color: Colors
+                                                                    .blueAccent,
+                                                              ),
+                                                              iconSize: 18,
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  const BoxConstraints(),
+                                                              onPressed: () async {
+                                                                final src =
+                                                                    await onPickLinkSource!();
+                                                                if (src !=
+                                                                    null) {
+                                                                  setSheetState(() {
+                                                                    tempTrueLink =
+                                                                        true;
+                                                                    tempTrueLinkSource =
+                                                                        src;
+                                                                    tempLinkSource!['trueLink'] =
+                                                                        true;
+                                                                    tempLinkSource!['trueLinkSource'] =
+                                                                        src;
+                                                                  });
+                                                                }
+                                                              },
+                                                            ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  l10n.falseValue,
+                                                  style: TextStyle(
+                                                    color: Colors.white54,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: tempFalseLink
+                                                          ? Container(
+                                                              padding:
+                                                                  const EdgeInsets.symmetric(
+                                                                    horizontal:
+                                                                        8,
+                                                                    vertical: 6,
+                                                                  ),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors
+                                                                    .blueAccent
+                                                                    .withOpacity(
+                                                                      0.15,
+                                                                    ),
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      4,
+                                                                    ),
+                                                                border: Border.all(
+                                                                  color: Colors
+                                                                      .blueAccent
+                                                                      .withOpacity(
+                                                                        0.4,
+                                                                      ),
+                                                                ),
+                                                              ),
+                                                              child: Row(
+                                                                children: [
+                                                                  const Icon(
+                                                                    Icons
+                                                                        .link_rounded,
+                                                                    color: Colors
+                                                                        .blueAccent,
+                                                                    size: 14,
+                                                                  ),
+                                                                  const SizedBox(
+                                                                    width: 4,
+                                                                  ),
+                                                                  Expanded(
+                                                                    child: Text(
+                                                                      _getLinkChipLabel(
+                                                                        tempFalseLinkSource,
+                                                                        2,
+                                                                        context,
+                                                                      ),
+                                                                      style: const TextStyle(
+                                                                        color: Colors
+                                                                            .blueAccent,
+                                                                        fontSize:
+                                                                            12,
+                                                                      ),
+                                                                      overflow:
+                                                                          TextOverflow
+                                                                              .ellipsis,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            )
+                                                          : TextField(
+                                                              controller:
+                                                                  falseValCtrl,
+                                                              keyboardType:
+                                                                  const TextInputType.numberWithOptions(
+                                                                    decimal:
+                                                                        true,
+                                                                  ),
+                                                              inputFormatters: [
+                                                                _ThousandsFormatter(),
+                                                              ],
+                                                              style:
+                                                                  const TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontSize:
+                                                                        13,
+                                                                  ),
+                                                              decoration: InputDecoration(
+                                                                hintText: '0.0',
+                                                                isDense: true,
+                                                                contentPadding:
+                                                                    EdgeInsets.symmetric(
+                                                                      vertical:
+                                                                          8,
+                                                                      horizontal:
+                                                                          8,
+                                                                    ),
+                                                                border:
+                                                                    OutlineInputBorder(),
+                                                              ),
+                                                              onChanged: (v) {
+                                                                tempLinkSource!['falseVal'] =
+                                                                    double.tryParse(
+                                                                      v.replaceAll(
+                                                                        ',',
+                                                                        '',
+                                                                      ),
+                                                                    ) ??
+                                                                    0.0;
+                                                              },
+                                                            ),
+                                                    ),
+                                                    if (onPickLinkSource !=
+                                                        null)
+                                                      tempFalseLink
+                                                          ? IconButton(
+                                                              icon: const Icon(
+                                                                Icons
+                                                                    .link_off_rounded,
+                                                                color: Colors
+                                                                    .white38,
+                                                              ),
+                                                              iconSize: 18,
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  const BoxConstraints(),
+                                                              onPressed: () {
+                                                                setSheetState(() {
+                                                                  tempFalseLink =
+                                                                      false;
+                                                                  tempFalseLinkSource =
+                                                                      null;
+                                                                  tempLinkSource!['falseLink'] =
+                                                                      false;
+                                                                  tempLinkSource!['falseLinkSource'] =
+                                                                      null;
+                                                                });
+                                                              },
+                                                            )
+                                                          : IconButton(
+                                                              icon: const Icon(
+                                                                Icons
+                                                                    .link_rounded,
+                                                                color: Colors
+                                                                    .blueAccent,
+                                                              ),
+                                                              iconSize: 18,
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  const BoxConstraints(),
+                                                              onPressed: () async {
+                                                                final src =
+                                                                    await onPickLinkSource!();
+                                                                if (src !=
+                                                                    null) {
+                                                                  setSheetState(() {
+                                                                    tempFalseLink =
+                                                                        true;
+                                                                    tempFalseLinkSource =
+                                                                        src;
+                                                                    tempLinkSource!['falseLink'] =
+                                                                        true;
+                                                                    tempLinkSource!['falseLinkSource'] =
+                                                                        src;
+                                                                  });
+                                                                }
+                                                              },
+                                                            ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      if (tempLink)
-                                        GestureDetector(
-                                          onTap: () => setSheetState(() {
-                                            tempLink = false;
-                                            tempLinkSource = null;
-                                          }),
-                                          child: Text(
-l10n.unlink,
-                                            style: TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        )
-                                      else
-                                        GestureDetector(
-                                          onTap: () => setSheetState(
-                                            () => tempLink = true,
-                                          ),
-                                          child: Text(
-l10n.restoreLink,
-                                            style: TextStyle(
-                                              color: Colors.blueAccent,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
                                     ],
-                                  ),
-                                  if (tempLinkSource != null &&
-                                      tempLinkSource!['type'] == 'logic') ...[
-                                    const SizedBox(height: 12),
-                                    const Divider(
-                                      color: Colors.white12,
-                                      height: 1,
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8, bottom: 4),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.white12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.linkSettingsHint,
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                     const SizedBox(height: 8),
                                     Row(
                                       children: [
                                         Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-l10n.trueValue,
-                                                style: TextStyle(
-                                                  color: Colors.white54,
-                                                  fontSize: 11,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: tempTrueLink
-                                                        ? Container(
-                                                            padding:
-                                                                const EdgeInsets.symmetric(
-                                                                  horizontal: 8,
-                                                                  vertical: 6,
-                                                                ),
-                                                            decoration: BoxDecoration(
-                                                              color: Colors
-                                                                  .blueAccent
-                                                                  .withOpacity(
-                                                                    0.15,
-                                                                  ),
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    4,
-                                                                  ),
-                                                              border: Border.all(
-                                                                color: Colors
-                                                                    .blueAccent
-                                                                    .withOpacity(
-                                                                      0.4,
-                                                                    ),
-                                                              ),
-                                                            ),
-                                                            child: Row(
-                                                              children: [
-                                                                const Icon(
-                                                                  Icons
-                                                                      .link_rounded,
-                                                                  color: Colors
-                                                                      .blueAccent,
-                                                                  size: 14,
-                                                                ),
-                                                                const SizedBox(
-                                                                  width: 4,
-                                                                ),
-                                                                Expanded(
-                                                                  child: Text(
-                                                                    _getLinkChipLabel(
-                                                                      tempTrueLinkSource,
-                                                                      2, context
-                                                                    ),
-                                                                    style: const TextStyle(
-                                                                      color: Colors
-                                                                          .blueAccent,
-                                                                      fontSize:
-                                                                          12,
-                                                                    ),
-                                                                    overflow:
-                                                                        TextOverflow
-                                                                            .ellipsis,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          )
-                                                        : TextField(
-                                                            controller:
-                                                                trueValCtrl,
-                                                            keyboardType:
-                                                                const TextInputType.numberWithOptions(
-                                                                  decimal: true,
-                                                                ),
-                                                            inputFormatters: [
-                                                              _ThousandsFormatter(),
-                                                            ],
-                                                            style:
-                                                                const TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize: 13,
-                                                                ),
-                                                            decoration: InputDecoration(
-                                                              hintText: '1.0',
-                                                              isDense: true,
-                                                              contentPadding:
-                                                                  EdgeInsets.symmetric(
-                                                                    vertical: 8,
-                                                                    horizontal:
-                                                                        8,
-                                                                  ),
-                                                              border:
-                                                                  OutlineInputBorder(),
-                                                            ),
-                                                            onChanged: (v) {
-                                                              tempLinkSource!['trueVal'] =
-                                                                  double.tryParse(
-                                                                    v.replaceAll(
-                                                                      ',',
-                                                                      '',
-                                                                    ),
-                                                                  ) ??
-                                                                  1.0;
-                                                            },
-                                                          ),
+                                          child: ElevatedButton.icon(
+                                            icon: const Icon(
+                                              Icons.upload_rounded,
+                                              size: 16,
+                                            ),
+                                            label: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  l10n.makeLinkSource,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
                                                   ),
-                                                  if (onPickLinkSource != null)
-                                                    tempTrueLink
-                                                        ? IconButton(
-                                                            icon: const Icon(
-                                                              Icons
-                                                                  .link_off_rounded,
-                                                              color: Colors
-                                                                  .white38,
-                                                            ),
-                                                            iconSize: 18,
-                                                            padding:
-                                                                EdgeInsets.zero,
-                                                            constraints:
-                                                                const BoxConstraints(),
-                                                            onPressed: () {
-                                                              setSheetState(() {
-                                                                tempTrueLink =
-                                                                    false;
-                                                                tempTrueLinkSource =
-                                                                    null;
-                                                                tempLinkSource!['trueLink'] =
-                                                                    false;
-                                                                tempLinkSource!['trueLinkSource'] =
-                                                                    null;
-                                                              });
-                                                            },
-                                                          )
-                                                        : IconButton(
-                                                            icon: const Icon(
-                                                              Icons
-                                                                  .link_rounded,
-                                                              color: Colors
-                                                                  .blueAccent,
-                                                            ),
-                                                            iconSize: 18,
-                                                            padding:
-                                                                EdgeInsets.zero,
-                                                            constraints:
-                                                                const BoxConstraints(),
-                                                            onPressed: () async {
-                                                              final src =
-                                                                  await onPickLinkSource!();
-                                                              if (src != null) {
-                                                                setSheetState(() {
-                                                                  tempTrueLink =
-                                                                      true;
-                                                                  tempTrueLinkSource =
-                                                                      src;
-                                                                  tempLinkSource!['trueLink'] =
-                                                                      true;
-                                                                  tempLinkSource!['trueLinkSource'] =
-                                                                      src;
-                                                                });
-                                                              }
-                                                            },
-                                                          ),
-                                                ],
-                                              ),
-                                            ],
+                                                ),
+                                                SizedBox(width: 4),
+                                                ProBadge(),
+                                              ],
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.blueAccent
+                                                  .withOpacity(0.2),
+                                              foregroundColor:
+                                                  Colors.blueAccent,
+                                              elevation: 0,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 8,
+                                                  ),
+                                            ),
+                                            onPressed: () {
+                                              Navigator.pop(ctx);
+                                              ProGuard.checkAndRun(context, () {
+                                                if (onLinkSettingsPressed !=
+                                                    null) {
+                                                  onLinkSettingsPressed!(
+                                                    'source',
+                                                    'operand',
+                                                  );
+                                                }
+                                              });
+                                            },
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
+                                        const SizedBox(width: 8),
                                         Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-l10n.falseValue,
-                                                style: TextStyle(
-                                                  color: Colors.white54,
-                                                  fontSize: 11,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: tempFalseLink
-                                                        ? Container(
-                                                            padding:
-                                                                const EdgeInsets.symmetric(
-                                                                  horizontal: 8,
-                                                                  vertical: 6,
-                                                                ),
-                                                            decoration: BoxDecoration(
-                                                              color: Colors
-                                                                  .blueAccent
-                                                                  .withOpacity(
-                                                                    0.15,
-                                                                  ),
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    4,
-                                                                  ),
-                                                              border: Border.all(
-                                                                color: Colors
-                                                                    .blueAccent
-                                                                    .withOpacity(
-                                                                      0.4,
-                                                                    ),
-                                                              ),
-                                                            ),
-                                                            child: Row(
-                                                              children: [
-                                                                const Icon(
-                                                                  Icons
-                                                                      .link_rounded,
-                                                                  color: Colors
-                                                                      .blueAccent,
-                                                                  size: 14,
-                                                                ),
-                                                                const SizedBox(
-                                                                  width: 4,
-                                                                ),
-                                                                Expanded(
-                                                                  child: Text(
-                                                                    _getLinkChipLabel(
-                                                                      tempFalseLinkSource,
-                                                                      2, context
-                                                                    ),
-                                                                    style: const TextStyle(
-                                                                      color: Colors
-                                                                          .blueAccent,
-                                                                      fontSize:
-                                                                          12,
-                                                                    ),
-                                                                    overflow:
-                                                                        TextOverflow
-                                                                            .ellipsis,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          )
-                                                        : TextField(
-                                                            controller:
-                                                                falseValCtrl,
-                                                            keyboardType:
-                                                                const TextInputType.numberWithOptions(
-                                                                  decimal: true,
-                                                                ),
-                                                            inputFormatters: [
-                                                              _ThousandsFormatter(),
-                                                            ],
-                                                            style:
-                                                                const TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize: 13,
-                                                                ),
-                                                            decoration: InputDecoration(
-                                                              hintText: '0.0',
-                                                              isDense: true,
-                                                              contentPadding:
-                                                                  EdgeInsets.symmetric(
-                                                                    vertical: 8,
-                                                                    horizontal:
-                                                                        8,
-                                                                  ),
-                                                              border:
-                                                                  OutlineInputBorder(),
-                                                            ),
-                                                            onChanged: (v) {
-                                                              tempLinkSource!['falseVal'] =
-                                                                  double.tryParse(
-                                                                    v.replaceAll(
-                                                                      ',',
-                                                                      '',
-                                                                    ),
-                                                                  ) ??
-                                                                  0.0;
-                                                            },
-                                                          ),
+                                          child: ElevatedButton.icon(
+                                            icon: const Icon(
+                                              Icons.download_rounded,
+                                              size: 16,
+                                            ),
+                                            label: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  l10n.makeLinkTarget,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
                                                   ),
-                                                  if (onPickLinkSource != null)
-                                                    tempFalseLink
-                                                        ? IconButton(
-                                                            icon: const Icon(
-                                                              Icons
-                                                                  .link_off_rounded,
-                                                              color: Colors
-                                                                  .white38,
-                                                            ),
-                                                            iconSize: 18,
-                                                            padding:
-                                                                EdgeInsets.zero,
-                                                            constraints:
-                                                                const BoxConstraints(),
-                                                            onPressed: () {
-                                                              setSheetState(() {
-                                                                tempFalseLink =
-                                                                    false;
-                                                                tempFalseLinkSource =
-                                                                    null;
-                                                                tempLinkSource!['falseLink'] =
-                                                                    false;
-                                                                tempLinkSource!['falseLinkSource'] =
-                                                                    null;
-                                                              });
-                                                            },
-                                                          )
-                                                        : IconButton(
-                                                            icon: const Icon(
-                                                              Icons
-                                                                  .link_rounded,
-                                                              color: Colors
-                                                                  .blueAccent,
-                                                            ),
-                                                            iconSize: 18,
-                                                            padding:
-                                                                EdgeInsets.zero,
-                                                            constraints:
-                                                                const BoxConstraints(),
-                                                            onPressed: () async {
-                                                              final src =
-                                                                  await onPickLinkSource!();
-                                                              if (src != null) {
-                                                                setSheetState(() {
-                                                                  tempFalseLink =
-                                                                      true;
-                                                                  tempFalseLinkSource =
-                                                                      src;
-                                                                  tempLinkSource!['falseLink'] =
-                                                                      true;
-                                                                  tempLinkSource!['falseLinkSource'] =
-                                                                      src;
-                                                                });
-                                                              }
-                                                            },
-                                                          ),
-                                                ],
-                                              ),
-                                            ],
+                                                ),
+                                                SizedBox(width: 4),
+                                                ProBadge(),
+                                              ],
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.cyan
+                                                  .withOpacity(0.2),
+                                              foregroundColor: Colors.cyan,
+                                              elevation: 0,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 8,
+                                                  ),
+                                            ),
+                                            onPressed: () {
+                                              Navigator.pop(ctx);
+                                              ProGuard.checkAndRun(context, () {
+                                                if (onLinkSettingsPressed !=
+                                                    null) {
+                                                  onLinkSettingsPressed!(
+                                                    'target',
+                                                    'operand',
+                                                  );
+                                                }
+                                              });
+                                            },
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          )
-                        else
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8, bottom: 4),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.white12),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-l10n.linkSettingsHint,
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12,
+                                    const SizedBox(height: 12),
+                                    const Divider(
+                                      color: Colors.white12,
+                                      height: 1,
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: ElevatedButton.icon(
-                                          icon: const Icon(
-                                            Icons.upload_rounded,
-                                            size: 16,
-                                          ),
-                                          label: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                l10n.makeLinkSource,
-                                                style: TextStyle(fontSize: 12),
-                                              ),
-                                              SizedBox(width: 4),
-                                              ProBadge(),
-                                            ],
-                                          ),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blueAccent
-                                                .withOpacity(0.2),
-                                            foregroundColor: Colors.blueAccent,
-                                            elevation: 0,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 8,
-                                            ),
-                                          ),
-                                          onPressed: () {
-                                            Navigator.pop(ctx);
-                                            ProGuard.checkAndRun(context, () {
-                                              if (onLinkSettingsPressed !=
-                                                  null) {
-                                                onLinkSettingsPressed!(
-                                                  'source',
-                                                  'operand',
-                                                );
-                                              }
-                                            });
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: ElevatedButton.icon(
-                                          icon: const Icon(
-                                            Icons.download_rounded,
-                                            size: 16,
-                                          ),
-                                          label: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                l10n.makeLinkTarget,
-                                                style: TextStyle(fontSize: 12),
-                                              ),
-                                              SizedBox(width: 4),
-                                              ProBadge(),
-                                            ],
-                                          ),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.cyan
-                                                .withOpacity(0.2),
-                                            foregroundColor: Colors.cyan,
-                                            elevation: 0,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 8,
-                                            ),
-                                          ),
-                                          onPressed: () {
-                                            Navigator.pop(ctx);
-                                            ProGuard.checkAndRun(context, () {
-                                              if (onLinkSettingsPressed !=
-                                                  null) {
-                                                onLinkSettingsPressed!(
-                                                  'target',
-                                                  'operand',
-                                                );
-                                              }
-                                            });
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  const Divider(
-                                    color: Colors.white12,
-                                    height: 1,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.rule_rounded,
-                                        color: Colors.purpleAccent,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-l10n.linkLogic,
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      TextButton.icon(
-                                        icon: const Icon(
-                                          Icons.add_rounded,
-                                          size: 14,
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.rule_rounded,
                                           color: Colors.purpleAccent,
+                                          size: 16,
                                         ),
-                                        label: Text(
-l10n.addLogic,
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          l10n.linkLogic,
                                           style: TextStyle(
-                                            color: Colors.purpleAccent,
+                                            color: Colors.white70,
                                             fontSize: 12,
                                           ),
                                         ),
-                                        style: TextButton.styleFrom(
-                                          padding: EdgeInsets.zero,
-                                          minimumSize: Size.zero,
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        onPressed: () async {
-                                          final newLogic =
-                                              await showDialog<
-                                                Map<String, dynamic>
-                                              >(
-                                                context: context,
-                                                builder: (ctx) =>
-                                                    const _LogicItemEditDialog(
-                                                      initial: null,
-                                                    ),
-                                              );
-                                          if (newLogic != null) {
-                                            final newId =
-                                                'logic_${DateTime.now().millisecondsSinceEpoch}';
-                                            final newLogicItem = {
-                                              ...newLogic,
-                                              'id': newId,
-                                            };
-                                            if (onAddLogicItem != null) {
-                                              onAddLogicItem!(newLogicItem);
+                                        const Spacer(),
+                                        TextButton.icon(
+                                          icon: const Icon(
+                                            Icons.add_rounded,
+                                            size: 14,
+                                            color: Colors.purpleAccent,
+                                          ),
+                                          label: Text(
+                                            l10n.addLogic,
+                                            style: TextStyle(
+                                              color: Colors.purpleAccent,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          style: TextButton.styleFrom(
+                                            padding: EdgeInsets.zero,
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize
+                                                .shrinkWrap,
+                                          ),
+                                          onPressed: () async {
+                                            final newLogic =
+                                                await showDialog<
+                                                  Map<String, dynamic>
+                                                >(
+                                                  context: context,
+                                                  builder: (ctx) =>
+                                                      const _LogicItemEditDialog(
+                                                        initial: null,
+                                                      ),
+                                                );
+                                            if (newLogic != null) {
+                                              final newId =
+                                                  'logic_${DateTime.now().millisecondsSinceEpoch}';
+                                              final newLogicItem = {
+                                                ...newLogic,
+                                                'id': newId,
+                                              };
+                                              if (onAddLogicItem != null) {
+                                                onAddLogicItem!(newLogicItem);
+                                              }
+                                              setSheetState(() {
+                                                localLogicItems.add(
+                                                  newLogicItem,
+                                                );
+                                                tempLink = true;
+                                                tempLinkSource = {
+                                                  'type': 'logic',
+                                                  'logicId': newId,
+                                                  'trueVal': 1.0,
+                                                  'falseVal': 0.0,
+                                                  'trueLink': false,
+                                                  'trueLinkSource': null,
+                                                  'falseLink': false,
+                                                  'falseLinkSource': null,
+                                                };
+                                                tempTrueLink = false;
+                                                tempTrueLinkSource = null;
+                                                tempFalseLink = false;
+                                                tempFalseLinkSource = null;
+                                                trueValCtrl.text = '1.0';
+                                                falseValCtrl.text = '0.0';
+                                              });
                                             }
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    if (localLogicItems.isEmpty)
+                                      Text(
+                                        l10n.noSettingLogicYet,
+                                        style: TextStyle(
+                                          color: Colors.white38,
+                                          fontSize: 11,
+                                        ),
+                                      )
+                                    else
+                                      DropdownButtonFormField<String>(
+                                        dropdownColor: Colors.black,
+                                        hint: Text(
+                                          l10n.selectLogic,
+                                          style: TextStyle(
+                                            color: Colors.white38,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        isExpanded: true,
+                                        decoration: InputDecoration(
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 8,
+                                          ),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        items: localLogicItems.map((logic) {
+                                          final name =
+                                              logic['name'] as String? ?? '';
+                                          final expr =
+                                              _CalculatorWidgetState._buildLogicExprString(
+                                                logic,
+                                              );
+                                          return DropdownMenuItem<String>(
+                                            value: logic['id'] as String,
+                                            child: Text(
+                                              name.isNotEmpty
+                                                  ? '$name: $expr'
+                                                  : expr,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          );
+                                        }).toList(),
+                                        onChanged: (selectedId) {
+                                          if (selectedId != null) {
                                             setSheetState(() {
-                                              localLogicItems.add(newLogicItem);
                                               tempLink = true;
                                               tempLinkSource = {
                                                 'type': 'logic',
-                                                'logicId': newId,
-                                                'trueVal': 1.0,
+                                                'logicId': selectedId,
+                                                'trueVal':
+                                                    double.tryParse(
+                                                      ctrl.text.replaceAll(
+                                                        ',',
+                                                        '',
+                                                      ),
+                                                    ) ??
+                                                    1.0,
                                                 'falseVal': 0.0,
                                                 'trueLink': false,
                                                 'trueLinkSource': null,
@@ -3611,445 +3822,381 @@ l10n.addLogic,
                                               tempTrueLinkSource = null;
                                               tempFalseLink = false;
                                               tempFalseLinkSource = null;
-                                              trueValCtrl.text = '1.0';
+                                              trueValCtrl.text =
+                                                  (double.tryParse(
+                                                            ctrl.text
+                                                                .replaceAll(
+                                                                  ',',
+                                                                  '',
+                                                                ),
+                                                          ) ??
+                                                          1.0)
+                                                      .toString();
                                               falseValCtrl.text = '0.0';
                                             });
                                           }
                                         },
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  if (localLogicItems.isEmpty)
-                                    Text(
-l10n.noSettingLogicYet,
-                                      style: TextStyle(
-                                        color: Colors.white38,
-                                        fontSize: 11,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          if (constants.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              l10n.constantLink,
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: constants.asMap().entries.map((e) {
+                                  final ci = e.key;
+                                  final c = e.value;
+                                  final name = c['name'] as String? ?? '';
+                                  final val = (c['value'] as num? ?? 0.0);
+                                  final isSelected =
+                                      tempLink &&
+                                      tempLinkSource != null &&
+                                      tempLinkSource!['type'] == 'constant' &&
+                                      tempLinkSource!['constIdx'] == ci;
+                                  return GestureDetector(
+                                    onTap: () => setSheetState(() {
+                                      tempLink = true;
+                                      tempLinkSource = {
+                                        'type': 'constant',
+                                        'constIdx': ci,
+                                      };
+                                    }),
+                                    child: Container(
+                                      margin: const EdgeInsets.only(right: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
                                       ),
-                                    )
-                                  else
-                                    DropdownButtonFormField<String>(
-                                      dropdownColor: Colors.black,
-                                      hint: Text(
-l10n.selectLogic,
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? Colors.amberAccent.withOpacity(
+                                                0.2,
+                                              )
+                                            : Colors.white.withOpacity(0.05),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? Colors.amberAccent
+                                              : Colors.white24,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '$name = $val',
                                         style: TextStyle(
-                                          color: Colors.white38,
+                                          color: isSelected
+                                              ? Colors.amberAccent
+                                              : Colors.white70,
                                           fontSize: 12,
                                         ),
                                       ),
-                                      isExpanded: true,
-                                      decoration: InputDecoration(
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(
-                                          vertical: 8,
-                                          horizontal: 8,
-                                        ),
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      items: localLogicItems.map((logic) {
-                                        final name =
-                                            logic['name'] as String? ?? '';
-                                        final expr =
-                                            _CalculatorWidgetState._buildLogicExprString(
-                                              logic,
-                                            );
-                                        return DropdownMenuItem<String>(
-                                          value: logic['id'] as String,
-                                          child: Text(
-                                            name.isNotEmpty
-                                                ? '$name: $expr'
-                                                : expr,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        );
-                                      }).toList(),
-                                      onChanged: (selectedId) {
-                                        if (selectedId != null) {
-                                          setSheetState(() {
-                                            tempLink = true;
-                                            tempLinkSource = {
-                                              'type': 'logic',
-                                              'logicId': selectedId,
-                                              'trueVal':
-                                                  double.tryParse(
-                                                    ctrl.text.replaceAll(
-                                                      ',',
-                                                      '',
-                                                    ),
-                                                  ) ??
-                                                  1.0,
-                                              'falseVal': 0.0,
-                                              'trueLink': false,
-                                              'trueLinkSource': null,
-                                              'falseLink': false,
-                                              'falseLinkSource': null,
-                                            };
-                                            tempTrueLink = false;
-                                            tempTrueLinkSource = null;
-                                            tempFalseLink = false;
-                                            tempFalseLinkSource = null;
-                                            trueValCtrl.text =
-                                                (double.tryParse(
-                                                          ctrl.text.replaceAll(
-                                                            ',',
-                                                            '',
-                                                          ),
-                                                        ) ??
-                                                        1.0)
-                                                    .toString();
-                                            falseValCtrl.text = '0.0';
-                                          });
-                                        }
-                                      },
                                     ),
-                                ],
+                                  );
+                                }).toList(),
                               ),
                             ),
-                          ),
-                        if (constants.isNotEmpty) ...[
-                          const SizedBox(height: 8),
+                          ],
+                          const Divider(color: Colors.white12),
+                          const SizedBox(height: 4),
                           Text(
-l10n.constantLink,
+                            l10n.transformSection,
                             style: TextStyle(
                               color: Colors.white54,
                               fontSize: 12,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(vertical: 4),
                             child: Row(
-                              children: constants.asMap().entries.map((e) {
-                                final ci = e.key;
-                                final c = e.value;
-                                final name = c['name'] as String? ?? '';
-                                final val = (c['value'] as num? ?? 0.0);
-                                final isSelected =
-                                    tempLink &&
-                                    tempLinkSource != null &&
-                                    tempLinkSource!['type'] == 'constant' &&
-                                    tempLinkSource!['constIdx'] == ci;
-                                return GestureDetector(
-                                  onTap: () => setSheetState(() {
-                                    tempLink = true;
-                                    tempLinkSource = {
-                                      'type': 'constant',
-                                      'constIdx': ci,
-                                    };
-                                  }),
-                                  child: Container(
-                                    margin: const EdgeInsets.only(right: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? Colors.amberAccent.withOpacity(0.2)
-                                          : Colors.white.withOpacity(0.05),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? Colors.amberAccent
-                                            : Colors.white24,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      '$name = $val',
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? Colors.amberAccent
+                              children: [
+                                for (final entry in <List<String?>>[
+                                  [l10n.noTransform, null],
+                                  [l10n.transformSqrt, 'sqrt'],
+                                  [l10n.transformPowLabel, 'pow'],
+                                  [l10n.transformNroot, 'nroot'],
+                                  [l10n.transformAbs, 'abs'],
+                                  [l10n.transformFloor, 'floor'],
+                                  [l10n.transformCeil, 'ceil'],
+                                  [l10n.transformRound, 'round'],
+                                  [l10n.transformLog10, 'log10'],
+                                  [l10n.transformReciprocal, 'reciprocal'],
+                                  [l10n.transformSin, 'sin'],
+                                  [l10n.transformCos, 'cos'],
+                                  [l10n.transformTan, 'tan'],
+                                ])
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: ChoiceChip(
+                                      label: Text(entry[0]!),
+                                      selected: tempTransform == entry[1],
+                                      selectedColor: entry[1] == null
+                                          ? null
+                                          : _CalculatorRow._transformColor(
+                                              entry[1],
+                                            ).withOpacity(0.2),
+                                      labelStyle: TextStyle(
+                                        color:
+                                            tempTransform == entry[1] &&
+                                                entry[1] != null
+                                            ? _CalculatorRow._transformColor(
+                                                entry[1],
+                                              )
                                             : Colors.white70,
                                         fontSize: 12,
                                       ),
+                                      onSelected: (_) => setSheetState(
+                                        () => tempTransform = entry[1],
+                                      ),
                                     ),
                                   ),
-                                );
-                              }).toList(),
+                              ],
                             ),
                           ),
-                        ],
-                        const Divider(color: Colors.white12),
-                        const SizedBox(height: 4),
-                        Text(
-l10n.transformSection,
-                          style: TextStyle(color: Colors.white54, fontSize: 12),
-                        ),
-                        const SizedBox(height: 8),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              for (final entry in <List<String?>>[
-                                [l10n.noTransform, null],
-                                [l10n.transformSqrt, 'sqrt'],
-                                [l10n.transformPowLabel, 'pow'],
-                                [l10n.transformNroot, 'nroot'],
-                                [l10n.transformAbs, 'abs'],
-                                [l10n.transformFloor, 'floor'],
-                                [l10n.transformCeil, 'ceil'],
-                                [l10n.transformRound, 'round'],
-                                [l10n.transformLog10, 'log10'],
-                                [l10n.transformReciprocal, 'reciprocal'],
-                                [l10n.transformSin, 'sin'],
-                                [l10n.transformCos, 'cos'],
-                                [l10n.transformTan, 'tan'],
-                              ])
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: ChoiceChip(
-                                    label: Text(entry[0]!),
-                                    selected: tempTransform == entry[1],
-                                    selectedColor: entry[1] == null
-                                        ? null
-                                        : _CalculatorRow._transformColor(
-                                            entry[1],
-                                          ).withOpacity(0.2),
-                                    labelStyle: TextStyle(
-                                      color:
-                                          tempTransform == entry[1] &&
-                                              entry[1] != null
-                                          ? _CalculatorRow._transformColor(
-                                              entry[1],
-                                            )
-                                          : Colors.white70,
-                                      fontSize: 12,
-                                    ),
-                                    onSelected: (_) => setSheetState(
-                                      () => tempTransform = entry[1],
-                                    ),
+                          if (tempTransform == 'pow' ||
+                              tempTransform == 'nroot') ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Text(
+                                  tempTransform == 'pow'
+                                      ? l10n.powExponentQ
+                                      : l10n.nrootExponentQ,
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
                                   ),
                                 ),
-                            ],
-                          ),
-                        ),
-                        if (tempTransform == 'pow' ||
-                            tempTransform == 'nroot') ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Text(
-                                tempTransform == 'pow'
-                                    ? l10n.powExponentQ
-                                    : l10n.nrootExponentQ,
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              SizedBox(
-                                width: 80,
-                                child: TextField(
-                                  controller: powExpCtrl,
-                                  keyboardType:
-                                      const TextInputType.numberWithOptions(
-                                        decimal: true,
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 80,
+                                  child: TextField(
+                                    controller: powExpCtrl,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                    inputFormatters: [_ThousandsFormatter()],
+                                    style: const TextStyle(color: Colors.white),
+                                    decoration: InputDecoration(
+                                      hintText: '2',
+                                      hintStyle: TextStyle(
+                                        color: Colors.white24,
                                       ),
-                                  inputFormatters: [_ThousandsFormatter()],
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
-                                    hintText: '2',
-                                    hintStyle: TextStyle(color: Colors.white24),
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(
-                                      vertical: 8,
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
                                     ),
+                                    onChanged: (v) {
+                                      tempPowExp =
+                                          double.tryParse(
+                                            v.replaceAll(',', ''),
+                                          ) ??
+                                          tempPowExp;
+                                      setSheetState(() {});
+                                    },
                                   ),
-                                  onChanged: (v) {
-                                    tempPowExp =
-                                        double.tryParse(
-                                          v.replaceAll(',', ''),
-                                        ) ??
-                                        tempPowExp;
-                                    setSheetState(() {});
-                                  },
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        if (tempTransform != null) ...[
-                          const SizedBox(height: 10),
-                          Builder(
-                            builder: (_) {
-                              final v =
-                                  double.tryParse(
-                                    ctrl.text.replaceAll(',', ''),
-                                  ) ??
-                                  0.0;
-                              final res = _applyTermTransform(
-                                v,
-                                tempTransform,
-                                tempPowExp,
-                              );
-                              String fmtPreview(double x) {
-                                if (x.isInfinite || x.isNaN) return AppLocalizations.of(context)!.errorResult;
-                                if (x == x.truncateToDouble() && x.abs() < 1e12)
-                                  return x.toInt().toString();
-                                final intD = x.abs() >= 1
-                                    ? x.abs().toInt().toString().length
-                                    : 0;
-                                final decD = (10 - intD).clamp(0, 10);
-                                final s = x.toStringAsFixed(decD);
-                                return s
-                                    .replaceAll(RegExp(r'0+$'), '')
-                                    .replaceAll(RegExp(r'\.$'), '');
-                              }
+                              ],
+                            ),
+                          ],
+                          if (tempTransform != null) ...[
+                            const SizedBox(height: 10),
+                            Builder(
+                              builder: (_) {
+                                final v =
+                                    double.tryParse(
+                                      ctrl.text.replaceAll(',', ''),
+                                    ) ??
+                                    0.0;
+                                final res = _applyTermTransform(
+                                  v,
+                                  tempTransform,
+                                  tempPowExp,
+                                );
+                                String fmtPreview(double x) {
+                                  if (x.isInfinite || x.isNaN)
+                                    return AppLocalizations.of(
+                                      context,
+                                    )!.errorResult;
+                                  if (x == x.truncateToDouble() &&
+                                      x.abs() < 1e12)
+                                    return x.toInt().toString();
+                                  final intD = x.abs() >= 1
+                                      ? x.abs().toInt().toString().length
+                                      : 0;
+                                  final decD = (10 - intD).clamp(0, 10);
+                                  final s = x.toStringAsFixed(decD);
+                                  return s
+                                      .replaceAll(RegExp(r'0+$'), '')
+                                      .replaceAll(RegExp(r'\.$'), '');
+                                }
 
-                              final exprStr = _CalculatorRow._transformExprStr(
-                                ctrl.text,
-                                tempTransform,
-                                tempPowExp,
-                              );
-                              final color = _CalculatorRow._transformColor(
-                                tempTransform,
-                              );
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: color.withOpacity(0.25),
+                                final exprStr =
+                                    _CalculatorRow._transformExprStr(
+                                      ctrl.text,
+                                      tempTransform,
+                                      tempPowExp,
+                                    );
+                                final color = _CalculatorRow._transformColor(
+                                  tempTransform,
+                                );
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
                                   ),
-                                ),
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        exprStr,
-                                        style: const TextStyle(
-                                          color: Colors.white54,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      const Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                        ),
-                                        child: Text(
-                                          '=',
-                                          style: TextStyle(
-                                            color: Colors.white38,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: color.withOpacity(0.25),
+                                    ),
+                                  ),
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          exprStr,
+                                          style: const TextStyle(
+                                            color: Colors.white54,
                                             fontSize: 13,
                                           ),
                                         ),
-                                      ),
-                                      Text(
-                                        _addCommas(fmtPreview(res)),
-                                        style: TextStyle(
-                                          color: color,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                          ),
+                                          child: Text(
+                                            '=',
+                                            style: TextStyle(
+                                              color: Colors.white38,
+                                              fontSize: 13,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                        Text(
+                                          _addCommas(fmtPreview(res)),
+                                          style: TextStyle(
+                                            color: color,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ], // end オプション
+                                );
+                              },
+                            ),
+                          ],
+                        ], // end オプション
 
-                      const SizedBox(height: 16),
-                    ],
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 8,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-              ),
-              child: Row(
-                children: [
-                  if (!tempLink)
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.calculate_outlined,
-                          color: Colors.black,
+              Padding(
+                padding: EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 8,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+                child: Row(
+                  children: [
+                    if (!tempLink)
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
                         ),
-                        tooltip: AppLocalizations.of(context)!.calculatorTooltip,
-                        onPressed: () => _showMiniCalcSheet(context, (v) {
-                          setSheetState(() {
-                            if (v == v.truncateToDouble() && v.abs() < 1e15) {
-                              ctrl.text = _addCommas(v.toInt().toString());
-                            } else {
-                              final intD = v.abs() >= 1
-                                  ? v.abs().toInt().toString().length
-                                  : 0;
-                              final decD = (10 - intD).clamp(0, 10);
-                              ctrl.text = _addCommas(
-                                v
-                                    .toStringAsFixed(decD)
-                                    .replaceAll(RegExp(r'0+$'), '')
-                                    .replaceAll(RegExp(r'\.$'), ''),
-                              );
-                            }
-                          });
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.calculate_outlined,
+                            color: Colors.black,
+                          ),
+                          tooltip: AppLocalizations.of(
+                            context,
+                          )!.calculatorTooltip,
+                          onPressed: () => _showMiniCalcSheet(context, (v) {
+                            setSheetState(() {
+                              if (v == v.truncateToDouble() && v.abs() < 1e15) {
+                                ctrl.text = _addCommas(v.toInt().toString());
+                              } else {
+                                final intD = v.abs() >= 1
+                                    ? v.abs().toInt().toString().length
+                                    : 0;
+                                final decD = (10 - intD).clamp(0, 10);
+                                ctrl.text = _addCommas(
+                                  v
+                                      .toStringAsFixed(decD)
+                                      .replaceAll(RegExp(r'0+$'), '')
+                                      .replaceAll(RegExp(r'\.$'), ''),
+                                );
+                              }
+                            });
+                          }),
+                        ),
+                      ),
+                    if (others.isNotEmpty)
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, {'delete': true}),
+                        child: Text(
+                          l10n.deleteTerm,
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                      ),
+                    const Spacer(),
+                    SizedBox(
+                      width: 140,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: () => Navigator.pop(ctx, {
+                          'val': ctrl.text,
+                          'unit': unitCtrl.text,
+                          'link': tempLink,
+                          'source': tempLinkSource,
+                          'transform': tempTransform,
+                          'powExp': tempPowExp,
+                          'applyToAll': tempApplyToAll,
+                          'delete': false,
                         }),
-                      ),
-                    ),
-                  if (others.isNotEmpty)
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, {'delete': true}),
-                      child: Text(
-l10n.deleteTerm,
-                        style: TextStyle(color: Colors.redAccent),
-                      ),
-                    ),
-                  const Spacer(),
-                  SizedBox(
-                    width: 140,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        child: Text(
+                          AppLocalizations.of(context)!.save,
+                          style: TextStyle(fontSize: 16),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      onPressed: () => Navigator.pop(ctx, {
-                        'val': ctrl.text,
-                        'unit': unitCtrl.text,
-                        'link': tempLink,
-                        'source': tempLinkSource,
-                        'transform': tempTransform,
-                        'powExp': tempPowExp,
-                        'applyToAll': tempApplyToAll,
-                        'delete': false,
-                      }),
-                      child: Text(AppLocalizations.of(context)!.save, style: TextStyle(fontSize: 16)),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
-        );
-        }
+            ],
+          );
+        },
       ),
     );
 
@@ -4210,105 +4357,95 @@ l10n.deleteTerm,
 
           final l10n = AppLocalizations.of(context)!;
           return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.only(
-                    left: 24,
-                    right: 24,
-                    top: 24,
-                    bottom: 8,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              l10n.valueSettings(_termLabel('other_$idx', context)),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      left: 24,
+                      right: 24,
+                      top: 24,
+                      bottom: 8,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                l10n.valueSettings(
+                                  _termLabel('other_$idx', context),
+                                ),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.close,
-                              color: Colors.white54,
-                            ),
-                            onPressed: () => Navigator.pop(ctx),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-l10n.numericValue,
-                        style: TextStyle(color: Colors.white54, fontSize: 12),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: ctrl,
-                              focusNode: valFocusNode,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
-                              inputFormatters: [_ThousandsFormatter()],
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 26,
+                            IconButton(
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white54,
                               ),
-                              autofocus: true,
-                              readOnly: tempLink,
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(
-                                    color: tempLink
-                                        ? Colors.blueAccent.withOpacity(0.5)
-                                        : Colors.white24,
-                                    width: 1,
+                              onPressed: () => Navigator.pop(ctx),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          l10n.numericValue,
+                          style: TextStyle(color: Colors.white54, fontSize: 12),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: ctrl,
+                                focusNode: valFocusNode,
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                inputFormatters: [_ThousandsFormatter()],
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 26,
+                                ),
+                                autofocus: true,
+                                readOnly: tempLink,
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: tempLink
+                                          ? Colors.blueAccent.withOpacity(0.5)
+                                          : Colors.white24,
+                                      width: 1,
+                                    ),
                                   ),
-                                ),
-                                hintText: '0.0',
-                                hintStyle: const TextStyle(
-                                  color: Colors.white24,
-                                ),
-                                suffix: tempLink
-                                    ? GestureDetector(
-                                        onTap: () => setSheetState(() {
-                                          tempLink = false;
-                                          // リンク元は保持して一時的に解除（解除ボタンで完全削除）
-                                        }),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color:
-                                                (tempLinkSource != null &&
-                                                            tempLinkSource!['type'] ==
-                                                                'logic'
-                                                        ? Colors
-                                                              .deepPurpleAccent
-                                                        : Colors.blueAccent)
-                                                    .withOpacity(0.2),
-                                            borderRadius: BorderRadius.circular(
-                                              6,
+                                  hintText: '0.0',
+                                  hintStyle: const TextStyle(
+                                    color: Colors.white24,
+                                  ),
+                                  suffix: tempLink
+                                      ? GestureDetector(
+                                          onTap: () => setSheetState(() {
+                                            tempLink = false;
+                                            // リンク元は保持して一時的に解除（解除ボタンで完全削除）
+                                          }),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
                                             ),
-                                            border: Border.all(
+                                            decoration: BoxDecoration(
                                               color:
                                                   (tempLinkSource != null &&
                                                               tempLinkSource!['type'] ==
@@ -4316,742 +4453,878 @@ l10n.numericValue,
                                                           ? Colors
                                                                 .deepPurpleAccent
                                                           : Colors.blueAccent)
-                                                      .withOpacity(0.5),
+                                                      .withOpacity(0.2),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                              border: Border.all(
+                                                color:
+                                                    (tempLinkSource != null &&
+                                                                tempLinkSource!['type'] ==
+                                                                    'logic'
+                                                            ? Colors
+                                                                  .deepPurpleAccent
+                                                            : Colors.blueAccent)
+                                                        .withOpacity(0.5),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              tempLinkSource != null &&
+                                                      tempLinkSource!['type'] ==
+                                                          'logic'
+                                                  ? l10n.logicLinking
+                                                  : l10n.linking,
+                                              style: TextStyle(
+                                                color:
+                                                    tempLinkSource != null &&
+                                                        tempLinkSource!['type'] ==
+                                                            'logic'
+                                                    ? Colors.purpleAccent
+                                                    : Colors.blueAccent,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
                                           ),
+                                        )
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildUnitSection(
+                          context,
+                          l10n.unitLabel,
+                          unitCtrl,
+                          setSheetState,
+                          suggestedUnits: suggestedUnits,
+                        ),
+                        const SizedBox(height: 4),
+                        GestureDetector(
+                          onTap: () => ProGuard.checkAndRun(
+                            context,
+                            () => setSheetState(
+                              () => tempOptionsExpanded = !tempOptionsExpanded,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                Text(
+                                  l10n.optionsLabel,
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const ProBadge(),
+                                const Spacer(),
+                                Icon(
+                                  tempOptionsExpanded
+                                      ? Icons.expand_less_rounded
+                                      : Icons.expand_more_rounded,
+                                  color: Colors.white38,
+                                  size: 20,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (tempOptionsExpanded) ...[
+                          const SizedBox(height: 4),
+                          // _editOtherValLinkSection
+                          CheckboxListTile(
+                            title: Text(
+                              l10n.applyToAllWithLinks,
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 13,
+                              ),
+                            ),
+                            value: tempApplyToAll,
+                            onChanged: (v) => setSheetState(
+                              () => tempApplyToAll = v ?? false,
+                            ),
+                            contentPadding: EdgeInsets.zero,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            activeColor: Colors.blueAccent,
+                            dense: true,
+                          ),
+                          if (tempLink || tempLinkSource != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8, bottom: 4),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      (tempLinkSource != null &&
+                                          tempLinkSource!['type'] == 'logic'
+                                      ? Colors.purple.withOpacity(0.15)
+                                      : (tempLink
+                                                ? Colors.blueAccent
+                                                : Colors.orangeAccent)
+                                            .withOpacity(0.1)),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color:
+                                        (tempLinkSource != null &&
+                                            tempLinkSource!['type'] == 'logic'
+                                        ? Colors.purpleAccent.withOpacity(0.4)
+                                        : (tempLink
+                                                  ? Colors.blueAccent
+                                                  : Colors.orangeAccent)
+                                              .withOpacity(0.3)),
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          tempLinkSource != null &&
+                                                  tempLinkSource!['type'] ==
+                                                      'logic'
+                                              ? Icons.rule_rounded
+                                              : (tempLink
+                                                    ? Icons.link
+                                                    : Icons.link_off),
+                                          size: 14,
+                                          color:
+                                              tempLinkSource != null &&
+                                                  tempLinkSource!['type'] ==
+                                                      'logic'
+                                              ? Colors.purpleAccent
+                                              : (tempLink
+                                                    ? Colors.blueAccent
+                                                    : Colors.orangeAccent),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
                                           child: Text(
                                             tempLinkSource != null &&
                                                     tempLinkSource!['type'] ==
                                                         'logic'
-                                                ? l10n.logicLinking
-                                                : l10n.linking,
+                                                ? l10n.logicLinkPrefix(
+                                                    _getLogicLabel(
+                                                      tempLinkSource!['logicId'],
+                                                      context,
+                                                    ),
+                                                  )
+                                                : (tempLink
+                                                      ? l10n.linkSourcePrefix(
+                                                          _getSourceLabel(
+                                                            tempLinkSource,
+                                                            context,
+                                                          ),
+                                                        )
+                                                      : l10n.previousLinkPrefix(
+                                                          _getSourceLabel(
+                                                            tempLinkSource,
+                                                            context,
+                                                          ),
+                                                        )),
                                             style: TextStyle(
                                               color:
                                                   tempLinkSource != null &&
                                                       tempLinkSource!['type'] ==
                                                           'logic'
                                                   ? Colors.purpleAccent
-                                                  : Colors.blueAccent,
+                                                  : (tempLink
+                                                        ? Colors.blueAccent
+                                                        : Colors.orangeAccent),
                                               fontSize: 12,
-                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
                                         ),
-                                      )
-                                    : null,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _buildUnitSection(
-                        context,
-                        l10n.unitLabel,
-                        unitCtrl,
-                        setSheetState,
-                        suggestedUnits: suggestedUnits,
-                      ),
-                      const SizedBox(height: 4),
-                      GestureDetector(
-                        onTap: () => ProGuard.checkAndRun(
-                          context,
-                          () => setSheetState(
-                            () => tempOptionsExpanded = !tempOptionsExpanded,
-                          ),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          child: Row(
-                            children: [
-                              Text(
-                                l10n.optionsLabel,
-                                style: TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const ProBadge(),
-                              const Spacer(),
-                              Icon(
-                                tempOptionsExpanded
-                                    ? Icons.expand_less_rounded
-                                    : Icons.expand_more_rounded,
-                                color: Colors.white38,
-                                size: 20,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (tempOptionsExpanded) ...[
-                        const SizedBox(height: 4),
-                        // _editOtherValLinkSection
-                        CheckboxListTile(
-                          title: Text(
-l10n.applyToAllWithLinks,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 13,
-                            ),
-                          ),
-                          value: tempApplyToAll,
-                          onChanged: (v) =>
-                              setSheetState(() => tempApplyToAll = v ?? false),
-                          contentPadding: EdgeInsets.zero,
-                          controlAffinity: ListTileControlAffinity.leading,
-                          activeColor: Colors.blueAccent,
-                          dense: true,
-                        ),
-                        if (tempLink || tempLinkSource != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8, bottom: 4),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    (tempLinkSource != null &&
-                                        tempLinkSource!['type'] == 'logic'
-                                    ? Colors.purple.withOpacity(0.15)
-                                    : (tempLink
-                                              ? Colors.blueAccent
-                                              : Colors.orangeAccent)
-                                          .withOpacity(0.1)),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color:
-                                      (tempLinkSource != null &&
-                                          tempLinkSource!['type'] == 'logic'
-                                      ? Colors.purpleAccent.withOpacity(0.4)
-                                      : (tempLink
-                                                ? Colors.blueAccent
-                                                : Colors.orangeAccent)
-                                            .withOpacity(0.3)),
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        tempLinkSource != null &&
-                                                tempLinkSource!['type'] ==
-                                                    'logic'
-                                            ? Icons.rule_rounded
-                                            : (tempLink
-                                                  ? Icons.link
-                                                  : Icons.link_off),
-                                        size: 14,
-                                        color:
-                                            tempLinkSource != null &&
-                                                tempLinkSource!['type'] ==
-                                                    'logic'
-                                            ? Colors.purpleAccent
-                                            : (tempLink
-                                                  ? Colors.blueAccent
-                                                  : Colors.orangeAccent),
+                                        if (tempLink)
+                                          GestureDetector(
+                                            onTap: () => setSheetState(() {
+                                              tempLink = false;
+                                              tempLinkSource = null;
+                                            }),
+                                            child: Text(
+                                              l10n.unlink,
+                                              style: TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          GestureDetector(
+                                            onTap: () => setSheetState(
+                                              () => tempLink = true,
+                                            ),
+                                            child: Text(
+                                              l10n.restoreLink,
+                                              style: TextStyle(
+                                                color: Colors.blueAccent,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    if (tempLinkSource != null &&
+                                        tempLinkSource!['type'] == 'logic') ...[
+                                      const SizedBox(height: 12),
+                                      const Divider(
+                                        color: Colors.white12,
+                                        height: 1,
                                       ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          tempLinkSource != null &&
-                                                  tempLinkSource!['type'] ==
-                                                      'logic'
-                                              ? l10n.logicLinkPrefix(_getLogicLabel(tempLinkSource!['logicId'], context))
-                                              : (tempLink
-                                                    ? l10n.linkSourcePrefix(_getSourceLabel(tempLinkSource, context))
-                                                    : l10n.previousLinkPrefix(_getSourceLabel(tempLinkSource, context))),
-                                          style: TextStyle(
-                                            color:
-                                                tempLinkSource != null &&
-                                                    tempLinkSource!['type'] ==
-                                                        'logic'
-                                                ? Colors.purpleAccent
-                                                : (tempLink
-                                                      ? Colors.blueAccent
-                                                      : Colors.orangeAccent),
-                                            fontSize: 12,
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  l10n.trueValue,
+                                                  style: TextStyle(
+                                                    color: Colors.white54,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: tempTrueLink
+                                                          ? Container(
+                                                              padding:
+                                                                  const EdgeInsets.symmetric(
+                                                                    horizontal:
+                                                                        8,
+                                                                    vertical: 6,
+                                                                  ),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors
+                                                                    .blueAccent
+                                                                    .withOpacity(
+                                                                      0.15,
+                                                                    ),
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      4,
+                                                                    ),
+                                                                border: Border.all(
+                                                                  color: Colors
+                                                                      .blueAccent
+                                                                      .withOpacity(
+                                                                        0.4,
+                                                                      ),
+                                                                ),
+                                                              ),
+                                                              child: Row(
+                                                                children: [
+                                                                  const Icon(
+                                                                    Icons
+                                                                        .link_rounded,
+                                                                    color: Colors
+                                                                        .blueAccent,
+                                                                    size: 14,
+                                                                  ),
+                                                                  const SizedBox(
+                                                                    width: 4,
+                                                                  ),
+                                                                  Expanded(
+                                                                    child: Text(
+                                                                      _getLinkChipLabel(
+                                                                        tempTrueLinkSource,
+                                                                        2,
+                                                                        context,
+                                                                      ),
+                                                                      style: const TextStyle(
+                                                                        color: Colors
+                                                                            .blueAccent,
+                                                                        fontSize:
+                                                                            12,
+                                                                      ),
+                                                                      overflow:
+                                                                          TextOverflow
+                                                                              .ellipsis,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            )
+                                                          : TextField(
+                                                              controller:
+                                                                  trueValCtrl,
+                                                              keyboardType:
+                                                                  const TextInputType.numberWithOptions(
+                                                                    decimal:
+                                                                        true,
+                                                                  ),
+                                                              inputFormatters: [
+                                                                _ThousandsFormatter(),
+                                                              ],
+                                                              style:
+                                                                  const TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontSize:
+                                                                        13,
+                                                                  ),
+                                                              decoration: InputDecoration(
+                                                                hintText: '1.0',
+                                                                isDense: true,
+                                                                contentPadding:
+                                                                    EdgeInsets.symmetric(
+                                                                      vertical:
+                                                                          8,
+                                                                      horizontal:
+                                                                          8,
+                                                                    ),
+                                                                border:
+                                                                    OutlineInputBorder(),
+                                                              ),
+                                                              onChanged: (v) {
+                                                                tempLinkSource!['trueVal'] =
+                                                                    double.tryParse(
+                                                                      v.replaceAll(
+                                                                        ',',
+                                                                        '',
+                                                                      ),
+                                                                    ) ??
+                                                                    1.0;
+                                                              },
+                                                            ),
+                                                    ),
+                                                    if (onPickLinkSource !=
+                                                        null)
+                                                      tempTrueLink
+                                                          ? IconButton(
+                                                              icon: const Icon(
+                                                                Icons
+                                                                    .link_off_rounded,
+                                                                color: Colors
+                                                                    .white38,
+                                                              ),
+                                                              iconSize: 18,
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  const BoxConstraints(),
+                                                              onPressed: () {
+                                                                setSheetState(() {
+                                                                  tempTrueLink =
+                                                                      false;
+                                                                  tempTrueLinkSource =
+                                                                      null;
+                                                                  tempLinkSource!['trueLink'] =
+                                                                      false;
+                                                                  tempLinkSource!['trueLinkSource'] =
+                                                                      null;
+                                                                });
+                                                              },
+                                                            )
+                                                          : IconButton(
+                                                              icon: const Icon(
+                                                                Icons
+                                                                    .link_rounded,
+                                                                color: Colors
+                                                                    .blueAccent,
+                                                              ),
+                                                              iconSize: 18,
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  const BoxConstraints(),
+                                                              onPressed: () async {
+                                                                final src =
+                                                                    await onPickLinkSource!();
+                                                                if (src !=
+                                                                    null) {
+                                                                  setSheetState(() {
+                                                                    tempTrueLink =
+                                                                        true;
+                                                                    tempTrueLinkSource =
+                                                                        src;
+                                                                    tempLinkSource!['trueLink'] =
+                                                                        true;
+                                                                    tempLinkSource!['trueLinkSource'] =
+                                                                        src;
+                                                                  });
+                                                                }
+                                                              },
+                                                            ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  l10n.falseValue,
+                                                  style: TextStyle(
+                                                    color: Colors.white54,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: tempFalseLink
+                                                          ? Container(
+                                                              padding:
+                                                                  const EdgeInsets.symmetric(
+                                                                    horizontal:
+                                                                        8,
+                                                                    vertical: 6,
+                                                                  ),
+                                                              decoration: BoxDecoration(
+                                                                color: Colors
+                                                                    .blueAccent
+                                                                    .withOpacity(
+                                                                      0.15,
+                                                                    ),
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      4,
+                                                                    ),
+                                                                border: Border.all(
+                                                                  color: Colors
+                                                                      .blueAccent
+                                                                      .withOpacity(
+                                                                        0.4,
+                                                                      ),
+                                                                ),
+                                                              ),
+                                                              child: Row(
+                                                                children: [
+                                                                  const Icon(
+                                                                    Icons
+                                                                        .link_rounded,
+                                                                    color: Colors
+                                                                        .blueAccent,
+                                                                    size: 14,
+                                                                  ),
+                                                                  const SizedBox(
+                                                                    width: 4,
+                                                                  ),
+                                                                  Expanded(
+                                                                    child: Text(
+                                                                      _getLinkChipLabel(
+                                                                        tempFalseLinkSource,
+                                                                        2,
+                                                                        context,
+                                                                      ),
+                                                                      style: const TextStyle(
+                                                                        color: Colors
+                                                                            .blueAccent,
+                                                                        fontSize:
+                                                                            12,
+                                                                      ),
+                                                                      overflow:
+                                                                          TextOverflow
+                                                                              .ellipsis,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            )
+                                                          : TextField(
+                                                              controller:
+                                                                  falseValCtrl,
+                                                              keyboardType:
+                                                                  const TextInputType.numberWithOptions(
+                                                                    decimal:
+                                                                        true,
+                                                                  ),
+                                                              inputFormatters: [
+                                                                _ThousandsFormatter(),
+                                                              ],
+                                                              style:
+                                                                  const TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontSize:
+                                                                        13,
+                                                                  ),
+                                                              decoration: InputDecoration(
+                                                                hintText: '0.0',
+                                                                isDense: true,
+                                                                contentPadding:
+                                                                    EdgeInsets.symmetric(
+                                                                      vertical:
+                                                                          8,
+                                                                      horizontal:
+                                                                          8,
+                                                                    ),
+                                                                border:
+                                                                    OutlineInputBorder(),
+                                                              ),
+                                                              onChanged: (v) {
+                                                                tempLinkSource!['falseVal'] =
+                                                                    double.tryParse(
+                                                                      v.replaceAll(
+                                                                        ',',
+                                                                        '',
+                                                                      ),
+                                                                    ) ??
+                                                                    0.0;
+                                                              },
+                                                            ),
+                                                    ),
+                                                    if (onPickLinkSource !=
+                                                        null)
+                                                      tempFalseLink
+                                                          ? IconButton(
+                                                              icon: const Icon(
+                                                                Icons
+                                                                    .link_off_rounded,
+                                                                color: Colors
+                                                                    .white38,
+                                                              ),
+                                                              iconSize: 18,
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  const BoxConstraints(),
+                                                              onPressed: () {
+                                                                setSheetState(() {
+                                                                  tempFalseLink =
+                                                                      false;
+                                                                  tempFalseLinkSource =
+                                                                      null;
+                                                                  tempLinkSource!['falseLink'] =
+                                                                      false;
+                                                                  tempLinkSource!['falseLinkSource'] =
+                                                                      null;
+                                                                });
+                                                              },
+                                                            )
+                                                          : IconButton(
+                                                              icon: const Icon(
+                                                                Icons
+                                                                    .link_rounded,
+                                                                color: Colors
+                                                                    .blueAccent,
+                                                              ),
+                                                              iconSize: 18,
+                                                              padding:
+                                                                  EdgeInsets
+                                                                      .zero,
+                                                              constraints:
+                                                                  const BoxConstraints(),
+                                                              onPressed: () async {
+                                                                final src =
+                                                                    await onPickLinkSource!();
+                                                                if (src !=
+                                                                    null) {
+                                                                  setSheetState(() {
+                                                                    tempFalseLink =
+                                                                        true;
+                                                                    tempFalseLinkSource =
+                                                                        src;
+                                                                    tempLinkSource!['falseLink'] =
+                                                                        true;
+                                                                    tempLinkSource!['falseLinkSource'] =
+                                                                        src;
+                                                                  });
+                                                                }
+                                                              },
+                                                            ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      if (tempLink)
-                                        GestureDetector(
-                                          onTap: () => setSheetState(() {
-                                            tempLink = false;
-                                            tempLinkSource = null;
-                                          }),
-                                          child: Text(
-l10n.unlink,
-                                            style: TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        )
-                                      else
-                                        GestureDetector(
-                                          onTap: () => setSheetState(
-                                            () => tempLink = true,
-                                          ),
-                                          child: Text(
-l10n.restoreLink,
-                                            style: TextStyle(
-                                              color: Colors.blueAccent,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
                                     ],
-                                  ),
-                                  if (tempLinkSource != null &&
-                                      tempLinkSource!['type'] == 'logic') ...[
-                                    const SizedBox(height: 12),
-                                    const Divider(
-                                      color: Colors.white12,
-                                      height: 1,
+                                  ],
+                                ),
+                              ),
+                            )
+                          else
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8, bottom: 4),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.white12),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.linkSettingsHint,
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                     const SizedBox(height: 8),
                                     Row(
                                       children: [
                                         Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-l10n.trueValue,
-                                                style: TextStyle(
-                                                  color: Colors.white54,
-                                                  fontSize: 11,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: tempTrueLink
-                                                        ? Container(
-                                                            padding:
-                                                                const EdgeInsets.symmetric(
-                                                                  horizontal: 8,
-                                                                  vertical: 6,
-                                                                ),
-                                                            decoration: BoxDecoration(
-                                                              color: Colors
-                                                                  .blueAccent
-                                                                  .withOpacity(
-                                                                    0.15,
-                                                                  ),
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    4,
-                                                                  ),
-                                                              border: Border.all(
-                                                                color: Colors
-                                                                    .blueAccent
-                                                                    .withOpacity(
-                                                                      0.4,
-                                                                    ),
-                                                              ),
-                                                            ),
-                                                            child: Row(
-                                                              children: [
-                                                                const Icon(
-                                                                  Icons
-                                                                      .link_rounded,
-                                                                  color: Colors
-                                                                      .blueAccent,
-                                                                  size: 14,
-                                                                ),
-                                                                const SizedBox(
-                                                                  width: 4,
-                                                                ),
-                                                                Expanded(
-                                                                  child: Text(
-                                                                    _getLinkChipLabel(
-                                                                      tempTrueLinkSource,
-                                                                      2, context
-                                                                    ),
-                                                                    style: const TextStyle(
-                                                                      color: Colors
-                                                                          .blueAccent,
-                                                                      fontSize:
-                                                                          12,
-                                                                    ),
-                                                                    overflow:
-                                                                        TextOverflow
-                                                                            .ellipsis,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          )
-                                                        : TextField(
-                                                            controller:
-                                                                trueValCtrl,
-                                                            keyboardType:
-                                                                const TextInputType.numberWithOptions(
-                                                                  decimal: true,
-                                                                ),
-                                                            inputFormatters: [
-                                                              _ThousandsFormatter(),
-                                                            ],
-                                                            style:
-                                                                const TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize: 13,
-                                                                ),
-                                                            decoration: InputDecoration(
-                                                              hintText: '1.0',
-                                                              isDense: true,
-                                                              contentPadding:
-                                                                  EdgeInsets.symmetric(
-                                                                    vertical: 8,
-                                                                    horizontal:
-                                                                        8,
-                                                                  ),
-                                                              border:
-                                                                  OutlineInputBorder(),
-                                                            ),
-                                                            onChanged: (v) {
-                                                              tempLinkSource!['trueVal'] =
-                                                                  double.tryParse(
-                                                                    v.replaceAll(
-                                                                      ',',
-                                                                      '',
-                                                                    ),
-                                                                  ) ??
-                                                                  1.0;
-                                                            },
-                                                          ),
+                                          child: ElevatedButton.icon(
+                                            icon: const Icon(
+                                              Icons.upload_rounded,
+                                              size: 16,
+                                            ),
+                                            label: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  l10n.makeLinkSource,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
                                                   ),
-                                                  if (onPickLinkSource != null)
-                                                    tempTrueLink
-                                                        ? IconButton(
-                                                            icon: const Icon(
-                                                              Icons
-                                                                  .link_off_rounded,
-                                                              color: Colors
-                                                                  .white38,
-                                                            ),
-                                                            iconSize: 18,
-                                                            padding:
-                                                                EdgeInsets.zero,
-                                                            constraints:
-                                                                const BoxConstraints(),
-                                                            onPressed: () {
-                                                              setSheetState(() {
-                                                                tempTrueLink =
-                                                                    false;
-                                                                tempTrueLinkSource =
-                                                                    null;
-                                                                tempLinkSource!['trueLink'] =
-                                                                    false;
-                                                                tempLinkSource!['trueLinkSource'] =
-                                                                    null;
-                                                              });
-                                                            },
-                                                          )
-                                                        : IconButton(
-                                                            icon: const Icon(
-                                                              Icons
-                                                                  .link_rounded,
-                                                              color: Colors
-                                                                  .blueAccent,
-                                                            ),
-                                                            iconSize: 18,
-                                                            padding:
-                                                                EdgeInsets.zero,
-                                                            constraints:
-                                                                const BoxConstraints(),
-                                                            onPressed: () async {
-                                                              final src =
-                                                                  await onPickLinkSource!();
-                                                              if (src != null) {
-                                                                setSheetState(() {
-                                                                  tempTrueLink =
-                                                                      true;
-                                                                  tempTrueLinkSource =
-                                                                      src;
-                                                                  tempLinkSource!['trueLink'] =
-                                                                      true;
-                                                                  tempLinkSource!['trueLinkSource'] =
-                                                                      src;
-                                                                });
-                                                              }
-                                                            },
-                                                          ),
-                                                ],
-                                              ),
-                                            ],
+                                                ),
+                                                SizedBox(width: 4),
+                                                ProBadge(),
+                                              ],
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.blueAccent
+                                                  .withOpacity(0.2),
+                                              foregroundColor:
+                                                  Colors.blueAccent,
+                                              elevation: 0,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 8,
+                                                  ),
+                                            ),
+                                            onPressed: () {
+                                              Navigator.pop(ctx);
+                                              ProGuard.checkAndRun(context, () {
+                                                if (onLinkSettingsPressed !=
+                                                    null) {
+                                                  onLinkSettingsPressed!(
+                                                    'source',
+                                                    'other_$idx',
+                                                  );
+                                                }
+                                              });
+                                            },
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
+                                        const SizedBox(width: 8),
                                         Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-l10n.falseValue,
-                                                style: TextStyle(
-                                                  color: Colors.white54,
-                                                  fontSize: 11,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: tempFalseLink
-                                                        ? Container(
-                                                            padding:
-                                                                const EdgeInsets.symmetric(
-                                                                  horizontal: 8,
-                                                                  vertical: 6,
-                                                                ),
-                                                            decoration: BoxDecoration(
-                                                              color: Colors
-                                                                  .blueAccent
-                                                                  .withOpacity(
-                                                                    0.15,
-                                                                  ),
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    4,
-                                                                  ),
-                                                              border: Border.all(
-                                                                color: Colors
-                                                                    .blueAccent
-                                                                    .withOpacity(
-                                                                      0.4,
-                                                                    ),
-                                                              ),
-                                                            ),
-                                                            child: Row(
-                                                              children: [
-                                                                const Icon(
-                                                                  Icons
-                                                                      .link_rounded,
-                                                                  color: Colors
-                                                                      .blueAccent,
-                                                                  size: 14,
-                                                                ),
-                                                                const SizedBox(
-                                                                  width: 4,
-                                                                ),
-                                                                Expanded(
-                                                                  child: Text(
-                                                                    _getLinkChipLabel(
-                                                                      tempFalseLinkSource,
-                                                                      2, context
-                                                                    ),
-                                                                    style: const TextStyle(
-                                                                      color: Colors
-                                                                          .blueAccent,
-                                                                      fontSize:
-                                                                          12,
-                                                                    ),
-                                                                    overflow:
-                                                                        TextOverflow
-                                                                            .ellipsis,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          )
-                                                        : TextField(
-                                                            controller:
-                                                                falseValCtrl,
-                                                            keyboardType:
-                                                                const TextInputType.numberWithOptions(
-                                                                  decimal: true,
-                                                                ),
-                                                            inputFormatters: [
-                                                              _ThousandsFormatter(),
-                                                            ],
-                                                            style:
-                                                                const TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontSize: 13,
-                                                                ),
-                                                            decoration: InputDecoration(
-                                                              hintText: '0.0',
-                                                              isDense: true,
-                                                              contentPadding:
-                                                                  EdgeInsets.symmetric(
-                                                                    vertical: 8,
-                                                                    horizontal:
-                                                                        8,
-                                                                  ),
-                                                              border:
-                                                                  OutlineInputBorder(),
-                                                            ),
-                                                            onChanged: (v) {
-                                                              tempLinkSource!['falseVal'] =
-                                                                  double.tryParse(
-                                                                    v.replaceAll(
-                                                                      ',',
-                                                                      '',
-                                                                    ),
-                                                                  ) ??
-                                                                  0.0;
-                                                            },
-                                                          ),
+                                          child: ElevatedButton.icon(
+                                            icon: const Icon(
+                                              Icons.download_rounded,
+                                              size: 16,
+                                            ),
+                                            label: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  l10n.makeLinkTarget,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
                                                   ),
-                                                  if (onPickLinkSource != null)
-                                                    tempFalseLink
-                                                        ? IconButton(
-                                                            icon: const Icon(
-                                                              Icons
-                                                                  .link_off_rounded,
-                                                              color: Colors
-                                                                  .white38,
-                                                            ),
-                                                            iconSize: 18,
-                                                            padding:
-                                                                EdgeInsets.zero,
-                                                            constraints:
-                                                                const BoxConstraints(),
-                                                            onPressed: () {
-                                                              setSheetState(() {
-                                                                tempFalseLink =
-                                                                    false;
-                                                                tempFalseLinkSource =
-                                                                    null;
-                                                                tempLinkSource!['falseLink'] =
-                                                                    false;
-                                                                tempLinkSource!['falseLinkSource'] =
-                                                                    null;
-                                                              });
-                                                            },
-                                                          )
-                                                        : IconButton(
-                                                            icon: const Icon(
-                                                              Icons
-                                                                  .link_rounded,
-                                                              color: Colors
-                                                                  .blueAccent,
-                                                            ),
-                                                            iconSize: 18,
-                                                            padding:
-                                                                EdgeInsets.zero,
-                                                            constraints:
-                                                                const BoxConstraints(),
-                                                            onPressed: () async {
-                                                              final src =
-                                                                  await onPickLinkSource!();
-                                                              if (src != null) {
-                                                                setSheetState(() {
-                                                                  tempFalseLink =
-                                                                      true;
-                                                                  tempFalseLinkSource =
-                                                                      src;
-                                                                  tempLinkSource!['falseLink'] =
-                                                                      true;
-                                                                  tempLinkSource!['falseLinkSource'] =
-                                                                      src;
-                                                                });
-                                                              }
-                                                            },
-                                                          ),
-                                                ],
-                                              ),
-                                            ],
+                                                ),
+                                                SizedBox(width: 4),
+                                                ProBadge(),
+                                              ],
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.cyan
+                                                  .withOpacity(0.2),
+                                              foregroundColor: Colors.cyan,
+                                              elevation: 0,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 8,
+                                                  ),
+                                            ),
+                                            onPressed: () {
+                                              Navigator.pop(ctx);
+                                              ProGuard.checkAndRun(context, () {
+                                                if (onLinkSettingsPressed !=
+                                                    null) {
+                                                  onLinkSettingsPressed!(
+                                                    'target',
+                                                    'other_$idx',
+                                                  );
+                                                }
+                                              });
+                                            },
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          )
-                        else
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8, bottom: 4),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.white12),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-l10n.linkSettingsHint,
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 12,
+                                    const SizedBox(height: 12),
+                                    const Divider(
+                                      color: Colors.white12,
+                                      height: 1,
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: ElevatedButton.icon(
-                                          icon: const Icon(
-                                            Icons.upload_rounded,
-                                            size: 16,
-                                          ),
-                                          label: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                l10n.makeLinkSource,
-                                                style: TextStyle(fontSize: 12),
-                                              ),
-                                              SizedBox(width: 4),
-                                              ProBadge(),
-                                            ],
-                                          ),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blueAccent
-                                                .withOpacity(0.2),
-                                            foregroundColor: Colors.blueAccent,
-                                            elevation: 0,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 8,
-                                            ),
-                                          ),
-                                          onPressed: () {
-                                            Navigator.pop(ctx);
-                                            ProGuard.checkAndRun(context, () {
-                                              if (onLinkSettingsPressed !=
-                                                  null) {
-                                                onLinkSettingsPressed!(
-                                                  'source',
-                                                  'other_$idx',
-                                                );
-                                              }
-                                            });
-                                          },
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: ElevatedButton.icon(
-                                          icon: const Icon(
-                                            Icons.download_rounded,
-                                            size: 16,
-                                          ),
-                                          label: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                l10n.makeLinkTarget,
-                                                style: TextStyle(fontSize: 12),
-                                              ),
-                                              SizedBox(width: 4),
-                                              ProBadge(),
-                                            ],
-                                          ),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.cyan
-                                                .withOpacity(0.2),
-                                            foregroundColor: Colors.cyan,
-                                            elevation: 0,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 8,
-                                            ),
-                                          ),
-                                          onPressed: () {
-                                            Navigator.pop(ctx);
-                                            ProGuard.checkAndRun(context, () {
-                                              if (onLinkSettingsPressed !=
-                                                  null) {
-                                                onLinkSettingsPressed!(
-                                                  'target',
-                                                  'other_$idx',
-                                                );
-                                              }
-                                            });
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  const Divider(
-                                    color: Colors.white12,
-                                    height: 1,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.rule_rounded,
-                                        color: Colors.purpleAccent,
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-l10n.linkLogic,
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      TextButton.icon(
-                                        icon: const Icon(
-                                          Icons.add_rounded,
-                                          size: 14,
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.rule_rounded,
                                           color: Colors.purpleAccent,
+                                          size: 16,
                                         ),
-                                        label: Text(
-l10n.addLogic,
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          l10n.linkLogic,
                                           style: TextStyle(
-                                            color: Colors.purpleAccent,
+                                            color: Colors.white70,
                                             fontSize: 12,
                                           ),
                                         ),
-                                        style: TextButton.styleFrom(
-                                          padding: EdgeInsets.zero,
-                                          minimumSize: Size.zero,
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        onPressed: () async {
-                                          final newLogic =
-                                              await showDialog<
-                                                Map<String, dynamic>
-                                              >(
-                                                context: context,
-                                                builder: (ctx) =>
-                                                    const _LogicItemEditDialog(
-                                                      initial: null,
-                                                    ),
-                                              );
-                                          if (newLogic != null) {
-                                            final newId =
-                                                'logic_${DateTime.now().millisecondsSinceEpoch}';
-                                            final newLogicItem = {
-                                              ...newLogic,
-                                              'id': newId,
-                                            };
-                                            if (onAddLogicItem != null) {
-                                              onAddLogicItem!(newLogicItem);
+                                        const Spacer(),
+                                        TextButton.icon(
+                                          icon: const Icon(
+                                            Icons.add_rounded,
+                                            size: 14,
+                                            color: Colors.purpleAccent,
+                                          ),
+                                          label: Text(
+                                            l10n.addLogic,
+                                            style: TextStyle(
+                                              color: Colors.purpleAccent,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          style: TextButton.styleFrom(
+                                            padding: EdgeInsets.zero,
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize
+                                                .shrinkWrap,
+                                          ),
+                                          onPressed: () async {
+                                            final newLogic =
+                                                await showDialog<
+                                                  Map<String, dynamic>
+                                                >(
+                                                  context: context,
+                                                  builder: (ctx) =>
+                                                      const _LogicItemEditDialog(
+                                                        initial: null,
+                                                      ),
+                                                );
+                                            if (newLogic != null) {
+                                              final newId =
+                                                  'logic_${DateTime.now().millisecondsSinceEpoch}';
+                                              final newLogicItem = {
+                                                ...newLogic,
+                                                'id': newId,
+                                              };
+                                              if (onAddLogicItem != null) {
+                                                onAddLogicItem!(newLogicItem);
+                                              }
+                                              setSheetState(() {
+                                                localLogicItems.add(
+                                                  newLogicItem,
+                                                );
+                                                tempLink = true;
+                                                tempLinkSource = {
+                                                  'type': 'logic',
+                                                  'logicId': newId,
+                                                  'trueVal': 1.0,
+                                                  'falseVal': 0.0,
+                                                  'trueLink': false,
+                                                  'trueLinkSource': null,
+                                                  'falseLink': false,
+                                                  'falseLinkSource': null,
+                                                };
+                                                tempTrueLink = false;
+                                                tempTrueLinkSource = null;
+                                                tempFalseLink = false;
+                                                tempFalseLinkSource = null;
+                                                trueValCtrl.text = '1.0';
+                                                falseValCtrl.text = '0.0';
+                                              });
                                             }
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    if (localLogicItems.isEmpty)
+                                      Text(
+                                        l10n.noSettingLogicYet,
+                                        style: TextStyle(
+                                          color: Colors.white38,
+                                          fontSize: 11,
+                                        ),
+                                      )
+                                    else
+                                      DropdownButtonFormField<String>(
+                                        dropdownColor: Colors.black,
+                                        hint: Text(
+                                          l10n.selectLogic,
+                                          style: TextStyle(
+                                            color: Colors.white38,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        isExpanded: true,
+                                        decoration: InputDecoration(
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 8,
+                                            horizontal: 8,
+                                          ),
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        items: localLogicItems.map((logic) {
+                                          final name =
+                                              logic['name'] as String? ?? '';
+                                          final expr =
+                                              _CalculatorWidgetState._buildLogicExprString(
+                                                logic,
+                                              );
+                                          return DropdownMenuItem<String>(
+                                            value: logic['id'] as String,
+                                            child: Text(
+                                              name.isNotEmpty
+                                                  ? '$name: $expr'
+                                                  : expr,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          );
+                                        }).toList(),
+                                        onChanged: (selectedId) {
+                                          if (selectedId != null) {
                                             setSheetState(() {
-                                              localLogicItems.add(newLogicItem);
                                               tempLink = true;
                                               tempLinkSource = {
                                                 'type': 'logic',
-                                                'logicId': newId,
-                                                'trueVal': 1.0,
+                                                'logicId': selectedId,
+                                                'trueVal':
+                                                    double.tryParse(
+                                                      ctrl.text.replaceAll(
+                                                        ',',
+                                                        '',
+                                                      ),
+                                                    ) ??
+                                                    1.0,
                                                 'falseVal': 0.0,
                                                 'trueLink': false,
                                                 'trueLinkSource': null,
@@ -5062,445 +5335,381 @@ l10n.addLogic,
                                               tempTrueLinkSource = null;
                                               tempFalseLink = false;
                                               tempFalseLinkSource = null;
-                                              trueValCtrl.text = '1.0';
+                                              trueValCtrl.text =
+                                                  (double.tryParse(
+                                                            ctrl.text
+                                                                .replaceAll(
+                                                                  ',',
+                                                                  '',
+                                                                ),
+                                                          ) ??
+                                                          1.0)
+                                                      .toString();
                                               falseValCtrl.text = '0.0';
                                             });
                                           }
                                         },
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  if (localLogicItems.isEmpty)
-                                    Text(
-l10n.noSettingLogicYet,
-                                      style: TextStyle(
-                                        color: Colors.white38,
-                                        fontSize: 11,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          if (constants.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              l10n.constantLink,
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: constants.asMap().entries.map((e) {
+                                  final ci = e.key;
+                                  final c = e.value;
+                                  final name = c['name'] as String? ?? '';
+                                  final val = (c['value'] as num? ?? 0.0);
+                                  final isSelected =
+                                      tempLink &&
+                                      tempLinkSource != null &&
+                                      tempLinkSource!['type'] == 'constant' &&
+                                      tempLinkSource!['constIdx'] == ci;
+                                  return GestureDetector(
+                                    onTap: () => setSheetState(() {
+                                      tempLink = true;
+                                      tempLinkSource = {
+                                        'type': 'constant',
+                                        'constIdx': ci,
+                                      };
+                                    }),
+                                    child: Container(
+                                      margin: const EdgeInsets.only(right: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
                                       ),
-                                    )
-                                  else
-                                    DropdownButtonFormField<String>(
-                                      dropdownColor: Colors.black,
-                                      hint: Text(
-l10n.selectLogic,
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? Colors.amberAccent.withOpacity(
+                                                0.2,
+                                              )
+                                            : Colors.white.withOpacity(0.05),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? Colors.amberAccent
+                                              : Colors.white24,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '$name = $val',
                                         style: TextStyle(
-                                          color: Colors.white38,
+                                          color: isSelected
+                                              ? Colors.amberAccent
+                                              : Colors.white70,
                                           fontSize: 12,
                                         ),
                                       ),
-                                      isExpanded: true,
-                                      decoration: InputDecoration(
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(
-                                          vertical: 8,
-                                          horizontal: 8,
-                                        ),
-                                        border: OutlineInputBorder(),
-                                      ),
-                                      items: localLogicItems.map((logic) {
-                                        final name =
-                                            logic['name'] as String? ?? '';
-                                        final expr =
-                                            _CalculatorWidgetState._buildLogicExprString(
-                                              logic,
-                                            );
-                                        return DropdownMenuItem<String>(
-                                          value: logic['id'] as String,
-                                          child: Text(
-                                            name.isNotEmpty
-                                                ? '$name: $expr'
-                                                : expr,
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        );
-                                      }).toList(),
-                                      onChanged: (selectedId) {
-                                        if (selectedId != null) {
-                                          setSheetState(() {
-                                            tempLink = true;
-                                            tempLinkSource = {
-                                              'type': 'logic',
-                                              'logicId': selectedId,
-                                              'trueVal':
-                                                  double.tryParse(
-                                                    ctrl.text.replaceAll(
-                                                      ',',
-                                                      '',
-                                                    ),
-                                                  ) ??
-                                                  1.0,
-                                              'falseVal': 0.0,
-                                              'trueLink': false,
-                                              'trueLinkSource': null,
-                                              'falseLink': false,
-                                              'falseLinkSource': null,
-                                            };
-                                            tempTrueLink = false;
-                                            tempTrueLinkSource = null;
-                                            tempFalseLink = false;
-                                            tempFalseLinkSource = null;
-                                            trueValCtrl.text =
-                                                (double.tryParse(
-                                                          ctrl.text.replaceAll(
-                                                            ',',
-                                                            '',
-                                                          ),
-                                                        ) ??
-                                                        1.0)
-                                                    .toString();
-                                            falseValCtrl.text = '0.0';
-                                          });
-                                        }
-                                      },
                                     ),
-                                ],
+                                  );
+                                }).toList(),
                               ),
                             ),
-                          ),
-                        if (constants.isNotEmpty) ...[
-                          const SizedBox(height: 8),
+                          ],
+                          const Divider(color: Colors.white12),
+                          const SizedBox(height: 4),
                           Text(
-l10n.constantLink,
+                            l10n.transformSection,
                             style: TextStyle(
                               color: Colors.white54,
                               fontSize: 12,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(vertical: 4),
                             child: Row(
-                              children: constants.asMap().entries.map((e) {
-                                final ci = e.key;
-                                final c = e.value;
-                                final name = c['name'] as String? ?? '';
-                                final val = (c['value'] as num? ?? 0.0);
-                                final isSelected =
-                                    tempLink &&
-                                    tempLinkSource != null &&
-                                    tempLinkSource!['type'] == 'constant' &&
-                                    tempLinkSource!['constIdx'] == ci;
-                                return GestureDetector(
-                                  onTap: () => setSheetState(() {
-                                    tempLink = true;
-                                    tempLinkSource = {
-                                      'type': 'constant',
-                                      'constIdx': ci,
-                                    };
-                                  }),
-                                  child: Container(
-                                    margin: const EdgeInsets.only(right: 8),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? Colors.amberAccent.withOpacity(0.2)
-                                          : Colors.white.withOpacity(0.05),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? Colors.amberAccent
-                                            : Colors.white24,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      '$name = $val',
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? Colors.amberAccent
+                              children: [
+                                for (final entry in <List<String?>>[
+                                  [l10n.noTransform, null],
+                                  [l10n.transformSqrt, 'sqrt'],
+                                  [l10n.transformPowLabel, 'pow'],
+                                  [l10n.transformNroot, 'nroot'],
+                                  [l10n.transformAbs, 'abs'],
+                                  [l10n.transformFloor, 'floor'],
+                                  [l10n.transformCeil, 'ceil'],
+                                  [l10n.transformRound, 'round'],
+                                  [l10n.transformLog10, 'log10'],
+                                  [l10n.transformReciprocal, 'reciprocal'],
+                                  [l10n.transformSin, 'sin'],
+                                  [l10n.transformCos, 'cos'],
+                                  [l10n.transformTan, 'tan'],
+                                ])
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: ChoiceChip(
+                                      label: Text(entry[0]!),
+                                      selected: tempTransform == entry[1],
+                                      selectedColor: entry[1] == null
+                                          ? null
+                                          : _CalculatorRow._transformColor(
+                                              entry[1],
+                                            ).withOpacity(0.2),
+                                      labelStyle: TextStyle(
+                                        color:
+                                            tempTransform == entry[1] &&
+                                                entry[1] != null
+                                            ? _CalculatorRow._transformColor(
+                                                entry[1],
+                                              )
                                             : Colors.white70,
                                         fontSize: 12,
                                       ),
+                                      onSelected: (_) => setSheetState(
+                                        () => tempTransform = entry[1],
+                                      ),
                                     ),
                                   ),
-                                );
-                              }).toList(),
+                              ],
                             ),
                           ),
-                        ],
-                        const Divider(color: Colors.white12),
-                        const SizedBox(height: 4),
-                        Text(
-l10n.transformSection,
-                          style: TextStyle(color: Colors.white54, fontSize: 12),
-                        ),
-                        const SizedBox(height: 8),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              for (final entry in <List<String?>>[
-                                [l10n.noTransform, null],
-                                [l10n.transformSqrt, 'sqrt'],
-                                [l10n.transformPowLabel, 'pow'],
-                                [l10n.transformNroot, 'nroot'],
-                                [l10n.transformAbs, 'abs'],
-                                [l10n.transformFloor, 'floor'],
-                                [l10n.transformCeil, 'ceil'],
-                                [l10n.transformRound, 'round'],
-                                [l10n.transformLog10, 'log10'],
-                                [l10n.transformReciprocal, 'reciprocal'],
-                                [l10n.transformSin, 'sin'],
-                                [l10n.transformCos, 'cos'],
-                                [l10n.transformTan, 'tan'],
-                              ])
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: ChoiceChip(
-                                    label: Text(entry[0]!),
-                                    selected: tempTransform == entry[1],
-                                    selectedColor: entry[1] == null
-                                        ? null
-                                        : _CalculatorRow._transformColor(
-                                            entry[1],
-                                          ).withOpacity(0.2),
-                                    labelStyle: TextStyle(
-                                      color:
-                                          tempTransform == entry[1] &&
-                                              entry[1] != null
-                                          ? _CalculatorRow._transformColor(
-                                              entry[1],
-                                            )
-                                          : Colors.white70,
-                                      fontSize: 12,
-                                    ),
-                                    onSelected: (_) => setSheetState(
-                                      () => tempTransform = entry[1],
-                                    ),
+                          if (tempTransform == 'pow' ||
+                              tempTransform == 'nroot') ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Text(
+                                  tempTransform == 'pow'
+                                      ? l10n.powExponentQ
+                                      : l10n.nrootExponentQ,
+                                  style: const TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
                                   ),
                                 ),
-                            ],
-                          ),
-                        ),
-                        if (tempTransform == 'pow' ||
-                            tempTransform == 'nroot') ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Text(
-                                tempTransform == 'pow'
-                                    ? l10n.powExponentQ
-                                    : l10n.nrootExponentQ,
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              SizedBox(
-                                width: 80,
-                                child: TextField(
-                                  controller: powExpCtrl,
-                                  keyboardType:
-                                      const TextInputType.numberWithOptions(
-                                        decimal: true,
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 80,
+                                  child: TextField(
+                                    controller: powExpCtrl,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                          decimal: true,
+                                        ),
+                                    inputFormatters: [_ThousandsFormatter()],
+                                    style: const TextStyle(color: Colors.white),
+                                    decoration: InputDecoration(
+                                      hintText: '2',
+                                      hintStyle: TextStyle(
+                                        color: Colors.white24,
                                       ),
-                                  inputFormatters: [_ThousandsFormatter()],
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
-                                    hintText: '2',
-                                    hintStyle: TextStyle(color: Colors.white24),
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.symmetric(
-                                      vertical: 8,
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
                                     ),
+                                    onChanged: (v) {
+                                      tempPowExp =
+                                          double.tryParse(
+                                            v.replaceAll(',', ''),
+                                          ) ??
+                                          tempPowExp;
+                                      setSheetState(() {});
+                                    },
                                   ),
-                                  onChanged: (v) {
-                                    tempPowExp =
-                                        double.tryParse(
-                                          v.replaceAll(',', ''),
-                                        ) ??
-                                        tempPowExp;
-                                    setSheetState(() {});
-                                  },
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        if (tempTransform != null) ...[
-                          const SizedBox(height: 10),
-                          Builder(
-                            builder: (_) {
-                              final v =
-                                  double.tryParse(
-                                    ctrl.text.replaceAll(',', ''),
-                                  ) ??
-                                  0.0;
-                              final res = _applyTermTransform(
-                                v,
-                                tempTransform,
-                                tempPowExp,
-                              );
-                              String fmtPreview(double x) {
-                                if (x.isInfinite || x.isNaN) return AppLocalizations.of(context)!.errorResult;
-                                if (x == x.truncateToDouble() && x.abs() < 1e12)
-                                  return x.toInt().toString();
-                                final intD = x.abs() >= 1
-                                    ? x.abs().toInt().toString().length
-                                    : 0;
-                                final decD = (10 - intD).clamp(0, 10);
-                                final s = x.toStringAsFixed(decD);
-                                return s
-                                    .replaceAll(RegExp(r'0+$'), '')
-                                    .replaceAll(RegExp(r'\.$'), '');
-                              }
+                              ],
+                            ),
+                          ],
+                          if (tempTransform != null) ...[
+                            const SizedBox(height: 10),
+                            Builder(
+                              builder: (_) {
+                                final v =
+                                    double.tryParse(
+                                      ctrl.text.replaceAll(',', ''),
+                                    ) ??
+                                    0.0;
+                                final res = _applyTermTransform(
+                                  v,
+                                  tempTransform,
+                                  tempPowExp,
+                                );
+                                String fmtPreview(double x) {
+                                  if (x.isInfinite || x.isNaN)
+                                    return AppLocalizations.of(
+                                      context,
+                                    )!.errorResult;
+                                  if (x == x.truncateToDouble() &&
+                                      x.abs() < 1e12)
+                                    return x.toInt().toString();
+                                  final intD = x.abs() >= 1
+                                      ? x.abs().toInt().toString().length
+                                      : 0;
+                                  final decD = (10 - intD).clamp(0, 10);
+                                  final s = x.toStringAsFixed(decD);
+                                  return s
+                                      .replaceAll(RegExp(r'0+$'), '')
+                                      .replaceAll(RegExp(r'\.$'), '');
+                                }
 
-                              final exprStr = _CalculatorRow._transformExprStr(
-                                ctrl.text,
-                                tempTransform,
-                                tempPowExp,
-                              );
-                              final color = _CalculatorRow._transformColor(
-                                tempTransform,
-                              );
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: color.withOpacity(0.25),
+                                final exprStr =
+                                    _CalculatorRow._transformExprStr(
+                                      ctrl.text,
+                                      tempTransform,
+                                      tempPowExp,
+                                    );
+                                final color = _CalculatorRow._transformColor(
+                                  tempTransform,
+                                );
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
                                   ),
-                                ),
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        exprStr,
-                                        style: const TextStyle(
-                                          color: Colors.white54,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      const Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 6,
-                                        ),
-                                        child: Text(
-                                          '=',
-                                          style: TextStyle(
-                                            color: Colors.white38,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: color.withOpacity(0.25),
+                                    ),
+                                  ),
+                                  child: SingleChildScrollView(
+                                    scrollDirection: Axis.horizontal,
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          exprStr,
+                                          style: const TextStyle(
+                                            color: Colors.white54,
                                             fontSize: 13,
                                           ),
                                         ),
-                                      ),
-                                      Text(
-                                        _addCommas(fmtPreview(res)),
-                                        style: TextStyle(
-                                          color: color,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                          ),
+                                          child: Text(
+                                            '=',
+                                            style: TextStyle(
+                                              color: Colors.white38,
+                                              fontSize: 13,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                        Text(
+                                          _addCommas(fmtPreview(res)),
+                                          style: TextStyle(
+                                            color: color,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ], // end オプション
+                                );
+                              },
+                            ),
+                          ],
+                        ], // end オプション
 
-                      const SizedBox(height: 16),
-                    ],
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 8,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-              ),
-              child: Row(
-                children: [
-                  if (!tempLink)
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.calculate_outlined,
-                          color: Colors.black,
-                          size: 30,
+              Padding(
+                padding: EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 8,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                ),
+                child: Row(
+                  children: [
+                    if (!tempLink)
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
                         ),
-                        tooltip: AppLocalizations.of(context)!.calculatorTooltip,
-                        onPressed: () => _showMiniCalcSheet(context, (v) {
-                          setSheetState(() {
-                            if (v == v.truncateToDouble() && v.abs() < 1e15) {
-                              ctrl.text = _addCommas(v.toInt().toString());
-                            } else {
-                              final intD = v.abs() >= 1
-                                  ? v.abs().toInt().toString().length
-                                  : 0;
-                              final decD = (10 - intD).clamp(0, 10);
-                              ctrl.text = _addCommas(
-                                v
-                                    .toStringAsFixed(decD)
-                                    .replaceAll(RegExp(r'0+$'), '')
-                                    .replaceAll(RegExp(r'\.$'), ''),
-                              );
-                            }
-                          });
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.calculate_outlined,
+                            color: Colors.black,
+                            size: 30,
+                          ),
+                          tooltip: AppLocalizations.of(
+                            context,
+                          )!.calculatorTooltip,
+                          onPressed: () => _showMiniCalcSheet(context, (v) {
+                            setSheetState(() {
+                              if (v == v.truncateToDouble() && v.abs() < 1e15) {
+                                ctrl.text = _addCommas(v.toInt().toString());
+                              } else {
+                                final intD = v.abs() >= 1
+                                    ? v.abs().toInt().toString().length
+                                    : 0;
+                                final decD = (10 - intD).clamp(0, 10);
+                                ctrl.text = _addCommas(
+                                  v
+                                      .toStringAsFixed(decD)
+                                      .replaceAll(RegExp(r'0+$'), '')
+                                      .replaceAll(RegExp(r'\.$'), ''),
+                                );
+                              }
+                            });
+                          }),
+                        ),
+                      ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, {'delete': true}),
+                      child: Text(
+                        l10n.deleteTerm,
+                        style: TextStyle(color: Colors.redAccent),
+                      ),
+                    ),
+                    const Spacer(),
+                    SizedBox(
+                      width: 140,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: () => Navigator.pop(ctx, {
+                          'val': ctrl.text,
+                          'unit': unitCtrl.text,
+                          'link': tempLink,
+                          'source': tempLinkSource,
+                          'transform': tempTransform,
+                          'powExp': tempPowExp,
+                          'delete': false,
+                          'applyToAll': tempApplyToAll,
                         }),
-                      ),
-                    ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, {'delete': true}),
-                    child: Text(
-l10n.deleteTerm,
-                      style: TextStyle(color: Colors.redAccent),
-                    ),
-                  ),
-                  const Spacer(),
-                  SizedBox(
-                    width: 140,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        child: Text(
+                          AppLocalizations.of(context)!.save,
+                          style: TextStyle(fontSize: 16),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      onPressed: () => Navigator.pop(ctx, {
-                        'val': ctrl.text,
-                        'unit': unitCtrl.text,
-                        'link': tempLink,
-                        'source': tempLinkSource,
-                        'transform': tempTransform,
-                        'powExp': tempPowExp,
-                        'delete': false,
-                        'applyToAll': tempApplyToAll,
-                      }),
-                      child: Text(AppLocalizations.of(context)!.save, style: TextStyle(fontSize: 16)),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
-        );
-        }
+            ],
+          );
+        },
       ),
     );
 
@@ -5651,7 +5860,9 @@ l10n.deleteTerm,
         unit: unit2,
         op: op,
         isLink: operandLink,
-        linkLabel: operandLink ? _getSourceRowName(operandLinkSource, context) : '',
+        linkLabel: operandLink
+            ? _getSourceRowName(operandLinkSource, context)
+            : '',
       ),
     );
     for (int i = 0; i < others.length; i++) {
@@ -5739,7 +5950,10 @@ l10n.deleteTerm,
                       children: [
                         Text(
                           l10n2.linkSettingsSection,
-                          style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Row(
@@ -6059,7 +6273,10 @@ l10n.deleteTerm,
                       });
                       Navigator.pop(ctx);
                     },
-                    child: Text(l10n2.save, style: const TextStyle(fontSize: 16)),
+                    child: Text(
+                      l10n2.save,
+                      style: const TextStyle(fontSize: 16),
+                    ),
                   ),
                 ),
               ],
@@ -6092,7 +6309,7 @@ l10n.deleteTerm,
     String? linkLabel,
     VoidCallback? onTap,
     Function(TapDownDetails)? onTapDown,
-    double fontSize = 15,
+    double fontSize = 16,
   }) {
     Color getBorderColor() {
       if (!isLink)
@@ -6348,7 +6565,11 @@ l10n.deleteTerm,
               value: 'copy',
               child: Row(
                 children: [
-                  const Icon(Icons.copy_rounded, color: Colors.blueAccent, size: 18),
+                  const Icon(
+                    Icons.copy_rounded,
+                    color: Colors.blueAccent,
+                    size: 18,
+                  ),
                   const SizedBox(width: 12),
                   Text(
                     l10n.copy,
@@ -6396,7 +6617,11 @@ l10n.deleteTerm,
               value: 'brackets',
               child: Row(
                 children: [
-                  const Icon(Icons.code_rounded, color: Colors.blueAccent, size: 18),
+                  const Icon(
+                    Icons.code_rounded,
+                    color: Colors.blueAccent,
+                    size: 18,
+                  ),
                   const SizedBox(width: 12),
                   Text(
                     l10n.brackets,
@@ -6439,7 +6664,10 @@ l10n.deleteTerm,
                   const SizedBox(width: 12),
                   Text(
                     l10n.delete,
-                    style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
@@ -6551,9 +6779,10 @@ l10n.deleteTerm,
                           ? input.toStringAsFixed(
                               _getLinkedPrecision(inputLinkSource),
                             )
-                          : (input == input.truncateToDouble() && input.abs() < 1e12)
-                              ? input.toInt().toString()
-                              : input.toString(),
+                          : (input == input.truncateToDouble() &&
+                                input.abs() < 1e12)
+                          ? input.toInt().toString()
+                          : input.toString(),
                       unit: unit1,
                       isLink: inputLink,
                       linkSource: inputLinkSource,
@@ -6611,9 +6840,10 @@ l10n.deleteTerm,
                           ? operand.toStringAsFixed(
                               _getLinkedPrecision(operandLinkSource),
                             )
-                          : (operand == operand.truncateToDouble() && operand.abs() < 1e12)
-                              ? operand.toInt().toString()
-                              : operand.toString(),
+                          : (operand == operand.truncateToDouble() &&
+                                operand.abs() < 1e12)
+                          ? operand.toInt().toString()
+                          : operand.toString(),
                       unit: unit2,
                       isLink: operandLink,
                       linkSource: operandLinkSource,
@@ -6687,16 +6917,19 @@ l10n.deleteTerm,
                                       as Map<String, dynamic>?,
                                 ),
                               )
-                            : (otherVal == otherVal.truncateToDouble() && otherVal.abs() < 1e12)
-                                ? otherVal.toInt().toString()
-                                : otherVal.toString(),
+                            : (otherVal == otherVal.truncateToDouble() &&
+                                  otherVal.abs() < 1e12)
+                            ? otherVal.toInt().toString()
+                            : otherVal.toString(),
                         unit: otherUnit,
                         isLink: other['valLink'] as bool? ?? false,
                         linkSource:
                             other['valLinkSource'] as Map<String, dynamic>?,
                         linkLabel: (other['valLink'] as bool? ?? false)
                             ? _getSourceRowName(
-                                other['valLinkSource'] as Map<String, dynamic>?, context)
+                                other['valLinkSource'] as Map<String, dynamic>?,
+                                context,
+                              )
                             : null,
                         onTap: () => _editOtherVal(context, idx),
                       ),
@@ -6730,7 +6963,7 @@ l10n.deleteTerm,
                     _buildValueBox(
                       value: result.toStringAsFixed(precision),
                       unit: unitResult,
-                      fontSize: 18,
+                      fontSize: 19,
                       onTapDown: (details) => _editResultProperties(
                         context,
                         details.globalPosition,
@@ -6762,9 +6995,10 @@ l10n.deleteTerm,
                         ? input.toStringAsFixed(
                             _getLinkedPrecision(inputLinkSource),
                           )
-                        : (input == input.truncateToDouble() && input.abs() < 1e12)
-                            ? input.toInt().toString()
-                            : input.toString(),
+                        : (input == input.truncateToDouble() &&
+                              input.abs() < 1e12)
+                        ? input.toInt().toString()
+                        : input.toString(),
                     unit: unit1,
                     isLink: inputLink,
                     linkSource: inputLinkSource,
@@ -6819,9 +7053,10 @@ l10n.deleteTerm,
                         ? operand.toStringAsFixed(
                             _getLinkedPrecision(operandLinkSource),
                           )
-                        : (operand == operand.truncateToDouble() && operand.abs() < 1e12)
-                            ? operand.toInt().toString()
-                            : operand.toString(),
+                        : (operand == operand.truncateToDouble() &&
+                              operand.abs() < 1e12)
+                        ? operand.toInt().toString()
+                        : operand.toString(),
                     unit: unit2,
                     isLink: operandLink,
                     linkSource: operandLinkSource,
@@ -6892,9 +7127,10 @@ l10n.deleteTerm,
                                         as Map<String, dynamic>?,
                                   ),
                                 )
-                              : (otherVal == otherVal.truncateToDouble() && otherVal.abs() < 1e12)
-                                  ? otherVal.toInt().toString()
-                                  : otherVal.toString(),
+                              : (otherVal == otherVal.truncateToDouble() &&
+                                    otherVal.abs() < 1e12)
+                              ? otherVal.toInt().toString()
+                              : otherVal.toString(),
                           unit: otherUnit,
                           isLink: other['valLink'] as bool? ?? false,
                           linkSource:
@@ -6902,7 +7138,9 @@ l10n.deleteTerm,
                           linkLabel: (other['valLink'] as bool? ?? false)
                               ? _getSourceRowName(
                                   other['valLinkSource']
-                                      as Map<String, dynamic>?, context)
+                                      as Map<String, dynamic>?,
+                                  context,
+                                )
                               : null,
                           onTap: () => _editOtherVal(context, idx),
                         ),
@@ -6935,7 +7173,7 @@ l10n.deleteTerm,
                   _buildValueBox(
                     value: result.toStringAsFixed(precision),
                     unit: unitResult,
-                    fontSize: 18,
+                    fontSize: 19,
                     onTapDown: (details) =>
                         _editResultProperties(context, details.globalPosition),
                   ),

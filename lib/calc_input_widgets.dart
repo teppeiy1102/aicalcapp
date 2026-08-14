@@ -565,6 +565,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
           );
         }
         _display = _fmt(runningResult);
+        _calcA = runningResult;
         // 式文字列を再構築
         final exprParts = <String>[];
         for (int i = 0; i < _termValues.length; i++) {
@@ -745,6 +746,7 @@ class _MiniCalcSheetState extends State<_MiniCalcSheet> {
                     );
                   }
                   _display = _fmt(runningResult);
+                  _calcA = runningResult;
                   // 式文字列を再構築
                   final exprParts = <String>[];
                   for (int i = 0; i < _termValues.length; i++) {

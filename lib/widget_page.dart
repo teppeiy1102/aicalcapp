@@ -468,9 +468,9 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
                   ),
                 ),
               ),
-             
-                const SizedBox(height: 6),
- if (_attachedImage != null) ...[
+
+              const SizedBox(height: 6),
+              if (_attachedImage != null) ...[
                 const SizedBox(height: 12),
                 Stack(
                   children: [
@@ -501,7 +501,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
                   ],
                 ),
               ],
- if (_historyEntries.isNotEmpty) ...[
+              if (_historyEntries.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 Row(
                   children: [
@@ -567,7 +567,7 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
                   },
                 ),
               ],
-             
+
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -587,11 +587,11 @@ class _AiPromptSheetState extends State<_AiPromptSheet> {
                   Expanded(
                     child: FilledButton.icon(
                       onPressed: canGenerate
-                            ? () async {
-                                await AiPromptHistoryManager.instance.addEntry(
-                                  _ctrl.text,
-                                );
-                                if (!mounted) return;
+                          ? () async {
+                              await AiPromptHistoryManager.instance.addEntry(
+                                _ctrl.text,
+                              );
+                              if (!mounted) return;
                               Navigator.pop(context, (
                                 instruction: _ctrl.text.trim(),
                                 isModify: _isModify,
@@ -1141,6 +1141,12 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
           r = _evalSimple(r, _termOps[i], _termValues[i + 1]);
         }
         _display = _fmt(r);
+        _calcA = r;
+        if (_termValues.length >= 2) {
+          _calcLastA = _termValues[0];
+          _calcLastOp = _opToDart(_termOps[0]);
+          _calcLastB = _termValues[1];
+        }
         final ep = <String>[];
         for (int i = 0; i < _termValues.length; i++) {
           ep.add(_fmt(_termValues[i]));
@@ -1166,6 +1172,12 @@ class _CalcBottomSheetState extends State<_CalcBottomSheet> {
           r = _evalSimple(r, _termOps[i], _termValues[i + 1]);
         }
         _display = _fmt(r);
+        _calcA = r;
+        if (_termValues.length >= 2) {
+          _calcLastA = _termValues[0];
+          _calcLastOp = _opToDart(_termOps[0]);
+          _calcLastB = _termValues[1];
+        }
         final ep = <String>[];
         for (int i = 0; i < _termValues.length; i++) {
           ep.add(_fmt(_termValues[i]));
@@ -2742,7 +2754,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
     } else {
       modeIcon = Icons.edit_note_rounded;
       modeLabel = l10n.editMode;
-      modeColor = isDarkBar ? Colors.white38 : Colors.black45;
+      modeColor = isDarkBar ? Colors.white : Colors.black;
     }
 
     return Container(
@@ -2773,6 +2785,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
               ClipboardBottomBar(
                 item: widget.clipboardNotifier!.value!,
                 onClear: () => widget.clipboardNotifier!.value = null,
+                onPaste: () => _calcKey.currentState?._pasteClipboardToEnd(),
               ),
             if (_isAiGenerating)
               const LinearProgressIndicator(
@@ -2788,7 +2801,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   _ToolbarButton(
                     icon: Icons.auto_awesome_rounded,
                     label: l10n.toolbarAiGenerate,
-                    color: isDarkBar ? Colors.white38 : Colors.black45,
+                    color: isDarkBar ? Colors.white : Colors.black,
                     isLoading: _isAiGenerating,
                     onTap: () {
                       _calcKey.currentState?._showAiGenerateCalcDialog();
@@ -2825,7 +2838,7 @@ class _WidgetDetailPageState extends State<WidgetDetailPage> {
                   _ToolbarButton(
                     icon: Icons.calculate_rounded,
                     label: l10n.toolbarCalculator,
-                    color: isDarkBar ? Colors.white38 : Colors.black45,
+                    color: isDarkBar ? Colors.white : Colors.black,
                     onTap: _openCalcSheet,
                   ),
                 ],
@@ -3828,6 +3841,12 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
           r = _eval(r, _termOps[i], _termValues[i + 1]);
         }
         _display = _fmt(r);
+        _calcA = r;
+        if (_termValues.length >= 2) {
+          _calcLastA = _termValues[0];
+          _calcLastOp = _opToDart(_termOps[0]);
+          _calcLastB = _termValues[1];
+        }
         final ep = <String>[];
         for (int i = 0; i < _termValues.length; i++) {
           ep.add(_fmt(_termValues[i]));
@@ -3913,6 +3932,12 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                     r = _eval(r, _termOps[i], _termValues[i + 1]);
                   }
                   _display = _fmt(r);
+                  _calcA = r;
+                  if (_termValues.length >= 2) {
+                    _calcLastA = _termValues[0];
+                    _calcLastOp = _opToDart(_termOps[0]);
+                    _calcLastB = _termValues[1];
+                  }
                   final ep = <String>[];
                   for (int i = 0; i < _termValues.length; i++) {
                     ep.add(_fmt(_termValues[i]));
@@ -4042,13 +4067,11 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
           final targetContentH =
               screenH - 64.0 - topPad; // 64.0 is _kHandleHeight
 
-          // viewPadding.bottom は Scaffold/SafeArea に左右されず常にホームインジケーター高さを返す
-          final bottomPad = MediaQuery.of(ctx).viewPadding.bottom;
           final screenW = MediaQuery.of(ctx).size.width;
-          // innerH = ホームインジケーターを除いた使用可能高さ
-          final innerH = targetContentH - bottomPad;
-          // kFixed: topPad(8) + actionRow(50) + gap(8) + display(80) + gap(8) + buffer(8) + gridGaps(4*6=24) = 186
-          const kFixed = 186.0;
+          // Use the full panel height so the last row reaches the bottom edge.
+          final innerH = targetContentH;
+          // Fixed content: padding(8) + actionRow(50) + display(110) + gap(8) + gridGaps(4*5=20) = 196
+          const kFixed = 196.0;
           final gridAvail = innerH - kFixed;
           final buttonH = (gridAvail / 5).clamp(28.0, 72.0);
           final buttonW = (screenW - 20.0 - 18.0) / 4;
@@ -4077,7 +4100,7 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
             child: SizedBox(
               height: targetContentH,
               child: Padding(
-                padding: EdgeInsets.fromLTRB(10, 8, 10, bottomPad + 8),
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -4199,92 +4222,88 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
                     // ── 表示部 ──
                     _CalcFlashOverlay(
                       key: _flashKey,
-                      child: SafeArea(
-                        child: SizedBox(
-                          height: 110,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              if (_termValues.isNotEmpty)
-                                _buildCalcFormulaDisplay(),
-                              FittedBox(
-                                child: Text(
-                                  _addCommas(_display),
-                                  maxLines: 1,
-                                  style: const TextStyle(
-                                    height: 1,
-                                    color: Colors.black,
-                                    fontSize: 34,
-                                    fontWeight: FontWeight.w200,
-                                  ),
-                                  textAlign: TextAlign.right,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // ── ボタングリッド ──
-                    SafeArea(
                       child: SizedBox(
-                        height: 5 * buttonH + 4 * 10,
-                        child: GridView.count(
-                          padding: EdgeInsets.zero,
-                          crossAxisCount: 4,
-                          mainAxisSpacing: 5,
-                          crossAxisSpacing: 5,
-                          childAspectRatio: ratio,
-                          physics: const NeverScrollableScrollPhysics(),
+                        height: 110,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            calcKey(
-                              'C',
-                              bg: const Color.fromARGB(255, 251, 81, 65),
-                              fg: Colors.white,
-                            ),
-                            calcKey('+/-', bg: Colors.white, fg: Colors.black),
-                            calcKey('%', bg: Colors.white, fg: Colors.black),
-                            calcKey(
-                              '÷',
-                              bg: opColor,
-                              fg: const Color.fromARGB(255, 0, 0, 0),
-                            ),
-                            calcKey('7', bg: Colors.white, fg: Colors.black),
-                            calcKey('8', bg: Colors.white, fg: Colors.black),
-                            calcKey('9', bg: Colors.white, fg: Colors.black),
-                            calcKey(
-                              '×',
-                              bg: opColor,
-                              fg: const Color.fromARGB(255, 0, 0, 0),
-                            ),
-                            calcKey('4', bg: Colors.white, fg: Colors.black),
-                            calcKey('5', bg: Colors.white, fg: Colors.black),
-                            calcKey('6', bg: Colors.white, fg: Colors.black),
-                            calcKey(
-                              '-',
-                              bg: opColor,
-                              fg: const Color.fromARGB(255, 0, 0, 0),
-                            ),
-                            calcKey('1', bg: Colors.white, fg: Colors.black),
-                            calcKey('2', bg: Colors.white, fg: Colors.black),
-                            calcKey('3', bg: Colors.white, fg: Colors.black),
-                            calcKey(
-                              '+',
-                              bg: opColor,
-                              fg: const Color.fromARGB(255, 0, 0, 0),
-                            ),
-                            calcKey('⌫', bg: Colors.white, fg: Colors.black),
-                            calcKey('0', bg: Colors.white, fg: Colors.black),
-                            calcKey('.', bg: Colors.white, fg: Colors.black),
-                            calcKey(
-                              '=',
-                              bg: eqColor.withOpacity(0.8),
-                              fg: Colors.black,
+                            if (_termValues.isNotEmpty)
+                              _buildCalcFormulaDisplay(),
+                            FittedBox(
+                              child: Text(
+                                _addCommas(_display),
+                                maxLines: 1,
+                                style: const TextStyle(
+                                  height: 1,
+                                  color: Colors.black,
+                                  fontSize: 54,
+                                  fontWeight: FontWeight.w200,
+                                ),
+                                textAlign: TextAlign.right,
+                              ),
                             ),
                           ],
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    // ── ボタングリッド ──
+                    SizedBox(
+                      height: 5 * buttonH + 8 * 5,
+                      child: GridView.count(
+                        padding: EdgeInsets.zero,
+                        crossAxisCount: 4,
+                        mainAxisSpacing: 5,
+                        crossAxisSpacing: 5,
+                        childAspectRatio: ratio,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: [
+                          calcKey(
+                            'C',
+                            bg: const Color.fromARGB(255, 251, 81, 65),
+                            fg: Colors.white,
+                          ),
+                          calcKey('+/-', bg: Colors.white, fg: Colors.black),
+                          calcKey('%', bg: Colors.white, fg: Colors.black),
+                          calcKey(
+                            '÷',
+                            bg: opColor,
+                            fg: const Color.fromARGB(255, 0, 0, 0),
+                          ),
+                          calcKey('7', bg: Colors.white, fg: Colors.black),
+                          calcKey('8', bg: Colors.white, fg: Colors.black),
+                          calcKey('9', bg: Colors.white, fg: Colors.black),
+                          calcKey(
+                            '×',
+                            bg: opColor,
+                            fg: const Color.fromARGB(255, 0, 0, 0),
+                          ),
+                          calcKey('4', bg: Colors.white, fg: Colors.black),
+                          calcKey('5', bg: Colors.white, fg: Colors.black),
+                          calcKey('6', bg: Colors.white, fg: Colors.black),
+                          calcKey(
+                            '-',
+                            bg: opColor,
+                            fg: const Color.fromARGB(255, 0, 0, 0),
+                          ),
+                          calcKey('1', bg: Colors.white, fg: Colors.black),
+                          calcKey('2', bg: Colors.white, fg: Colors.black),
+                          calcKey('3', bg: Colors.white, fg: Colors.black),
+                          calcKey(
+                            '+',
+                            bg: opColor,
+                            fg: const Color.fromARGB(255, 0, 0, 0),
+                          ),
+                          calcKey('⌫', bg: Colors.white, fg: Colors.black),
+                          calcKey('0', bg: Colors.white, fg: Colors.black),
+                          calcKey('.', bg: Colors.white, fg: Colors.black),
+                          calcKey(
+                            '=',
+                            bg: eqColor.withOpacity(0.8),
+                            fg: Colors.black,
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -4302,12 +4321,14 @@ class HomeCalcBottomPanelState extends State<HomeCalcBottomPanel>
 class CalculatorViewCard extends StatelessWidget {
   final WidgetConfig config;
   final void Function(Map<String, dynamic>) onUpdate;
+  final ValueNotifier<Map<String, dynamic>?>? clipboardNotifier;
   final EdgeInsetsGeometry? contentPadding;
 
   const CalculatorViewCard({
     super.key,
     required this.config,
     required this.onUpdate,
+    this.clipboardNotifier,
     this.contentPadding,
   });
 
@@ -4323,8 +4344,10 @@ class CalculatorViewCard extends StatelessWidget {
       onDuplicate: () {},
       showToolbar: false,
       showHeader: false,
+      showCopySnackBar: false,
       contentPadding:
           contentPadding ?? const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      clipboardNotifier: clipboardNotifier,
     );
   }
 }
@@ -4437,6 +4460,8 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
         },
         onRequestAiCount: _handleMergedCalcAiCountRequest,
         onRequestHistory: _showMergedHistoryForCalc,
+        onRequestEditValue: _showMergedEditValueSheet,
+        onRequestPickOp: _showMergedPickOpSheet,
         onClose: _closeMergedCalcSheet,
       ),
     );
@@ -4512,6 +4537,276 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
     } else {
       Overlay.of(context).insert(entry);
     }
+  }
+
+  void _showMergedEditValueSheet(
+    double currentVal,
+    void Function(double) onConfirm,
+  ) {
+    final ctrl = TextEditingController(
+      text: currentVal == currentVal.truncateToDouble()
+          ? currentVal.toInt().toString()
+          : currentVal.toString(),
+    );
+    OverlayEntry? entry;
+    void close() {
+      entry?.remove();
+      entry = null;
+    }
+
+    entry = OverlayEntry(
+      builder: (ctx) => Material(
+        color: Colors.transparent,
+        child: GestureDetector(
+          onTap: close,
+          behavior: HitTestBehavior.opaque,
+          child: Stack(
+            children: [
+              Container(color: Colors.black26),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    padding: EdgeInsets.only(
+                      left: 24,
+                      right: 24,
+                      top: 24,
+                      bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.edit,
+                              color: Color(0xFF5E81FF),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              AppLocalizations.of(context)!.editValue,
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              icon: Icon(
+                                Icons.close,
+                                color: Colors.grey.shade400,
+                              ),
+                              onPressed: close,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: ctrl,
+                          autofocus: true,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                            signed: true,
+                          ),
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                          decoration: InputDecoration(
+                            hintText: AppLocalizations.of(
+                              context,
+                            )!.numberInputHint,
+                            hintStyle: TextStyle(color: Colors.grey.shade400),
+                            filled: true,
+                            fillColor: Colors.grey.shade100,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF5E81FF),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            onPressed: () {
+                              final value =
+                                  double.tryParse(
+                                    ctrl.text.replaceAll(',', ''),
+                                  ) ??
+                                  currentVal;
+                              close();
+                              onConfirm(value);
+                            },
+                            child: Text(
+                              AppLocalizations.of(context)!.save,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    Overlay.of(context).insert(entry!, above: _mergedCalcOverlay);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ctrl.selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: ctrl.text.length,
+      );
+    });
+  }
+
+  void _showMergedPickOpSheet(
+    String currentOp,
+    void Function(String) onConfirm,
+  ) {
+    OverlayEntry? entry;
+    void close() {
+      entry?.remove();
+      entry = null;
+    }
+
+    entry = OverlayEntry(
+      builder: (ctx) => Material(
+        color: Colors.transparent,
+        child: GestureDetector(
+          onTap: close,
+          behavior: HitTestBehavior.opaque,
+          child: Stack(
+            children: [
+              Container(color: Colors.black54),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: GestureDetector(
+                  onTap: () {},
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 24,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF1E1E2A),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(20),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.calculate,
+                              color: Colors.orangeAccent,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              AppLocalizations.of(context)!.selectOperation,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white54,
+                              ),
+                              onPressed: close,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: ['+', '-', '×', '÷'].map((op) {
+                            final selected = currentOp == op;
+                            return GestureDetector(
+                              onTap: () {
+                                close();
+                                onConfirm(op);
+                              },
+                              child: Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: selected
+                                      ? Colors.orangeAccent.withOpacity(0.3)
+                                      : Colors.white.withOpacity(0.08),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: selected
+                                        ? Colors.orangeAccent
+                                        : Colors.white.withOpacity(0.2),
+                                    width: selected ? 2 : 1,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    op,
+                                    style: TextStyle(
+                                      color: selected
+                                          ? Colors.orangeAccent
+                                          : Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    Overlay.of(context).insert(entry!, above: _mergedCalcOverlay);
   }
 
   Future<void> _pickSheetAndAdd(Map<String, dynamic> item) async {
@@ -5379,6 +5674,8 @@ class _MergedDetailPageState extends State<MergedDetailPage> {
                               widget.onSheetUpdate(sheetId, data);
                             },
                             onSheetDuplicate: widget.onSheetDuplicate,
+                            onRequestEditValue: _showMergedEditValueSheet,
+                            onRequestPickOp: _showMergedPickOpSheet,
                           ),
                         );
                       },
@@ -5635,6 +5932,10 @@ class _MergedSheetSection extends StatefulWidget {
   final Set<String> mergedSiblingIds;
   final void Function(String, Map<String, dynamic>)? onSheetUpdate;
   final void Function(String)? onSheetDuplicate;
+  final void Function(double currentVal, void Function(double) onConfirm)?
+  onRequestEditValue;
+  final void Function(String currentOp, void Function(String) onConfirm)?
+  onRequestPickOp;
 
   const _MergedSheetSection({
     super.key,
@@ -5648,6 +5949,8 @@ class _MergedSheetSection extends StatefulWidget {
     this.mergedSiblingIds = const {},
     this.onSheetUpdate,
     this.onSheetDuplicate,
+    this.onRequestEditValue,
+    this.onRequestPickOp,
   });
 
   @override
@@ -5745,6 +6048,8 @@ class _MergedSheetSectionState extends State<_MergedSheetSection> {
         bgColor: bgColorValue,
         initialAiCountResult: pendingResult,
         onRequestAiCount: _handleCalcAiCountRequest,
+        onRequestEditValue: widget.onRequestEditValue,
+        onRequestPickOp: widget.onRequestPickOp,
         onAddItem: (item) => state?._addItemFromMap(item),
         onAddItems: (items) => state?._addItemsFromMaps(items),
         onClose: _closeCalcSheet,
@@ -6289,8 +6594,13 @@ class _ToolbarButton extends StatelessWidget {
 class ClipboardBottomBar extends StatelessWidget {
   final Map<String, dynamic> item;
   final VoidCallback onClear;
+  final VoidCallback? onPaste;
 
-  const ClipboardBottomBar({required this.item, required this.onClear});
+  const ClipboardBottomBar({
+    required this.item,
+    required this.onClear,
+    this.onPaste,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -6333,6 +6643,21 @@ class ClipboardBottomBar extends StatelessWidget {
               ],
             ),
           ),
+          if (onPaste != null)
+            TextButton.icon(
+              onPressed: onPaste,
+              icon: const Icon(Icons.content_paste_rounded, size: 16),
+              label: Text(
+                AppLocalizations.of(context)!.pasteToThisSheet,
+                style: const TextStyle(fontSize: 12),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.lightBlueAccent,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
           GestureDetector(
             onTap: onClear,
             child: Container(
@@ -6432,7 +6757,7 @@ class _QrShareDialogState extends State<_QrShareDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('保存に失敗しました: $e'),
+            content: Text(AppLocalizations.of(context)!.saveFailed(e)),
             backgroundColor: const Color(0xFF2A2A3A),
           ),
         );
@@ -6477,8 +6802,10 @@ class _QrShareDialogState extends State<_QrShareDialog> {
                     Expanded(
                       child: Text(
                         isMulti
-                            ? 'QRコードで共有 (${_currentPage + 1}/$total枚目)'
-                            : 'QRコードで共有',
+                            ? AppLocalizations.of(
+                                context,
+                              )!.qrSharePageLabel(_currentPage + 1, total)
+                            : AppLocalizations.of(context)!.qrShareLabel,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -6533,7 +6860,7 @@ class _QrShareDialogState extends State<_QrShareDialog> {
               ),
               const SizedBox(height: 4),
               Text(
-                '${widget.itemCount}件の計算データ',
+                AppLocalizations.of(context)!.calcDataCount(widget.itemCount),
                 style: const TextStyle(color: Colors.white54, fontSize: 12),
               ),
               const SizedBox(height: 8),
@@ -6562,7 +6889,9 @@ class _QrShareDialogState extends State<_QrShareDialog> {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        '連結QR: ${_currentPage + 1}/$total枚目',
+                        AppLocalizations.of(
+                          context,
+                        )!.linkedQrPage(_currentPage + 1, total),
                         style: const TextStyle(
                           color: Colors.tealAccent,
                           fontSize: 12,
@@ -6814,7 +7143,7 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('保存に失敗しました: $e'),
+            content: Text(AppLocalizations.of(context)!.saveFailed(e)),
             backgroundColor: const Color(0xFF2A2A3A),
           ),
         );
@@ -6838,11 +7167,11 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
 
     // シート内のチャンク番号（シートが複数チャンクを持つ場合のみ表示）
     final chunkLabel = sheetChunks > 1
-        ? '  (${cur.chunkIdx + 1}/$sheetChunks枚目)'
+        ? '  ${AppLocalizations.of(context)!.linkedQrPage(cur.chunkIdx + 1, sheetChunks)}'
         : '';
     // シート番号ラベル（複数シートの場合のみ表示）
     final sheetLabel = totalSheets > 1
-        ? 'シート ${cur.sheetIdx + 1} / $totalSheets  ·  '
+        ? '${AppLocalizations.of(context)!.sheetNumberLabel(cur.sheetIdx + 1, totalSheets)}  ·  '
         : '';
 
     return Dialog(
@@ -6876,7 +7205,7 @@ class _MultiSheetQrDialogState extends State<MultiSheetQrDialog> {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    '$sheetLabel${sheet.itemCount}件$chunkLabel',
+                    '$sheetLabel${AppLocalizations.of(context)!.calcDataCount(sheet.itemCount)}$chunkLabel',
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.4),
                       fontSize: 11,

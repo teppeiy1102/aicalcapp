@@ -48,10 +48,12 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
               final valStr =
                   value == value.truncateToDouble() && value.abs() < 1e12
                   ? _addCommas(value.toInt().toString())
-                  : _addCommas(value
-                        .toStringAsFixed(4)
-                        .replaceAll(RegExp(r'0+$'), '')
-                        .replaceAll(RegExp(r'\.$'), ''));
+                  : _addCommas(
+                      value
+                          .toStringAsFixed(4)
+                          .replaceAll(RegExp(r'0+$'), '')
+                          .replaceAll(RegExp(r'\.$'), ''),
+                    );
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(
@@ -85,7 +87,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                       valStr,
                       style: TextStyle(
                         color: fgColor,
-                        fontSize: 12,
+                        fontSize: 13,
                         //fontWeight: FontWeight.bold,
                         fontFamily: 'ZenOldMincho',
                       ),
@@ -106,7 +108,9 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
     final constants = _constants;
     final standaloneItems = _standaloneItems;
     final displayOrder = _effectiveDisplayOrder;
-    final title = widget.config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
+    final title =
+        widget.config.data['title'] as String? ??
+        AppLocalizations.of(context)!.standardCalc;
     final bgColorValue = widget.config.data['bgColor'] as int?;
     final isDark = bgColorValue != null
         ? _kNoteColorPresets
@@ -186,7 +190,10 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
             }
           }
           if (logic != null) {
-            final isTrue = _CalculatorWidgetState._evalLogicItem(logic, resolveLink);
+            final isTrue = _CalculatorWidgetState._evalLogicItem(
+              logic,
+              resolveLink,
+            );
             final trueVal = (source['trueVal'] as num? ?? 1.0).toDouble();
             final falseVal = (source['falseVal'] as num? ?? 0.0).toDouble();
             return isTrue ? trueVal : falseVal;
@@ -307,7 +314,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
 
       final valStyle = TextStyle(
         color: isDark ? Colors.white60 : Colors.black54,
-        fontSize: 14,
+        fontSize: 15,
         fontFamily: 'ZenOldMincho',
         height: 1.5,
       );
@@ -318,18 +325,29 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
         height: 1.5,
       );
 
-      List<InlineSpan> termSpans(double v, String u, String? transform, double powExp) {
+      List<InlineSpan> termSpans(
+        double v,
+        String u,
+        String? transform,
+        double powExp,
+      ) {
         final s = fmtNum(v, precision);
-        final mapped = _CalculatorRow._transformExprStr('###VAL###', transform, powExp);
+        final mapped = _CalculatorRow._transformExprStr(
+          '###VAL###',
+          transform,
+          powExp,
+        );
         final parts = mapped.split('###VAL###');
         final prefix = parts[0];
         final suffix = parts.length > 1 ? parts[1] : '';
 
         final spans = <InlineSpan>[];
-        if (prefix.isNotEmpty) spans.add(TextSpan(text: prefix, style: valStyle));
+        if (prefix.isNotEmpty)
+          spans.add(TextSpan(text: prefix, style: valStyle));
         spans.add(TextSpan(text: s, style: valStyle));
         if (u.isNotEmpty) spans.add(TextSpan(text: ' $u', style: unitStyle));
-        if (suffix.isNotEmpty) spans.add(TextSpan(text: suffix, style: valStyle));
+        if (suffix.isNotEmpty)
+          spans.add(TextSpan(text: suffix, style: valStyle));
         return spans;
       }
 
@@ -421,12 +439,12 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
               ),
               const SizedBox(height: 24),
             ],
-        
+
             if (constants.isNotEmpty) ...[
               _buildViewModeConstantsSection(constants, isDark),
               const SizedBox(height: 16),
             ],
-        
+
             if (items.isEmpty && standaloneItems.isEmpty && _logicItems.isEmpty)
               Center(
                 child: Text(
@@ -448,7 +466,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                 ) {
                   final entry = displayOrder[orderIdx];
                   final isFirst = orderIdx == 0;
-        
+
                   if (entry['type'] == 'standalone') {
                     final itemId = entry['itemId'] as String? ?? '';
                     final sm = standaloneItems.firstWhere(
@@ -504,7 +522,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                     );
                     continue;
                   }
-        
+
                   if (entry['type'] == 'logic') {
                     final itemId = entry['itemId'] as String? ?? '';
                     final logicItem = _logicItems.firstWhere(
@@ -525,10 +543,11 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                         ),
                       );
                     }
-                    final exprStr = _CalculatorWidgetState._buildLogicExprString(
-                      logicItem,
-                      resolveLink,
-                    );
+                    final exprStr =
+                        _CalculatorWidgetState._buildLogicExprString(
+                          logicItem,
+                          resolveLink,
+                        );
                     final isTrue = _CalculatorWidgetState._evalLogicItem(
                       logicItem,
                       resolveLink,
@@ -602,7 +621,9 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                                 ),
                               ),
                               child: Text(
-                                isTrue ? AppLocalizations.of(context)!.trueLabel : AppLocalizations.of(context)!.falseLabel,
+                                isTrue
+                                    ? AppLocalizations.of(context)!.trueLabel
+                                    : AppLocalizations.of(context)!.falseLabel,
                                 style: TextStyle(
                                   color: isTrue
                                       ? (isDark
@@ -623,24 +644,30 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                     );
                     continue;
                   }
-        
+
                   // type == 'calc'
                   final ci = entry['calcIdx'] as int? ?? 0;
-                  if (ci < 0 || ci >= items.length || ci >= resolvedRows.length) {
+                  if (ci < 0 ||
+                      ci >= items.length ||
+                      ci >= resolvedRows.length) {
                     continue;
                   }
-        
+
                   final item = items[ci];
                   final resolved = resolvedRows[ci];
                   final precision = item['precision'] as int? ?? 2;
                   final name = item['name'] as String? ?? '';
                   final result = finalResults[ci];
                   final unitResult = item['unitResult'] as String? ?? '';
-                  final formulaSpans = buildFormulaSpans(item, resolved, precision);
-                  
+                  final formulaSpans = buildFormulaSpans(
+                    item,
+                    resolved,
+                    precision,
+                  );
+
                   final resultValStyle = TextStyle(
                     color: isDark ? Colors.white : Colors.black,
-                    fontSize: 16,
+                    fontSize: 17,
                     fontWeight: FontWeight.w700,
                     fontFamily: 'ZenOldMincho',
                     letterSpacing: -0.5,
@@ -664,7 +691,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                       ),
                     );
                   }
-        
+
                   widgets.add(
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4, left: 10),
@@ -677,7 +704,9 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                               child: Text(
                                 name,
                                 style: TextStyle(
-                                  color: isDark ? Colors.white38 : Colors.black45,
+                                  color: isDark
+                                      ? Colors.white38
+                                      : Colors.black45,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   fontFamily: 'ZenOldMincho',
@@ -714,7 +743,7 @@ extension _CalculatorWidgetStateView on _CalculatorWidgetState {
                       ),
                     ),
                   );
-        
+
                   // この計算行に紐付いたメモを表示（閲覧モードは読み取り専用）
                   for (final memo in memos) {
                     if ((memo['afterCalcIdx'] as int? ?? -1) == ci) {

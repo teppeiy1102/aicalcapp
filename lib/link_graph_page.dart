@@ -6,7 +6,7 @@
 //    • Ticker で毎フレーム 60fps 物理演算
 //    • ChangeNotifier + CustomPainter.repaint で setState 不要の高効率描画
 //    • 生ポインターイベントでノードドラッグ＋ピンチズーム＋スクロールズーム
-//    • Obsidian 風ダークスタイル（小丸ノード・細線・グロー）
+//    • ライトスタイル（小丸ノード・細線・グロー）
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 import 'dart:convert';
@@ -500,6 +500,8 @@ class _LinkGraphPageState extends State<LinkGraphPage>
               c['lhsLinkSource'] as Map?, ldest, '条件${k + 1}左辺', sid);
           addEdge(c['rhsLink'] == true,
               c['rhsLinkSource'] as Map?, ldest, '条件${k + 1}右辺', sid);
+          addEdge(c['rhsLink2'] == true,
+              c['rhsLinkSource2'] as Map?, ldest, '条件${k + 1}上限', sid);
         }
       }
     }
@@ -621,7 +623,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
     }
     for (final entry in bySheet.entries) {
       final ns = entry.value;
-      if (ns.length < 2) continue;
+      if (ns.isEmpty) continue;
       double minX = ns.first.pos.dx, maxX = minX;
       double minY = ns.first.pos.dy, maxY = minY;
       for (final n in ns) {
@@ -855,14 +857,14 @@ class _LinkGraphPageState extends State<LinkGraphPage>
     return PopScope(
       canPop: false,
       child: Scaffold(
-      backgroundColor: const Color(0xFF0D0D14),
+      backgroundColor: const Color(0xFFF7F8FA),
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+        backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        foregroundColor: Colors.white,
+        foregroundColor: const Color(0xFF20242B),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
       title: Column(
@@ -870,7 +872,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
           children: [
             Text(l10n.linkGraph,
                 style: const TextStyle(
-                    color: Colors.white,
+                color: Color(0xFF20242B),
                     fontWeight: FontWeight.bold,
                     fontSize: 17)),
             if (!_loading)
@@ -878,15 +880,15 @@ class _LinkGraphPageState extends State<LinkGraphPage>
                 _showAll
                     ? l10n.graphShowAllNodes(_model.nodes.length)
                     : l10n.graphShowLinkedNodes(visible.length),
-                style: const TextStyle(color: Color.fromARGB(151, 221, 254, 181), fontSize: 14),
+                style: const TextStyle(color: Color(0xFF697586), fontSize: 14),
               ),
           ],
         ),
         actions: const [],
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF7B7FFF)))
+            ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF2F6FED)))
           : visible.isEmpty
               ? _EmptyState(
                   showAll: _showAll,
@@ -928,30 +930,63 @@ class _LinkGraphPageState extends State<LinkGraphPage>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          FloatingActionButton.small(
-                            heroTag: 'graph_toggle',
-                            backgroundColor: const Color(0xFF1A1A2A),
-                            foregroundColor: _showAll
-                                ? const Color(0xFF7B7FFF)
-                                : Colors.white54,
-                            elevation: 2,
-                            tooltip: _showAll ? l10n.graphTooltipShowAll : l10n.graphTooltipShowLinked,
-                            onPressed: () {
-                              setState(() => _showAll = !_showAll);
-                              WidgetsBinding.instance
-                                  .addPostFrameCallback((_) => _fitToView());
-                            },
-                            child: Icon(
-                              _showAll ? Icons.hub : Icons.hub_outlined,
-                              size: 18,
+                          Material(
+                            color: Colors.white,
+                            elevation: 3,
+                            borderRadius: BorderRadius.circular(10),
+                            child: Tooltip(
+                              message: l10n.graphTooltipShowLinked,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: () {
+                                  setState(() => _showAll = !_showAll);
+                                  WidgetsBinding.instance
+                                      .addPostFrameCallback((_) => _fitToView());
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 10, right: 4),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.hub_outlined,
+                                        size: 17,
+                                        color: _showAll
+                                            ? const Color(0xFF697586)
+                                            : const Color(0xFF2F6FED),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        l10n.graphLinkedOnlyOption,
+                                        style: const TextStyle(
+                                          color: Color(0xFF394150),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Switch.adaptive(
+                                        value: !_showAll,
+                                        onChanged: (value) {
+                                          setState(() => _showAll = !value);
+                                          WidgetsBinding.instance
+                                              .addPostFrameCallback((_) => _fitToView());
+                                        },
+                                        activeColor: const Color(0xFF2F6FED),
+                                        materialTapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 8),
                           FloatingActionButton.small(
                             heroTag: 'graph_fit',
-                            backgroundColor: const Color(0xFF1A1A2A),
-                            foregroundColor: Colors.white54,
-                            elevation: 2,
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF697586),
+                            elevation: 3,
                             tooltip: l10n.graphTooltipFit,
                             onPressed: _fitToView,
                             child: const Icon(Icons.fit_screen, size: 18),
@@ -990,7 +1025,7 @@ class _LinkGraphPageState extends State<LinkGraphPage>
                             child: Text(
                               l10n.graphHint,
                               style: const TextStyle(
-                                  color: Colors.white38, fontSize: 11),
+                                  color: Color(0xFF8A94A3), fontSize: 11),
                             ),
                           ),
                         ),
@@ -1046,12 +1081,12 @@ class _GraphPainter extends CustomPainter {
     this.mergedSheetNames = const {},
   }) : super(repaint: Listenable.merge([model, view]));
 
-  static const Color _bg = Color.fromARGB(255, 0, 0, 0);
-  static const Color _calcColor = Color.fromARGB(255, 74, 153, 255);
-  static const Color _logicColor = Color(0xFFFFAA33);
-  static const Color _edgeColor = Color(0xFF888AAA);
-  static const Color _edgeSelColor = Color(0xFFAAB0FF);
-  static const Color _labelColor = Color(0xFFD0D0E8);
+  static const Color _bg = Color(0xFFF7F8FA);
+  static const Color _calcColor = Color(0xFF2F6FED);
+  static const Color _logicColor = Color(0xFFB86B00);
+  static const Color _edgeColor = Color(0xFF8995A5);
+  static const Color _edgeSelColor = Color(0xFF245BC7);
+  static const Color _labelColor = Color(0xFF263238);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1147,17 +1182,17 @@ class _GraphPainter extends CustomPainter {
       canvas.drawRRect(
         rr,
         Paint()
-          ..color = (hasMerged ? accentColor! : Colors.white)
-              .withOpacity(hasMerged ? 0.04 : 0.02),
+          ..color = (hasMerged ? accentColor! : const Color(0xFFCBD5E1))
+              .withOpacity(hasMerged ? 0.07 : 0.045),
       );
       // 枠線
       canvas.drawRRect(
           rr,
           Paint()
-            ..color = (hasMerged ? accentColor! : Colors.white)
-                .withOpacity(hasMerged ? 0.25 : 0.05)
+            ..color = (hasMerged ? accentColor! : const Color(0xFF64748B))
+                .withOpacity(hasMerged ? 0.38 : 0.20)
             ..style = PaintingStyle.stroke
-            ..strokeWidth = (hasMerged ? 1.4 : 1.0) / sc);
+            ..strokeWidth = (hasMerged ? 1.6 : 1.3) / sc);
 
       if (sc > 0.25) {
         // シート名
@@ -1165,8 +1200,8 @@ class _GraphPainter extends CustomPainter {
           text: TextSpan(
             text: entry.key,
             style: TextStyle(
-              color: (hasMerged ? accentColor! : Colors.white)
-                  .withOpacity(hasMerged ? 0.55 : 0.18),
+                color: (hasMerged ? accentColor! : const Color(0xFF52606D))
+                  .withOpacity(hasMerged ? 0.72 : 0.62),
               fontSize: (11 / sc).clamp(8.0, 14.0),
               fontWeight: FontWeight.w500,
             ),
@@ -1300,11 +1335,12 @@ class _GraphPainter extends CustomPainter {
     }
 
     // 背景（ノード内側）
-    canvas.drawCircle(c, r, Paint()..color = _bg);
+    final fillAlpha = isDimmed ? 0.04 : (isSel ? 0.18 : 0.08);
+    canvas.drawCircle(c, r, Paint()..color = base.withOpacity(fillAlpha));
 
     // リング
     final ringAlpha =
-        isDimmed ? 0.18 : (isSel ? 1.0 : isConn ? 0.80 : 0.65);
+      isDimmed ? 0.38 : (isSel ? 1.0 : isConn ? 0.85 : 0.80);
     canvas.drawCircle(
         c,
         r,
@@ -1319,16 +1355,16 @@ class _GraphPainter extends CustomPainter {
         r * (isSel ? 0.44 : 0.28),
         Paint()
           ..color = base
-              .withOpacity(isDimmed ? 0.15 : (isSel ? 0.90 : 0.55)));
+              .withOpacity(isDimmed ? 0.30 : (isSel ? 0.90 : 0.70)));
 
     // ラベル
-    if (sc > 0.28 && !isDimmed) {
+    if (sc > 0.28) {
       final maxCh = isSel ? 22 : 12;
       final lbl = node.label.length > maxCh
           ? '${node.label.substring(0, maxCh)}…'
           : node.label;
       final fs = (11.0 / sc).clamp(7.0, 14.0);
-      final la = isSel ? 1.0 : (isConn ? 0.80 : 0.55);
+      final la = isSel ? 1.0 : (isConn ? 0.85 : (isDimmed ? 0.42 : 0.75));
       final tp = TextPainter(
         text: TextSpan(
           text: lbl,
@@ -1344,12 +1380,13 @@ class _GraphPainter extends CustomPainter {
     }
 
     // シート名（ズームイン時）
-    if (sc > 0.7 && !isDimmed) {
+    if (sc > 0.7) {
       final stp = TextPainter(
         text: TextSpan(
           text: node.sheetName,
           style: TextStyle(
-              color: Colors.white.withOpacity(0.20),
+              color: const Color(0xFF697586)
+                  .withOpacity(isDimmed ? 0.32 : 0.55),
               fontSize: (8.5 / sc).clamp(5.5, 10.0)),
         ),
         textDirection: TextDirection.ltr,
@@ -1361,7 +1398,7 @@ class _GraphPainter extends CustomPainter {
     // ピン留めインジケーター
     if (node.pinned) {
       canvas.drawCircle(c + Offset(r * 0.65, -r * 0.65), 2.5 / sc,
-          Paint()..color = Colors.white70);
+          Paint()..color = const Color(0xFF52606D));
     }
   }
 
@@ -1402,13 +1439,13 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.scatter_plot_outlined,
-              size: 64, color: Colors.white.withOpacity(0.08)),
+            Icon(Icons.scatter_plot_outlined,
+              size: 64, color: const Color(0xFFCBD5E1)),
           const SizedBox(height: 20),
           Text(
             showAll ? 'シートにデータがありません' : 'リンクが設定されていません',
             style: const TextStyle(
-                color: Color(0xFF5A5A7A),
+              color: Color(0xFF52606D),
                 fontSize: 16,
                 fontWeight: FontWeight.w500),
           ),
@@ -1418,7 +1455,7 @@ class _EmptyState extends StatelessWidget {
                 ? AppLocalizations.of(context)!.createCalcSheet
                 : AppLocalizations.of(context)!.linkGraphEmptyHint,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF3A3A5A), fontSize: 13),
+            style: const TextStyle(color: Color(0xFF697586), fontSize: 13),
           ),
           if (!showAll) ...[
             const SizedBox(height: 24),
@@ -1427,8 +1464,8 @@ class _EmptyState extends StatelessWidget {
               icon: const Icon(Icons.scatter_plot_outlined, size: 16),
               label: Text(AppLocalizations.of(context)!.showAllNodes),
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF7B7FFF),
-                side: const BorderSide(color: Color(0xFF3A4080)),
+                foregroundColor: const Color(0xFF245BC7),
+                side: const BorderSide(color: Color(0xFF9BB9F4)),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
@@ -1462,8 +1499,16 @@ class _LegendWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.92),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE1E7EF)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Center(
         child: Column(
@@ -1471,26 +1516,26 @@ class _LegendWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _LegRow(
-                color: const Color(0xFF7B7FFF),
+                color: const Color(0xFF2F6FED),
                 label: AppLocalizations.of(context)!.formulaCalc,
                 count: calcCount),
             const SizedBox(height: 6),
             _LegRow(
-                color: const Color(0xFFFFAA33),
+                color: const Color(0xFFB86B00),
                 label: AppLocalizations.of(context)!.formulaLogic,
                 count: logicCount),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 3),
-              child: Divider(color: Colors.white10, height: 1),
+              child: Divider(color: Color(0xFFE1E7EF), height: 1),
             ),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(width: 16, height: 1.2, color: const Color(0xFF404060)),
+                Container(width: 16, height: 1.2, color: const Color(0xFF9AA6B2)),
                 const SizedBox(width: 7),
                 Text('接続 $edgeCount 本',
                     style: const TextStyle(
-                        color: Color(0xFF505070), fontSize: 10)),
+                        color: Color(0xFF697586), fontSize: 10)),
               ],
             ),
             const SizedBox(width: 10),
@@ -1506,13 +1551,13 @@ class _LegendWidget extends StatelessWidget {
                       child: CircularProgressIndicator(
                         strokeWidth: 1.2,
                         value: 1.0 - model.alpha,
-                        color: const Color(0xFF7B7FFF),
+                        color: const Color(0xFF2F6FED),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(AppLocalizations.of(context)!.layoutCalculating,
                         style: TextStyle(
-                            color: Color(0xFF4A4A6A), fontSize: 9.5)),
+                            color: Color(0xFF697586), fontSize: 9.5)),
                   ],
                 );
               },
@@ -1577,6 +1622,7 @@ class _DetailCard extends StatelessWidget {
     }
     final sid = src['sheetId'] as String? ?? ownSid;
     final type = src['type'] as String?;
+    if (type == 'constant') return '? (リンクされていません)';
     if (type == 'logic') {
       final logicId = src['logicId'] as String?;
       return nm['${sid}_l$logicId']?.label ?? '?';
@@ -1599,17 +1645,17 @@ class _DetailCard extends StatelessWidget {
     final incoming = edges.where((e) => e.toId == node.id).toList();
     final outgoing = edges.where((e) => e.fromId == node.id).toList();
     final accent =
-        node.isLogic ? const Color(0xFFFFAA33) : const Color(0xFF7B7FFF);
+      node.isLogic ? const Color(0xFFB86B00) : const Color(0xFF2F6FED);
 
     return Container(
       constraints: const BoxConstraints(maxHeight: 360),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F101E),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: accent.withOpacity(0.22), width: 1.2),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.60),
+              color: Colors.black.withOpacity(0.14),
               blurRadius: 28,
               offset: const Offset(0, 6)),
           BoxShadow(color: accent.withOpacity(0.07), blurRadius: 20),
@@ -1640,7 +1686,7 @@ class _DetailCard extends StatelessWidget {
                 Expanded(
                   child: Text(node.label,
                       style: const TextStyle(
-                          color: Colors.white,
+                          color: const Color(0xFF20242B),
                           fontSize: 15,
                           fontWeight: FontWeight.bold),
                       overflow: TextOverflow.ellipsis),
@@ -1658,7 +1704,7 @@ class _DetailCard extends StatelessWidget {
                         children: [
                           Text(AppLocalizations.of(context)!.edit,
                               style: TextStyle(
-                                  color: Color(0xFF7B7FFF),
+                                  color: Color(0xFF245BC7),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600)),
                         ],
@@ -1667,8 +1713,8 @@ class _DetailCard extends StatelessWidget {
                   ),
                 IconButton(
                   onPressed: onClose,
-                  icon: const Icon(Icons.close,
-                      color: Colors.white24, size: 18),
+                    icon: const Icon(Icons.close,
+                      color: Color(0xFF8A94A3), size: 18),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(
                       minWidth: 32, minHeight: 32),
@@ -1680,9 +1726,9 @@ class _DetailCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 2, 16, 6),
             child: Text(AppLocalizations.of(context)!.graphSheetName(node.sheetName),
                 style: const TextStyle(
-                    color: Color(0xFF3A3A5A), fontSize: 11)),
+                    color: Color(0xFF697586), fontSize: 11)),
           ),
-          const Divider(color: Colors.white10, height: 1),
+          const Divider(color: Color(0xFFE1E7EF), height: 1),
 
           // ── 式セクション ──
           Flexible(
@@ -1709,13 +1755,13 @@ class _DetailCard extends StatelessWidget {
                         resolveLabel: _resolveLabel,
                         fmtNum: _fmtNum),
                   const SizedBox(height: 10),
-                  const Divider(color: Colors.white10, height: 1),
+                  const Divider(color: Color(0xFFE1E7EF), height: 1),
                   const SizedBox(height: 8),
                   // 参照元・先
                   if (incoming.isNotEmpty) ...[
                     _ConSection(
-                        title: '← 参照元',
-                        accentColor: const Color(0xFF5EFFBB),
+                      title: '← 参照元',
+                      accentColor: const Color(0xFF159A6A),
                         edges: incoming,
                         allEdges: edges,
                         nodeMap: nodeMap,
@@ -1727,7 +1773,7 @@ class _DetailCard extends StatelessWidget {
                   if (outgoing.isNotEmpty)
                     _ConSection(
                         title: '→ 参照先',
-                        accentColor: const Color(0xFFFF9B5E),
+                        accentColor: const Color(0xFFC85B24),
                         edges: outgoing,
                         allEdges: edges,
                         nodeMap: nodeMap,
@@ -1737,7 +1783,7 @@ class _DetailCard extends StatelessWidget {
                   if (incoming.isEmpty && outgoing.isEmpty)
                     Text(AppLocalizations.of(context)!.noConnections,
                         style: TextStyle(
-                            color: Color(0xFF3A3A5A), fontSize: 13)),
+                            color: Color(0xFF697586), fontSize: 13)),
                 ],
               ),
             ),
@@ -1868,29 +1914,197 @@ double _calculateFull(
   return _evaluateTokensLocal(currentTokens);
 }
 
-/// リンクを辿りながら再帰的に計算結果を解決する
+/// リンク値を辿って、計算式や論理式の実効値を解決する。
+double _resolveGraphValue(
+  bool linked,
+  Map? source,
+  dynamic fallback,
+  String ownSheetId,
+  Map<String, _Node> nodeMap,
+  Set<String> visited,
+) {
+  final fallbackValue = (fallback as num? ?? 0.0).toDouble();
+  if (!linked || source == null) return fallbackValue;
+  if (source['type'] == 'constant' || source['type'] == 'globalConstant') {
+    return fallbackValue;
+  }
+
+  final sourceSheetId = source['sheetId'] as String? ?? ownSheetId;
+  if (source['type'] == 'logic') {
+    final logicId = source['logicId'] as String?;
+    if (logicId == null) return fallbackValue;
+    final sourceId = '${sourceSheetId}_l$logicId';
+    if (visited.contains(sourceId)) return fallbackValue;
+    final logicNode = nodeMap[sourceId];
+    if (logicNode == null || !logicNode.isLogic) return fallbackValue;
+    final nextVisited = {...visited, sourceId};
+    final isTrue = _evalLinkedLogic(
+      logicNode.rawData,
+      logicNode.sheetId,
+      nodeMap,
+      nextVisited,
+    );
+    final branchKey = isTrue ? 'true' : 'false';
+    final branchLink = source['${branchKey}Link'] == true;
+    final branchSource = source['${branchKey}LinkSource'] as Map?;
+    final branchValue = source['${branchKey}Val'] as num? ??
+        (isTrue ? 1.0 : 0.0);
+    return _resolveGraphValue(
+      branchLink,
+      branchSource,
+      branchValue,
+      ownSheetId,
+      nodeMap,
+      nextVisited,
+    );
+  }
+
+  final row = (source['rowIdx'] as num?)?.toInt() ?? 0;
+  final sourceId = '${sourceSheetId}_c$row';
+  if (visited.contains(sourceId)) return fallbackValue;
+  final sourceNode = nodeMap[sourceId];
+  if (sourceNode == null || sourceNode.isLogic) return fallbackValue;
+  final nextVisited = {...visited, sourceId};
+  final target = source['target'] as String? ?? 'result';
+  if (target == 'result') {
+    return _calcLinkedResult(
+      sourceNode.rawData,
+      sourceNode.sheetId,
+      nodeMap,
+      nextVisited,
+    );
+  }
+  if (target == 'input') {
+    return _resolveGraphValue(
+      sourceNode.rawData['inputLink'] == true,
+      sourceNode.rawData['inputLinkSource'] as Map?,
+      sourceNode.rawData['input'],
+      sourceNode.sheetId,
+      nodeMap,
+      nextVisited,
+    );
+  }
+  if (target == 'operand') {
+    return _resolveGraphValue(
+      sourceNode.rawData['operandLink'] == true,
+      sourceNode.rawData['operandLinkSource'] as Map?,
+      sourceNode.rawData['operand'],
+      sourceNode.sheetId,
+      nodeMap,
+      nextVisited,
+    );
+  }
+  if (target.startsWith('other_')) {
+    final otherIndex = int.tryParse(target.split('_')[1]) ?? -1;
+    final others = sourceNode.rawData['others'] as List? ?? [];
+    if (otherIndex >= 0 && otherIndex < others.length) {
+      final other = Map<String, dynamic>.from(others[otherIndex] as Map);
+      return _resolveGraphValue(
+        other['valLink'] == true,
+        other['valLinkSource'] as Map?,
+        other['val'],
+        sourceNode.sheetId,
+        nodeMap,
+        nextVisited,
+      );
+    }
+  }
+  return fallbackValue;
+}
+
+bool _evalLinkedLogic(
+  Map<String, dynamic> item,
+  String sheetId,
+  Map<String, _Node> nodeMap,
+  Set<String> visited,
+) {
+  final conditions = (item['conditions'] as List? ?? [])
+      .map((e) => Map<String, dynamic>.from(e as Map))
+      .toList();
+  if (conditions.isEmpty) return false;
+
+  double conditionValue(
+    Map<String, dynamic> condition,
+    String valueKey,
+    String linkKey,
+    String sourceKey,
+  ) {
+    return _resolveGraphValue(
+      condition[linkKey] == true,
+      condition[sourceKey] as Map?,
+      condition[valueKey],
+      sheetId,
+      nodeMap,
+      visited,
+    );
+  }
+
+  bool evaluateCondition(Map<String, dynamic> condition) {
+    final lhs = conditionValue(condition, 'lhsVal', 'lhsLink', 'lhsLinkSource');
+    final rhs = conditionValue(condition, 'rhsVal', 'rhsLink', 'rhsLinkSource');
+    final op = condition['op'] as String? ?? '==';
+    switch (op) {
+      case '==': return (lhs - rhs).abs() < 1e-10;
+      case '!=': return (lhs - rhs).abs() >= 1e-10;
+      case '>': return lhs > rhs;
+      case '>=': return lhs >= rhs;
+      case '<': return lhs < rhs;
+      case '<=': return lhs <= rhs;
+      case 'between':
+        final upper = conditionValue(
+          condition,
+          'rhsVal2',
+          'rhsLink2',
+          'rhsLinkSource2',
+        );
+        return lhs >= rhs && lhs <= upper;
+      case 'not_between':
+        final upper = conditionValue(
+          condition,
+          'rhsVal2',
+          'rhsLink2',
+          'rhsLinkSource2',
+        );
+        return lhs < rhs || lhs > upper;
+      case 'divisible': return rhs != 0 && lhs % rhs == 0;
+      default: return false;
+    }
+  }
+
+  final chainOps = (item['chainOps'] as List? ?? []).cast<String>();
+  bool result = evaluateCondition(conditions.first);
+  for (int i = 1; i < conditions.length; i++) {
+    final next = evaluateCondition(conditions[i]);
+    final op = i - 1 < chainOps.length ? chainOps[i - 1] : 'AND';
+    if (op == 'OR') {
+      result = result || next;
+    } else if (op == 'XOR') {
+      result = result ^ next;
+    } else {
+      result = result && next;
+    }
+  }
+  return result;
+}
+
+/// リンクを辿りながら計算結果を再帰的に解決する
 /// （演算子の正規化・項変換・括弧・優先順位に対応）
 double _calcLinkedResult(
-    Map<String, dynamic> item,
-    String sheetId,
-    Map<String, _Node> nodeMap, [
-    Set<String>? visited,
+  Map<String, dynamic> item,
+  String sheetId,
+  Map<String, _Node> nodeMap, [
+  Set<String>? visited,
 ]) {
-  // リンク先またはローカル値を解決して返す（再帰対応）
-  double resolveValue(bool linked, Map? src, dynamic rawVal) {
-    if (linked && src != null) {
-      final sid = src['sheetId'] as String? ?? sheetId;
-      final row = src['rowIdx'] as int? ?? 0;
-      final srcId = '${sid}_c$row';
-      final v = visited ?? {};
-      if (v.contains(srcId)) return (rawVal as num? ?? 0).toDouble();
-      final srcNode = nodeMap[srcId];
-      if (srcNode != null && !srcNode.isLogic) {
-        v.add(srcId);
-        return _calcLinkedResult(srcNode.rawData, srcNode.sheetId, nodeMap, v);
-      }
-    }
-    return (rawVal as num? ?? 0).toDouble();
+  final currentVisited = visited ?? <String>{};
+  double resolveValue(bool linked, Map? source, dynamic rawValue) {
+    return _resolveGraphValue(
+      linked,
+      source,
+      rawValue,
+      sheetId,
+      nodeMap,
+      currentVisited,
+    );
   }
 
   // 各項の値を解決してから transform を適用
@@ -1962,11 +2176,11 @@ class _CalcFormulaView extends StatelessWidget {
   });
 
   // 参照元（緑）・参照先（橙）・両方（金）
-  static const _srcColor  = Color(0xFF5EFFBB);
-  static const _dstColor  = Color(0xFFFF9B5E);
-  static const _bothColor = Color(0xFFFFCC44);
-  static const _noLinkColor = Color(0xFF1E1E30);
-  static const _opColor = Color(0xFF5050A0);
+  static const _srcColor  = Color(0xFF159A6A);
+  static const _dstColor  = Color(0xFFC85B24);
+  static const _bothColor = Color(0xFFB77900);
+  static const _noLinkColor = Color(0xFFF1F4F8);
+  static const _opColor = Color(0xFF52606D);
 
   /// リンクソースの接続種別を返す（循環参照判定用）
   String _connType(Map? src) {
@@ -1989,10 +2203,10 @@ class _CalcFormulaView extends StatelessWidget {
         decoration: BoxDecoration(
           color: _noLinkColor,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: Colors.white12, width: 1),
+          border: Border.all(color: Color(0xFFD5DDE7), width: 1),
         ),
         child: Text(text,
-            style: const TextStyle(color: Colors.white60, fontSize: 11)),
+            style: const TextStyle(color: Color(0xFF52606D), fontSize: 11)),
       );
     }
     final ct = src != null ? _connType(src) : 'source';
@@ -2037,6 +2251,7 @@ class _CalcFormulaView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     bool isLinked(Map src) {
+        if (src['type'] == 'constant') return false;
       final sid = src['sheetId'] as String? ?? sheetId;
       final type = src['type'] as String?;
       final String srcId;
@@ -2090,14 +2305,6 @@ class _CalcFormulaView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.logicName,
-            style: const TextStyle(
-                color: Color(0xFF5050A0),
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5)),
-        const SizedBox(height: 5),
-        
         const SizedBox(height: 6),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -2109,15 +2316,15 @@ class _CalcFormulaView extends StatelessWidget {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A1A2A),
+                  color: const Color(0xFFF1F4F8),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: Colors.white12,
+                    color: Color(0xFFD5DDE7),
                   ),
                 ),
                 child: Text(resultStr,
                     style: const TextStyle(
-                        color: Colors.white60,
+                        color: Color(0xFF263238),
                         fontSize: 12,
                         fontWeight: FontWeight.w600)),
               );
@@ -2126,28 +2333,10 @@ class _CalcFormulaView extends StatelessWidget {
                Padding(
                 padding: EdgeInsets.only(left: 6),
                 child: Text(AppLocalizations.of(context)!.savedValueCalc,
-                    style: TextStyle(color: Colors.white38, fontSize: 9.5)),
+                    style: TextStyle(color: Color(0xFF697586), fontSize: 9.5)),
               ),
           ]),
         ),
-        const SizedBox(height: 6),
-        Row(children: [
-          if (incomingEdges?.isNotEmpty == true) ...[
-            _LinkedLegend(linked: true, label: '参照元', color: _srcColor),
-            const SizedBox(width: 8),
-          ],
-          if (outgoingEdges?.isNotEmpty == true) ...[
-            _LinkedLegend(linked: true, label: '参照先', color: _dstColor),
-            const SizedBox(width: 8),
-          ],
-          if ((incomingEdges?.isNotEmpty == true) && (outgoingEdges?.isNotEmpty == true))
-            _LinkedLegend(linked: true, label: AppLocalizations.of(context)!.bothLabel, color: _bothColor),
-          if (incomingEdges == null && outgoingEdges == null) ...[
-            _LinkedLegend(linked: true),
-            const SizedBox(width: 12),
-            _LinkedLegend(linked: false),
-          ],
-        ]),
       ],
     );
   }
@@ -2172,10 +2361,10 @@ class _LogicFormulaView extends StatelessWidget {
     required this.fmtNum,
   });
 
-  static const _lhsColor = Color(0xFF5EFFBB);
-  static const _rhsColor = Color(0xFFFF9B5E);
-  static const _noLinkBg = Color(0xFF1E1E30);
-  static const _opColor = Color(0xFF5050A0);
+  static const _lhsColor = Color(0xFF159A6A);
+  static const _rhsColor = Color(0xFFC85B24);
+  static const _noLinkBg = Color(0xFFF1F4F8);
+  static const _opColor = Color(0xFF52606D);
 
   Widget _term(String text, {required bool linked, required Color linkColor}) {
     if (text == '? (リンクされていません)') {
@@ -2187,7 +2376,7 @@ class _LogicFormulaView extends StatelessWidget {
         color: linked ? linkColor.withOpacity(0.15) : _noLinkBg,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: linked ? linkColor.withOpacity(0.5) : Colors.white12,
+          color: linked ? linkColor.withOpacity(0.5) : Color(0xFFD5DDE7),
           width: 1,
         ),
       ),
@@ -2200,7 +2389,7 @@ class _LogicFormulaView extends StatelessWidget {
           ],
           Text(text,
               style: TextStyle(
-                color: linked ? linkColor : Colors.white60,
+                color: linked ? linkColor : Color(0xFF52606D),
                 fontSize: 11,
                 fontWeight: linked ? FontWeight.w600 : FontWeight.normal,
               )),
@@ -2218,6 +2407,7 @@ class _LogicFormulaView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     bool isLinked(Map src) {
+      if (src['type'] == 'constant') return false;
       final sid = src['sheetId'] as String? ?? sheetId;
       final type = src['type'] as String?;
       final String srcId;
@@ -2250,17 +2440,35 @@ class _LogicFormulaView extends StatelessWidget {
           ? resolveLabel(rSrc, sheetId, nodeMap, resolveRemoteLink: isLinked(rSrc))
           : fmtNum(c['rhsVal']);
 
+      final isBetween = c['op'] == 'between' || c['op'] == 'not_between';
+      final r2Linked = c['rhsLink2'] == true;
+      final r2Src = c['rhsLinkSource2'] as Map?;
+      final r2Label = r2Linked && r2Src != null
+          ? resolveLabel(r2Src, sheetId, nodeMap, resolveRemoteLink: isLinked(r2Src))
+          : fmtNum(c['rhsVal2']);
+
       final condOp = c['op'] as String? ?? '==';
 
-      rows.add(Wrap(
-        spacing: 0, runSpacing: 3,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          _term(lLabel, linked: lLinked, linkColor: _lhsColor),
-          _small(condOp),
-          _term(rLabel, linked: rLinked, linkColor: _rhsColor),
-        ],
-      ));
+      rows.add(
+        Wrap(
+          spacing: 0,
+          runSpacing: 3,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: isBetween
+              ? [
+                  _term(rLabel, linked: rLinked, linkColor: _rhsColor),
+                  _small('≤'),
+                  _term(lLabel, linked: lLinked, linkColor: _lhsColor),
+                  _small('≤'),
+                  _term(r2Label, linked: r2Linked, linkColor: _rhsColor),
+                ]
+              : [
+                  _term(lLabel, linked: lLinked, linkColor: _lhsColor),
+                  _small(condOp),
+                  _term(rLabel, linked: rLinked, linkColor: _rhsColor),
+                ],
+        ),
+      );
 
       if (k < conds.length - 1) {
         final chainOp = k < chainOps.length ? chainOps[k] : 'AND';
@@ -2275,15 +2483,20 @@ class _LogicFormulaView extends StatelessWidget {
       }
     }
 
-    final isTrue = _evalLogic(item);
-    final hasLinks = conds.any((c) => c['lhsLink'] == true || c['rhsLink'] == true);
+    final isTrue = _evalLinkedLogic(item, sheetId, nodeMap, <String>{});
+    final hasLinks = conds.any(
+      (c) =>
+          c['lhsLink'] == true ||
+          c['rhsLink'] == true ||
+          c['rhsLink2'] == true,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(l10n.logicConditions,
             style: const TextStyle(
-                color: Color(0xFFFFAA33),
+                color: Color(0xFFB86B00),
                 fontSize: 10,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5)),
@@ -2291,20 +2504,20 @@ class _LogicFormulaView extends StatelessWidget {
         ...rows,
         const SizedBox(height: 6),
         Row(children: [
-          _small(AppLocalizations.of(context)!.resultLabel, color: Colors.white54),
+          _small(AppLocalizations.of(context)!.resultLabel, color: Color(0xFF697586)),
           const SizedBox(width: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: isTrue ? const Color(0xFF0E2A1A) : const Color(0xFF2A0E0E),
+              color: isTrue ? const Color(0xFFE7F7EF) : const Color(0xFFFDECEC),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                  color: isTrue ? const Color(0xFF2A7A4A) : const Color(0xFF7A2A2A),
+                    color: isTrue ? const Color(0xFF74C69D) : const Color(0xFFE08B8B),
                   width: 1),
             ),
             child: Text(isTrue ? AppLocalizations.of(context)!.trueLabel : AppLocalizations.of(context)!.falseLabel,
                 style: TextStyle(
-                    color: isTrue ? const Color(0xFF5EFFBB) : const Color(0xFFFF7070),
+                    color: isTrue ? const Color(0xFF107A52) : const Color(0xFFB42318),
                     fontSize: 13,
                     fontWeight: FontWeight.w700)),
           ),
@@ -2312,7 +2525,7 @@ class _LogicFormulaView extends StatelessWidget {
              Padding(
               padding: EdgeInsets.only(left: 6),
               child: Text(AppLocalizations.of(context)!.savedValueEval,
-                  style: TextStyle(color: Colors.white38, fontSize: 9.5)),
+                  style: TextStyle(color: Color(0xFF697586), fontSize: 9.5)),
             ),
         ]),
         const SizedBox(height: 5),
@@ -2325,44 +2538,6 @@ class _LogicFormulaView extends StatelessWidget {
     );
   }
 
-  static bool _evalLogic(Map<String, dynamic> item) {
-    final conds = (item['conditions'] as List? ?? [])
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
-    if (conds.isEmpty) return false;
-    bool evalOne(Map<String, dynamic> c) {
-      final lhs = (c['lhsVal'] as num? ?? 0).toDouble();
-      final rhs = (c['rhsVal'] as num? ?? 0).toDouble();
-      final op = c['op'] as String? ?? '==';
-      switch (op) {
-        case '==': return (lhs - rhs).abs() < 1e-10;
-        case '!=': return (lhs - rhs).abs() >= 1e-10;
-        case '>': return lhs > rhs;
-        case '>=': return lhs >= rhs;
-        case '<': return lhs < rhs;
-        case '<=': return lhs <= rhs;
-        case 'between': {
-          final rhs2 = (c['rhsVal2'] as num? ?? 0).toDouble();
-          return lhs >= rhs && lhs <= rhs2;
-        }
-        case 'not_between': {
-          final rhs2 = (c['rhsVal2'] as num? ?? 0).toDouble();
-          return lhs < rhs || lhs > rhs2;
-        }
-        default: return false;
-      }
-    }
-    final chainOps = (item['chainOps'] as List? ?? []).cast<String>();
-    bool result = evalOne(conds[0]);
-    for (int i = 1; i < conds.length; i++) {
-      final r = evalOne(conds[i]);
-      final op = i - 1 < chainOps.length ? chainOps[i - 1] : 'AND';
-      if (op == 'OR') result = result || r;
-      else if (op == 'XOR') result = result ^ r;
-      else result = result && r;
-    }
-    return result;
-  }
 }
 
 /// リンク状況の凡例チップ
@@ -2374,7 +2549,7 @@ class _LinkedLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? const Color(0xFF7B7FFF);
+    final c = color ?? const Color(0xFF2F6FED);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -2382,15 +2557,15 @@ class _LinkedLegend extends StatelessWidget {
           width: 10, height: 10,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(3),
-            color: linked ? c.withOpacity(0.20) : const Color(0xFF1E1E30),
+            color: linked ? c.withOpacity(0.12) : const Color(0xFFF1F4F8),
             border: Border.all(
-                color: linked ? c.withOpacity(0.55) : Colors.white12),
+                color: linked ? c.withOpacity(0.55) : const Color(0xFFD5DDE7)),
           ),
         ),
         const SizedBox(width: 4),
         Text(
           linked ? (label ?? AppLocalizations.of(context)!.calcLink) : AppLocalizations.of(context)!.fixedValue,
-          style: const TextStyle(color: Color(0xFF3A3A5A), fontSize: 9.5),
+          style: const TextStyle(color: Color(0xFF697586), fontSize: 9.5),
         ),
       ],
     );
@@ -2421,6 +2596,7 @@ class _ConSection extends StatelessWidget {
   // 計算式のコンパクトな文字列表現（項 op 項 op … = 結果）
   List<String> _formulaTerms(Map<String, dynamic> item, String sid) {
     bool isLinked(Map src) {
+      if (src['type'] == 'constant') return false;
       final tid = src['sheetId'] as String? ?? sid;
       final type = src['type'] as String?;
       final String srcId;
@@ -2452,8 +2628,13 @@ class _ConSection extends StatelessWidget {
 
   /// エッジラベルから対象項インデックスを返す（0=項1/入力, 2=項2, 4=項3…）
   int _labelToTermIdx(String label, BuildContext context) {
-    // 「入力」は後方互換のため残す
-    if (label == AppLocalizations.of(context)!.inputLabel) return 0;
+    final l10n = AppLocalizations.of(context)!;
+    // エッジ生成時と同じローカライズ済みラベルを優先して解決する。
+    if (label == l10n.inputLabel || label == l10n.calcTerm1) return 0;
+    if (label == l10n.calcTerm2) return 2;
+    for (int n = 3; n <= 99; n++) {
+      if (label == l10n.calcTermOther(n)) return 4 + (n - 3) * 2;
+    }
     final m = RegExp(r'項(\d+)').firstMatch(label);
     if (m != null) {
       final n = int.parse(m.group(1)!);
@@ -2517,9 +2698,9 @@ class _ConSection extends StatelessWidget {
           final othId = isIncoming ? e.fromId : e.toId;
           final oth = nodeMap[othId];
           if (oth == null) return const SizedBox.shrink();
-          final oc = oth.isLogic
-              ? const Color(0xFFFFAA33)
-              : const Color(0xFF7B7FFF);
+            final oc = oth.isLogic
+              ? const Color(0xFFB86B00)
+              : const Color(0xFF2F6FED);
 
           // 式の項リスト（計算式のみ）
           final terms = oth.isLogic
@@ -2580,7 +2761,7 @@ class _ConSection extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 14, top: 2),
                   child: Text(oth.sheetName,
                       style: const TextStyle(
-                          color: Color(0xFF3A3A5A), fontSize: 10)),
+                          color: Color(0xFF697586), fontSize: 10)),
                 ),
                 // 式（計算式の場合のみ）
                 if (terms != null && terms.isNotEmpty) ...[
@@ -2596,7 +2777,7 @@ class _ConSection extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(horizontal: 4),
                               child: Text(terms[ti],
                                   style: const TextStyle(
-                                      color: Color(0xFF5050A0),
+                                      color: Color(0xFF52606D),
                                       fontSize: 11,
                                       fontWeight: FontWeight.bold)),
                             )
@@ -2613,7 +2794,7 @@ class _ConSection extends StatelessWidget {
                                   (linkStatuses != null &&
                                       ti < linkStatuses.length &&
                                       linkStatuses[ti]);
-                              const linkColor = Color(0xFF5EFFBB); // 参照元色（緑）
+                              const linkColor = Color(0xFF159A6A); // 参照元色（緑）
                               final Color? chipColor = isHighlighted
                                   ? accentColor
                                   : (isLinked ? linkColor : null);
@@ -2624,12 +2805,12 @@ class _ConSection extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: chipColor != null
                                       ? chipColor.withOpacity(0.15)
-                                      : const Color(0xFF1A1A2A),
+                                      : const Color(0xFFF1F4F8),
                                   borderRadius: BorderRadius.circular(5),
                                   border: Border.all(
                                     color: chipColor != null
                                         ? chipColor.withOpacity(0.45)
-                                        : Colors.white10,
+                                        : Color(0xFFD5DDE7),
                                     width: 1,
                                   ),
                                 ),
@@ -2644,7 +2825,7 @@ class _ConSection extends StatelessWidget {
                                     ],
                                     Text(terms[ti],
                                         style: TextStyle(
-                                            color: chipColor ?? Colors.white38,
+                                            color: chipColor ?? Color(0xFF697586),
                                             fontSize: 10,
                                             fontWeight: chipColor != null
                                                 ? FontWeight.w600
@@ -2658,7 +2839,7 @@ class _ConSection extends StatelessWidget {
                           padding: EdgeInsets.symmetric(horizontal: 4),
                           child: Text('=',
                               style: TextStyle(
-                                  color: Color(0xFF5050A0),
+                                  color: Color(0xFF52606D),
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold)),
                         ),
@@ -2675,12 +2856,12 @@ class _ConSection extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: isHighlighted
                                   ? accentColor.withOpacity(0.15)
-                                  : const Color(0xFF1A1A2A),
+                                  : const Color(0xFFF1F4F8),
                               borderRadius: BorderRadius.circular(5),
                               border: Border.all(
                                 color: isHighlighted
                                     ? accentColor.withOpacity(0.45)
-                                    : Colors.white10,
+                                    : Color(0xFFD5DDE7),
                                 width: 1,
                               ),
                             ),
@@ -2698,7 +2879,7 @@ class _ConSection extends StatelessWidget {
                                   style: TextStyle(
                                       color: isHighlighted
                                           ? accentColor
-                                          : Colors.white38,
+                                          : Color(0xFF697586),
                                       fontSize: 10,
                                       fontWeight: isHighlighted
                                           ? FontWeight.w600
@@ -2717,7 +2898,7 @@ class _ConSection extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text('条件式 (${(oth.rawData['conditions'] as List? ?? []).length} 条件)',
                       style: const TextStyle(
-                          color: Color(0xFFFFAA33), fontSize: 10)),
+                          color: Color(0xFFB86B00), fontSize: 10)),
                 ],
               ],
             ),
@@ -2728,7 +2909,7 @@ class _ConSection extends StatelessWidget {
             padding: const EdgeInsets.only(top: 2),
             child: Text('他 ${edges.length - 5} 件…',
                 style: const TextStyle(
-                    color: Color(0xFF3A3A5A), fontSize: 11)),
+                    color: Color(0xFF697586), fontSize: 11)),
           ),
       ],
     );

@@ -16,7 +16,6 @@ import 'store_page.dart';
 import 'l10n/app_localizations.dart';
 
 void main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   HomeWidget.setAppGroupId('group.com.yama.genbacalc');
@@ -214,10 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _updateConfig(int index, Map<String, dynamic> data) {
     final now = DateTime.now().toIso8601String();
     // 既存の createdAt を引き継ぎ、updatedAt を現在時刻で上書き
-    final updated = <String, dynamic>{
-      ...data,
-      'updatedAt': now,
-    };
+    final updated = <String, dynamic>{...data, 'updatedAt': now};
     if (!updated.containsKey('createdAt') || updated['createdAt'] == null) {
       updated['createdAt'] = _configs[index].data['createdAt'] ?? now;
     }
@@ -245,7 +241,8 @@ class _HomeScreenState extends State<HomeScreen> {
           id: '${DateTime.now().millisecondsSinceEpoch}',
           type: src.type,
           data: Map<String, dynamic>.from(src.data)
-            ..['title'] = '${src.data['title'] ?? AppLocalizations.of(context)!.standardCalc} (コピー)'
+            ..['title'] =
+                '${src.data['title'] ?? AppLocalizations.of(context)!.standardCalc} (コピー)'
             ..['createdAt'] = now
             ..['updatedAt'] = now,
         ),
@@ -332,7 +329,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(items.length == 1 ? AppLocalizations.of(context)!.addedToNewSheet : AppLocalizations.of(context)!.addedItemsToNewSheet(items.length)),
+          content: Text(
+            items.length == 1
+                ? AppLocalizations.of(context)!.addedToNewSheet
+                : AppLocalizations.of(
+                    context,
+                  )!.addedItemsToNewSheet(items.length),
+          ),
           backgroundColor: const Color.fromARGB(255, 234, 234, 235),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
@@ -359,7 +362,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final result = await showHomeAiGenerateSheet(context);
-    if (result == null || (result.instruction.isEmpty && result.imageBytes == null)) return;
+    if (result == null ||
+        (result.instruction.isEmpty && result.imageBytes == null))
+      return;
     if (!mounted) return;
 
     final canUse = await RevenueCatService.consumeUse();
@@ -380,7 +385,10 @@ class _HomeScreenState extends State<HomeScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text(AppLocalizations.of(context)!.cancel, style: const TextStyle(color: Colors.white54)),
+              child: Text(
+                AppLocalizations.of(context)!.cancel,
+                style: const TextStyle(color: Colors.white54),
+              ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -404,17 +412,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() => _isHomeAiGenerating = true);
     if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context)!.generatingFormula),
-          duration: const Duration(seconds: 3),
-          backgroundColor: const Color(0xFF2A2A3A),
-        ),
-      );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(AppLocalizations.of(context)!.generatingFormula),
+        duration: const Duration(seconds: 3),
+        backgroundColor: const Color(0xFF2A2A3A),
+      ),
+    );
 
     final instruction = result.instruction;
     final prompt =
-"""
+        """
   An image is attached to this request. Inspect the image carefully and use its
   visible text, numbers, formulas, and layout as the primary source of truth.
   If the image contains a calculation request or an existing formula, convert
@@ -471,17 +479,16 @@ Example output for "3万円を5人で割り勘":
 """;
 
     try {
-        final shouldExtractImageCounts =
-          result.imageBytes != null &&
-          isImageCategoryCountRequest(instruction);
-        final imageCounts = !shouldExtractImageCounts
+      final shouldExtractImageCounts =
+          result.imageBytes != null && isImageCategoryCountRequest(instruction);
+      final imageCounts = !shouldExtractImageCounts
           ? null
           : await ai.countInImage(
-            result.imageBytes!,
-            instruction,
-            requireCategories: true,
-          );
-        if (shouldExtractImageCounts &&
+              result.imageBytes!,
+              instruction,
+              requireCategories: true,
+            );
+      if (shouldExtractImageCounts &&
           (imageCounts == null || imageCounts.items.isEmpty)) {
         throw Exception('画像から対象の個数を取得できませんでした。');
       }
@@ -519,7 +526,9 @@ Total observed count: ${imageCounts.count}
       if (jsonStart != -1 && jsonEnd != -1) {
         final jsonStr = res.substring(jsonStart, jsonEnd + 1);
         final list = jsonDecode(jsonStr) as List<dynamic>;
-        final items = list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        final items = list
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
 
         final title = instruction.isNotEmpty ? instruction : '新規シート';
         final _aiNowStr = DateTime.now().toIso8601String();
@@ -540,7 +549,9 @@ Total observed count: ${imageCounts.count}
           _saveConfigs();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(AppLocalizations.of(context)!.generatedSheet(title)),
+              content: Text(
+                AppLocalizations.of(context)!.generatedSheet(title),
+              ),
               backgroundColor: const Color.fromARGB(255, 230, 230, 230),
               behavior: SnackBarBehavior.floating,
               duration: const Duration(seconds: 3),
@@ -553,7 +564,9 @@ Total observed count: ${imageCounts.count}
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.generationFailed(e.toString())),
+            content: Text(
+              AppLocalizations.of(context)!.generationFailed(e.toString()),
+            ),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -583,16 +596,25 @@ Total observed count: ${imageCounts.count}
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
           AppLocalizations.of(context)!.deleteSheet,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         content: Text(
-          AppLocalizations.of(context)!.deleteSheetConfirm(_configs[index].data['title'] ?? AppLocalizations.of(context)!.standardCalc),
+          AppLocalizations.of(context)!.deleteSheetConfirm(
+            _configs[index].data['title'] ??
+                AppLocalizations.of(context)!.standardCalc,
+          ),
           style: const TextStyle(color: Colors.white60, fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(AppLocalizations.of(context)!.cancel, style: const TextStyle(color: Colors.white38)),
+            child: Text(
+              AppLocalizations.of(context)!.cancel,
+              style: const TextStyle(color: Colors.white38),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -654,8 +676,10 @@ Total observed count: ${imageCounts.count}
                   ...data,
                   'updatedAt': _sheetNow,
                 };
-                if (!updatedData.containsKey('createdAt') || updatedData['createdAt'] == null) {
-                  updatedData['createdAt'] = _configs[idx].data['createdAt'] ?? _sheetNow;
+                if (!updatedData.containsKey('createdAt') ||
+                    updatedData['createdAt'] == null) {
+                  updatedData['createdAt'] =
+                      _configs[idx].data['createdAt'] ?? _sheetNow;
                 }
                 setState(() {
                   _configs[idx] = _configs[idx].copyWith(data: updatedData);
@@ -673,7 +697,8 @@ Total observed count: ${imageCounts.count}
                 id: '${DateTime.now().millisecondsSinceEpoch}',
                 type: src.type,
                 data: Map<String, dynamic>.from(src.data)
-                  ..['title'] = '${src.data['title'] ?? AppLocalizations.of(context)!.standardCalc} (コピー)'
+                  ..['title'] =
+                      '${src.data['title'] ?? AppLocalizations.of(context)!.standardCalc} (コピー)'
                   ..['createdAt'] = _dupNow
                   ..['updatedAt'] = _dupNow,
               );
@@ -728,9 +753,7 @@ Total observed count: ${imageCounts.count}
           onOpenFlashMath: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => const FlashMentalMathPage(),
-              ),
+              MaterialPageRoute(builder: (_) => const FlashMentalMathPage()),
             );
           },
           onOpenSoroban: () {
@@ -877,7 +900,9 @@ Total observed count: ${imageCounts.count}
     }
 
     final sheets = targetConfigs.map((config) {
-      final title = config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
+      final title =
+          config.data['title'] as String? ??
+          AppLocalizations.of(context)!.standardCalc;
       final items = config.data['items'] as List<dynamic>? ?? [];
       final qrDataList = _buildQrDataForConfig(config);
       return (title: title, itemCount: items.length, qrDataList: qrDataList);
@@ -905,12 +930,18 @@ Total observed count: ${imageCounts.count}
     // Simple single-operation arithmetic (same operators as _calculateSingle)
     double calcSingle(double a, String op, double b) {
       switch (op) {
-        case '+': return a + b;
-        case '-': return a - b;
-        case 'x': return a * b;
-        case '/': return b != 0 ? a / b : 0.0;
-        case '%': return b != 0 ? a % b : 0.0;
-        default: return a;
+        case '+':
+          return a + b;
+        case '-':
+          return a - b;
+        case 'x':
+          return a * b;
+        case '/':
+          return b != 0 ? a / b : 0.0;
+        case '%':
+          return b != 0 ? a % b : 0.0;
+        default:
+          return a;
       }
     }
 
@@ -928,7 +959,10 @@ Total observed count: ${imageCounts.count}
         final op2 = work[i] as String;
         if (op2 == 'x' || op2 == '/' || op2 == '%') {
           final res = calcSingle(
-            (work[i - 1] as num).toDouble(), op2, (work[i + 1] as num).toDouble());
+            (work[i - 1] as num).toDouble(),
+            op2,
+            (work[i + 1] as num).toDouble(),
+          );
           work.replaceRange(i - 1, i + 2, [res]);
         } else {
           i += 2;
@@ -937,7 +971,11 @@ Total observed count: ${imageCounts.count}
       // Pass 2: low-priority ops (+ -)
       double result = (work[0] as num).toDouble();
       for (int j = 1; j < work.length; j += 2) {
-        result = calcSingle(result, work[j] as String, (work[j + 1] as num).toDouble());
+        result = calcSingle(
+          result,
+          work[j] as String,
+          (work[j + 1] as num).toDouble(),
+        );
       }
       return result;
     }
@@ -981,16 +1019,22 @@ Total observed count: ${imageCounts.count}
         for (int i = 0; i < items.length; i++) {
           final it = items[i];
           final inp = resolveInSheet(
-              it['inputLink'] == true, it['inputLinkSource'] as Map?,
-              safeDouble(it['input'] as num?));
+            it['inputLink'] == true,
+            it['inputLinkSource'] as Map?,
+            safeDouble(it['input'] as num?),
+          );
           final ope = resolveInSheet(
-              it['operandLink'] == true, it['operandLinkSource'] as Map?,
-              safeDouble(it['operand'] as num?));
+            it['operandLink'] == true,
+            it['operandLinkSource'] as Map?,
+            safeDouble(it['operand'] as num?),
+          );
           final oth = (it['others'] as List? ?? []).map((o) {
             final om = Map<String, dynamic>.from(o as Map);
             om['val'] = resolveInSheet(
-                om['valLink'] == true, om['valLinkSource'] as Map?,
-                safeDouble(om['val'] as num?));
+              om['valLink'] == true,
+              om['valLinkSource'] as Map?,
+              safeDouble(om['val'] as num?),
+            );
             return om;
           }).toList();
           next[i] = simpleEval(inp, it['op'] as String? ?? '+', ope, oth);
@@ -1005,7 +1049,10 @@ Total observed count: ${imageCounts.count}
     // For cross-sheet / constant / logic links: resolve to a concrete value.
     // Returns null for same-sheet links → caller preserves link metadata.
     double? resolveComplexLink(
-        bool isLinked, Map<String, dynamic>? src, double stored) {
+      bool isLinked,
+      Map<String, dynamic>? src,
+      double stored,
+    ) {
       if (!isLinked || src == null) return null;
       final sheetId = src['sheetId'] as String?;
       final type = src['type'] as String?;
@@ -1070,9 +1117,12 @@ Total observed count: ${imageCounts.count}
     // and source['trueLinkSource'] as Map? (missing key → null).
     Map<String, dynamic> compactSrc(Map<String, dynamic> src) =>
         Map.fromEntries(
-            src.entries.where((e) => e.value != null && e.value != false));
+          src.entries.where((e) => e.value != null && e.value != false),
+        );
 
-    final title = config.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
+    final title =
+        config.data['title'] as String? ??
+        AppLocalizations.of(context)!.standardCalc;
     final rawItems = config.data['items'] as List<dynamic>? ?? [];
 
     final qrItems = rawItems.map<Map<String, dynamic>>((e) {
@@ -1081,14 +1131,20 @@ Total observed count: ${imageCounts.count}
       final inputLinkSrc = item['inputLinkSource'] as Map<String, dynamic>?;
       final inputLinked = item['inputLink'] == true;
       final resolvedInput = resolveComplexLink(
-          inputLinked, inputLinkSrc, safeDouble(item['input'] as num?));
+        inputLinked,
+        inputLinkSrc,
+        safeDouble(item['input'] as num?),
+      );
       final inputVal = resolvedInput ?? safeDouble(item['input'] as num?);
       final keepInputLink = inputLinked && resolvedInput == null;
 
       final operandLinkSrc = item['operandLinkSource'] as Map<String, dynamic>?;
       final operandLinked = item['operandLink'] == true;
       final resolvedOperand = resolveComplexLink(
-          operandLinked, operandLinkSrc, safeDouble(item['operand'] as num?));
+        operandLinked,
+        operandLinkSrc,
+        safeDouble(item['operand'] as num?),
+      );
       final operandVal = resolvedOperand ?? safeDouble(item['operand'] as num?);
       final keepOperandLink = operandLinked && resolvedOperand == null;
 
@@ -1102,7 +1158,10 @@ Total observed count: ${imageCounts.count}
           final valLinkSrc = om['valLinkSource'] as Map<String, dynamic>?;
           final valLinked = om['valLink'] == true;
           final resolvedVal = resolveComplexLink(
-              valLinked, valLinkSrc, safeDouble(om['val'] as num?));
+            valLinked,
+            valLinkSrc,
+            safeDouble(om['val'] as num?),
+          );
           final valVal = resolvedVal ?? safeDouble(om['val'] as num?);
           final keepValLink = valLinked && resolvedVal == null;
           return {
@@ -1120,13 +1179,17 @@ Total observed count: ${imageCounts.count}
         'u2': item['unit2'] as String? ?? '',
         'ur': item['unitResult'] as String? ?? '',
         if (keepInputLink) 'il': true,
-        if (keepInputLink && inputLinkSrc != null) 'ils': compactSrc(inputLinkSrc),
+        if (keepInputLink && inputLinkSrc != null)
+          'ils': compactSrc(inputLinkSrc),
         if (item['inputTransform'] != null) 'it': item['inputTransform'],
-        if (item['inputPowExp'] != null) 'ipe': safeDouble(item['inputPowExp'] as num?),
+        if (item['inputPowExp'] != null)
+          'ipe': safeDouble(item['inputPowExp'] as num?),
         if (keepOperandLink) 'ol': true,
-        if (keepOperandLink && operandLinkSrc != null) 'ols': compactSrc(operandLinkSrc),
+        if (keepOperandLink && operandLinkSrc != null)
+          'ols': compactSrc(operandLinkSrc),
         if (item['operandTransform'] != null) 'ot': item['operandTransform'],
-        if (item['operandPowExp'] != null) 'ope': safeDouble(item['operandPowExp'] as num?),
+        if (item['operandPowExp'] != null)
+          'ope': safeDouble(item['operandPowExp'] as num?),
       };
     }).toList();
 
@@ -1134,7 +1197,10 @@ Total observed count: ${imageCounts.count}
     final memos = config.data['memos'] as List<dynamic>?;
     final qrMemos = memos?.map<Map<String, dynamic>>((e) {
       final m = Map<String, dynamic>.from(e as Map);
-      return {'txt': m['text'] as String? ?? '', 'aci': m['afterCalcIdx'] as int? ?? -1};
+      return {
+        'txt': m['text'] as String? ?? '',
+        'aci': m['afterCalcIdx'] as int? ?? -1,
+      };
     }).toList();
 
     // スタンドアロンメモ
@@ -1159,11 +1225,20 @@ Total observed count: ${imageCounts.count}
               'rv2': safeDouble(cm['rhsVal2'] as num?),
               'rl2': cm['rhsLabel2'] as String? ?? '',
               if (cm['lhsLink'] == true) 'lhl': true,
-              if (cm['lhsLinkSource'] != null) 'lhls': compactSrc(Map<String, dynamic>.from(cm['lhsLinkSource'] as Map)),
+              if (cm['lhsLinkSource'] != null)
+                'lhls': compactSrc(
+                  Map<String, dynamic>.from(cm['lhsLinkSource'] as Map),
+                ),
               if (cm['rhsLink'] == true) 'rhl': true,
-              if (cm['rhsLinkSource'] != null) 'rhls': compactSrc(Map<String, dynamic>.from(cm['rhsLinkSource'] as Map)),
+              if (cm['rhsLinkSource'] != null)
+                'rhls': compactSrc(
+                  Map<String, dynamic>.from(cm['rhsLinkSource'] as Map),
+                ),
               if (cm['rhsLink2'] == true) 'rhl2': true,
-              if (cm['rhsLinkSource2'] != null) 'rhls2': compactSrc(Map<String, dynamic>.from(cm['rhsLinkSource2'] as Map)),
+              if (cm['rhsLinkSource2'] != null)
+                'rhls2': compactSrc(
+                  Map<String, dynamic>.from(cm['rhsLinkSource2'] as Map),
+                ),
             };
           })
           .toList();
@@ -1224,7 +1299,10 @@ Total observed count: ${imageCounts.count}
     final constants = config.data['constants'] as List<dynamic>?;
     final qrConsts = constants?.map<Map<String, dynamic>>((c) {
       final cm = Map<String, dynamic>.from(c as Map);
-      return {'n': cm['name'] as String? ?? '', 'v': safeDouble(cm['value'] as num?)};
+      return {
+        'n': cm['name'] as String? ?? '',
+        'v': safeDouble(cm['value'] as num?),
+      };
     }).toList();
 
     // チャンク生成（calculator_widget の _buildQrChunks と同じロジック）
@@ -1236,7 +1314,8 @@ Total observed count: ${imageCounts.count}
       if (qrSItems != null && qrSItems.isNotEmpty) 'sitems': qrSItems,
       if (qrDOrder != null && qrDOrder.isNotEmpty) 'dorder': qrDOrder,
       if (qrConsts != null && qrConsts.isNotEmpty) 'consts': qrConsts,
-      if (qrLogicItems != null && qrLogicItems.isNotEmpty) 'logics': qrLogicItems,
+      if (qrLogicItems != null && qrLogicItems.isNotEmpty)
+        'logics': qrLogicItems,
     };
     final singleQr = json.encode(singlePayload);
     if (singleQr.length <= 350) return [singleQr];
@@ -1253,15 +1332,23 @@ Total observed count: ${imageCounts.count}
     final total = dataChunks.length;
     return List.generate(total, (idx) {
       final envelope = <String, dynamic>{
-        'v': 1, 'm': 1, 'tot': total, 'idx': idx, 'd': dataChunks[idx],
+        'v': 1,
+        'm': 1,
+        'tot': total,
+        'idx': idx,
+        'd': dataChunks[idx],
       };
       if (idx == 0) {
         envelope['t'] = title;
         if (qrMemos != null && qrMemos.isNotEmpty) envelope['memos'] = qrMemos;
-        if (qrSItems != null && qrSItems.isNotEmpty) envelope['sitems'] = qrSItems;
-        if (qrDOrder != null && qrDOrder.isNotEmpty) envelope['dorder'] = qrDOrder;
-        if (qrConsts != null && qrConsts.isNotEmpty) envelope['consts'] = qrConsts;
-        if (qrLogicItems != null && qrLogicItems.isNotEmpty) envelope['logics'] = qrLogicItems;
+        if (qrSItems != null && qrSItems.isNotEmpty)
+          envelope['sitems'] = qrSItems;
+        if (qrDOrder != null && qrDOrder.isNotEmpty)
+          envelope['dorder'] = qrDOrder;
+        if (qrConsts != null && qrConsts.isNotEmpty)
+          envelope['consts'] = qrConsts;
+        if (qrLogicItems != null && qrLogicItems.isNotEmpty)
+          envelope['logics'] = qrLogicItems;
       }
       return json.encode(envelope);
     });
@@ -1328,14 +1415,23 @@ Total observed count: ${imageCounts.count}
     final sorted = _selectedForMerge.toList()..sort();
     final selectedConfigs = sorted.map((i) => _configs[i]).toList();
     final titles = selectedConfigs
-        .map((c) => c.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc)
+        .map(
+          (c) =>
+              c.data['title'] as String? ??
+              AppLocalizations.of(context)!.standardCalc,
+        )
         .join(' + ');
     final sheetIds = selectedConfigs.map((c) => c.id).toList();
     final _mergeNowStr = DateTime.now().toIso8601String();
     final newConfig = WidgetConfig(
       id: '${DateTime.now().millisecondsSinceEpoch}',
       type: 'merged',
-      data: {'title': titles, 'sheetIds': sheetIds, 'createdAt': _mergeNowStr, 'updatedAt': _mergeNowStr},
+      data: {
+        'title': titles,
+        'sheetIds': sheetIds,
+        'createdAt': _mergeNowStr,
+        'updatedAt': _mergeNowStr,
+      },
     );
     setState(() {
       _configs.insert(0, newConfig);
@@ -1389,7 +1485,9 @@ Total observed count: ${imageCounts.count}
         return null;
       }
 
-      final title = decoded['t'] as String? ?? AppLocalizations.of(context)!.importedSheetDefault;
+      final title =
+          decoded['t'] as String? ??
+          AppLocalizations.of(context)!.importedSheetDefault;
       final qrItems = decoded['items'] as List<dynamic>;
 
       final items = qrItems.map<Map<String, dynamic>>((e) {
@@ -1466,7 +1564,8 @@ Total observed count: ${imageCounts.count}
       final qrLogics = decoded['logics'] as List<dynamic>?;
       final logicItems = qrLogics?.map<Map<String, dynamic>>((l) {
         final lm = Map<String, dynamic>.from(l as Map);
-        final baseId = lm['id'] as String? ??
+        final baseId =
+            lm['id'] as String? ??
             '${DateTime.now().millisecondsSinceEpoch}_logic';
         final conditions = (lm['conds'] as List? ?? [])
             .map<Map<String, dynamic>>((c) {
@@ -1614,7 +1713,12 @@ Total observed count: ${imageCounts.count}
                   pinned: true,
 
                   expandedHeight: (_isSelectMode || _isQrSelectMode) ? 50 : 200,
-                  backgroundColor: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.0),
+                  backgroundColor: const Color.fromARGB(
+                    255,
+                    255,
+                    255,
+                    255,
+                  ).withOpacity(0.0),
                   //backgroundColor: const Color(0xFF0D0D14).withOpacity(0.9),
                   surfaceTintColor: Colors.transparent,
                   elevation: 0,
@@ -1625,7 +1729,9 @@ Total observed count: ${imageCounts.count}
                               padding: const EdgeInsets.only(right: 10),
                               child: Text(
                                 _selectedForMerge.length < 2
-                                    ? AppLocalizations.of(context)!.select2OrMore
+                                    ? AppLocalizations.of(
+                                        context,
+                                      )!.select2OrMore
                                     : '${_selectedForMerge.length}件選択中',
                                 style: TextStyle(
                                   color: _selectedForMerge.length >= 2
@@ -1645,8 +1751,14 @@ Total observed count: ${imageCounts.count}
                               padding: const EdgeInsets.only(right: 4),
                               child: Text(
                                 _selectedForQrShare.isEmpty
-                                    ? AppLocalizations.of(context)!.selectSheetsToShare
-                                    : '${_selectedForQrShare.length}件選択中',
+                                    ? AppLocalizations.of(
+                                        context,
+                                      )!.selectSheetsToShare
+                                    : AppLocalizations.of(
+                                        context,
+                                      )!.selectedCountFormat(
+                                        _selectedForQrShare.length,
+                                      ),
                                 style: TextStyle(
                                   color: _selectedForQrShare.isNotEmpty
                                       ? Colors.purpleAccent
@@ -1685,8 +1797,7 @@ Total observed count: ${imageCounts.count}
                   const SliverFillRemaining(child: _EmptyState())
                 else
                   SliverPadding(
-                    padding: EdgeInsets.fromLTRB(24, 8, 24,
-                      200),
+                    padding: EdgeInsets.fromLTRB(24, 8, 24, 200),
                     sliver: SliverReorderableList(
                       itemCount: _configs.length,
                       onReorder: _reorderConfigs,
@@ -1724,6 +1835,7 @@ Total observed count: ${imageCounts.count}
                                 : () => _openDetail(i),
                             onDelete: () => _deleteConfig(i),
                             onUpdate: (data) => _updateConfig(i, data),
+                            clipboardNotifier: _clipboardNotifier,
                             isSelectMode: _isSelectMode || _isQrSelectMode,
                             isSelected: _isSelectMode
                                 ? _selectedForMerge.contains(i)
@@ -1791,24 +1903,14 @@ Total observed count: ${imageCounts.count}
           : _isCalcExpanded
           ? null
           : Padding(
-            padding: const EdgeInsets.only(bottom: 40.0),
-            child: _HomeFab(
+              padding: const EdgeInsets.only(bottom: 40.0),
+              child: _HomeFab(
                 onAiGenerate: _openHomeAiGenerate,
                 onAddSheet: _addConfig,
                 isAiGenerating: _isHomeAiGenerating,
               ),
-          ),
+            ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      bottomNavigationBar: ValueListenableBuilder<Map<String, dynamic>?>(
-        valueListenable: _clipboardNotifier,
-        builder: (ctx, clipboardItem, _) {
-          if (clipboardItem == null) return const SizedBox.shrink();
-          return ClipboardBottomBar(
-            item: clipboardItem,
-            onClear: () => _clipboardNotifier.value = null,
-          );
-        },
-      ),
     );
   }
 }
@@ -1862,8 +1964,7 @@ class _HomeToolsPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-        //  l10n.settings,
-          'TOOLS',
+          l10n.toolsTitle,
           style: const TextStyle(
             color: Colors.black87,
             fontSize: 20,
@@ -1884,16 +1985,16 @@ class _HomeToolsPage extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             _HomeToolTile(
-              title: 'フラッシュ暗算',
-              subtitle: '数字を見て答えるトレーニングゲーム',
+              title: l10n.flashMathTitle,
+              subtitle: l10n.flashMathToolDescription,
               icon: Icons.flash_on_rounded,
               color: const Color(0xFFE05B3F),
               onTap: () => _closeAndRun(context, onOpenFlashMath),
             ),
             const SizedBox(height: 10),
             _HomeToolTile(
-              title: 'そろばんシミュレーター',
-              subtitle: 'そろばんを動かして計算を練習',
+              title: l10n.sorobanTitle,
+              subtitle: l10n.sorobanDescription,
               icon: Icons.diamond,
               color: const Color(0xFF168A7A),
               onTap: () => _closeAndRun(context, onOpenSoroban),
@@ -1973,7 +2074,6 @@ class _HomeToolTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-    
       color: color.withOpacity(0.05),
       borderRadius: BorderRadius.circular(20),
       clipBehavior: Clip.antiAlias,
@@ -1985,11 +2085,7 @@ class _HomeToolTile extends StatelessWidget {
               Positioned(
                 right: -16,
                 bottom: -56,
-                child: Icon(
-                  icon,
-                  size: 192,
-                  color: color.withOpacity(0.10),
-                ),
+                child: Icon(icon, size: 192, color: color.withOpacity(0.10)),
               ),
               Positioned(
                 left: 0,
@@ -2091,8 +2187,16 @@ class _HomeLogoTitleState extends State<_HomeLogoTitle> {
             ShaderMask(
               shaderCallback: (bounds) => LinearGradient(
                 colors: _isPro
-                ? [Color.fromARGB(255, 236, 126, 126), Color.fromARGB(255, 182, 62, 252), Color.fromARGB(255, 55, 204, 234)]
-                : [Color.fromARGB(255, 53, 53, 53), Color.fromARGB(255, 0, 0, 0), Color.fromARGB(255, 79, 79, 79)],
+                    ? [
+                        Color.fromARGB(255, 236, 126, 126),
+                        Color.fromARGB(255, 182, 62, 252),
+                        Color.fromARGB(255, 55, 204, 234),
+                      ]
+                    : [
+                        Color.fromARGB(255, 53, 53, 53),
+                        Color.fromARGB(255, 0, 0, 0),
+                        Color.fromARGB(255, 79, 79, 79),
+                      ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ).createShader(bounds),
@@ -2111,8 +2215,11 @@ class _HomeLogoTitleState extends State<_HomeLogoTitle> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
-                   gradient: const LinearGradient(
-                    colors: [Color.fromARGB(255, 255, 185, 94), Color.fromARGB(255, 255, 122, 246)],
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color.fromARGB(255, 255, 185, 94),
+                      Color.fromARGB(255, 255, 122, 246),
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -2137,15 +2244,6 @@ class _HomeLogoTitleState extends State<_HomeLogoTitle> {
               ),
             ],
           ],
-        ),
-        Text(
-          l10n.genbaCalcTagline,
-          style: TextStyle(
-            color: Colors.black.withOpacity(0.5),
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.2,
-          ),
         ),
         const Spacer(flex: 1),
       ],
@@ -2208,6 +2306,7 @@ class _WidgetCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final void Function(Map<String, dynamic>) onUpdate;
+  final ValueNotifier<Map<String, dynamic>?>? clipboardNotifier;
   final bool isSelectMode;
   final bool isSelected;
   final List<WidgetConfig>? resolvedSheets;
@@ -2221,6 +2320,7 @@ class _WidgetCard extends StatefulWidget {
     required this.onTap,
     required this.onDelete,
     required this.onUpdate,
+    this.clipboardNotifier,
     this.isSelectMode = false,
     this.isSelected = false,
     this.resolvedSheets,
@@ -2243,7 +2343,8 @@ class _WidgetCardState extends State<_WidgetCard> {
     final l10n = AppLocalizations.of(context)!;
     final isMerged = widget.config.type == 'merged';
     final title =
-        widget.config.data['title'] as String? ?? (isMerged ? l10n.mergedView : l10n.standardCalc);
+        widget.config.data['title'] as String? ??
+        (isMerged ? l10n.mergedView : l10n.standardCalc);
     final items = widget.config.data['items'] as List<dynamic>? ?? [];
     final memos = widget.config.data['memos'] as List<dynamic>? ?? [];
     final imageItems = widget.config.data['imageItems'] as List<dynamic>? ?? [];
@@ -2260,7 +2361,10 @@ class _WidgetCardState extends State<_WidgetCard> {
     final bgColorValue = widget.config.data['bgColor'] as int?;
     // For merged: prefer the merged config's own bgColor; fall back to first resolved sheet
     final effectiveBgValue = isMerged
-        ? (bgColorValue ?? (resolvedSheets.isNotEmpty ? resolvedSheets.first.data['bgColor'] as int? : null))
+        ? (bgColorValue ??
+              (resolvedSheets.isNotEmpty
+                  ? resolvedSheets.first.data['bgColor'] as int?
+                  : null))
         : bgColorValue;
     final cardBgColor = effectiveBgValue != null
         ? Color(effectiveBgValue)
@@ -2325,14 +2429,12 @@ class _WidgetCardState extends State<_WidgetCard> {
             spreadRadius: 3,
             offset: const Offset(3, 3),
           ),
-          
         ],
         borderRadius: BorderRadius.circular(32),
         color: cardBgColor.withAlpha(240),
         border: widget.isSelected
             ? Border.all(color: const Color(0xFF5E81FF), width: 2.5)
             : null,
-   
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -2640,7 +2742,7 @@ class _WidgetCardState extends State<_WidgetCard> {
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
-                             //   color: Colors.white.withOpacity(0.2),
+                                //   color: Colors.white.withOpacity(0.2),
                                 shape: BoxShape.circle,
                               ),
                               child: Center(
@@ -2684,6 +2786,7 @@ class _WidgetCardState extends State<_WidgetCard> {
                   : CalculatorViewCard(
                       config: widget.config,
                       onUpdate: widget.onUpdate,
+                      clipboardNotifier: widget.clipboardNotifier,
                       contentPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                     ),
             ),
@@ -2705,7 +2808,9 @@ class _WidgetCardState extends State<_WidgetCard> {
             widget.onReorderSheets?.call(oldIndex, newIndex),
         itemBuilder: (ctx, idx) {
           final s = sheets[idx];
-          final sTitle = s.data['title'] as String? ?? AppLocalizations.of(context)!.standardCalc;
+          final sTitle =
+              s.data['title'] as String? ??
+              AppLocalizations.of(context)!.standardCalc;
           final sColorVal = s.data['bgColor'] as int?;
           final sColor = sColorVal != null
               ? Color(sColorVal)
@@ -2859,12 +2964,10 @@ class _HomeFab extends StatelessWidget {
                 ),
               ],
             ),
-            child:
-                Icon(Icons.add_rounded, color: Colors.white, size: 28),
-               
+            child: Icon(Icons.add_rounded, color: Colors.white, size: 28),
           ),
         ),
-        const SizedBox(width:16 ),
+        const SizedBox(width: 16),
         // AI生成ボタン
         GestureDetector(
           onTap: isAiGenerating ? null : onAiGenerate,
@@ -2889,7 +2992,9 @@ class _HomeFab extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.purpleAccent.withOpacity(isAiGenerating ? 0.4 : 0.2),
+                  color: Colors.purpleAccent.withOpacity(
+                    isAiGenerating ? 0.4 : 0.2,
+                  ),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -2962,7 +3067,7 @@ class _MergeActionBar extends StatelessWidget {
               ),
             ),
             child: Text(
-                    AppLocalizations.of(context)!.cancel,
+              AppLocalizations.of(context)!.cancel,
               style: TextStyle(color: Colors.white54, fontSize: 14),
             ),
           ),
@@ -2973,7 +3078,10 @@ class _MergeActionBar extends StatelessWidget {
               onTap: canMerge ? onMerge : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(30),
                   gradient: canMerge
@@ -3051,7 +3159,7 @@ class _QrShareActionBar extends StatelessWidget {
               ),
             ),
             child: Text(
-                    AppLocalizations.of(context)!.cancel,
+              AppLocalizations.of(context)!.cancel,
               style: TextStyle(color: Colors.white54, fontSize: 14),
             ),
           ),
@@ -3060,7 +3168,10 @@ class _QrShareActionBar extends StatelessWidget {
               onTap: canShare ? onShare : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(14),
                   gradient: canShare
@@ -3072,8 +3183,10 @@ class _QrShareActionBar extends StatelessWidget {
                 ),
                 child: Text(
                   canShare
-                      ? '$selectedCount件のシートを共有'
-                      : '1件以上選択してください',
+                      ? AppLocalizations.of(
+                          context,
+                        )!.shareSheetsCount(selectedCount)
+                      : AppLocalizations.of(context)!.pleaseSelect1OrMore,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
@@ -3111,11 +3224,31 @@ class _SettingsPageState extends State<_SettingsPage> {
   bool _isBillingLoading = false;
 
   List<Map<String, dynamic>> _builtinConstants(BuildContext context) => [
-    {'label': AppLocalizations.of(context)!.piLabel, 'symbol': 'π', 'value': 3.14159265358979},
-    {'label': AppLocalizations.of(context)!.eLabel, 'symbol': 'e', 'value': 2.71828182845905},
-    {'label': AppLocalizations.of(context)!.gLabel, 'symbol': 'g', 'value': 9.80665},
-    {'label': AppLocalizations.of(context)!.phiLabel, 'symbol': 'φ', 'value': 1.61803398874989},
-    {'label': AppLocalizations.of(context)!.cLabel, 'symbol': 'c', 'value': 299792458.0},
+    {
+      'label': AppLocalizations.of(context)!.piLabel,
+      'symbol': 'π',
+      'value': 3.14159265358979,
+    },
+    {
+      'label': AppLocalizations.of(context)!.eLabel,
+      'symbol': 'e',
+      'value': 2.71828182845905,
+    },
+    {
+      'label': AppLocalizations.of(context)!.gLabel,
+      'symbol': 'g',
+      'value': 9.80665,
+    },
+    {
+      'label': AppLocalizations.of(context)!.phiLabel,
+      'symbol': 'φ',
+      'value': 1.61803398874989,
+    },
+    {
+      'label': AppLocalizations.of(context)!.cLabel,
+      'symbol': 'c',
+      'value': 299792458.0,
+    },
   ];
 
   @override
@@ -3213,104 +3346,109 @@ class _SettingsPageState extends State<_SettingsPage> {
             });
           }
           return Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-            child: Text(
-              isNew ? AppLocalizations.of(context)!.addConstant : AppLocalizations.of(context)!.editConstant,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white54),
-                    onPressed: () => Navigator.pop(ctx),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                AppLocalizations.of(context)!.constantName,
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: nameCtrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(context)!.constantNameHint,
-                  hintStyle: const TextStyle(color: Colors.white24),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                AppLocalizations.of(context)!.constantValue,
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
-              ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: valCtrl,
-                autofocus: true,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                  signed: true,
-                ),
-                style: const TextStyle(color: Colors.white, fontSize: 20),
-                decoration: const InputDecoration(
-                  hintText: '0.0',
-                  hintStyle: TextStyle(color: Colors.white24),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  if (!isNew)
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, {'delete': true}),
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 24,
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
                       child: Text(
-                        AppLocalizations.of(context)!.delete,
-                        style: const TextStyle(color: Colors.redAccent),
-                      ),
-                    ),
-                  const Spacer(),
-                  SizedBox(
-                    width: 120,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                        isNew
+                            ? AppLocalizations.of(context)!.addConstant
+                            : AppLocalizations.of(context)!.editConstant,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      onPressed: () => Navigator.pop(ctx, {
-                        'name': nameCtrl.text.trim(),
-                        'value': valCtrl.text.trim(),
-                      }),
-                      child: Text(AppLocalizations.of(context)!.save, style: const TextStyle(fontSize: 16)),
                     ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white54),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  AppLocalizations.of(context)!.constantName,
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: nameCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: AppLocalizations.of(context)!.constantNameHint,
+                    hintStyle: const TextStyle(color: Colors.white24),
                   ),
-                ],
-              ),
-            ],
-          ),
-        );
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  AppLocalizations.of(context)!.constantValue,
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: valCtrl,
+                  autofocus: true,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 20),
+                  decoration: const InputDecoration(
+                    hintText: '0.0',
+                    hintStyle: TextStyle(color: Colors.white24),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    if (!isNew)
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, {'delete': true}),
+                        child: Text(
+                          AppLocalizations.of(context)!.delete,
+                          style: const TextStyle(color: Colors.redAccent),
+                        ),
+                      ),
+                    const Spacer(),
+                    SizedBox(
+                      width: 120,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        onPressed: () => Navigator.pop(ctx, {
+                          'name': nameCtrl.text.trim(),
+                          'value': valCtrl.text.trim(),
+                        }),
+                        child: Text(
+                          AppLocalizations.of(context)!.save,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
         },
       ),
     );
@@ -3342,7 +3480,7 @@ class _SettingsPageState extends State<_SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
         children: [
-    // ── 課金・購入 ───────────────────────────────────────────────────────────────
+          // ── 課金・購入 ───────────────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
             child: Text(
@@ -3394,7 +3532,9 @@ class _SettingsPageState extends State<_SettingsPage> {
                     ),
                   ),
                   subtitle: Text(
-                    _isPro ? AppLocalizations.of(context)!.proAllFeaturesAvailable : AppLocalizations.of(context)!.proUnlockAll,
+                    _isPro
+                        ? AppLocalizations.of(context)!.proAllFeaturesAvailable
+                        : AppLocalizations.of(context)!.proUnlockAll,
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.4),
                       fontSize: 12,
@@ -3417,7 +3557,10 @@ class _SettingsPageState extends State<_SettingsPage> {
                           ),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [Color.fromARGB(255, 255, 94, 94), Color(0xFF9E7AFF)],
+                              colors: [
+                                Color.fromARGB(255, 255, 94, 94),
+                                Color(0xFF9E7AFF),
+                              ],
                             ),
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -3459,7 +3602,9 @@ class _SettingsPageState extends State<_SettingsPage> {
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF5E81FF).withOpacity(0.4),
+                                  color: const Color(
+                                    0xFF5E81FF,
+                                  ).withOpacity(0.4),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -3476,7 +3621,12 @@ class _SettingsPageState extends State<_SettingsPage> {
                           ),
                         ),
                 ),
-                const Divider(color: Colors.white10, height: 1, indent: 16, endIndent: 16),
+                const Divider(
+                  color: Colors.white10,
+                  height: 1,
+                  indent: 16,
+                  endIndent: 16,
+                ),
                 // ── AIクレジット ──
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(
@@ -3509,7 +3659,9 @@ class _SettingsPageState extends State<_SettingsPage> {
                     ),
                   ),
                   subtitle: Text(
-                    AppLocalizations.of(context)!.aiCreditsRemaining(_remainingUses),
+                    AppLocalizations.of(
+                      context,
+                    )!.aiCreditsRemaining(_remainingUses),
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.4),
                       fontSize: 12,
@@ -3573,7 +3725,7 @@ class _SettingsPageState extends State<_SettingsPage> {
             ),
           ),
           const SizedBox(height: 32),
-   // ── 操作設定 ─────────────────────────────────────────────────────────────────
+          // ── 操作設定 ─────────────────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
             child: Text(
@@ -3630,7 +3782,7 @@ class _SettingsPageState extends State<_SettingsPage> {
           ),
 
           const SizedBox(height: 32),
-   // ── ユーザー定義定数 ─────────────────────────────────────────────────
+          // ── ユーザー定義定数 ─────────────────────────────────────────────────
           Row(
             children: [
               Expanded(
@@ -3656,7 +3808,10 @@ class _SettingsPageState extends State<_SettingsPage> {
                 ),
                 label: Text(
                   AppLocalizations.of(context)!.userConstantsAdd,
-                  style: const TextStyle(color: Color(0xFF5E81FF), fontSize: 13),
+                  style: const TextStyle(
+                    color: Color(0xFF5E81FF),
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ],
@@ -3669,8 +3824,8 @@ class _SettingsPageState extends State<_SettingsPage> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Center(
-                  child: Text(
-                    AppLocalizations.of(context)!.userConstantsEmpty,
+                child: Text(
+                  AppLocalizations.of(context)!.userConstantsEmpty,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.3),
@@ -3758,7 +3913,7 @@ class _SettingsPageState extends State<_SettingsPage> {
           const SizedBox(height: 12),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
+            child: Text(
               AppLocalizations.of(context)!.userConstantsDesc,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.3),
@@ -3843,13 +3998,7 @@ class _SettingsPageState extends State<_SettingsPage> {
 
           const SizedBox(height: 24),
 
-       
           const SizedBox(height: 32),
-
-       
-
-
-      
         ],
       ),
     );
@@ -3860,6 +4009,7 @@ class _SettingsPageState extends State<_SettingsPage> {
 class _QrScannerPage extends StatefulWidget {
   /// QR データが揃ったときに呼ばれる。成功時はシートタイトル、失敗時は null を返す。
   final String? Function(String) onScanned;
+
   /// スキャナーを閉じるときに呼ばれる（「完了」ボタン）
   final VoidCallback? onDone;
 
@@ -3974,7 +4124,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-          content: Text(AppLocalizations.of(context)!.imageAnalysisFailed),
+            content: Text(AppLocalizations.of(context)!.imageAnalysisFailed),
             backgroundColor: Color(0xFF2A2A3A),
           ),
         );
@@ -4025,22 +4175,33 @@ class _QrScannerPageState extends State<_QrScannerPage>
             context: context,
             builder: (ctx) => AlertDialog(
               backgroundColor: const Color(0xFF1A2A1A),
-              title: Text(AppLocalizations.of(context)!.importComplete, style: const TextStyle(color: Colors.white)),
-              content: Text(AppLocalizations.of(context)!.importedSheet(result), style: const TextStyle(color: Colors.white70)),
+              title: Text(
+                AppLocalizations.of(context)!.importComplete,
+                style: const TextStyle(color: Colors.white),
+              ),
+              content: Text(
+                AppLocalizations.of(context)!.importedSheet(result),
+                style: const TextStyle(color: Colors.white70),
+              ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: Text(AppLocalizations.of(context)!.ok, style: const TextStyle(color: Color(0xFF5E81FF))),
+                  child: Text(
+                    AppLocalizations.of(context)!.ok,
+                    style: const TextStyle(color: Color(0xFF5E81FF)),
+                  ),
                 ),
               ],
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(AppLocalizations.of(context)!.invalidQrCode),
-            backgroundColor: const Color(0xFF2A2A3A),
-            duration: const Duration(seconds: 2),
-          ));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.invalidQrCode),
+              backgroundColor: const Color(0xFF2A2A3A),
+              duration: const Duration(seconds: 2),
+            ),
+          );
         }
       }
       setState(() => _scannedCount++);
@@ -4089,7 +4250,8 @@ class _QrScannerPageState extends State<_QrScannerPage>
         final itemsDecoded = json.decode(assembledItemsJson);
         final assembledMap = <String, dynamic>{
           'v': 1,
-          't': _multiTitle ?? AppLocalizations.of(context)!.importedSheetDefault,
+          't':
+              _multiTitle ?? AppLocalizations.of(context)!.importedSheetDefault,
           'items': itemsDecoded,
         };
         if (_multiMemos != null && _multiMemos!.isNotEmpty) {
@@ -4131,22 +4293,33 @@ class _QrScannerPageState extends State<_QrScannerPage>
               context: context,
               builder: (ctx) => AlertDialog(
                 backgroundColor: const Color(0xFF1A2A1A),
-                title: const Text('取り込み完了', style: TextStyle(color: Colors.white)),
-                content: Text('「$result」を取り込みました', style: const TextStyle(color: Colors.white70)),
+                title: Text(
+                  AppLocalizations.of(context)!.importComplete,
+                  style: const TextStyle(color: Colors.white),
+                ),
+                content: Text(
+                  AppLocalizations.of(context)!.importedSheet(result),
+                  style: const TextStyle(color: Colors.white70),
+                ),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text('OK', style: TextStyle(color: Color(0xFF5E81FF))),
+                    child: const Text(
+                      'OK',
+                      style: TextStyle(color: Color(0xFF5E81FF)),
+                    ),
                   ),
                 ],
               ),
             );
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(AppLocalizations.of(context)!.invalidQrCode),
-              backgroundColor: Color(0xFF2A2A3A),
-              duration: Duration(seconds: 2),
-            ));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(AppLocalizations.of(context)!.invalidQrCode),
+                backgroundColor: Color(0xFF2A2A3A),
+                duration: Duration(seconds: 2),
+              ),
+            );
           }
         }
         // スキャン成功：状態をリセットして次のシートに備える
@@ -4176,7 +4349,7 @@ class _QrScannerPageState extends State<_QrScannerPage>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-          content: Text(AppLocalizations.of(context)!.qrDataMergeFailed),
+            content: Text(AppLocalizations.of(context)!.qrDataMergeFailed),
             backgroundColor: Color(0xFF2A2A3A),
           ),
         );
@@ -4196,10 +4369,12 @@ class _QrScannerPageState extends State<_QrScannerPage>
         backgroundColor: const Color(0xFF0D0D14),
         title: Text(
           isMulti
-              ? 'QRスキャン ($collected/$total枚)'
+              ? AppLocalizations.of(
+                  context,
+                )!.qrScanProgressTitle(collected, total)
               : _scannedCount > 0
-                  ? '$_scannedCount件取り込み済み'
-                  : 'QRコードをスキャン',
+              ? AppLocalizations.of(context)!.importedSheetsCount(_scannedCount)
+              : AppLocalizations.of(context)!.scanQrCode,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 16,
@@ -4214,9 +4389,10 @@ class _QrScannerPageState extends State<_QrScannerPage>
             TextButton(
               onPressed: widget.onDone,
               child: Text(
-                _scannedCount > 0 ? '完了 ($_scannedCount件)' : '完了',
-                style: const TextStyle(
-                    color: Colors.tealAccent, fontSize: 13),
+                _scannedCount > 0
+                    ? AppLocalizations.of(context)!.doneWithCount(_scannedCount)
+                    : AppLocalizations.of(context)!.done,
+                style: const TextStyle(color: Colors.tealAccent, fontSize: 13),
               ),
             ),
           // 連結スキャン中はリセットボタンを表示
@@ -4233,9 +4409,12 @@ class _QrScannerPageState extends State<_QrScannerPage>
                 _multiLogics = null;
                 _lastScannedValue = null;
               }),
-              child: const Text(
-                'リセット',
-                style: TextStyle(color: Colors.orangeAccent, fontSize: 13),
+              child: Text(
+                AppLocalizations.of(context)!.reset,
+                style: const TextStyle(
+                  color: Colors.orangeAccent,
+                  fontSize: 13,
+                ),
               ),
             ),
           IconButton(
@@ -4314,7 +4493,9 @@ class _QrScannerPageState extends State<_QrScannerPage>
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '連結QR: $collected/$total枚スキャン済み',
+                          AppLocalizations.of(
+                            context,
+                          )!.linkedQrScanProgress(collected, total),
                           style: const TextStyle(
                             color: Colors.orangeAccent,
                             fontSize: 13,
@@ -4357,10 +4538,12 @@ class _QrScannerPageState extends State<_QrScannerPage>
               ),
               child: Text(
                 isMulti
-                    ? '残り ${total - collected}枚のQRをスキャンしてください'
+                    ? AppLocalizations.of(
+                        context,
+                      )!.remainingQrScan(total - collected)
                     : _scannedCount > 0
-                        ? '続けて次のシートのQRをスキャンできます'
-                        : 'シートのQRコードをフレーム内に合わせてください',
+                    ? AppLocalizations.of(context)!.continueQrScan
+                    : AppLocalizations.of(context)!.alignSheetQr,
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white70, fontSize: 13),
               ),
@@ -4389,9 +4572,9 @@ class _QrScannerPageState extends State<_QrScannerPage>
                   ),
                   onPressed: _pickImages,
                   icon: const Icon(Icons.photo_library_outlined, size: 16),
-                  label: const Text(
-                    'ファイルから読み込み',
-                    style: TextStyle(fontSize: 12),
+                  label: Text(
+                    AppLocalizations.of(context)!.loadFromFile,
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ),
               ),
@@ -4485,7 +4668,9 @@ class _QrScannerPageState extends State<_QrScannerPage>
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          '連結QR: $collected/$total枚スキャン済み',
+                          AppLocalizations.of(
+                            context,
+                          )!.linkedQrScanProgress(collected, total),
                           style: const TextStyle(
                             color: Colors.orangeAccent,
                             fontSize: 13,
@@ -4532,7 +4717,9 @@ class _QrScannerPageState extends State<_QrScannerPage>
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '${_pickedImageIndex + 1} / $total  ← スワイプで切り替え →',
+                    AppLocalizations.of(
+                      context,
+                    )!.imagePageSwipe(_pickedImageIndex + 1, total),
                     style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ),
@@ -4558,10 +4745,10 @@ class _QrScannerPageState extends State<_QrScannerPage>
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (_isAnalyzing)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(bottom: 8),
                     child: Text(
-                      'QRコードを解析中...',
+                      AppLocalizations.of(context)!.analyzingQrCode,
                       style: TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ),
@@ -4609,7 +4796,11 @@ class _QrScannerPageState extends State<_QrScannerPage>
                                 Icons.qr_code_scanner_rounded,
                                 size: 18,
                               ),
-                        label: Text(_isAnalyzing ? '解析中...' : 'QRを読み込む'),
+                        label: Text(
+                          _isAnalyzing
+                              ? AppLocalizations.of(context)!.analyzing
+                              : AppLocalizations.of(context)!.readQrCode,
+                        ),
                       ),
                     ),
                   ],

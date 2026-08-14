@@ -2273,6 +2273,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
           r = _evalCalcSimple(r, _calcTermOps[i], _calcTermValues[i + 1]);
         }
         _calcDisplay = _fmtCalc(r);
+        _calcA = r;
         final ep = <String>[];
         for (int i = 0; i < _calcTermValues.length; i++) {
           ep.add(_fmtCalc(_calcTermValues[i]));
@@ -2363,6 +2364,7 @@ class _MemoEditDialogState extends State<_MemoEditDialog> {
                     );
                   }
                   _calcDisplay = _fmtCalc(r);
+                  _calcA = r;
                   final ep = <String>[];
                   for (int i = 0; i < _calcTermValues.length; i++) {
                     ep.add(_fmtCalc(_calcTermValues[i]));

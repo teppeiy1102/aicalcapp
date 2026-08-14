@@ -74,15 +74,20 @@ class FlashMathPlay {
     );
   }
 
-  String get configurationLabel {
-    if (!isCustom) return 'レベル $level';
+  String configurationLabel(AppLocalizations l10n) {
+    if (!isCustom) return l10n.flashMathLevelConfiguration(level);
     final speed = (speedMs / 1000).toStringAsFixed(2);
     final count = termCount > 0 ? termCount : '-';
     final operators = <String>['+'];
     if (subtraction) operators.add('-');
     if (multiplication) operators.add('×');
     if (division) operators.add('÷');
-    return 'カスタム・${digits}桁・${speed}秒・${count}個・${operators.join()}';
+    return l10n.flashMathCustomConfiguration(
+      digits,
+      speed,
+      count,
+      operators.join(),
+    );
   }
 }
 
@@ -260,7 +265,9 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   int get _activeTermCount =>
       _isCustomMode ? _customTermCount : _levelTermCount;
 
-  String get _sessionLabel => _isCustomMode ? 'CUSTOM' : 'LEVEL $_level';
+    String _sessionLabel(AppLocalizations l10n) => _isCustomMode
+      ? l10n.flashMathCustomSession
+      : l10n.flashMathLevelValue(_level);
 
   int _randomNumber() {
     final minimum = _activeDigits == 1
@@ -341,7 +348,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
       if (_countdownValue <= 1) {
         timer.cancel();
         setState(() {
-          _visibleTerm = 'START';
+          _visibleTerm = AppLocalizations.of(context)!.flashMathStartSignal;
           _mode = _FlashPageMode.flashing;
         });
         _countdownTimer = Timer(
@@ -400,7 +407,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
       });
       return;
     }
-    setState(() => _visibleTerm = _question!.terms[_termIndex].label.trim());
+        setState(() => _visibleTerm = _question!.terms[_termIndex].label.trim());
     _flashTimer = Timer(Duration(milliseconds: _activeSpeedMs), _showNextTerm);
   }
 
@@ -451,8 +458,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   }
 
   Widget _buildAnswerKeypad() {
-    const keyBackground = Color(0xFFECE6E0);
-    const actionBackground = Color(0xFFFFE4DD);
+    const actionBackground = Color(0xFFE7F0F0);
     final keys = [
       'AC',
       '+/-',
@@ -486,8 +492,8 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             label: key,
             bg: action
                 ? actionBackground
-                : const Color.fromARGB(255, 220, 216, 210),
-            fg: action ? const Color(0xFFC64932) : const Color(0xFF262321),
+                : const Color(0xFFF0F2F4),
+              fg: action ? const Color(0xFF2D6A72) : const Color(0xFF17202A),
             fontSize: key == '⌫' ? 34 : 22,
             onTap: () => _onAnswerKey(key),
           );
@@ -501,9 +507,11 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
       _answerController.text.replaceAll(',', '').trim(),
     );
     if (userAnswer == null || _question == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('答えを入力してください')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.flashMathAnswerRequired),
+        ),
+      );
       return;
     }
     final correct = (userAnswer - _question!.answer).abs() < 0.0001;
@@ -546,9 +554,9 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        backgroundColor: Color(0xFFF7F3EE),
+        backgroundColor: Color(0xFFF6F7F9),
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFFE05B3F)),
+          child: CircularProgressIndicator(color: Color(0xFF2D6A72)),
         ),
       );
     }
@@ -573,9 +581,9 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
     VoidCallback? onBack,
   }) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F3EE),
+      backgroundColor: const Color(0xFFF6F7F9),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFFF6F7F9),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -588,8 +596,9 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
         title: Text(
           title,
           style: const TextStyle(
-            color: Color(0xFF262321),
-            fontWeight: FontWeight.w800,
+            color: Color(0xFF17202A),
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
           ),
         ),
         actions: actions,
@@ -599,6 +608,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   }
 
   Widget _buildHomePage() {
+    final l10n = AppLocalizations.of(context)!;
     final plays = FlashMathStore.instance.plays;
     final today = DateTime.now();
     final todayPlays = plays.where((play) {
@@ -618,11 +628,11 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
         .where((play) => !play.isCustom && play.isCorrect)
         .fold<int>(0, (best, play) => math.max(best, play.level));
     return _pageScaffold(
-      title: 'フラッシュ暗算',
+      title: l10n.flashMathTitle,
       actions: [
         IconButton(
-          tooltip: '統計',
-          icon: const Icon(Icons.insights_rounded, color: Color(0xFF262321)),
+          tooltip: l10n.flashMathStats,
+          icon: const Icon(Icons.insights_rounded, color: Color(0xFF17202A)),
           onPressed: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const FlashMathStatsPage()),
@@ -630,87 +640,79 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
         ),
       ],
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
         children: [
           _buildHeroCard(),
-          const SizedBox(height: 24),
-          const Text(
-            '今日の実績',
+          const SizedBox(height: 30),
+          Text(
+            l10n.flashMathTodayStats,
             style: TextStyle(
-              color: Color(0xFF262321),
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
+              color: Color(0xFF17202A),
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Row(
             children: [
               _achievementCard(
-                'プレイ',
-                '${todayPlays.length}回',
+                l10n.flashMathPlay,
+                l10n.flashMathPlayCount(todayPlays.length),
                 Icons.bolt_rounded,
                 const Color(0xFFE05B3F),
               ),
               const SizedBox(width: 8),
               _achievementCard(
-                '正答率',
+                l10n.flashMathAccuracy,
                 '$accuracy%',
                 Icons.track_changes_rounded,
-                const Color(0xFF168A7A),
+                const Color(0xFF2D6A72),
               ),
               const SizedBox(width: 8),
               _achievementCard(
-                '連続正解',
+                l10n.flashMathStreak,
                 '$bestStreak',
                 Icons.local_fire_department_rounded,
-                const Color(0xFFC18127),
+                const Color(0xFFE05B3F),
               ),
             ],
           ),
 
-          const SizedBox(height: 20),
-          bestLevel == 0
-              ? const Text(
-                  '現在クリア済みのレベルはありません',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Color.fromARGB(255, 54, 54, 54),
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                  ),
-                )
-              : ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
-                    colors: [
-                      Color.fromARGB(255, 97, 53, 240),
-                      Color.fromARGB(255, 46, 216, 216),
-                      Color.fromARGB(255, 153, 103, 234),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ).createShader(bounds),
-                  child: Text(
-                    'Lv.$bestLevel Cleared!',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w900,
-                    ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              const Icon(
+                Icons.flag_outlined,
+                color: Color(0xFF2D6A72),
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  bestLevel == 0
+                      ? l10n.flashMathNoClearedLevel
+                      : l10n.flashMathLevelCleared(bestLevel),
+                  style: const TextStyle(
+                    color: Color(0xFF2D6A72),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-          const SizedBox(height: 18),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
 
           OutlinedButton.icon(
             onPressed: _openCustomSettings,
             icon: const Icon(Icons.tune_rounded),
-            label: const Text('カスタム設定で始める'),
+            label: Text(l10n.flashMathCustomStart),
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFFE05B3F),
-              side: const BorderSide(color: Color(0xFFE05B3F)),
+              foregroundColor: const Color(0xFF2D6A72),
+              side: const BorderSide(color: Color(0xFFB7CCCE)),
               minimumSize: const Size.fromHeight(52),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(34),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
@@ -718,14 +720,14 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
           FilledButton.icon(
             onPressed: _startLevelGame,
             icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('ゲームをスタート'),
+            label: Text(l10n.flashMathStart),
             style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 28),
-              backgroundColor: const Color(0xFFE05B3F),
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              backgroundColor: const Color(0xFF2D6A72),
               foregroundColor: Colors.white,
               minimumSize: const Size.fromHeight(56),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(12),
               ),
               textStyle: const TextStyle(
                 fontSize: 16,
@@ -735,9 +737,8 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
           ),
           const SizedBox(height: 10),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 28),
           _settingsCard(),
-          const SizedBox(height: 18),
           const SizedBox(height: 10),
         ],
       ),
@@ -745,51 +746,46 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   }
 
   Widget _buildHeroCard() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+      padding: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF262321),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.12),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: const Border(
+          bottom: BorderSide(color: Color(0xFFDDE2E6)),
+        ),
       ),
       child: Row(
         children: [
           Container(
-            width: 58,
-            height: 58,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
-              color: const Color(0xFFE05B3F),
-              borderRadius: BorderRadius.circular(16),
+              color: const Color(0xFFDCECEE),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
               Icons.flash_on_rounded,
-              color: Colors.white,
-              size: 32,
+              color: Color(0xFF2D6A72),
+              size: 25,
             ),
           ),
-          const SizedBox(width: 16),
-          const Expanded(
+          const SizedBox(width: 14),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '一瞬の数字をつかむ',
+                  l10n.flashMathHeroTitle,
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF17202A),
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: 5),
+                SizedBox(height: 6),
                 Text(
-                  '集中力と暗算力を毎日トレーニング',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                  l10n.flashMathHeroDescription,
+                  style: TextStyle(color: Color(0xFF69757F), fontSize: 13),
                 ),
               ],
             ),
@@ -810,8 +806,8 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE7DFD7)),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFDDE2E6)),
         ),
         child: Column(
           children: [
@@ -837,23 +833,24 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   }
 
   Widget _settingsCard() {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE7DFD7)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFDDE2E6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'ゲーム設定',
+                  l10n.flashMathGameSettings,
                   style: TextStyle(
-                    color: Color(0xFF262321),
+                    color: Color(0xFF17202A),
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
@@ -867,10 +864,10 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
-                tooltip: 'レベルを下げる',
+                tooltip: l10n.flashMathLevelDown,
                 onPressed: _level > 1 ? () => setState(() => _level--) : null,
                 icon: const Icon(Icons.remove_rounded),
-                color: const Color(0xFFC64932),
+                color: const Color(0xFF2D6A72),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -878,31 +875,31 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFE4DD),
-                  borderRadius: BorderRadius.circular(30),
+                  color: const Color(0xFFE7F0F0),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  'LEVEL $_level',
+                  l10n.flashMathLevelValue(_level),
                   style: const TextStyle(
-                    color: Color(0xFFC64932),
+                    color: Color(0xFF2D6A72),
                     fontSize: 30,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
               IconButton(
-                tooltip: 'レベルを上げる',
+                tooltip: l10n.flashMathLevelUp,
                 onPressed: _level < 99 ? () => setState(() => _level++) : null,
                 icon: const Icon(Icons.add_rounded),
-                color: const Color(0xFFC64932),
+                color: const Color(0xFF2D6A72),
               ),
             ],
           ),
           Row(
             children: [
-              const Text(
-                'レベル',
-                style: TextStyle(color: Color(0xFF766D66), fontSize: 13),
+              Text(
+                l10n.flashMathLevel,
+                style: TextStyle(color: Color(0xFF69757F), fontSize: 13),
               ),
               Expanded(
                 child: Slider(
@@ -910,34 +907,40 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                   min: 1,
                   max: 99,
                   divisions: 98,
-                  activeColor: const Color(0xFFE05B3F),
-                  inactiveColor: const Color(0xFFE9D9D1),
+                  activeColor: const Color(0xFF2D6A72),
+                  inactiveColor: const Color(0xFFD8E3E4),
                   onChanged: (value) => setState(() => _level = value.round()),
                 ),
               ),
             ],
           ),
-          _autoSettingRow('桁数', '$_levelDigits 桁', Icons.pin_rounded),
           _autoSettingRow(
-            '表示速度',
-            '${(_levelSpeedMs / 1000).toStringAsFixed(2)}秒',
+            l10n.flashMathDigits,
+            l10n.flashMathDigitsValue(_levelDigits),
+            Icons.pin_rounded,
+          ),
+          _autoSettingRow(
+            l10n.flashMathDisplaySpeed,
+            l10n.flashMathSecondsValue(
+              (_levelSpeedMs / 1000).toStringAsFixed(2),
+            ),
             Icons.speed_rounded,
           ),
           _autoSettingRow(
-            '計算数',
-            '$_levelTermCount 個',
+            l10n.flashMathCalculationCount,
+            l10n.flashMathTermValue(_levelTermCount),
             Icons.format_list_numbered_rounded,
           ),
           const SizedBox(height: 12),
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
             dense: true,
-            title: const Text(
-              '掛け算を加える',
+            title: Text(
+              l10n.flashMathAddMultiplication,
               style: TextStyle(color: Color(0xFF262321), fontSize: 14),
             ),
-            subtitle: const Text(
-              '難易度が上がります',
+            subtitle: Text(
+              l10n.flashMathDifficultyIncreases,
               style: TextStyle(color: Color(0xFF958A81), fontSize: 11),
             ),
             value: _multiplication,
@@ -947,12 +950,12 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
             dense: true,
-            title: const Text(
-              '割り算を加える',
+            title: Text(
+              l10n.flashMathAddDivision,
               style: TextStyle(color: Color(0xFF262321), fontSize: 14),
             ),
-            subtitle: const Text(
-              '小数の答えも出題されます',
+            subtitle: Text(
+              l10n.flashMathDecimalAnswers,
               style: TextStyle(color: Color(0xFF958A81), fontSize: 11),
             ),
             value: _division,
@@ -962,12 +965,12 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
             dense: true,
-            title: const Text(
-              '引き算を加える',
+            title: Text(
+              l10n.flashMathAddSubtraction,
               style: TextStyle(color: Color(0xFF262321), fontSize: 14),
             ),
-            subtitle: const Text(
-              '負の答えが出題される場合があります',
+            subtitle: Text(
+              l10n.flashMathNegativeAnswers,
               style: TextStyle(color: Color(0xFF958A81), fontSize: 11),
             ),
             value: _subtraction,
@@ -1002,8 +1005,9 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   }
 
   Widget _buildFlashingPage() {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFF262321),
+      backgroundColor: const Color(0xFF12232A),
       body: SafeArea(
         child: Column(
           children: [
@@ -1015,14 +1019,14 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                     onPressed: _backToHome,
                     icon: const Icon(
                       Icons.close_rounded,
-                      color: Colors.white70,
+                      color: Colors.white60,
                     ),
                   ),
                   const Spacer(),
                   Text(
-                    _sessionLabel,
+                    _sessionLabel(l10n),
                     style: const TextStyle(
-                      color: Colors.white70,
+                      color: Colors.white60,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1036,7 +1040,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                 _visibleTerm,
                 key: ValueKey(_visibleTerm),
                 style: const TextStyle(
-                  color: Colors.greenAccent,
+                  color: const Color(0xFFB7E3D5),
                   fontSize: 78,
                   fontWeight: FontWeight.w300,
                 ),
@@ -1045,7 +1049,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             const SizedBox(height: 16),
             Text(
               '${_termIndex < 0 ? 0 : _termIndex + 1} / ${_question?.terms.length ?? 0}',
-              style: const TextStyle(color: Colors.white38, fontSize: 13),
+              style: const TextStyle(color: Colors.white54, fontSize: 13),
             ),
             const Spacer(flex: 2),
           ],
@@ -1055,8 +1059,9 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   }
 
   Widget _buildCountdownPage() {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFF262321),
+      backgroundColor: const Color(0xFF12232A),
       body: SafeArea(
         child: Column(
           children: [
@@ -1073,7 +1078,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                   ),
                   const Spacer(),
                   Text(
-                    _sessionLabel,
+                    _sessionLabel(l10n),
                     style: const TextStyle(
                       color: Colors.white70,
                       fontWeight: FontWeight.w700,
@@ -1092,8 +1097,8 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'まもなくスタート',
+            Text(
+              l10n.flashMathCountdownStarting,
               style: TextStyle(color: Colors.white54, fontSize: 14),
             ),
             const Spacer(flex: 2),
@@ -1104,15 +1109,16 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   }
 
   Widget _buildAnswerPage() {
+    final l10n = AppLocalizations.of(context)!;
     return _pageScaffold(
-      title: '答えを入力',
+      title: l10n.flashMathAnswerInput,
       onBack: _backToHome,
       body: Padding(
         padding: const EdgeInsets.fromLTRB(20, 30, 20, 24),
         child: Column(
           children: [
-            const Text(
-              'いくつになりましたか？',
+            Text(
+              l10n.flashMathAnswerQuestion,
               style: TextStyle(color: Color(0xFF766D66), fontSize: 16),
             ),
             const SizedBox(height: 16),
@@ -1129,15 +1135,15 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
-                hintText: '答え',
+                hintText: l10n.flashMathAnswerHint,
                 hintStyle: const TextStyle(color: Color(0xFFC9BDB4)),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Color(0xFFE7DFD7)),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFDDE2E6)),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: Color(0xFFE7DFD7)),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFDDE2E6)),
                 ),
               ),
             ),
@@ -1149,12 +1155,12 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
               child: FilledButton.icon(
                 onPressed: _submitAnswer,
                 icon: const Icon(Icons.check_rounded),
-                label: const Text('答え合わせ'),
+                label: Text(l10n.flashMathCheckAnswer),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFE05B3F),
-                  minimumSize: const Size.fromHeight(74),
+                  backgroundColor: const Color(0xFF2D6A72),
+                  minimumSize: const Size.fromHeight(56),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
@@ -1166,9 +1172,10 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   }
 
   Widget _buildResultPage() {
+    final l10n = AppLocalizations.of(context)!;
     final correct = _lastCorrect == true;
     return _pageScaffold(
-      title: 'ラウンド結果',
+      title: l10n.flashMathRoundResult,
       onBack: _backToHome,
       body: Padding(
         padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
@@ -1183,7 +1190,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             ),
             const SizedBox(height: 14),
             Text(
-              correct ? '正解！' : 'あと一歩',
+              correct ? l10n.flashMathCorrect : l10n.flashMathAlmost,
               style: TextStyle(
                 color: correct
                     ? const Color(0xFF168A7A)
@@ -1213,7 +1220,9 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '正解  ${_formatNumber(_lastAnswer ?? 0)}',
+                    l10n.flashMathCorrectAnswer(
+                      _formatNumber(_lastAnswer ?? 0),
+                    ),
                     style: const TextStyle(
                       color: Color(0xFF262321),
                       fontSize: 22,
@@ -1223,7 +1232,9 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                   if (!correct) ...[
                     const SizedBox(height: 5),
                     Text(
-                      'あなたの答え  ${_formatNumber(_lastUserAnswer ?? 0)}',
+                      l10n.flashMathYourAnswer(
+                        _formatNumber(_lastUserAnswer ?? 0),
+                      ),
                       style: const TextStyle(
                         color: Color(0xFFE05B3F),
                         fontSize: 14,
@@ -1239,9 +1250,9 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
               child: FilledButton.icon(
                 onPressed: _startGame,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('もう一度'),
+                label: Text(l10n.flashMathPlayAgain),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFE05B3F),
+                  backgroundColor: const Color(0xFF2D6A72),
                   minimumSize: const Size.fromHeight(54),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -1252,8 +1263,8 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             const SizedBox(height: 10),
             TextButton(
               onPressed: _backToHome,
-              child: const Text(
-                '設定に戻る',
+              child: Text(
+                l10n.flashMathBackToSettings,
                 style: TextStyle(color: Color(0xFF766D66)),
               ),
             ),
@@ -1339,10 +1350,11 @@ class _FlashCustomSettingsPageState extends State<_FlashCustomSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F3EE),
+      backgroundColor: const Color(0xFFF6F7F9),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFFF6F7F9),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -1352,8 +1364,8 @@ class _FlashCustomSettingsPageState extends State<_FlashCustomSettingsPage> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'カスタム設定',
+        title: Text(
+          l10n.flashMathCustomSettings,
           style: TextStyle(
             color: Color(0xFF262321),
             fontWeight: FontWeight.w800,
@@ -1364,8 +1376,8 @@ class _FlashCustomSettingsPageState extends State<_FlashCustomSettingsPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
           children: [
-            const Text(
-              '桁数・表示速度・計算数を自由に設定',
+            Text(
+              l10n.flashMathCustomSettingsDescription,
               style: TextStyle(color: Color(0xFF766D66), fontSize: 14),
             ),
             const SizedBox(height: 14),
@@ -1379,40 +1391,42 @@ class _FlashCustomSettingsPageState extends State<_FlashCustomSettingsPage> {
               child: Column(
                 children: [
                   _customSliderRow(
-                    label: '桁数',
-                    value: '$_digits 桁',
+                    label: l10n.flashMathDigits,
+                    value: l10n.flashMathDigitsValue(_digits),
                     slider: Slider(
                       value: _digits.toDouble(),
                       min: 1,
                       max: 6,
                       divisions: 5,
-                      activeColor: const Color(0xFFE05B3F),
+                      activeColor: const Color(0xFF2D6A72),
                       onChanged: (value) =>
                           setState(() => _digits = value.round()),
                     ),
                   ),
                   _customSliderRow(
-                    label: '表示速度',
-                    value: '${(_speedMs / 1000).toStringAsFixed(2)}秒',
+                    label: l10n.flashMathDisplaySpeed,
+                    value: l10n.flashMathSecondsValue(
+                      (_speedMs / 1000).toStringAsFixed(2),
+                    ),
                     slider: Slider(
                       value: _speedMs.toDouble(),
                       min: 250,
                       max: 1200,
                       divisions: 19,
-                      activeColor: const Color(0xFFE05B3F),
+                      activeColor: const Color(0xFF2D6A72),
                       onChanged: (value) =>
                           setState(() => _speedMs = (value / 50).round() * 50),
                     ),
                   ),
                   _customSliderRow(
-                    label: '計算数',
-                    value: '$_termCount 個',
+                    label: l10n.flashMathCalculationCount,
+                    value: l10n.flashMathTermValue(_termCount),
                     slider: Slider(
                       value: _termCount.toDouble(),
                       min: 3,
                       max: 30,
                       divisions: 27,
-                      activeColor: const Color(0xFFE05B3F),
+                      activeColor: const Color(0xFF2D6A72),
                       onChanged: (value) =>
                           setState(() => _termCount = value.round()),
                     ),
@@ -1420,8 +1434,8 @@ class _FlashCustomSettingsPageState extends State<_FlashCustomSettingsPage> {
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
                     dense: true,
-                    title: const Text(
-                      '掛け算を加える',
+                    title: Text(
+                      l10n.flashMathAddMultiplication,
                       style: TextStyle(color: Color(0xFF262321), fontSize: 14),
                     ),
                     value: _multiplication,
@@ -1432,8 +1446,8 @@ class _FlashCustomSettingsPageState extends State<_FlashCustomSettingsPage> {
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
                     dense: true,
-                    title: const Text(
-                      '割り算を加える',
+                    title: Text(
+                      l10n.flashMathAddDivision,
                       style: TextStyle(color: Color(0xFF262321), fontSize: 14),
                     ),
                     value: _division,
@@ -1443,8 +1457,8 @@ class _FlashCustomSettingsPageState extends State<_FlashCustomSettingsPage> {
                   SwitchListTile.adaptive(
                     contentPadding: EdgeInsets.zero,
                     dense: true,
-                    title: const Text(
-                      '引き算を加える',
+                    title: Text(
+                      l10n.flashMathAddSubtraction,
                       style: TextStyle(color: Color(0xFF262321), fontSize: 14),
                     ),
                     value: _subtraction,
@@ -1458,13 +1472,13 @@ class _FlashCustomSettingsPageState extends State<_FlashCustomSettingsPage> {
             FilledButton.icon(
               onPressed: _start,
               icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('この設定で始める'),
+              label: Text(l10n.flashMathCustomStartWithSettings),
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFE05B3F),
+                backgroundColor: const Color(0xFF2D6A72),
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(56),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 textStyle: const TextStyle(fontWeight: FontWeight.w800),
               ),
@@ -1526,6 +1540,7 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final plays = FlashMathStore.instance.plays;
     final correct = plays.where((play) => play.isCorrect).length;
     final accuracy = plays.isEmpty ? 0 : (correct / plays.length * 100).round();
@@ -1557,7 +1572,7 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
         return b.value.first.level.compareTo(a.value.first.level);
       });
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F3EE),
+      backgroundColor: const Color(0xFFF6F7F9),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
@@ -1569,8 +1584,8 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          '詳しい統計',
+        title: Text(
+          l10n.flashMathDetailedStats,
           style: TextStyle(
             color: Color(0xFF262321),
             fontWeight: FontWeight.w800,
@@ -1583,24 +1598,35 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
           children: [
             Row(
               children: [
-                _statValue('総プレイ', '${plays.length}回'),
+                _statValue(
+                  l10n.flashMathTotalPlays,
+                  l10n.flashMathPlayCount(plays.length),
+                ),
                 const SizedBox(width: 8),
-                _statValue('正答率', '$accuracy%'),
+                _statValue(l10n.flashMathAccuracy, '$accuracy%'),
                 const SizedBox(width: 8),
-                _statValue('平均回答', '${(average / 1000).toStringAsFixed(1)}秒'),
+                _statValue(
+                  l10n.flashMathAverageAnswer,
+                  l10n.flashMathSecondsValue(
+                    (average / 1000).toStringAsFixed(1),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),
             Row(
               children: [
-                _statValue('最高レベル', '$maxLevel'),
+                _statValue(l10n.flashMathHighestLevel, '$maxLevel'),
                 const SizedBox(width: 8),
-                _statValue('最長連続', '$bestStreak問'),
+                _statValue(
+                  l10n.flashMathLongestStreak,
+                  l10n.flashMathQuestionCount(bestStreak),
+                ),
               ],
             ),
             const SizedBox(height: 22),
-            const Text(
-              '設定別成績',
+            Text(
+              l10n.flashMathStatsBySetting,
               style: TextStyle(
                 color: Color(0xFF262321),
                 fontSize: 17,
@@ -1609,20 +1635,20 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
             ),
             const SizedBox(height: 10),
             if (groups.isEmpty)
-              const Text(
-                'プレイするとレベル別の成績が表示されます',
+              Text(
+                l10n.flashMathStatsEmpty,
                 style: TextStyle(color: Color(0xFF766D66), fontSize: 13),
               )
             else
               ...groups.map(
                 (group) => _statsGroupTile(
-                  group.value.first.configurationLabel,
+                  group.value.first.configurationLabel(l10n),
                   group.value,
                 ),
               ),
             const SizedBox(height: 22),
-            const Text(
-              'プレイ履歴（最新50件）',
+            Text(
+              l10n.flashMathPlayHistory,
               style: TextStyle(
                 color: Color(0xFF262321),
                 fontSize: 17,
@@ -1637,9 +1663,9 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
-                    'まだプレイ履歴がありません',
+                    l10n.flashMathNoPlayHistory,
                     style: TextStyle(color: Color(0xFF766D66)),
                   ),
                 ),
@@ -1658,7 +1684,7 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFE7DFD7)),
         ),
         child: Column(
@@ -1683,6 +1709,7 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
   }
 
   Widget _statsGroupTile(String label, List<FlashMathPlay> group) {
+    final l10n = AppLocalizations.of(context)!;
     final correct = group.where((play) => play.isCorrect).toList();
     final accuracy = (correct.length / group.length * 100).round();
     final bestMs = correct.isEmpty
@@ -1711,7 +1738,7 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
                 ),
               ),
               Text(
-                '${group.length}回',
+                l10n.flashMathPlayCount(group.length),
                 style: const TextStyle(
                   color: Color(0xFFE05B3F),
                   fontWeight: FontWeight.w800,
@@ -1721,14 +1748,20 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            '正解 ${correct.length}回  /  不正解 ${group.length - correct.length}回  /  正答率 $accuracy%',
+            l10n.flashMathCorrectIncorrectStats(
+              correct.length,
+              group.length - correct.length,
+              accuracy,
+            ),
             style: const TextStyle(color: Color(0xFF766D66), fontSize: 12),
           ),
           const SizedBox(height: 4),
           Text(
             bestMs == null
-                ? 'クリア記録なし'
-                : '最短クリア ${(bestMs / 1000).toStringAsFixed(1)}秒',
+                ? l10n.flashMathNoClearRecord
+                : l10n.flashMathShortestClear(
+                    (bestMs / 1000).toStringAsFixed(1),
+                  ),
             style: TextStyle(
               color: bestMs == null
                   ? const Color(0xFF958A81)
@@ -1743,6 +1776,7 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
   }
 
   Widget _historyTile(FlashMathPlay play) {
+    final l10n = AppLocalizations.of(context)!;
     final color = play.isCorrect
         ? const Color(0xFF168A7A)
         : const Color(0xFFE05B3F);
@@ -1777,7 +1811,7 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${play.configurationLabel}  ·  ${_formatDate(play.playedAt)}  ·  ${(play.responseMs / 1000).toStringAsFixed(1)}秒',
+                  '${play.configurationLabel(l10n)}  ·  ${_formatDate(play.playedAt)}  ·  ${l10n.flashMathSecondsValue((play.responseMs / 1000).toStringAsFixed(1))}',
                   style: const TextStyle(
                     color: Color(0xFF958A81),
                     fontSize: 11,
@@ -1787,7 +1821,9 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
             ),
           ),
           Text(
-            play.isCorrect ? '正解' : '不正解',
+            play.isCorrect
+              ? l10n.flashMathCorrectLabel
+              : l10n.flashMathIncorrectLabel,
             style: TextStyle(color: color, fontWeight: FontWeight.w800),
           ),
         ],

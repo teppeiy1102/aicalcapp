@@ -297,6 +297,7 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
           .toList(),
     );
     if (selectedOp != null) {
+      // ignore: invalid_use_of_protected_member
       setState(() {
         _calcTermOps[opIndex] = selectedOp;
         // 再計算
@@ -309,6 +310,12 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
           );
         }
         _calcDisplay = _fmtCalc(runningResult);
+        _calcA = runningResult;
+        if (_calcTermValues.length >= 2) {
+          _calcLastA = _calcTermValues[0];
+          _calcLastOp = _opToDart(_calcTermOps[0]);
+          _calcLastB = _calcTermValues[1];
+        }
         // 式文字列を再構築
         final exprParts = <String>[];
         for (int i = 0; i < _calcTermValues.length; i++) {
@@ -480,6 +487,12 @@ extension _CalculatorWidgetStateCalc on _CalculatorWidgetState {
                   );
                 }
                 _calcDisplay = _fmtCalc(runningResult);
+                _calcA = runningResult;
+                if (_calcTermValues.length >= 2) {
+                  _calcLastA = _calcTermValues[0];
+                  _calcLastOp = _opToDart(_calcTermOps[0]);
+                  _calcLastB = _calcTermValues[1];
+                }
                 // 式文字列を再構築
                 final exprParts = <String>[];
                 for (int i = 0; i < _calcTermValues.length; i++) {
