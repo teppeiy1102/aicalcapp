@@ -52,6 +52,12 @@ bool isImageCategoryCountRequest(String instruction) => RegExp(
   caseSensitive: false,
 ).hasMatch(instruction);
 
+String compactAiTitle(String value, {required String fallback}) {
+  final title = value.replaceAll(RegExp(r'\s+'), ' ').trim();
+  if (title.isEmpty) return fallback;
+  return title.length > 12 ? title.substring(0, 12) : title;
+}
+
 String _buildCountPrompt(String instruction) =>
     '''画像内の対象物を、計算に使える個数データへ変換してください。
 依頼: 「$instruction」
@@ -258,7 +264,7 @@ class GemmaAi {
         ),
         data: jsonEncode({
           //    'model': 'moonshotai/kimi-k3',
-          'model': '~google/gemini-flash-latest',
+          'model': 'google/gemini-3.6-flash',
           //'model': 'openai/gpt-5.6-luna',
           //    'model': '~anthropic/claude-fable-latest',
           'messages': [
@@ -351,7 +357,7 @@ class GemmaAi {
           responseType: ResponseType.json,
         ),
         data: jsonEncode({
-          'model': '~google/gemini-flash-latest',
+          'model': 'google/gemini-3.6-flash',
           //'model': 'moonshotai/kimi-k3',
           'messages': [
             {'role': 'system', 'content': sp},
@@ -500,7 +506,7 @@ class GemmaAi {
               'response_format': {'type': 'json_object'},
               'temperature': 0,
               //'model': 'openai/gpt-5.6-luna',
-              'model': '~google/gemini-flash-latest',
+              'model': 'google/gemini-3.6-flash',
               //'model': 'moonshotai/kimi-k3',
               //  'model': 'anthropic/claude-fable-latest',
               'messages': [

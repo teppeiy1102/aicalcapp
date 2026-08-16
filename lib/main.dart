@@ -421,6 +421,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     final instruction = result.instruction;
+  final l10n = AppLocalizations.of(context)!;
+  final systemLanguage = l10n.localeName.startsWith('ja')
+    ? 'Japanese'
+    : 'English';
     final prompt =
         """
   An image is attached to this request. Inspect the image carefully and use its
@@ -442,6 +446,8 @@ Return a JSON array of objects. Multiple formulas are allowed if the request imp
 7. Be mathematically precise. Only use division or constants (like /2) if the specific formula requires it.
 8. Use "brackets" to specify priority calculations (parentheses). Index 0 is "input", index 1 is "operand", index 2 is "others[0]", index 3 is "others[1]", and so on.
 9. Ensure every formula is mathematically correct.
+10. Write all human-readable fields (especially "name", "unit1", "unit2", "unit", and "unitResult") in the same language as the user's instruction. If the instruction has no clear language, use the system language: $systemLanguage.
+11. Make "name" a concise title of about 10 characters and no more than 12 characters.
 
 Structure per item:
 {
@@ -506,8 +512,8 @@ ${imageCounts.items.map((item) => '- ${item.target}: ${item.count}').join('\n')}
 Total observed count: ${imageCounts.count}
 ''';
       final formulaPrompt = '$prompt$observedCounts';
-      const systemPrompt =
-          "You are a calculator generator AI. Use any IMAGE MEASUREMENTS supplied in the prompt as authoritative numeric data. Return only a JSON array of formula objects.";
+        final systemPrompt =
+          "You are a calculator generator AI. Use any IMAGE MEASUREMENTS supplied in the prompt as authoritative numeric data. Return only a JSON array of formula objects. Use the same language as the user's instruction for all human-readable fields; if unclear, use $systemLanguage. Keep each formula name to about 10 characters, maximum 12 characters.";
       final String res;
       if (imageCounts != null) {
         res = await ai.query(formulaPrompt, systemPrompt: systemPrompt);
@@ -526,11 +532,28 @@ Total observed count: ${imageCounts.count}
       if (jsonStart != -1 && jsonEnd != -1) {
         final jsonStr = res.substring(jsonStart, jsonEnd + 1);
         final list = jsonDecode(jsonStr) as List<dynamic>;
-        final items = list
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList();
+        final items = list.asMap().entries.map((entry) {
+          final item = Map<String, dynamic>.from(entry.value as Map);
+          final name = item['name'];
+          if (name is String) {
+            item['name'] = compactAiTitle(
+              name,
+              fallback: l10n.defaultCalcName(entry.key + 1),
+            );
+          }
+          return item;
+        }).toList();
 
-        final title = instruction.isNotEmpty ? instruction : '新規シート';
+        final generatedName = items.isNotEmpty ? items.first['name'] : null;
+        final title = generatedName is String
+            ? compactAiTitle(
+                generatedName,
+                fallback: l10n.defaultCalcName(1),
+              )
+            : compactAiTitle(
+                instruction,
+                fallback: l10n.defaultCalcName(1),
+              );
         final _aiNowStr = DateTime.now().toIso8601String();
         final newConfig = WidgetConfig(
           id: '${DateTime.now().millisecondsSinceEpoch}',

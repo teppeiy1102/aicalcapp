@@ -4181,6 +4181,10 @@ class _CalculatorWidgetState extends State<_CalculatorWidget> {
     }
 
     final instruction = result.instruction;
+  final l10n = AppLocalizations.of(context)!;
+  final systemLanguage = l10n.localeName.startsWith('ja')
+    ? 'Japanese'
+    : 'English';
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -4212,6 +4216,8 @@ Return a JSON array of objects. Multiple formulas are allowed if the request imp
 6. [IMPORTANT] Be mathematically precise. Only use division or constants (like /2) if the specific formula requires it.
 7. Use "brackets" to specify priority calculations (parentheses). Index 0 is "input", index 1 is "operand", index 2 is "others[0]", index 3 is "others[1]", and so on.
 8. Ensure every formula is mathematically correct.
+9. Write all human-readable fields (especially "name", "unit1", "unit2", "unit", and "unitResult") in the same language as the user's instruction. If the instruction has no clear language, use the system language: $systemLanguage.
+10. Make "name" a concise title of about 10 characters and no more than 12 characters.
 
 Structure per item:
 {
@@ -4277,8 +4283,8 @@ Total observed count: ${imageCounts.count}
 ''';
       final formulaPrompt = '$prompt$observedCounts';
       final String res;
-      final systemPrompt =
-          "You are a calculator generator AI. Use any IMAGE MEASUREMENTS supplied in the prompt as authoritative numeric data. Return only a JSON array of formula objects.";
+        final systemPrompt =
+          "You are a calculator generator AI. Use any IMAGE MEASUREMENTS supplied in the prompt as authoritative numeric data. Return only a JSON array of formula objects. Use the same language as the user's instruction for all human-readable fields; if unclear, use $systemLanguage. Keep each formula name to about 10 characters, maximum 12 characters.";
 
       if (imageCounts != null) {
         res = await ai.query(formulaPrompt, systemPrompt: systemPrompt);
@@ -4297,9 +4303,17 @@ Total observed count: ${imageCounts.count}
       if (jsonStart != -1 && jsonEnd != -1) {
         final jsonStr = res.substring(jsonStart, jsonEnd + 1);
         final list = jsonDecode(jsonStr) as List<dynamic>;
-        final newItems = list
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList();
+        final newItems = list.asMap().entries.map((entry) {
+          final item = Map<String, dynamic>.from(entry.value as Map);
+          final name = item['name'];
+          if (name is String) {
+            item['name'] = compactAiTitle(
+              name,
+              fallback: l10n.defaultCalcName(_items.length + entry.key + 1),
+            );
+          }
+          return item;
+        }).toList();
 
         final currentItems = result.isModify
             ? <Map<String, dynamic>>[]

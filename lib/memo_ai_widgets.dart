@@ -482,12 +482,18 @@ class _AiCountPageState extends State<_AiCountPage> {
         return;
       }
 
-      final prompt =
-          'この画像に写っている主要なオブジェクト（物体）の名称を、カンマ区切りでリストアップしてください。できるだけ多くの対象を列挙し、不要な説明や箇条書きの記号は省き、必ず名称のみを日本語でカンマ区切りで出力してください。';
+      final isJapanese = AppLocalizations.of(context)!.localeName.startsWith(
+        'ja',
+      );
+      final prompt = isJapanese
+          ? 'この画像に写っている主要なオブジェクト（物体）の名称を、カンマ区切りでリストアップしてください。できるだけ多くの対象を列挙し、不要な説明や箇条書きの記号は省き、必ず名称のみを日本語でカンマ区切りで出力してください。'
+          : 'List the names of the main objects visible in this image, separated by commas. List as many objects as possible. Do not include explanations or bullet points; output only the object names in English, separated by commas.';
       final resultText = await GemmaAi().queryWithImage(
         prompt,
         _imageBytes!,
-        systemPrompt: "You are an object detector.",
+        systemPrompt: isJapanese
+            ? 'You are an object detector. Respond in Japanese.'
+            : 'You are an object detector. Respond in English.',
       );
       if (!mounted) return;
 
@@ -496,7 +502,13 @@ class _AiCountPageState extends State<_AiCountPage> {
           .map(
             (e) => e.replaceAll(RegExp(r'^[-・* ]+|[-・* ]+$'), '').trim(),
           ) // remove markdown list dashes or stars
-          .where((e) => e.isNotEmpty && e != 'なし')
+          .where(
+            (e) =>
+                e.isNotEmpty &&
+                e != 'なし' &&
+                e.toLowerCase() != 'none' &&
+                e.toLowerCase() != 'no objects',
+          )
           .toList();
 
       if (objects.isEmpty) {
@@ -1008,8 +1020,8 @@ class _AiCountPageState extends State<_AiCountPage> {
                             child: Text(
                               AppLocalizations.of(context)!.aiCountTitle,
                               style: const TextStyle(
-                                fontSize: 70,
-                                fontWeight: FontWeight.w700,
+                                fontSize: 50,
+                                fontWeight: FontWeight.w900,
                                 color: Colors.white,
                                 letterSpacing: 0.5,
                               ),
@@ -1158,8 +1170,54 @@ class _AiCountPageState extends State<_AiCountPage> {
                 const Spacer(),
                 GestureDetector(
                   onTap: () async {
-                    await AiCountHistoryManager.instance.clearAll();
-                    _loadHistory();
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: const Color(0xFF1E1E2E),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        title: Text(
+                          AppLocalizations.of(context)!.deleteHistoryTitle,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        ),
+                        content: Text(
+                          AppLocalizations.of(context)!.deleteHistoryConfirm(
+                            _historyEntries.length,
+                          ),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: Text(
+                              AppLocalizations.of(context)!.cancel,
+                              style: const TextStyle(color: Colors.white54),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: Text(
+                              AppLocalizations.of(context)!.delete,
+                              style: const TextStyle(
+                                color: Color(0xFFEF9A9A),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed == true && mounted) {
+                      await AiCountHistoryManager.instance.clearAll();
+                      _loadHistory();
+                    }
                   },
                   child: Text(
                     AppLocalizations.of(context)!.clearHistory,

@@ -1,5 +1,23 @@
 part of 'widget_page.dart';
 
+const _flashInk = Color(0xFF050816);
+const _flashDeepBlue = Color(0xFF0D1430);
+const _flashOcean = Color(0xFF24194A);
+const _flashNebula = Color(0xFF3A2368);
+const _flashTeal = Color(0xFF6DE3F0);
+const _flashMint = Color(0xFFEAF2FF);
+const _flashCoral = Color(0xFFC8B5FF);
+const _flashPanel = Color(0x261D2850);
+const _flashPanelStrong = Color(0x5218203F);
+const _flashPanelBorder = Color(0x4D9AA9DC);
+
+const _flashBackgroundGradient = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [_flashInk, _flashDeepBlue, _flashNebula, _flashInk],
+  stops: [0, 0.42, 0.74, 1],
+);
+
 class FlashMathPlay {
   final DateTime playedAt;
   final int level;
@@ -251,21 +269,41 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
 
   int _clampInt(int value, int min, int max) => value.clamp(min, max).toInt();
 
-  int get _levelDigits {
-    return 1 + (((_level - 1) * 5) / 98).round();
+  int _digitsForLevel(int level) => 1 + (((level - 1) * 5) / 98).round();
+
+  int get _levelDigits => _digitsForLevel(_level);
+
+  int get _levelRangeStart {
+    for (var level = 1; level <= 99; level++) {
+      if (_digitsForLevel(level) == _levelDigits) return level;
+    }
+    return 1;
+  }
+
+  int get _levelRangeEnd {
+    for (var level = 99; level >= 1; level--) {
+      if (_digitsForLevel(level) == _levelDigits) return level;
+    }
+    return 99;
+  }
+
+  double get _levelRangeProgress {
+    final rangeLength = _levelRangeEnd - _levelRangeStart;
+    if (rangeLength == 0) return 0;
+    return (_level - _levelRangeStart) / rangeLength;
   }
 
   int get _levelSpeedMs =>
-      _clampInt(1200 - ((_level - 1) * 950 / 98).round(), 250, 1200);
+      _clampInt(1200 - (950 * _levelRangeProgress).round(), 250, 1200);
 
-  int get _levelTermCount => 3 + (((_level - 1) * 27) / 98).round();
+  int get _levelTermCount => 3 + (27 * _levelRangeProgress).round();
 
   int get _activeDigits => _isCustomMode ? _customDigits : _levelDigits;
   int get _activeSpeedMs => _isCustomMode ? _customSpeedMs : _levelSpeedMs;
   int get _activeTermCount =>
       _isCustomMode ? _customTermCount : _levelTermCount;
 
-    String _sessionLabel(AppLocalizations l10n) => _isCustomMode
+  String _sessionLabel(AppLocalizations l10n) => _isCustomMode
       ? l10n.flashMathCustomSession
       : l10n.flashMathLevelValue(_level);
 
@@ -407,7 +445,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
       });
       return;
     }
-        setState(() => _visibleTerm = _question!.terms[_termIndex].label.trim());
+    setState(() => _visibleTerm = _question!.terms[_termIndex].label.trim());
     _flashTimer = Timer(Duration(milliseconds: _activeSpeedMs), _showNextTerm);
   }
 
@@ -458,7 +496,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   }
 
   Widget _buildAnswerKeypad() {
-    const actionBackground = Color(0xFFE7F0F0);
+    const actionBackground = Color(0x4D6DE3F0);
     final keys = [
       'AC',
       '+/-',
@@ -490,10 +528,8 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
           final action = key == 'AC' || key == '+/-' || key == '⌫';
           return _CalcKeyButton(
             label: key,
-            bg: action
-                ? actionBackground
-                : const Color(0xFFF0F2F4),
-              fg: action ? const Color(0xFF2D6A72) : const Color(0xFF17202A),
+            bg: action ? actionBackground : const Color(0x331D2850),
+            fg: action ? _flashMint : Colors.white,
             fontSize: key == '⌫' ? 34 : 22,
             onTap: () => _onAnswerKey(key),
           );
@@ -554,10 +590,8 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        backgroundColor: Color(0xFFF6F7F9),
-        body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF2D6A72)),
-        ),
+        backgroundColor: _flashInk,
+        body: Center(child: CircularProgressIndicator(color: _flashMint)),
       );
     }
     switch (_mode) {
@@ -581,29 +615,29 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
     VoidCallback? onBack,
   }) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F9),
+      backgroundColor: _flashInk,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF6F7F9),
+        backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Color(0xFF262321),
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _flashMint),
           onPressed: onBack ?? () => Navigator.pop(context),
         ),
         title: Text(
           title,
           style: const TextStyle(
-            color: Color(0xFF17202A),
+            color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.w700,
           ),
         ),
         actions: actions,
       ),
-      body: SafeArea(child: body),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(gradient: _flashBackgroundGradient),
+        child: SafeArea(child: body),
+      ),
     );
   }
 
@@ -632,7 +666,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
       actions: [
         IconButton(
           tooltip: l10n.flashMathStats,
-          icon: const Icon(Icons.insights_rounded, color: Color(0xFF17202A)),
+          icon: const Icon(Icons.insights_rounded, color: _flashMint),
           onPressed: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const FlashMathStatsPage()),
@@ -647,7 +681,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
           Text(
             l10n.flashMathTodayStats,
             style: TextStyle(
-              color: Color(0xFF17202A),
+              color: Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
@@ -659,21 +693,21 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                 l10n.flashMathPlay,
                 l10n.flashMathPlayCount(todayPlays.length),
                 Icons.bolt_rounded,
-                const Color(0xFFE05B3F),
+                _flashCoral,
               ),
               const SizedBox(width: 8),
               _achievementCard(
                 l10n.flashMathAccuracy,
                 '$accuracy%',
                 Icons.track_changes_rounded,
-                const Color(0xFF2D6A72),
+                _flashMint,
               ),
               const SizedBox(width: 8),
               _achievementCard(
                 l10n.flashMathStreak,
                 '$bestStreak',
                 Icons.local_fire_department_rounded,
-                const Color(0xFFE05B3F),
+                _flashCoral,
               ),
             ],
           ),
@@ -681,11 +715,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
           const SizedBox(height: 24),
           Row(
             children: [
-              const Icon(
-                Icons.flag_outlined,
-                color: Color(0xFF2D6A72),
-                size: 18,
-              ),
+              const Icon(Icons.flag_outlined, color: _flashMint, size: 18),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -693,7 +723,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                       ? l10n.flashMathNoClearedLevel
                       : l10n.flashMathLevelCleared(bestLevel),
                   style: const TextStyle(
-                    color: Color(0xFF2D6A72),
+                    color: _flashMint,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -708,8 +738,9 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             icon: const Icon(Icons.tune_rounded),
             label: Text(l10n.flashMathCustomStart),
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF2D6A72),
-              side: const BorderSide(color: Color(0xFFB7CCCE)),
+              foregroundColor: Colors.black,
+              backgroundColor: const Color.fromARGB(214, 250, 249, 249),
+              side: const BorderSide(color: Color(0x66DCE7FF)),
               minimumSize: const Size.fromHeight(52),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -723,8 +754,8 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             label: Text(l10n.flashMathStart),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 18),
-              backgroundColor: const Color(0xFF2D6A72),
-              foregroundColor: Colors.white,
+              backgroundColor: _flashTeal,
+              foregroundColor: Colors.black,
               minimumSize: const Size.fromHeight(56),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -748,11 +779,12 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   Widget _buildHeroCard() {
     final l10n = AppLocalizations.of(context)!;
     return Container(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
       decoration: BoxDecoration(
-        border: const Border(
-          bottom: BorderSide(color: Color(0xFFDDE2E6)),
-        ),
+     
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0x66DCE7FF)),
+    
       ),
       child: Row(
         children: [
@@ -760,12 +792,13 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: const Color(0xFFDCECEE),
-              borderRadius: BorderRadius.circular(12),
+              color: const Color(0x33FFFFFF),
+              borderRadius: BorderRadius.circular(15),
+            //  border: Border.all(color: const Color(0x66FFFFFF)),
             ),
             child: const Icon(
               Icons.flash_on_rounded,
-              color: Color(0xFF2D6A72),
+              color: Colors.white,
               size: 25,
             ),
           ),
@@ -776,16 +809,20 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
               children: [
                 Text(
                   l10n.flashMathHeroTitle,
-                  style: TextStyle(
-                    color: Color(0xFF17202A),
+                  style: const TextStyle(
+                    color: Colors.white,
                     fontSize: 19,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Text(
                   l10n.flashMathHeroDescription,
-                  style: TextStyle(color: Color(0xFF69757F), fontSize: 13),
+                  style: const TextStyle(
+                    color: Color(0xD9FFFFFF),
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
                 ),
               ],
             ),
@@ -805,9 +842,9 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFDDE2E6)),
+          color: _flashPanel,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _flashPanelBorder),
         ),
         child: Column(
           children: [
@@ -816,7 +853,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             Text(
               value,
               style: const TextStyle(
-                color: Color(0xFF262321),
+                color: Colors.white,
                 fontSize: 19,
                 fontWeight: FontWeight.w800,
               ),
@@ -824,7 +861,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(color: Color(0xFF766D66), fontSize: 11),
+              style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 11),
             ),
           ],
         ),
@@ -837,9 +874,9 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFDDE2E6)),
+        color: _flashPanelStrong,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _flashPanelBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -849,8 +886,8 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
               Expanded(
                 child: Text(
                   l10n.flashMathGameSettings,
-                  style: TextStyle(
-                    color: Color(0xFF17202A),
+                  style: const TextStyle(
+                    color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
@@ -867,7 +904,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                 tooltip: l10n.flashMathLevelDown,
                 onPressed: _level > 1 ? () => setState(() => _level--) : null,
                 icon: const Icon(Icons.remove_rounded),
-                color: const Color(0xFF2D6A72),
+                color: _flashMint,
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -875,13 +912,13 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE7F0F0),
-                  borderRadius: BorderRadius.circular(10),
+                 borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0x669EACFF)),
                 ),
                 child: Text(
                   l10n.flashMathLevelValue(_level),
                   style: const TextStyle(
-                    color: Color(0xFF2D6A72),
+                    color: Colors.white,
                     fontSize: 30,
                     fontWeight: FontWeight.w800,
                   ),
@@ -891,7 +928,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                 tooltip: l10n.flashMathLevelUp,
                 onPressed: _level < 99 ? () => setState(() => _level++) : null,
                 icon: const Icon(Icons.add_rounded),
-                color: const Color(0xFF2D6A72),
+                color: _flashMint,
               ),
             ],
           ),
@@ -899,7 +936,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             children: [
               Text(
                 l10n.flashMathLevel,
-                style: TextStyle(color: Color(0xFF69757F), fontSize: 13),
+                style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 13),
               ),
               Expanded(
                 child: Slider(
@@ -907,8 +944,8 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                   min: 1,
                   max: 99,
                   divisions: 98,
-                  activeColor: const Color(0xFF2D6A72),
-                  inactiveColor: const Color(0xFFD8E3E4),
+                  activeColor: _flashTeal,
+                  inactiveColor: const Color(0x4DEAF2FF),
                   onChanged: (value) => setState(() => _level = value.round()),
                 ),
               ),
@@ -937,14 +974,14 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             dense: true,
             title: Text(
               l10n.flashMathAddMultiplication,
-              style: TextStyle(color: Color(0xFF262321), fontSize: 14),
+              style: const TextStyle(color: Colors.white, fontSize: 14),
             ),
             subtitle: Text(
               l10n.flashMathDifficultyIncreases,
-              style: TextStyle(color: Color(0xFF958A81), fontSize: 11),
+              style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 11),
             ),
             value: _multiplication,
-            activeColor: const Color(0xFFE05B3F),
+            activeColor: _flashCoral,
             onChanged: (value) => setState(() => _multiplication = value),
           ),
           SwitchListTile.adaptive(
@@ -952,14 +989,14 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             dense: true,
             title: Text(
               l10n.flashMathAddDivision,
-              style: TextStyle(color: Color(0xFF262321), fontSize: 14),
+              style: const TextStyle(color: Colors.white, fontSize: 14),
             ),
             subtitle: Text(
               l10n.flashMathDecimalAnswers,
-              style: TextStyle(color: Color(0xFF958A81), fontSize: 11),
+              style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 11),
             ),
             value: _division,
-            activeColor: const Color(0xFFE05B3F),
+            activeColor: _flashCoral,
             onChanged: (value) => setState(() => _division = value),
           ),
           SwitchListTile.adaptive(
@@ -967,14 +1004,14 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
             dense: true,
             title: Text(
               l10n.flashMathAddSubtraction,
-              style: TextStyle(color: Color(0xFF262321), fontSize: 14),
+              style: const TextStyle(color: Colors.white, fontSize: 14),
             ),
             subtitle: Text(
               l10n.flashMathNegativeAnswers,
-              style: TextStyle(color: Color(0xFF958A81), fontSize: 11),
+              style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 11),
             ),
             value: _subtraction,
-            activeColor: const Color(0xFFE05B3F),
+            activeColor: _flashCoral,
             onChanged: (value) => setState(() => _subtraction = value),
           ),
         ],
@@ -985,18 +1022,18 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   Widget _autoSettingRow(String label, String value, IconData icon) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFFE05B3F), size: 19),
+        Icon(icon, color: _flashMint, size: 19),
         const SizedBox(width: 9),
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(color: Color(0xFF766D66), fontSize: 13),
+            style: const TextStyle(color: Color(0xB3D5DDF4), fontSize: 13),
           ),
         ),
         Text(
           value,
           style: const TextStyle(
-            color: Color(0xFF262321),
+            color: _flashMint,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -1007,53 +1044,67 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   Widget _buildFlashingPage() {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFF12232A),
+      backgroundColor: _flashInk,
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: _backToHome,
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: Colors.white60,
-                    ),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(gradient: _flashBackgroundGradient),
+          child: Column(
+            children: [
+              _buildGameHeader(l10n),
+              const Spacer(),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 100),
+                child: Text(
+                  _visibleTerm,
+                  key: ValueKey(_visibleTerm),
+                  style: const TextStyle(
+                    color: _flashMint,
+                    fontSize: 78,
+                    fontWeight: FontWeight.w300,
+                    shadows: [Shadow(color: Color(0x99C8B5FF), blurRadius: 28)],
                   ),
-                  const Spacer(),
-                  Text(
-                    _sessionLabel(l10n),
-                    style: const TextStyle(
-                      color: Colors.white60,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Spacer(),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 100),
-              child: Text(
-                _visibleTerm,
-                key: ValueKey(_visibleTerm),
-                style: const TextStyle(
-                  color: const Color(0xFFB7E3D5),
-                  fontSize: 78,
-                  fontWeight: FontWeight.w300,
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '${_termIndex < 0 ? 0 : _termIndex + 1} / ${_question?.terms.length ?? 0}',
-              style: const TextStyle(color: Colors.white54, fontSize: 13),
-            ),
-            const Spacer(flex: 2),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                '${_termIndex < 0 ? 0 : _termIndex + 1} / ${_question?.terms.length ?? 0}',
+                style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 13),
+              ),
+              const Spacer(flex: 2),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildGameHeader(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: _backToHome,
+            icon: const Icon(Icons.close_rounded, color: Color(0xB3FFFFFF)),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              color: const Color(0x266DE3F0),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0x4DEAF2FF)),
+            ),
+            child: Text(
+              _sessionLabel(l10n),
+              style: const TextStyle(
+                color: _flashMint,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1061,48 +1112,31 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
   Widget _buildCountdownPage() {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFF12232A),
+      backgroundColor: _flashInk,
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: _backToHome,
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    _sessionLabel(l10n),
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
+        child: DecoratedBox(
+          decoration: const BoxDecoration(gradient: _flashBackgroundGradient),
+          child: Column(
+            children: [
+              _buildGameHeader(l10n),
+              const Spacer(),
+              Text(
+                _visibleTerm,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 84,
+                  fontWeight: FontWeight.w300,
+                  shadows: [Shadow(color: Color(0x99C8B5FF), blurRadius: 32)],
+                ),
               ),
-            ),
-            const Spacer(),
-            Text(
-              _visibleTerm,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 84,
-                fontWeight: FontWeight.w300,
+              const SizedBox(height: 16),
+              Text(
+                l10n.flashMathCountdownStarting,
+                style: const TextStyle(color: Color(0x99FFFFFF), fontSize: 14),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.flashMathCountdownStarting,
-              style: TextStyle(color: Colors.white54, fontSize: 14),
-            ),
-            const Spacer(flex: 2),
-          ],
+              const Spacer(flex: 2),
+            ],
+          ),
         ),
       ),
     );
@@ -1119,7 +1153,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
           children: [
             Text(
               l10n.flashMathAnswerQuestion,
-              style: TextStyle(color: Color(0xFF766D66), fontSize: 16),
+              style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 16),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -1128,22 +1162,22 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
               showCursor: false,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Color(0xFF262321),
+                color: Colors.white,
                 fontSize: 34,
                 fontWeight: FontWeight.w800,
               ),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: _flashPanelStrong,
                 hintText: l10n.flashMathAnswerHint,
-                hintStyle: const TextStyle(color: Color(0xFFC9BDB4)),
+                hintStyle: const TextStyle(color: Color(0x669EACFF)),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFDDE2E6)),
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: const BorderSide(color: Color(0x4DEAF2FF)),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFDDE2E6)),
+                  borderRadius: BorderRadius.circular(18),
+                  borderSide: const BorderSide(color: Color(0x4DEAF2FF)),
                 ),
               ),
             ),
@@ -1157,7 +1191,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                 icon: const Icon(Icons.check_rounded),
                 label: Text(l10n.flashMathCheckAnswer),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF2D6A72),
+                  backgroundColor: _flashTeal,
                   minimumSize: const Size.fromHeight(56),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -1183,18 +1217,14 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
           children: [
             Icon(
               correct ? Icons.check_circle_rounded : Icons.cancel_rounded,
-              color: correct
-                  ? const Color(0xFF168A7A)
-                  : const Color(0xFFE05B3F),
+              color: correct ? _flashMint : _flashCoral,
               size: 76,
             ),
             const SizedBox(height: 14),
             Text(
               correct ? l10n.flashMathCorrect : l10n.flashMathAlmost,
               style: TextStyle(
-                color: correct
-                    ? const Color(0xFF168A7A)
-                    : const Color(0xFFE05B3F),
+                color: correct ? _flashMint : _flashCoral,
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
               ),
@@ -1204,9 +1234,9 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE7DFD7)),
+                color: _flashPanelStrong,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _flashPanelBorder),
               ),
               child: Column(
                 children: [
@@ -1214,7 +1244,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                     _lastExpression,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      color: Color(0xFF766D66),
+                      color: Color(0xB3FFFFFF),
                       fontSize: 15,
                     ),
                   ),
@@ -1224,7 +1254,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                       _formatNumber(_lastAnswer ?? 0),
                     ),
                     style: const TextStyle(
-                      color: Color(0xFF262321),
+                      color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                     ),
@@ -1235,10 +1265,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                       l10n.flashMathYourAnswer(
                         _formatNumber(_lastUserAnswer ?? 0),
                       ),
-                      style: const TextStyle(
-                        color: Color(0xFFE05B3F),
-                        fontSize: 14,
-                      ),
+                      style: const TextStyle(color: _flashCoral, fontSize: 14),
                     ),
                   ],
                 ],
@@ -1252,7 +1279,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
                 icon: const Icon(Icons.refresh_rounded),
                 label: Text(l10n.flashMathPlayAgain),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF2D6A72),
+                  backgroundColor: _flashTeal,
                   minimumSize: const Size.fromHeight(54),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -1265,7 +1292,7 @@ class _FlashMentalMathPageState extends State<FlashMentalMathPage> {
               onPressed: _backToHome,
               child: Text(
                 l10n.flashMathBackToSettings,
-                style: TextStyle(color: Color(0xFF766D66)),
+                style: const TextStyle(color: Color(0xB3FFFFFF)),
               ),
             ),
           ],
@@ -1352,138 +1379,152 @@ class _FlashCustomSettingsPageState extends State<_FlashCustomSettingsPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F9),
+      backgroundColor: _flashInk,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF6F7F9),
+        backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Color(0xFF262321),
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _flashMint),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           l10n.flashMathCustomSettings,
-          style: TextStyle(
-            color: Color(0xFF262321),
+          style: const TextStyle(
+            color: Colors.white,
             fontWeight: FontWeight.w800,
           ),
         ),
       ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
-          children: [
-            Text(
-              l10n.flashMathCustomSettingsDescription,
-              style: TextStyle(color: Color(0xFF766D66), fontSize: 14),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE7DFD7)),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(gradient: _flashBackgroundGradient),
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
+            children: [
+              Text(
+                l10n.flashMathCustomSettingsDescription,
+                style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 14),
               ),
-              child: Column(
-                children: [
-                  _customSliderRow(
-                    label: l10n.flashMathDigits,
-                    value: l10n.flashMathDigitsValue(_digits),
-                    slider: Slider(
-                      value: _digits.toDouble(),
-                      min: 1,
-                      max: 6,
-                      divisions: 5,
-                      activeColor: const Color(0xFF2D6A72),
-                      onChanged: (value) =>
-                          setState(() => _digits = value.round()),
-                    ),
-                  ),
-                  _customSliderRow(
-                    label: l10n.flashMathDisplaySpeed,
-                    value: l10n.flashMathSecondsValue(
-                      (_speedMs / 1000).toStringAsFixed(2),
-                    ),
-                    slider: Slider(
-                      value: _speedMs.toDouble(),
-                      min: 250,
-                      max: 1200,
-                      divisions: 19,
-                      activeColor: const Color(0xFF2D6A72),
-                      onChanged: (value) =>
-                          setState(() => _speedMs = (value / 50).round() * 50),
-                    ),
-                  ),
-                  _customSliderRow(
-                    label: l10n.flashMathCalculationCount,
-                    value: l10n.flashMathTermValue(_termCount),
-                    slider: Slider(
-                      value: _termCount.toDouble(),
-                      min: 3,
-                      max: 30,
-                      divisions: 27,
-                      activeColor: const Color(0xFF2D6A72),
-                      onChanged: (value) =>
-                          setState(() => _termCount = value.round()),
-                    ),
-                  ),
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    title: Text(
-                      l10n.flashMathAddMultiplication,
-                      style: TextStyle(color: Color(0xFF262321), fontSize: 14),
-                    ),
-                    value: _multiplication,
-                    activeColor: const Color(0xFFE05B3F),
-                    onChanged: (value) =>
-                        setState(() => _multiplication = value),
-                  ),
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    title: Text(
-                      l10n.flashMathAddDivision,
-                      style: TextStyle(color: Color(0xFF262321), fontSize: 14),
-                    ),
-                    value: _division,
-                    activeColor: const Color(0xFFE05B3F),
-                    onChanged: (value) => setState(() => _division = value),
-                  ),
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    title: Text(
-                      l10n.flashMathAddSubtraction,
-                      style: TextStyle(color: Color(0xFF262321), fontSize: 14),
-                    ),
-                    value: _subtraction,
-                    activeColor: const Color(0xFFE05B3F),
-                    onChanged: (value) => setState(() => _subtraction = value),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-            FilledButton.icon(
-              onPressed: _start,
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: Text(l10n.flashMathCustomStartWithSettings),
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF2D6A72),
-                foregroundColor: Colors.white,
-                minimumSize: const Size.fromHeight(56),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                decoration: BoxDecoration(
+                  color: _flashPanelStrong,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: _flashPanelBorder),
                 ),
-                textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                child: Column(
+                  children: [
+                    _customSliderRow(
+                      label: l10n.flashMathDigits,
+                      value: l10n.flashMathDigitsValue(_digits),
+                      slider: Slider(
+                        value: _digits.toDouble(),
+                        min: 1,
+                        max: 6,
+                        divisions: 5,
+                        activeColor: _flashTeal,
+                        inactiveColor: const Color(0x4DEAF2FF),
+                        onChanged: (value) =>
+                            setState(() => _digits = value.round()),
+                      ),
+                    ),
+                    _customSliderRow(
+                      label: l10n.flashMathDisplaySpeed,
+                      value: l10n.flashMathSecondsValue(
+                        (_speedMs / 1000).toStringAsFixed(2),
+                      ),
+                      slider: Slider(
+                        value: _speedMs.toDouble(),
+                        min: 250,
+                        max: 1200,
+                        divisions: 19,
+                        activeColor: _flashTeal,
+                        inactiveColor: const Color(0x4DEAF2FF),
+                        onChanged: (value) => setState(
+                          () => _speedMs = (value / 50).round() * 50,
+                        ),
+                      ),
+                    ),
+                    _customSliderRow(
+                      label: l10n.flashMathCalculationCount,
+                      value: l10n.flashMathTermValue(_termCount),
+                      slider: Slider(
+                        value: _termCount.toDouble(),
+                        min: 3,
+                        max: 30,
+                        divisions: 27,
+                        activeColor: _flashTeal,
+                        inactiveColor: const Color(0x4DEAF2FF),
+                        onChanged: (value) =>
+                            setState(() => _termCount = value.round()),
+                      ),
+                    ),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      title: Text(
+                        l10n.flashMathAddMultiplication,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                      value: _multiplication,
+                      activeColor: _flashCoral,
+                      onChanged: (value) =>
+                          setState(() => _multiplication = value),
+                    ),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      title: Text(
+                        l10n.flashMathAddDivision,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                      value: _division,
+                      activeColor: _flashCoral,
+                      onChanged: (value) => setState(() => _division = value),
+                    ),
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      title: Text(
+                        l10n.flashMathAddSubtraction,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                      value: _subtraction,
+                      activeColor: _flashCoral,
+                      onChanged: (value) =>
+                          setState(() => _subtraction = value),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 18),
+              FilledButton.icon(
+                onPressed: _start,
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: Text(l10n.flashMathCustomStartWithSettings),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _flashTeal,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(56),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1501,13 +1542,13 @@ class _FlashCustomSettingsPageState extends State<_FlashCustomSettingsPage> {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(color: Color(0xFF766D66), fontSize: 13),
+                style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 13),
               ),
             ),
             Text(
               value,
               style: const TextStyle(
-                color: Color(0xFF262321),
+                color: Colors.white,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -1572,107 +1613,111 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
         return b.value.first.level.compareTo(a.value.first.level);
       });
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7F9),
+      backgroundColor: _flashInk,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Color(0xFF262321),
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: _flashMint),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           l10n.flashMathDetailedStats,
-          style: TextStyle(
-            color: Color(0xFF262321),
+          style: const TextStyle(
+            color: Colors.white,
             fontWeight: FontWeight.w800,
           ),
         ),
       ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
-          children: [
-            Row(
-              children: [
-                _statValue(
-                  l10n.flashMathTotalPlays,
-                  l10n.flashMathPlayCount(plays.length),
-                ),
-                const SizedBox(width: 8),
-                _statValue(l10n.flashMathAccuracy, '$accuracy%'),
-                const SizedBox(width: 8),
-                _statValue(
-                  l10n.flashMathAverageAnswer,
-                  l10n.flashMathSecondsValue(
-                    (average / 1000).toStringAsFixed(1),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(gradient: _flashBackgroundGradient),
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
+            children: [
+              Row(
+                children: [
+                  _statValue(
+                    l10n.flashMathTotalPlays,
+                    l10n.flashMathPlayCount(plays.length),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                _statValue(l10n.flashMathHighestLevel, '$maxLevel'),
-                const SizedBox(width: 8),
-                _statValue(
-                  l10n.flashMathLongestStreak,
-                  l10n.flashMathQuestionCount(bestStreak),
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
-            Text(
-              l10n.flashMathStatsBySetting,
-              style: TextStyle(
-                color: Color(0xFF262321),
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
+                  const SizedBox(width: 8),
+                  _statValue(l10n.flashMathAccuracy, '$accuracy%'),
+                  const SizedBox(width: 8),
+                  _statValue(
+                    l10n.flashMathAverageAnswer,
+                    l10n.flashMathSecondsValue(
+                      (average / 1000).toStringAsFixed(1),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 10),
-            if (groups.isEmpty)
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  _statValue(l10n.flashMathHighestLevel, '$maxLevel'),
+                  const SizedBox(width: 8),
+                  _statValue(
+                    l10n.flashMathLongestStreak,
+                    l10n.flashMathQuestionCount(bestStreak),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
               Text(
-                l10n.flashMathStatsEmpty,
-                style: TextStyle(color: Color(0xFF766D66), fontSize: 13),
-              )
-            else
-              ...groups.map(
-                (group) => _statsGroupTile(
-                  group.value.first.configurationLabel(l10n),
-                  group.value,
-                ),
-              ),
-            const SizedBox(height: 22),
-            Text(
-              l10n.flashMathPlayHistory,
-              style: TextStyle(
-                color: Color(0xFF262321),
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            if (plays.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(28),
-                decoration: BoxDecoration(
+                l10n.flashMathStatsBySetting,
+                style: const TextStyle(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
                 ),
-                child: Center(
-                  child: Text(
-                    l10n.flashMathNoPlayHistory,
-                    style: TextStyle(color: Color(0xFF766D66)),
+              ),
+              const SizedBox(height: 10),
+              if (groups.isEmpty)
+                Text(
+                  l10n.flashMathStatsEmpty,
+                  style: const TextStyle(
+                    color: Color(0xB3FFFFFF),
+                    fontSize: 13,
+                  ),
+                )
+              else
+                ...groups.map(
+                  (group) => _statsGroupTile(
+                    group.value.first.configurationLabel(l10n),
+                    group.value,
                   ),
                 ),
-              )
-            else
-              ...plays.take(50).map(_historyTile),
-          ],
+              const SizedBox(height: 22),
+              Text(
+                l10n.flashMathPlayHistory,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              if (plays.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: _flashPanelStrong,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: _flashPanelBorder),
+                  ),
+                  child: Center(
+                    child: Text(
+                      l10n.flashMathNoPlayHistory,
+                      style: const TextStyle(color: Color(0xB3FFFFFF)),
+                    ),
+                  ),
+                )
+              else
+                ...plays.take(50).map(_historyTile),
+            ],
+          ),
         ),
       ),
     );
@@ -1683,16 +1728,16 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
         decoration: BoxDecoration(
-          color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE7DFD7)),
+          color: _flashPanel,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _flashPanelBorder),
         ),
         child: Column(
           children: [
             Text(
               value,
               style: const TextStyle(
-                color: Color(0xFF262321),
+                color: _flashMint,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
               ),
@@ -1700,7 +1745,7 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
             const SizedBox(height: 4),
             Text(
               label,
-              style: const TextStyle(color: Color(0xFF766D66), fontSize: 11),
+              style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 13),
             ),
           ],
         ),
@@ -1719,9 +1764,9 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE7DFD7)),
+        color: _flashPanelStrong,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _flashPanelBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1732,7 +1777,7 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
                 child: Text(
                   label,
                   style: const TextStyle(
-                    color: Color(0xFF262321),
+                    color: Colors.white,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -1740,7 +1785,7 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
               Text(
                 l10n.flashMathPlayCount(group.length),
                 style: const TextStyle(
-                  color: Color(0xFFE05B3F),
+                  color: _flashCoral,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -1753,7 +1798,7 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
               group.length - correct.length,
               accuracy,
             ),
-            style: const TextStyle(color: Color(0xFF766D66), fontSize: 12),
+            style: const TextStyle(color: Color(0xB3FFFFFF), fontSize: 12),
           ),
           const SizedBox(height: 4),
           Text(
@@ -1763,9 +1808,7 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
                     (bestMs / 1000).toStringAsFixed(1),
                   ),
             style: TextStyle(
-              color: bestMs == null
-                  ? const Color(0xFF958A81)
-                  : const Color(0xFF168A7A),
+              color: bestMs == null ? const Color(0x80FFFFFF) : _flashMint,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -1777,16 +1820,14 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
 
   Widget _historyTile(FlashMathPlay play) {
     final l10n = AppLocalizations.of(context)!;
-    final color = play.isCorrect
-        ? const Color(0xFF168A7A)
-        : const Color(0xFFE05B3F);
+    final color = play.isCorrect ? _flashMint : _flashCoral;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE7DFD7)),
+        color: _flashPanelStrong,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _flashPanelBorder),
       ),
       child: Row(
         children: [
@@ -1805,7 +1846,7 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFF262321),
+                    color: Colors.white,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1813,7 +1854,7 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
                 Text(
                   '${play.configurationLabel(l10n)}  ·  ${_formatDate(play.playedAt)}  ·  ${l10n.flashMathSecondsValue((play.responseMs / 1000).toStringAsFixed(1))}',
                   style: const TextStyle(
-                    color: Color(0xFF958A81),
+                    color: Color(0x99FFFFFF),
                     fontSize: 11,
                   ),
                 ),
@@ -1822,8 +1863,8 @@ class _FlashMathStatsPageState extends State<FlashMathStatsPage> {
           ),
           Text(
             play.isCorrect
-              ? l10n.flashMathCorrectLabel
-              : l10n.flashMathIncorrectLabel,
+                ? l10n.flashMathCorrectLabel
+                : l10n.flashMathIncorrectLabel,
             style: TextStyle(color: color, fontWeight: FontWeight.w800),
           ),
         ],
